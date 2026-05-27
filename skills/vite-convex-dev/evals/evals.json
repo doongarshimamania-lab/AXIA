@@ -1,0 +1,23 @@
+{
+  "skill_name": "vite-convex-dev",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build me a real-time chat application using Vite and Convex. It should have messages, user authentication with GitHub, and a message input form.",
+      "expected_output": "A complete Vite + Convex project with: schema.ts defining messages table, messages.ts with list/send queries and mutations, main.tsx with ConvexAuthProvider, App.tsx with useQuery/useMutation hooks, auth.ts with GitHub provider setup",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a Vite + Convex project. I need to add a task management feature with CRUD operations, pagination, and the ability to search tasks by title. Users should be able to assign tasks to team members.",
+      "expected_output": "Schema additions for tasks table with indexes (by_completed, by_assignee, search_title), tasks.ts with create/list/getById/update/remove queries and mutations, paginated list query, search query, React components for task list with pagination and search",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Set up file uploads in my Vite + Convex app. Users should be able to upload profile pictures and the app should display them. I also need a cron job that runs daily to clean up orphaned files.",
+      "expected_output": "Schema with files table and user avatar field, files.ts with generateUploadUrl/saveFile/getFileUrl mutations and queries, client-side upload component, crons.ts with daily cleanup job, internal mutation for cleanup logic",
+      "files": []
+    }
+  ]
+}
