@@ -795,6 +795,288 @@ function DashboardView() {
   )
 }
 
+/* ─────────────────────── ALL DASHBOARD VIEWS ─────────────────────── */
+
+function ClientsView() {
+  const clients = [
+    { name: "TechCorp Solutions", trust: 92, protection: 88, projects: 3, earned: "$12,400", status: "active", platform: "upwork" },
+    { name: "StartupHub Inc", trust: 78, protection: 72, projects: 2, earned: "$8,200", status: "active", platform: "fiverr" },
+    { name: "Global Enterprises", trust: 65, protection: 55, projects: 1, earned: "$3,200", status: "at_risk", platform: "upwork" },
+    { name: "Creative Studios", trust: 88, protection: 91, projects: 4, earned: "$15,600", status: "active", platform: "toptal" },
+    { name: "Acme Corp", trust: 45, protection: 38, projects: 1, earned: "$1,800", status: "flagged", platform: "fiverr" },
+  ]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Clients</h1><p className="text-[16px] text-muted-foreground">Monitor client trust scores, protection levels, and payment patterns</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Clients</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">5</div><p className="text-[12px] text-muted-foreground">Across 3 platforms</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Trust Score</CardTitle><Shield className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">73.6</div><p className="text-[12px] text-muted-foreground">Good standing</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">At-Risk Clients</CardTitle><AlertCircle className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-amber-600">2</div><p className="text-[12px] text-muted-foreground">Need attention</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Earned</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">$41,200</div><p className="text-[12px] text-muted-foreground">All time</p></CardContent></Card>
+      </div>
+      <Card><CardHeader><CardTitle className="text-[18px]">Client Directory</CardTitle></CardHeader><CardContent><div className="space-y-3">
+        {clients.map((c, i) => (<div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-4"><div className="w-10 h-10 rounded-full bg-[#00246B] flex items-center justify-center text-white text-sm font-bold">{c.name[0]}</div><div><div className="font-medium text-foreground">{c.name}</div><div className="text-sm text-muted-foreground">{c.projects} projects · {c.platform}</div></div></div>
+          <div className="flex items-center gap-4">
+            <div className="text-center"><div className="text-xs text-muted-foreground">Trust</div><div className={`text-sm font-bold ${c.trust >= 80 ? 'text-emerald-600' : c.trust >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{c.trust}%</div></div>
+            <div className="text-center"><div className="text-xs text-muted-foreground">Protection</div><Progress value={c.protection} className="w-16 h-2" /></div>
+            <div className="text-right"><div className="text-sm font-bold text-foreground">{c.earned}</div><Badge variant="outline" className={`text-[10px] ${c.status === 'active' ? 'border-emerald-500/30 text-emerald-600' : c.status === 'at_risk' ? 'border-amber-500/30 text-amber-600' : 'border-red-500/30 text-red-600'}`}>{c.status}</Badge></div>
+          </div>
+        </div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function ProjectsView() {
+  const projects = [
+    { name: "Website Redesign", client: "TechCorp", score: 92, hours: 45, value: "$4,250", risk: "low", platform: "upwork" },
+    { name: "Mobile App MVP", client: "StartupHub", score: 78, hours: 120, value: "$6,800", risk: "medium", platform: "fiverr" },
+    { name: "Backend API System", client: "Global Ent.", score: 55, hours: 30, value: "$3,200", risk: "high", platform: "upwork" },
+    { name: "Brand Identity Package", client: "Creative Studios", score: 91, hours: 80, value: "$5,500", risk: "low", platform: "toptal" },
+    { name: "E-commerce Platform", client: "Acme Corp", score: 38, hours: 15, value: "$9,200", risk: "critical", platform: "fiverr" },
+  ]
+  const riskColor: Record<string, string> = { low: "border-emerald-500/30 text-emerald-600", medium: "border-amber-500/30 text-amber-600", high: "border-orange-500/30 text-orange-600", critical: "border-red-500/30 text-red-600" }
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Project Protection</h1><p className="text-[16px] text-muted-foreground">Monitor project protection scores, risks, and evidence coverage</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Active Projects</CardTitle><Layers className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">5</div><p className="text-[12px] text-muted-foreground">3 platforms</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Protection</CardTitle><Shield className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">70.8%</div><p className="text-[12px] text-muted-foreground">Good coverage</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Value</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">$28,950</div><p className="text-[12px] text-muted-foreground">Protected</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">At-Risk Projects</CardTitle><AlertCircle className="h-4 w-4 text-red-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-red-600">2</div><p className="text-[12px] text-muted-foreground">Need review</p></CardContent></Card>
+      </div>
+      <Card><CardHeader><CardTitle className="text-[18px]">Project List</CardTitle></CardHeader><CardContent><div className="space-y-3">
+        {projects.map((p, i) => (<div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-4"><div className={`w-2 h-8 rounded-full ${p.score >= 80 ? 'bg-emerald-500' : p.score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} /><div><div className="font-medium text-foreground">{p.name}</div><div className="text-sm text-muted-foreground">{p.client} · {p.hours}h · {p.platform}</div></div></div>
+          <div className="flex items-center gap-4"><div className="text-center"><div className="text-xs text-muted-foreground">Score</div><div className="text-sm font-bold text-foreground">{p.score}%</div></div><div className="text-sm font-bold text-foreground">{p.value}</div><Badge variant="outline" className={`text-[10px] ${riskColor[p.risk]}`}>{p.risk} risk</Badge></div>
+        </div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function EvidenceView() {
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Library</h1><p className="text-[16px] text-muted-foreground">Browse, analyze, and export your work evidence across all projects</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Items</CardTitle><Eye className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">254</div><p className="text-[12px] text-muted-foreground">Across all projects</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Health Score</CardTitle><Shield className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">94%</div><p className="text-[12px] text-muted-foreground">Excellent</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Compliance Rate</CardTitle><CheckCircle2 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">97%</div><p className="text-[12px] text-muted-foreground">Verified items</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Evidence Gaps</CardTitle><AlertCircle className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-amber-600">3</div><p className="text-[12px] text-muted-foreground">Need attention</p></CardContent></Card>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-[16px]">Evidence by Type</CardTitle></CardHeader><CardContent><div className="space-y-3">
+          {[{ label: "Screenshots", val: 47, max: 50 }, { label: "Activity Logs", val: 128, max: 150 }, { label: "Work Memos", val: 23, max: 30 }, { label: "Compliance Records", val: 56, max: 60 }].map((e, i) => (<div key={i}><div className="flex justify-between text-sm mb-1"><span className="text-muted-foreground">{e.label}</span><span className="font-medium text-foreground">{e.val}</span></div><Progress value={(e.val / e.max) * 100} className="h-2" /></div>))}
+        </div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-[16px]">Quality Scorecard</CardTitle></CardHeader><CardContent><div className="space-y-3">
+          {[{ label: "Screenshot Quality", val: 96 }, { label: "Activity Density", val: 87 }, { label: "Memo Completeness", val: 72 }, { label: "Timestamp Accuracy", val: 99 }].map((e, i) => (<div key={i}><div className="flex justify-between text-sm mb-1"><span className="text-muted-foreground">{e.label}</span><span className={`font-medium ${e.val >= 90 ? 'text-emerald-600' : e.val >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{e.val}%</span></div><Progress value={e.val} className="h-2" /></div>))}
+        </div></CardContent></Card>
+      </div>
+    </div>
+  )
+}
+
+function TimeTrackingView() {
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => { if (!timerRunning) return; const id = setInterval(() => setElapsed(e => e + 1), 1000); return () => clearInterval(id) }, [timerRunning])
+  const fmt = (s: number) => `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+  const entries = [{ project: "Website Redesign", client: "TechCorp", dur: "4h 30m", platform: "upwork", status: "compliant" }, { project: "Mobile App MVP", client: "StartupHub", dur: "3h 00m", platform: "fiverr", status: "compliant" }, { project: "Brand Identity", client: "Creative Studios", dur: "2h 30m", platform: "upwork", status: "at_risk" }, { project: "E-commerce Platform", client: "Acme Corp", dur: "1h 30m", platform: "fiverr", status: "flagged" }]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Time Tracking</h1><p className="text-[16px] text-muted-foreground">Track work hours across all platforms with compliance monitoring</p></div>
+      <Card className="border-2 border-primary/20 mb-6"><CardContent className="pt-6"><div className="flex flex-col items-center gap-4">
+        <div className="flex items-center gap-3"><div className={`h-3 w-3 rounded-full ${timerRunning ? 'bg-emerald-500 animate-pulse' : 'bg-muted'}`} /><span className="text-sm font-medium text-muted-foreground">{timerRunning ? 'Recording' : 'Ready to track'}</span></div>
+        <div className="text-[56px] font-mono font-bold text-foreground tracking-wider">{fmt(elapsed)}</div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="lg" onClick={() => setTimerRunning(!timerRunning)} className="w-32">{timerRunning ? <><Zap className="mr-2 h-4 w-4" />Pause</> : <><Activity className="mr-2 h-4 w-4" />Start</>}</Button>
+          {timerRunning && <Button variant="destructive" size="lg" onClick={() => { setTimerRunning(false); setElapsed(0); toast.success('Time entry saved!') }} className="w-32">Stop</Button>}
+        </div>
+      </div></CardContent></Card>
+      <Card><CardHeader><CardTitle className="text-[18px]">Recent Time Entries</CardTitle></CardHeader><CardContent><div className="space-y-2">
+        {entries.map((e, i) => (<div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border"><div className="flex items-center gap-3"><div className={`h-2 w-2 rounded-full ${e.status === 'compliant' ? 'bg-emerald-500' : e.status === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'}`} /><div><div className="font-medium text-foreground">{e.project}</div><div className="text-sm text-muted-foreground">{e.client} · {e.platform}</div></div></div><div className="flex items-center gap-3"><span className="font-mono text-sm font-medium">{e.dur}</span><Badge variant="outline" className={`text-[10px] ${e.status === 'compliant' ? 'border-emerald-500/30 text-emerald-600' : e.status === 'at_risk' ? 'border-amber-500/30 text-amber-600' : 'border-red-500/30 text-red-600'}`}>{e.status}</Badge></div></div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function TagsView() {
+  const tags = [{ name: "Urgent", color: "#EF4444", count: 12 }, { name: "Design", color: "#8B5CF6", count: 8 }, { name: "Development", color: "#3B82F6", count: 15 }, { name: "Client Communication", color: "#10B981", count: 6 }, { name: "Bug Fix", color: "#F59E0B", count: 9 }, { name: "Documentation", color: "#6366F1", count: 4 }, { name: "Revision", color: "#EC4899", count: 7 }, { name: "Research", color: "#14B8A6", count: 3 }]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6 flex items-start justify-between"><div><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Tags</h1><p className="text-[16px] text-muted-foreground">Organize your work with custom tags</p></div><Button className="bg-[#00246B] hover:bg-[#00246B]/90 text-white"><Zap className="mr-2 h-4 w-4" />Create Tag</Button></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {tags.map((t, i) => (<Card key={i} className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="pt-6"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.color }} /><div><div className="font-medium text-foreground">{t.name}</div><div className="text-sm text-muted-foreground">{t.count} entries</div></div></div><Badge variant="secondary">{t.count}</Badge></div></CardContent></Card>))}
+      </div>
+    </div>
+  )
+}
+
+function GoalsView() {
+  const goals = [{ title: "Reach $10K monthly", progress: 72, deadline: "Jun 30", status: "active" }, { title: "Zero rejected hours", progress: 89, deadline: "Ongoing", status: "active" }, { title: "5-star rating on Upwork", progress: 94, deadline: "Jul 31", status: "active" }, { title: "Complete 50 projects", progress: 60, deadline: "Dec 31", status: "active" }, { title: "Build 3 recurring clients", progress: 100, deadline: "Completed", status: "completed" }]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6 flex items-start justify-between"><div><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Goals</h1><p className="text-[16px] text-muted-foreground">Set and track your professional goals</p></div><Button className="bg-[#00246B] hover:bg-[#00246B]/90 text-white"><Target className="mr-2 h-4 w-4" />Create Goal</Button></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Active Goals</CardTitle><Target className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">4</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Completion Rate</CardTitle><CheckCircle2 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">83%</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Best Streak</CardTitle><Zap className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">14 days</div></CardContent></Card>
+      </div>
+      <div className="space-y-4">{goals.map((g, i) => (<Card key={i}><CardContent className="pt-6"><div className="flex items-center justify-between mb-3"><div><div className="font-medium text-foreground">{g.title}</div><div className="text-sm text-muted-foreground">Deadline: {g.deadline}</div></div><Badge variant="outline" className={g.status === 'completed' ? 'border-emerald-500/30 text-emerald-600' : 'border-blue-500/30 text-blue-600'}>{g.status}</Badge></div><div className="flex items-center gap-3"><Progress value={g.progress} className="flex-1 h-2" /><span className="text-sm font-bold text-foreground min-w-[40px] text-right">{g.progress}%</span></div></CardContent></Card>))}</div>
+    </div>
+  )
+}
+
+function InvoicesView() {
+  const invoices = [{ id: "INV-001", client: "TechCorp", amount: "$4,250", status: "paid", date: "May 15" }, { id: "INV-002", client: "StartupHub", amount: "$6,800", status: "pending", date: "May 22" }, { id: "INV-003", client: "Global Ent.", amount: "$3,200", status: "overdue", date: "May 1" }, { id: "INV-004", client: "Creative Studios", amount: "$5,500", status: "paid", date: "May 10" }, { id: "INV-005", client: "Acme Corp", amount: "$9,200", status: "draft", date: "—" }]
+  const statusColor: Record<string, string> = { paid: "border-emerald-500/30 text-emerald-600", pending: "border-blue-500/30 text-blue-600", overdue: "border-red-500/30 text-red-600", draft: "border-gray-500/30 text-gray-600" }
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6 flex items-start justify-between"><div><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Invoices</h1><p className="text-[16px] text-muted-foreground">Manage and track your invoices</p></div><Button className="bg-[#00246B] hover:bg-[#00246B]/90 text-white"><Receipt className="mr-2 h-4 w-4" />Create Invoice</Button></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Revenue</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">$28,950</div><p className="text-[12px] text-muted-foreground">2 paid invoices</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Pending</CardTitle><Clock3 className="h-4 w-4 text-blue-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-blue-600">$6,800</div><p className="text-[12px] text-muted-foreground">1 invoice</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Overdue</CardTitle><AlertCircle className="h-4 w-4 text-red-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-red-600">$3,200</div><p className="text-[12px] text-muted-foreground">1 invoice</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Payment</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">5.3 days</div></CardContent></Card>
+      </div>
+      <Card><CardHeader><CardTitle className="text-[18px]">Recent Invoices</CardTitle></CardHeader><CardContent><div className="space-y-2">
+        {invoices.map((inv, i) => (<div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"><div className="flex items-center gap-4"><div><div className="font-medium text-foreground">{inv.id}</div><div className="text-sm text-muted-foreground">{inv.client}</div></div></div><div className="flex items-center gap-4"><span className="text-sm text-muted-foreground">{inv.date}</span><span className="text-lg font-bold text-foreground">{inv.amount}</span><Badge variant="outline" className={`text-[10px] ${statusColor[inv.status]}`}>{inv.status}</Badge></div></div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function PaymentPatternsView() {
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Payment Patterns</h1><p className="text-[16px] text-muted-foreground">Analyze payment history and trends across platforms</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Earned</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">$106,430</div><p className="text-[12px] text-emerald-600">+9.2% YoY</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Payment Time</CardTitle><Clock3 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">5.3 days</div><p className="text-[12px] text-emerald-600">-0.8 days improving</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">On-Time Rate</CardTitle><CheckCircle2 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">89%</div><Progress value={89} className="h-2 mt-1" /></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">At-Risk Amount</CardTitle><AlertCircle className="h-4 w-4 text-red-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-red-600">$4,620</div><p className="text-[12px] text-red-500">+$640 vs last month</p></CardContent></Card>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {[{ name: "Upwork", earned: "$62,400", avg: "4.2 days", onTime: "93%", color: "#14A800" }, { name: "Fiverr", earned: "$28,030", avg: "6.8 days", onTime: "84%", color: "#1DBF73" }, { name: "Toptal", earned: "$16,000", avg: "5.1 days", onTime: "91%", color: "#204ECF" }].map((p, i) => (<Card key={i}><CardHeader className="pb-2"><CardTitle className="text-[16px] flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />{p.name}</CardTitle></CardHeader><CardContent><div className="space-y-2"><div className="flex justify-between text-sm"><span className="text-muted-foreground">Earned</span><span className="font-medium text-foreground">{p.earned}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">Avg Payment</span><span className="font-medium text-foreground">{p.avg}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">On-Time</span><span className="font-medium text-foreground">{p.onTime}</span></div></div></CardContent></Card>))}
+      </div>
+      <Card><CardHeader className="pb-2"><CardTitle className="text-[16px] flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500" />Late Payment Alerts</CardTitle></CardHeader><CardContent><div className="space-y-2">
+        <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/5"><div className="flex items-center justify-between"><div><span className="text-sm font-bold text-red-600">Global Enterprises</span><span className="text-xs text-muted-foreground ml-2">— 14 days overdue</span></div><span className="text-sm font-bold text-red-600">$3,200</span></div></div>
+        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5"><div className="flex items-center justify-between"><div><span className="text-sm font-bold text-amber-600">Acme Corp</span><span className="text-xs text-muted-foreground ml-2">— 5 days overdue</span></div><span className="text-sm font-bold text-amber-600">$1,420</span></div></div>
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function ReportsView() {
+  const reports = [{ id: "UPW-2024-001", client: "TechCorp", amount: "$1,200", status: "generated", date: "May 20" }, { id: "FIV-2024-002", client: "StartupHub", amount: "$890", status: "sent", date: "May 18" }, { id: "UPW-2024-003", client: "Global Ent.", amount: "$3,200", status: "resolved", date: "May 10" }, { id: "TOP-2024-004", client: "Creative Studios", amount: "$560", status: "appealed", date: "May 5" }]
+  const statusColor: Record<string, string> = { generated: "border-blue-500/30 text-blue-600", sent: "border-amber-500/30 text-amber-600", resolved: "border-emerald-500/30 text-emerald-600", appealed: "border-purple-500/30 text-purple-600" }
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6 flex items-start justify-between"><div><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Reports</h1><p className="text-[16px] text-muted-foreground">Generate and manage dispute reports</p></div><Button className="bg-[#00246B] hover:bg-[#00246B]/90 text-white" onClick={() => toast.success('Report generated! Case ID: RPT-005')}><FileText className="mr-2 h-4 w-4" />Generate Report</Button></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Total Reports</CardTitle><FileText className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">4</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Success Rate</CardTitle><CheckCircle2 className="h-4 w-4 text-emerald-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">83%</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Resolution</CardTitle><Clock3 className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">6.2 days</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Protected Amount</CardTitle><Shield className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">$4,850</div></CardContent></Card>
+      </div>
+      <Card><CardHeader><CardTitle className="text-[18px]">Dispute Reports</CardTitle></CardHeader><CardContent><div className="space-y-2">
+        {reports.map((r, i) => (<div key={i} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"><div><div className="font-mono font-medium text-foreground">{r.id}</div><div className="text-sm text-muted-foreground">{r.client} · {r.date}</div></div><div className="flex items-center gap-4"><span className="text-lg font-bold text-foreground">{r.amount}</span><Badge variant="outline" className={`text-[10px] ${statusColor[r.status]}`}>{r.status}</Badge></div></div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
+function PlatformsView() {
+  const [connecting, setConnecting] = useState<string | null>(null)
+  const platforms = [{ name: "Upwork", color: "#14A800", connected: true, lastSync: "2 min ago", projects: 3 }, { name: "Fiverr", color: "#1DBF73", connected: true, lastSync: "15 min ago", projects: 2 }, { name: "Toptal", color: "#204ECF", connected: false, lastSync: "—", projects: 0 }, { name: "Freelancer.com", color: "#29B2FE", connected: false, lastSync: "—", projects: 0 }]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Platform Connections</h1><p className="text-[16px] text-muted-foreground">Connect and manage your freelance platform accounts</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {platforms.map((p, i) => (<Card key={i} className={p.connected ? 'border-emerald-500/30' : ''}><CardContent className="pt-6"><div className="flex items-center justify-between">
+          <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: p.color + '20' }}><div className="w-6 h-6 rounded" style={{ backgroundColor: p.color }} /></div><div><div className="font-medium text-foreground text-lg">{p.name}</div>{p.connected ? <div className="text-sm text-emerald-600">Connected · Last sync: {p.lastSync}</div> : <div className="text-sm text-muted-foreground">Not connected</div>}</div></div>
+          <div>{p.connected ? <Button variant="outline" size="sm" onClick={() => toast.info(`Disconnecting ${p.name}...`)}>Disconnect</Button> : <Button size="sm" className="bg-[#00246B] hover:bg-[#00246B]/90 text-white" onClick={() => { setConnecting(p.name); toast.success(`Connecting to ${p.name}...`) }}>Connect</Button>}</div>
+        </div>{p.connected && <div className="mt-4 pt-4 border-t border-border"><div className="flex gap-4 text-sm"><span className="text-muted-foreground">Projects: <span className="text-foreground font-medium">{p.projects}</span></span><span className="text-muted-foreground">Compliance: <span className="text-emerald-600 font-medium">Active</span></span></div></div>}</CardContent></Card>))}
+      </div>
+    </div>
+  )
+}
+
+function AIInsightsView() {
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">AI Insights</h1><p className="text-[16px] text-muted-foreground">AI-powered dispute prediction and protection recommendations</p></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Dispute Risk</CardTitle><AlertCircle className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-amber-600">Medium</div><p className="text-[12px] text-muted-foreground">Based on current patterns</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Predicted Savings</CardTitle><DollarSign className="h-4 w-4 text-emerald-500" /></CardHeader><CardContent><div className="text-[24px] font-bold text-emerald-600">$892/mo</div><p className="text-[12px] text-muted-foreground">With current protection</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-[14px] font-medium text-muted-foreground">Accuracy</CardTitle><Brain className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-[24px] font-bold text-foreground">94.2%</div><p className="text-[12px] text-muted-foreground">Prediction accuracy</p></CardContent></Card>
+      </div>
+      <Card className="mb-6"><CardHeader className="pb-2"><CardTitle className="text-[16px] flex items-center gap-2"><Brain className="w-4 h-4 text-primary" />AI Recommendations</CardTitle></CardHeader><CardContent><div className="space-y-3">
+        <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5"><div className="flex items-center gap-2 mb-1"><AlertCircle className="w-4 h-4 text-amber-500" /><span className="text-sm font-bold text-amber-600">Add Work Memos to Fiverr Sessions</span></div><p className="text-xs text-muted-foreground">Your Fiverr sessions have 30% fewer work memos than platform average. Adding 2-3 memos per session can reduce rejection risk by 45%.</p></div>
+        <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5"><div className="flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-emerald-500" /><span className="text-sm font-bold text-emerald-600">Upwork Pattern is Strong</span></div><p className="text-xs text-muted-foreground">Your Upwork work diary consistently meets all compliance requirements. Maintain current screenshot frequency and memo quality.</p></div>
+        <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5"><div className="flex items-center gap-2 mb-1"><FileX className="w-4 h-4 text-red-500" /><span className="text-sm font-bold text-red-600">Evidence Gap on Toptal Project</span></div><p className="text-xs text-muted-foreground">Missing 5 hours of screenshots on the Brand Identity project. Generate evidence report before client review on Friday.</p></div>
+      </div></CardContent></Card>
+      <Card><CardHeader className="pb-2"><CardTitle className="text-[16px]">Custom Policy Analysis</CardTitle><Badge variant="outline" className="text-[10px] ml-2">Pro Feature</Badge></CardHeader><CardContent><p className="text-sm text-muted-foreground mb-4">AI-powered analysis of platform-specific policies and how they apply to your current work sessions.</p><Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => toast.success('Policy analysis started!')}>Analyze Current Session</Button></CardContent></Card>
+    </div>
+  )
+}
+
+function SubscriptionView() {
+  const [selectedPlan, setSelectedPlan] = useState('free')
+  const plans = [{ name: "Free", price: "$0", period: "/mo", features: ["1 dispute report/mo", "Basic compliance", "1 platform", "Community support"], highlight: false }, { name: "Starter", price: "$9", period: "/mo", features: ["5 reports/mo", "Enhanced compliance", "2 platforms", "Evidence export", "Email support"], highlight: false }, { name: "Pro", price: "$29", period: "/mo", features: ["Unlimited reports", "AI dispute prediction", "Cross-platform verification", "WCVM engine", "Priority support"], highlight: true }, { name: "Expert", price: "$79", period: "/mo", features: ["Everything in Pro", "Team features", "Custom policies", "Premium network", "Dedicated support"], highlight: false }]
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Subscription</h1><p className="text-[16px] text-muted-foreground">Manage your TIMELock subscription plan</p></div>
+      <Card className="mb-6 border-primary/30"><CardContent className="pt-6"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center"><Zap className="h-6 w-6 text-primary" /></div><div><div className="text-lg font-bold text-foreground">Current Plan: Free</div><div className="text-sm text-muted-foreground">Basic protection with limited features</div></div></div><Button className="bg-[#00246B] hover:bg-[#00246B]/90 text-white">Upgrade to Pro</Button></div></CardContent></Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {plans.map((p, i) => (<Card key={i} className={p.highlight ? 'border-primary ring-2 ring-primary/20' : ''}><CardContent className="pt-6">{p.highlight && <Badge className="mb-3 bg-primary text-primary-foreground">Most Popular</Badge>}<div className="mb-4"><div className="text-lg font-bold text-foreground">{p.name}</div><div className="flex items-baseline gap-1"><span className="text-3xl font-bold text-foreground">{p.price}</span><span className="text-muted-foreground">{p.period}</span></div></div><ul className="space-y-2 mb-4">{p.features.map((f, j) => (<li key={j} className="flex items-center gap-2 text-sm"><CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" /><span className="text-muted-foreground">{f}</span></li>))}</ul><Button className={`w-full ${p.highlight ? 'bg-[#00246B] hover:bg-[#00246B]/90 text-white' : ''}`} variant={p.highlight ? 'default' : 'outline'}>{p.name === 'Free' ? 'Current Plan' : 'Upgrade'}</Button></CardContent></Card>))}
+      </div>
+    </div>
+  )
+}
+
+function SettingsView() {
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Settings</h1><p className="text-[16px] text-muted-foreground">Manage your account and preferences</p></div>
+      <div className="space-y-6">
+        <Card><CardHeader><CardTitle className="text-[18px]">Profile</CardTitle></CardHeader><CardContent><div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="text-sm font-medium text-muted-foreground">Full Name</label><div className="mt-1 p-2 rounded-md border border-border bg-background text-foreground">John Doe</div></div><div><label className="text-sm font-medium text-muted-foreground">Email</label><div className="mt-1 p-2 rounded-md border border-border bg-background text-foreground">john@example.com</div></div></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="text-sm font-medium text-muted-foreground">Hourly Rate</label><div className="mt-1 p-2 rounded-md border border-border bg-background text-foreground">$25/hr</div></div><div><label className="text-sm font-medium text-muted-foreground">Primary Platform</label><div className="mt-1 p-2 rounded-md border border-border bg-background text-foreground">Upwork</div></div></div>
+        </div></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-[18px]">API Keys</CardTitle></CardHeader><CardContent><div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border"><div><div className="text-sm font-medium text-foreground">Production Key</div><div className="text-xs text-muted-foreground font-mono">tl_live_****...****x7k9</div></div><Badge variant="outline" className="border-emerald-500/30 text-emerald-600">Active</Badge></div>
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border"><div><div className="text-sm font-medium text-foreground">Development Key</div><div className="text-xs text-muted-foreground font-mono">tl_test_****...****m2p4</div></div><Badge variant="outline" className="border-emerald-500/30 text-emerald-600">Active</Badge></div>
+          <Button variant="outline" size="sm" onClick={() => toast.success('New API key generated!')}>Generate New Key</Button>
+        </div></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-[18px]">Notifications</CardTitle></CardHeader><CardContent><div className="space-y-3">
+          {[{ label: "Compliance alerts", desc: "Get notified when compliance drops", on: true }, { label: "Payment reminders", desc: "Remind clients about overdue invoices", on: true }, { label: "Weekly summary", desc: "Weekly report of your protection status", on: false }, { label: "AI insights", desc: "Proactive AI-powered recommendations", on: true }].map((n, i) => (<div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border"><div><div className="text-sm font-medium text-foreground">{n.label}</div><div className="text-xs text-muted-foreground">{n.desc}</div></div><Switch defaultChecked={n.on} /></div>))}
+        </div></CardContent></Card>
+      </div>
+    </div>
+  )
+}
+
+function HelpCenterView() {
+  const [search, setSearch] = useState('')
+  const faqs = [{ q: "What is TIMELock?", a: "TIMELock is a freelancer protection platform that monitors your work compliance in real-time, collects evidence, and generates dispute reports to protect your payments." }, { q: "How does evidence collection work?", a: "TIMELock automatically captures screenshots, tracks activity density, and records work memos during your sessions. This evidence is verified against platform requirements." }, { q: "What platforms are supported?", a: "We support Upwork, Fiverr, and Toptal with platform-specific compliance rules and work diary integration." }, { q: "Can I try TIMELock for free?", a: "Yes! Our Free plan includes 1 dispute report per month, basic compliance monitoring, and 1 platform connection." }, { q: "How does AI dispute prediction work?", a: "Our AI analyzes your work patterns, platform policies, and historical dispute data to predict potential issues before they become problems." }, { q: "Is my data secure?", a: "All evidence is encrypted end-to-end and stored securely. Only you can access your data, and we never share it with third parties." }]
+  const filtered = search ? faqs.filter(f => f.q.toLowerCase().includes(search.toLowerCase()) || f.a.toLowerCase().includes(search.toLowerCase())) : faqs
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      <div className="mb-6"><h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Help Center</h1><p className="text-[16px] text-muted-foreground">Get help and support for TIMELock</p></div>
+      <div className="mb-6"><div className="relative"><input type="text" placeholder="Search help articles..." value={search} onChange={e => setSearch(e.target.value)} className="w-full p-3 rounded-lg border border-border bg-background text-foreground pl-10" /><HelpCircle className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" /></div></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {[{ icon: HelpCircle, label: "Contact Support", color: "bg-blue-500/10 text-blue-600" }, { icon: Clock3, label: "Schedule Call", color: "bg-emerald-500/10 text-emerald-600" }, { icon: FileX, label: "Report Bug", color: "bg-red-500/10 text-red-600" }, { icon: Star, label: "Feature Request", color: "bg-amber-500/10 text-amber-600" }].map((a, i) => { const Icon = a.icon; return (<Card key={i} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => toast.info(`${a.label} feature coming soon!`)}><CardContent className="pt-6 text-center"><Icon className={`h-8 w-8 mx-auto mb-2 ${a.color.split(' ')[1]}`} /><div className="text-sm font-medium text-foreground">{a.label}</div></CardContent></Card>) })}
+      </div>
+      <Card><CardHeader><CardTitle className="text-[18px]">Frequently Asked Questions</CardTitle></CardHeader><CardContent><div className="space-y-3">
+        {filtered.map((f, i) => (<div key={i} className="p-4 rounded-lg border border-border"><div className="text-sm font-bold text-foreground mb-2">{f.q}</div><div className="text-sm text-muted-foreground">{f.a}</div></div>))}
+      </div></CardContent></Card>
+    </div>
+  )
+}
+
 /* ─────────────────────── MAIN APP ─────────────────────── */
 
 export default function Home() {
@@ -943,7 +1225,21 @@ export default function Home() {
                 </Button>
               </div>
 
-              <DashboardView />
+              {activeTab === 'dashboard' && <DashboardView />}
+              {activeTab === 'clients' && <ClientsView />}
+              {activeTab === 'projects' && <ProjectsView />}
+              {activeTab === 'evidence' && <EvidenceView />}
+              {activeTab === 'time' && <TimeTrackingView />}
+              {activeTab === 'tags' && <TagsView />}
+              {activeTab === 'goals' && <GoalsView />}
+              {activeTab === 'invoices' && <InvoicesView />}
+              {activeTab === 'payments' && <PaymentPatternsView />}
+              {activeTab === 'reports' && <ReportsView />}
+              {activeTab === 'platforms' && <PlatformsView />}
+              {activeTab === 'ai' && <AIInsightsView />}
+              {activeTab === 'subscription' && <SubscriptionView />}
+              {activeTab === 'settings' && <SettingsView />}
+              {activeTab === 'help' && <HelpCenterView />}
             </div>
           </motion.div>
         )}
