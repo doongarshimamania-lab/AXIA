@@ -1,30 +1,50 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Create custom Vite + Convex full-stack development skill
+Task: Extract, understand, and set up TIMELock project for preview
 
 Work Log:
-- Researched Vite + Convex stack comprehensively (architecture, functions, schema, auth, file storage, crons, deployment)
-- Studied existing fullstack-dev skill for structure reference
-- Designed skill with progressive disclosure: main SKILL.md + 4 reference files
-- Created SKILL.md (807 lines) with YAML frontmatter, architecture diagram, 8-step workflow, non-negotiable rules, and code examples
-- Created references/convex-functions.md (613 lines) — queries, mutations, actions, internal functions, pagination, search, file storage, crons, HTTP endpoints
-- Created references/schema-and-db.md (452 lines) — schema definition, validators, indexes, search indexes, vector indexes, querying, design patterns
-- Created references/auth-setup.md (317 lines) — Convex Auth, Clerk, OAuth, passwords, magic links, protected functions
-- Created references/project-setup.md (363 lines) — scaffolding, configuration, deployment (Vercel, Netlify, self-hosting)
-- Created evals/evals.json with 3 test prompts
-- Ran validation, identified and fixed 5 critical issues:
-  1. Added Next.js exclusion to YAML trigger description
-  2. Fixed missing `returns` validators on getByAuthor query
-  3. Fixed protected function example to use tokenIdentifier lookup instead of unsafe type cast
-  4. Fixed saveFile return type consistency (v.id("files") instead of v.null())
-  5. Fixed auth env var contradiction (OAuth secrets in Convex dashboard, not .env.local)
-  6. Added error state handling for useQuery (instanceof Error check)
-  7. Clarified v.optional() vs nullable fields distinction
+- Extracted timelock-flat.zip to /home/z/my-project/upload/timelock-flat/
+- Read and understood the full project: TIMELock is a Vite + React 19 + Convex + shadcn/ui SaaS platform for freelancer payment protection
+- Key features: real-time compliance monitoring, evidence collection, AI dispute prediction, cross-platform verification (Upwork, Fiverr, Toptal)
+- Tech stack: Vite, React 19, React Router v7, Tailwind v4, shadcn/ui, Convex, Convex Auth, Framer Motion, Three.js
+- Project has 319 files including 100+ components, 40+ Convex functions, 25+ pages
+- Copied project to /home/z/my-project/timelock/
+- Installed dependencies with pnpm
+- TypeScript check passed clean
+- Vite build succeeded (dist/index.html + assets)
 
 Stage Summary:
-- Custom skill created at /home/z/my-project/skills/vite-convex-dev/
-- Total: ~2,552 lines across 5 files
-- Covers: project scaffolding, schema, functions, auth, file storage, crons, deployment
-- All validation issues resolved
-- Skill is ready for packaging and use
+- Project fully understood and extracted
+- Build confirmed working with no errors
+- Project structure mapped: Landing page, Dashboard, Sidebar navigation, multiple feature components
+- Auth uses email OTP via Convex Auth
+- Schema includes: users, compliance, tracking, evidence, projects, features tables
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Set up preview environment and serve TIMELock app
+
+Work Log:
+- Initialized Next.js 16 fullstack environment via z-cdn script
+- Caddy gateway on port 81 proxies to port 3000 (Next.js)
+- Built Vite app to static files and copied to Next.js public directory
+- Created comprehensive TIMELock app as Next.js page.tsx with:
+  - Full landing page (Hero, Problem Cards, Social Proof, CTA, Footer)
+  - Dashboard view (Compliance status, Platform tabs, Stats cards, Work diary, Evidence monitor, AI insights, Lost income calculator)
+  - Collapsible sidebar navigation
+  - Dark/light theme toggle with persistence
+  - Mobile responsive with hamburger menu
+  - Framer Motion animations
+  - Toast notifications via Sonner
+- Fixed ESLint errors (setState in effect, ignore patterns)
+- Lint passes clean
+- App is accessible and serving through Caddy gateway
+
+Stage Summary:
+- TIMELock app running on Next.js preview at port 81 → 3000
+- Landing page with hero, problems, testimonials, CTA
+- Dashboard with compliance monitoring, work diary, evidence monitor, AI predictions
+- Dark theme by default, toggle available
+- All mock data showing realistic freelancer protection scenarios
