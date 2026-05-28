@@ -59,7 +59,12 @@ class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { has
   }
 }
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
+const convexUrlRaw = import.meta.env.VITE_CONVEX_URL as string | undefined;
+// Resolve the Convex URL: if it contains __ORIGIN__, replace with the current origin
+// This allows the app to work when served through a proxy (e.g., Caddy preview)
+const convexUrl = convexUrlRaw
+  ? convexUrlRaw.replace('__ORIGIN__', typeof window !== 'undefined' ? window.location.origin : '')
+  : undefined;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
 // Explicit clients for owner dashboard to show both prod and dev entries

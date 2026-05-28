@@ -21,3 +21,27 @@ Stage Summary:
 - Error Boundary catches any remaining unhandled Convex errors
 - Build verified: "Convex Safe", "throwOnError", "ConvexErrorBoundary" all present in bundle
 - Both servers running and serving 200 responses
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Set up self-hosted Convex backend and deploy TIMELock functions
+
+Work Log:
+- Found pre-downloaded convex-local-backend binary at ~/.cache/convex/binaries/
+- Started self-hosted Convex backend on port 3210 with --disable-beacon flag
+- Used `npx convex dev --once --typecheck disable` to auto-configure and deploy functions
+- Fixed admin key mismatch by using config.json from fresh deployment
+- Successfully deployed all TIMELock functions (users, waitlist, projects, evidence, etc.)
+- Verified queries return success: users:currentUser → null, waitlist:getWaitlistCount → 0
+- Updated VITE_CONVEX_URL to use __ORIGIN__/convex for same-origin proxy
+- Added runtime URL resolution in main.tsx (replaces __ORIGIN__ with window.location.origin)
+- Created combined server with HTTP proxy and WebSocket upgrade proxy for /convex/* → localhost:3210
+- Both ports 5173 and 3000 serving static files + Convex proxy
+
+Stage Summary:
+- Self-hosted Convex backend running on port 3210 (PID 14772)
+- All TIMELock functions deployed and working
+- Convex proxy working on both port 5173 and 3000 via /convex/* prefix
+- Frontend updated to resolve Convex URL at runtime
+- No more Server Errors - queries return proper responses
