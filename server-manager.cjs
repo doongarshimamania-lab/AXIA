@@ -1,10 +1,10 @@
-const { spawn } = require('child_process');
-const http = require('http');
+const { createServer } = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const DIST = '/home/z/my-project/timelock/dist';
 const LOG = '/tmp/server-manager.log';
+const PORT = 3000;
 
 function log(msg) {
   const line = `${new Date().toISOString()} ${msg}\n`;
@@ -12,68 +12,87 @@ function log(msg) {
   console.log(line.trim());
 }
 
-function startStaticServer() {
-  const MIME = {
-    '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
-    '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
-    '.jpg': 'image/jpg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
-    '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
-    '.pdf': 'application/pdf',
-  };
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.pdf': 'application/pdf',
+  '.webp': 'image/webp',
+};
 
-  const server = http.createServer((req, res) => {
-    let urlPath = req.url.split('?')[0];
-    
-    if (urlPath === '/') {
-      res.writeHead(307, { 'Location': '/timelock/' });
-      res.end();
-      return;
-    }
-    
-    if (urlPath.startsWith('/timelock')) {
-      let relativePath = urlPath.replace('/timelock', '') || '/';
-      let filePath = path.join(DIST, relativePath === '/' ? 'index.html' : relativePath);
-      const ext = path.extname(filePath);
-      
-      if (ext && ext !== '.html') {
-        try {
-          if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
-            const data = fs.readFileSync(filePath);
-            res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-            res.end(data);
-            return;
-          }
-        } catch (e) {}
-      }
-      
-      try {
-        const data = fs.readFileSync(path.join(DIST, 'index.html'));
-        res.writeHead(200, { 'Content-Type': 'text/html' });
+const server = createServer((req, res) => {
+  let urlPath = req.url.split('?')[0];
+  log(`Request: ${req.method} ${urlPath}`);
+  
+  // Build the file path
+  let filePath = path.join(DIST, urlPath === '/' ? 'index.html' : urlPath);
+  
+  // Security: prevent directory traversal
+  if (!filePath.startsWith(DIST)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+  
+  const ext = path.extname(filePath);
+  
+  // For non-HTML files, try to serve them directly
+  if (ext && ext !== '.html') {
+    try {
+      if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
+        const data = fs.readFileSync(filePath);
+        res.writeHead(200, {
+          'Content-Type': MIME[ext] || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        });
         res.end(data);
         return;
-      } catch (e) {}
+      }
+    } catch (e) {
+      log(`Error serving ${filePath}: ${e.message}`);
     }
-    
-    res.writeHead(404);
-    res.end('Not found');
-  });
+  }
+  
+  // For HTML files or missing files, serve index.html (SPA routing)
+  try {
+    const indexPath = path.join(DIST, 'index.html');
+    const data = fs.readFileSync(indexPath);
+    res.writeHead(200, {
+      'Content-Type': MIME['.html'],
+      'Cache-Control': 'no-cache',
+    });
+    res.end(data);
+  } catch (e) {
+    log(`Error serving index.html: ${e.message}`);
+    res.writeHead(500);
+    res.end('Internal Server Error');
+  }
+});
 
-  return server;
-}
-
-log('Starting TIMELock server manager...');
-
-const server = startStaticServer();
-server.listen(3000, '0.0.0.0', () => {
-  log('TIMELock server running on port 3000');
-  log('Serving Vite build from ' + DIST);
+server.listen(PORT, '0.0.0.0', () => {
+  log(`TIMELock static server running on port ${PORT}`);
+  log(`Serving from ${DIST}`);
 });
 
 server.on('error', (err) => {
-  log('Server error: ' + err.message);
+  log(`Server error: ${err.message}`);
   process.exit(1);
 });
 
-// Keep process alive
-process.on('SIGTERM', () => { log('SIGTERM'); process.exit(0); });
-process.on('SIGINT', () => { log('SIGINT'); process.exit(0); });
+// Keep alive
+process.on('SIGTERM', () => { log('SIGTERM received'); process.exit(0); });
+process.on('SIGINT', () => { log('SIGINT received'); process.exit(0); });
+
+// Heartbeat to detect if we're still running
+setInterval(() => {
+  log('heartbeat');
+}, 60000);

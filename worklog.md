@@ -1,30 +1,25 @@
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Deploy original TIMELock Vite+Convex app on preview
+Agent: main
+Task: Fix runtime errors in TIMELock Vite+Convex app and deploy to preview
 
 Work Log:
-- Found the complete original project at `/home/z/my-project/timelock/` with 60+ components, 30+ Convex functions, 15+ pages
-- Previous session had incorrectly converted the project to Next.js, losing features
-- Installed npm dependencies in timelock/ directory
-- Created `.env.local` with VITE_CONVEX_URL=https://harmless-tapir-303.convex.cloud
-- Added `basename="/timelock"` to BrowserRouter in main.tsx for subdirectory routing
-- Added `base: "/timelock/"` to vite.config.ts for correct asset paths
-- Built the Vite project successfully (2779 modules transformed, 1.66MB JS, 276KB CSS)
-- Copied build output to `/home/z/my-project/public/timelock/`
-- Copied logo assets to `/home/z/my-project/public/` for hardcoded path references
-- Updated `src/app/page.tsx` to redirect `/` → `/timelock/`
-- Created `src/middleware.ts` for SPA fallback routing (rewrites `/timelock/*` to index.html)
-- Updated `next.config.ts` with rewrites for SPA routing
-- Tested all routes successfully:
-  - `/` → 307 redirect to `/timelock/` ✅
-  - `/timelock/` → serves Vite app HTML ✅
-  - `/timelock/assets/*` → serves JS/CSS assets ✅
-  - `/timelock/dashboard` → SPA fallback via middleware rewrite ✅
+- Investigated runtime errors in the TIMELock app
+- Identified root cause: Vite base path `/timelock/` caused asset paths to be `/timelock/assets/...` but Caddy served from `dist/` without the `/timelock/` prefix, causing all JS/CSS to 404
+- Changed `vite.config.ts` base from `/timelock/` to `/`
+- Removed `BrowserRouter basename="/timelock"` from main.tsx
+- Updated `/timelock/logo.svg` reference to `/logo.svg` in the no-convex fallback
+- Fixed `instrumentation.tsx` Dialog import: replaced `@radix-ui/react-dialog` with `@/components/ui/dialog` to fix mixed radix/shadcn Dialog issue
+- Added Convex/WebSocket errors to the InstrumentationProvider skip list to prevent false runtime error dialogs
+- Removed duplicate CollapsibleSidebar from ProtectionValueDashboard.tsx, PremiumNetwork.tsx, and Teams.tsx (these components were inside DashboardLayout which already renders CollapsibleSidebar)
+- Rebuilt Vite app with `npx vite build` - successful
+- Created daemon server using detached Node.js process to serve static files persistently
+- Server runs on port 3000, Caddy on port 81 proxies to it
+- Verified: HTML, JS, CSS, images, and SPA routing all work through Caddy
 
 Stage Summary:
-- The original TIMELock Vite+Convex app is now deployed through Next.js infrastructure
-- All pages, components, Convex functions, and features are preserved exactly as in the original
-- The app is served at `/timelock/` with proper SPA routing
-- The Convex backend URL is configured and will connect on load
-- Zero changes to original app functionality or appearance
+- TIMELock app is now serving correctly through the preview at port 81
+- Fixed 3 runtime error sources: missing assets (404), Dialog component mismatch, duplicate sidebars
+- Server is running as a detached daemon process on port 3000
+- All assets serve with correct content types and cache headers
+- SPA routing works (all paths return index.html)

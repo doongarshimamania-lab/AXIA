@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
 import { toast } from "sonner";
 
 interface PremiumNetworkProps {
@@ -108,17 +107,8 @@ export function PremiumNetwork({
   // Add loading and error states
   if (networkConnections === undefined) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <CollapsibleSidebar />
-        <div 
-          className="flex-1 transition-all duration-300 p-8 flex items-center justify-center" 
-          style={{ 
-            marginLeft: 'var(--sidebar-width, 64px)',
-            transition: 'margin-left 0.3s ease-in-out'
-          }}
-        >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -128,26 +118,17 @@ export function PremiumNetwork({
 
   if (!hasAccess) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <CollapsibleSidebar />
-        <div 
-          className="flex-1 transition-all duration-300 p-8" 
-          style={{ 
-            marginLeft: 'var(--sidebar-width, 64px)',
-            transition: 'margin-left 0.3s ease-in-out'
-          }}
-        >
-          <Card className="p-8 text-center">
-            <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Premium Network</h2>
-            <p className="text-muted-foreground mb-6">
-              This feature is exclusive to Pro users. Upgrade to connect with other freelancers and access referral opportunities.
-            </p>
-            <Button onClick={() => window.location.href = '/dashboard'}>
-              Back to Dashboard
-            </Button>
-          </Card>
-        </div>
+      <div className="p-8">
+        <Card className="p-8 text-center">
+          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Premium Network</h2>
+          <p className="text-muted-foreground mb-6">
+            This feature is exclusive to Pro users. Upgrade to connect with other freelancers and access referral opportunities.
+          </p>
+          <Button onClick={() => window.location.href = '/dashboard'}>
+            Back to Dashboard
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -165,9 +146,7 @@ export function PremiumNetwork({
   const totalConnections = networkConnections?.length || 0;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <CollapsibleSidebar />
-      <div className="flex-1 transition-all duration-300 p-8">
+    <div className="p-8">
         <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
@@ -354,7 +333,6 @@ export function PremiumNetwork({
           </div>
         </DialogContent>
       </Dialog>
-      </div>
     </div>
   );
 }

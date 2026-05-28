@@ -5,7 +5,6 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -73,9 +72,7 @@ export function Teams({ subscriptionTier = "free" }: TeamsProps) {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <CollapsibleSidebar />
-      <div className="flex-1 transition-all duration-300 p-8">
+    <div className="p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -224,7 +221,6 @@ export function Teams({ subscriptionTier = "free" }: TeamsProps) {
             </Card>
           </div>
         </div>
-      </div>
     </div>
   );
 }

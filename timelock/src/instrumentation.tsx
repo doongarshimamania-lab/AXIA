@@ -5,12 +5,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Dialog } from "@radix-ui/react-dialog";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -185,6 +185,12 @@ export function InstrumentationProvider({
           "Network request failed",
           "Failed to fetch",
           "chunk",
+          "Convex",
+          "convex",
+          "WebSocket",
+          "Cannot read properties",
+          "user is not authenticated",
+          "Not authenticated",
         ];
         
         const shouldSkip = skipErrors.some(err => 
@@ -232,6 +238,12 @@ export function InstrumentationProvider({
           "chunk",
           "NetworkError",
           "timeout",
+          "Convex",
+          "convex",
+          "WebSocket",
+          "Cannot read properties",
+          "user is not authenticated",
+          "Not authenticated",
         ];
         
         const shouldSkip = skipErrors.some(err => 

@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, TrendingUp, DollarSign, AlertTriangle, Award, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -35,13 +34,8 @@ export function ProtectionValueDashboard() {
 
   if (!metrics) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <CollapsibleSidebar />
-        <div className="flex-1 transition-all duration-300 p-8" style={{ marginLeft: 'var(--sidebar-width, 280px)' }}>
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -67,9 +61,7 @@ export function ProtectionValueDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <CollapsibleSidebar />
-      <div className="flex-1 transition-all duration-300 p-8 space-y-6">
+    <div className="p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -274,7 +266,6 @@ export function ProtectionValueDashboard() {
           </CardContent>
         </Card>
       )}
-      </div>
     </div>
   );
 }
