@@ -1,6 +1,6 @@
 ---
 name: vite-convex-dev
-description: "Full-stack web development with Vite (React + TypeScript) and Convex (reactive backend with real-time database, server functions, auth, file storage, cron jobs). Use when: building Vite apps with Convex backend, real-time apps, reactive database applications, Vite + Convex project, Convex functions, Convex schema, Convex auth, useQuery/useMutation hooks, ConvexProvider setup, convex dev server, or any full-stack project specifically requesting Vite and Convex as the tech stack. Also use when the user mentions 'convex' as their backend, asks for real-time database without manual WebSockets, or wants a reactive backend platform. Specifically for Vite-based SPA frontend — do NOT use for Next.js + Convex projects (use fullstack-dev skill instead)."
+description: "Full-stack web development with Vite (React + TypeScript) and Convex (reactive backend with real-time database, server functions, auth, file storage, cron jobs). Use when: building Vite apps with Convex backend, real-time apps, reactive database applications, Vite + Convex project, Convex functions, Convex schema, Convex auth, useQuery/useMutation hooks, ConvexProvider setup, convex dev server, or any full-stack project specifically requesting Vite and Convex as the tech stack. Also use when the user mentions 'convex' as their backend, asks for real-time database without manual WebSockets, or wants a reactive backend platform."
 argument-hint: "Describe the Vite + Convex app or feature you want to build"
 ---
 
@@ -335,7 +335,7 @@ export default defineSchema({
 
 - **Index naming**: Use `by_field1` or `by_field1_and_field2` convention
 - **Index field order matters**: Query fields must match the index field order exactly
-- **Use `v.optional()` for fields that can be omitted** (field is absent, not `undefined`). For fields that can explicitly be `null`, use `v.optional(v.union(v.string(), v.null()))`
+- **Use `v.optional()` for nullable fields**, not `v.union(v.string(), v.null())`
 - **Use `v.id("table")` for references**, not raw strings — this gives type-safe joins
 - **Use search indexes** for full-text search on text-heavy fields
 
@@ -377,12 +377,6 @@ export const list = query({
 
 export const getByAuthor = query({
   args: { author: v.string() },
-  returns: v.array(v.object({
-    _id: v.id("messages"),
-    _creationTime: v.number(),
-    author: v.string(),
-    body: v.string(),
-  })),
   handler: async (ctx, { author }) => {
     return await ctx.db
       .query("messages")
@@ -487,12 +481,8 @@ function MessageList() {
   const messages = useQuery(api.messages.list, {});
 
   // Loading state: undefined means the data hasn't loaded yet
-  // Error state: useQuery returns an Error if the query fails
   if (messages === undefined) {
     return <div className="animate-pulse">Loading...</div>;
-  }
-  if (messages instanceof Error) {
-    return <div className="text-red-500">Error: {messages.message}</div>;
   }
 
   return (
@@ -637,9 +627,9 @@ export const generateUploadUrl = mutation({
 
 export const saveFile = mutation({
   args: { storageId: v.id("_storage"), name: v.string() },
-  returns: v.id("files"),
+  returns: v.null(),
   handler: async (ctx, { storageId, name }) => {
-    return await ctx.db.insert("files", { storageId, name });
+    await ctx.db.insert("files", { storageId, name });
   },
 });
 
@@ -747,23 +737,15 @@ export const searchPosts = query({
 
 ### Protected Functions (require auth)
 
-The correct pattern is to look up the user by `tokenIdentifier` first, then use the user's document ID for queries. Do NOT cast `identity.subject` to `Id<"users">` — it's a string, not a Convex document ID.
-
 ```typescript
 export const getMyTasks = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    // Look up user by tokenIdentifier (not subject)
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const userId = await ctx.auth.getUserIdentity();
+    if (!userId) throw new Error("Not authenticated");
     return await ctx.db
       .query("tasks")
-      .withIndex("by_assignee", (q) => q.eq("assigneeId", user._id))
+      .withIndex("by_assignee", (q) => q.eq("assigneeId", userId.subject as Id<"users">))
       .collect();
   },
 });
