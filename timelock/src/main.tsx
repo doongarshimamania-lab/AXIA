@@ -13,7 +13,7 @@ import { Teams } from "@/components/Teams.tsx";
 import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
-import { StrictMode, useEffect } from "react";
+import { Component, StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation, Outlet } from "react-router";
 import "./index.css";
@@ -39,6 +39,25 @@ import EvidenceExport from "./pages/EvidenceExport.tsx";
 import ApiSettings from "./pages/ApiSettings.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
+
+// Error Boundary to catch Convex query errors and prevent app crash
+class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.warn("[ConvexErrorBoundary] Caught error:", error.message);
+  }
+  render() {
+    if (this.state.hasError) {
+      // Reset error state so the app can try to recover
+      setTimeout(() => this.setState({ hasError: false }), 2000);
+      return null;
+    }
+    return this.props.children;
+  }
+}
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
@@ -128,8 +147,11 @@ if (!convex) {
 
               {/* All other routes wrapped in ConvexAuthProvider */}
               <Route path="/*" element={
+                <ConvexErrorBoundary>
                 <ConvexAuthProvider client={convex}>
+                  <ConvexErrorBoundary>
                   <ProfileModal />
+                  </ConvexErrorBoundary>
                   <Routes>
 
                 {/* Public Routes (No Sidebar) */}
@@ -168,6 +190,7 @@ if (!convex) {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </ConvexAuthProvider>
+                </ConvexErrorBoundary>
               } />
             </Routes>
             <Toaster />

@@ -10,6 +10,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Safe wrapper for convex/react - prevents query errors from crashing the app
+      "convex/react": path.resolve(__dirname, "./src/lib/safe-convex-react.ts"),
+      // Internal alias so safe-convex-react.ts can import the ORIGINAL convex/react
+      "original-convex-react": path.resolve(__dirname, "./node_modules/convex/react"),
     },
   },
 });
