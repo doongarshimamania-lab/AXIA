@@ -141,18 +141,18 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         <div className="absolute top-6 right-6">
           <button
             aria-label="Toggle theme"
-            className="w-[52px] h-[28px] rounded-full bg-[#CBD5E1] dark:bg-[#475569] p-1 flex items-center transition-colors"
+            className="w-[52px] h-[28px] rounded-full bg-muted p-1 flex items-center transition-colors"
             onClick={toggleTheme}
           >
             <span
-              className={`w-5 h-5 rounded-full bg-white shadow flex items-center justify-center transform transition-transform ${
+              className={`w-5 h-5 rounded-full bg-background shadow flex items-center justify-center transform transition-transform ${
                 theme === "dark" ? "translate-x-[24px]" : "translate-x-0"
               }`}
             >
               {theme === "dark" ? (
-                <Moon className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <Moon className="w-3.5 h-3.5 text-primary" />
               ) : (
-                <Sun className="w-3.5 h-3.5 text-[#F59F00]" />
+                <Sun className="w-3.5 h-3.5 text-primary" />
               )}
             </span>
           </button>
@@ -161,7 +161,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         {/* Auth Content */}
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="flex items-center justify-center h-full flex-col">
-            <Card className="w-[480px] max-w-full pb-0 border border-border shadow-none rounded-2xl bg-background">
+            <Card className="w-[480px] max-w-full pb-0 border border-border shadow-none rounded-2xl bg-card">
               {step === "signIn" ? (
                 <>
                   {/* Branded Header */}
@@ -179,7 +179,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
                       Protect Your Freelance Income
                     </CardTitle>
-                    <CardDescription className="max-w-[360px] mx-auto text-[16px] text-[#475569]">
+                    <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
                       Axia prevents payment denials by validating your work meets ALL requirements — with dispute‑proof evidence.
                     </CardDescription>
                   </CardHeader>
@@ -187,7 +187,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   {/* Platform-first Connect Buttons */}
                   <CardContent>
                     <div className="mt-4 mb-2 text-left">
-                      <div className="text-[16px] font-semibold text-[#1E293B]">
+                      <div className="text-[16px] font-semibold text-foreground">
                         Connect your freelance accounts
                       </div>
                     </div>
@@ -224,7 +224,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                         <span className="w-[40%] border-t" />
                       </div>
                       <div className="relative flex justify-center text-sm uppercase">
-                        <span className="bg-background px-2 text-[#64748B]">
+                        <span className="bg-card px-2 text-muted-foreground">
                           Or connect with
                         </span>
                       </div>
@@ -234,7 +234,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full h-14 bg-white text-[#1E293B] border-[#E2E8F0]"
+                      className="w-full h-14 bg-background text-foreground border-border"
                       onClick={() => handleProviderClick("google")}
                       disabled={isLoading}
                     >
@@ -245,7 +245,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     <div className="mt-4">
                       <button
                         type="button"
-                        className="text-[14px] font-semibold text-[#5C6AC4] hover:underline"
+                        className="text-[14px] font-semibold text-primary hover:underline"
                         onClick={() => setShowMoreOptions((s) => !s)}
                       >
                         {showMoreOptions ? "Hide options" : "More options"}
@@ -255,7 +255,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                         <form onSubmit={handleEmailSubmit} className="mt-3">
                           <div className="grid gap-3">
                             <div className="relative">
-                              <Label htmlFor="email" className="text-[#475569] text-sm">
+                              <Label htmlFor="email" className="text-muted-foreground text-sm">
                                 Email address
                               </Label>
                               <div className="relative mt-1">
@@ -265,21 +265,21 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                                   name="email"
                                   placeholder="name@example.com"
                                   type="email"
-                                  className="pl-9 h-11 bg-white border-[#CBD5E1]"
+                                  className="pl-9 h-11 bg-background border-border"
                                   disabled={isLoading}
                                   required
                                 />
                               </div>
                             </div>
                             <div>
-                              <Label htmlFor="password" className="text-[#475569] text-sm">
+                              <Label htmlFor="password" className="text-muted-foreground text-sm">
                                 Create password
                               </Label>
                               <Input
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
-                                className="mt-1 h-11 bg-white border-[#CBD5E1]"
+                                className="mt-1 h-11 bg-background border-border"
                                 // Note: Password not used in Convex OTP flow; UI only per spec
                               />
                             </div>
@@ -300,7 +300,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                               </Button>
                             </div>
                             {error && (
-                              <p className="text-sm text-red-500">{error}</p>
+                              <p className="text-sm text-destructive">{error}</p>
                             )}
                           </div>
                         </form>
@@ -309,15 +309,15 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
                     {/* Custom Platform Setup */}
                     <div className="mt-6">
-                      <div className="text-[16px] font-semibold text-[#1E293B]">
+                      <div className="text-[16px] font-semibold text-foreground">
                         Using a different platform?
                       </div>
-                      <p className="text-[14px] text-[#475569]">
+                      <p className="text-[14px] text-muted-foreground">
                         Axia can work with any platform that has time tracking
                       </p>
                       <button
                         type="button"
-                        className="mt-2 text-[14px] font-semibold text-[#5C6AC4] hover:underline"
+                        className="mt-2 text-[14px] font-semibold text-primary hover:underline"
                         onClick={() => setShowCustomPlatformModal(true)}
                       >
                         Set up custom platform

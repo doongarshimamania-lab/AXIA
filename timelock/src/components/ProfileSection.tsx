@@ -14,13 +14,13 @@ export function ProfileSection({ profile, isExpanded, onOpenProfile }: ProfileSe
   const { tier: subscriptionTier } = useSubscriptionTier();
 
   return (
-    <div className="border-b border-[#1E293B] dark:border-[#1E293B] px-5 py-4">
+    <div className="border-b border-sidebar-border px-5 py-4">
       <div className="flex items-center gap-3 justify-center">
         <div className="relative flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-[#1E293B] flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center text-sidebar-foreground font-semibold">
             {userInitial}
           </div>
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0F172A]" />
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-sidebar" />
         </div>
         <AnimatePresence>
           {isExpanded && (
@@ -31,16 +31,16 @@ export function ProfileSection({ profile, isExpanded, onOpenProfile }: ProfileSe
               transition={{ duration: 0.2 }}
               className="flex flex-col overflow-hidden"
             >
-              <span className="text-white font-medium text-sm whitespace-nowrap">{username}</span>
-              <span className="text-[#60A5FA] text-xs capitalize whitespace-nowrap">
+              <span className="text-sidebar-foreground font-medium text-sm whitespace-nowrap">{username}</span>
+              <span className="text-primary text-xs capitalize whitespace-nowrap">
                 {subscriptionTier}
               </span>
             </motion.div>
           )}
         </AnimatePresence>
         {isExpanded && (
-          <button 
-            className="ml-auto text-white/60 hover:text-white transition-colors"
+          <button
+            className="ml-auto text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onOpenProfile();

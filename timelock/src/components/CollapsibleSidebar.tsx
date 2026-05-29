@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router";
+import { useTheme } from "@/components/ThemeProvider";
+import { Sun, Moon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,7 @@ const platformColors: Record<Platform, string> = {
 
 export function CollapsibleSidebar() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -173,7 +176,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-[#0F172A] dark:bg-[#0F172A] border-r border-[#1E293B] dark:border-[#1E293B] flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
         animate={{ width: isExpanded ? 320 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -194,8 +197,8 @@ export function CollapsibleSidebar() {
         }}
       >
         {/* Logo Section */}
-        <div 
-          className="h-16 border-b border-[#1E293B] dark:border-[#1E293B] flex items-center justify-between px-5 relative hover:bg-white/5 transition-colors cursor-pointer"
+        <div
+          className="h-16 border-b border-sidebar-border flex items-center justify-between px-5 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             if (isExpanded) {
@@ -219,21 +222,21 @@ export function CollapsibleSidebar() {
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="font-[Space_Grotesk] font-semibold text-lg text-white whitespace-nowrap overflow-hidden"
+                  className="font-[Space_Grotesk] font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
                 >
                   Axia
                 </motion.span>
               )}
             </AnimatePresence>
           </div>
-          
+
           {isExpanded && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(false);
               }}
-              className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              className="w-6 h-6 flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -260,8 +263,8 @@ export function CollapsibleSidebar() {
           <style>{`
             div::-webkit-scrollbar { width: 4px; }
             div::-webkit-scrollbar-track { background: transparent; }
-            div::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
-            div::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+            div::-webkit-scrollbar-thumb { background: oklch(0.4 0.02 240); border-radius: 2px; }
+            div::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0.02 240); }
           `}</style>
           <AnimatePresence>
             {isExpanded ? (
@@ -275,7 +278,7 @@ export function CollapsibleSidebar() {
               >
                 {/* WORK Section */}
                 <div className="px-2 space-y-0.5">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wider px-2 py-1 font-semibold">
+                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     WORK
                   </div>
                   <button 
@@ -324,7 +327,7 @@ export function CollapsibleSidebar() {
 
                 {/* BILLING Section */}
                 <div className="px-2 space-y-0.5 mt-4">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wider px-2 py-1 font-semibold">
+                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     BILLING
                   </div>
                   <button onClick={() => navigate("/invoices")} className="w-full text-left" type="button">
@@ -340,7 +343,7 @@ export function CollapsibleSidebar() {
 
                 {/* INTEGRATIONS Section */}
                 <div className="px-2 space-y-0.5 mt-4">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wider px-2 py-1 font-semibold">
+                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     INTEGRATIONS
                   </div>
                   <button onClick={() => navigate("/platform-integrations")} className="w-full text-left" type="button">
@@ -356,7 +359,7 @@ export function CollapsibleSidebar() {
 
                 {/* ADMIN Section */}
                 <div className="px-2 space-y-0.5 mt-4">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wider px-2 py-1 font-semibold">
+                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     ADMIN
                   </div>
                   <button onClick={() => navigate("/subscription")} className="w-full text-left" type="button">
@@ -381,34 +384,34 @@ export function CollapsibleSidebar() {
                 transition={{ duration: 0.2 }}
                 className="py-6 flex flex-col items-center gap-6"
               >
-                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Home className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Home className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/projects")} title="Projects" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Briefcase className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/projects")} title="Projects" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Briefcase className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Users className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Database className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Activity className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <LinkIcon className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <LinkIcon className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/subscription")} title="Subscription" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <Zap className="w-6 h-6 text-white/60 hover:text-white" />
+                <button onClick={() => navigate("/subscription")} title="Subscription" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Zap className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Bottom Section - Removed duplicate navigation */}
-        <div className="border-t border-[#1E293B] dark:border-[#1E293B] py-2">
+        {/* Bottom Section - Theme Toggle + Work Timeline */}
+        <div className="border-t border-sidebar-border py-2">
           <AnimatePresence>
             {isExpanded && (
               <motion.div
@@ -418,6 +421,25 @@ export function CollapsibleSidebar() {
                 transition={{ duration: 0.2 }}
                 className="space-y-0.5 px-2 text-xs"
               >
+                {/* Theme Toggle */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTheme();
+                  }}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+                    {theme === "dark" ? (
+                      <Sun className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <Moon className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
+                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </span>
+                  </div>
+                </button>
                 <button onClick={(e) => {
                   e.stopPropagation();
                   const event = new CustomEvent('openTimelinePopup');
@@ -428,6 +450,25 @@ export function CollapsibleSidebar() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Collapsed theme toggle icon */}
+          {!isExpanded && (
+            <div className="flex flex-col items-center gap-4 py-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleTheme();
+                }}
+                title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                ) : (
+                  <Moon className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </>
@@ -446,11 +487,11 @@ function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
     <div
       className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
         isActive
-          ? "bg-[#1E40AF]/20 text-[#60A5FA]"
-          : "text-[#9CA3AF] hover:text-white hover:bg-[#1F2937]/50"
+          ? "bg-primary/20 text-primary"
+          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-[#60A5FA]" : ""}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
       {isExpanded && (
         <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
           {label}
@@ -469,10 +510,10 @@ interface ExpandableSectionProps {
 
 export function ExpandableSection({ title, isExpanded, onToggle, children }: ExpandableSectionProps) {
   return (
-    <div className="border-b border-[#374151]/50 pb-2 mb-2">
+    <div className="border-b border-sidebar-border/50 pb-2 mb-2">
       <div
         onClick={onToggle}
-        className="flex items-center justify-between px-2 py-1.5 cursor-pointer text-white hover:text-white/80 transition-colors"
+        className="flex items-center justify-between px-2 py-1.5 cursor-pointer text-sidebar-foreground hover:text-sidebar-foreground/80 transition-colors"
       >
         <span className="font-medium text-[12px]">{title}</span>
         <ChevronDown

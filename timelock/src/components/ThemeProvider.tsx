@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useState, useEffect } from "react";
+import { createContext, useContext, useCallback, useState, useEffect, useRef } from "react";
 
 type Theme = "light" | "dark";
 
@@ -22,6 +22,17 @@ if (typeof document !== "undefined") {
   }
 }
 
+// Imperative helper — applies theme to DOM + localStorage without React state
+function applyThemeToDOM(newTheme: Theme) {
+  const root = document.documentElement;
+  if (newTheme === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+  localStorage.setItem("axia_theme", newTheme);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof localStorage !== "undefined") {
@@ -31,34 +42,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return "dark";
   });
 
-  // Apply theme to DOM immediately when state changes
-  const applyTheme = useCallback((newTheme: Theme) => {
-    const root = document.documentElement;
-    if (newTheme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("axia_theme", newTheme);
-  }, []);
+  // Track last-applied theme to avoid redundant DOM writes
+  const lastApplied = useRef<Theme>(theme);
 
   const setTheme = useCallback((newTheme: Theme) => {
+    // Apply to DOM immediately (before React re-render) for zero-lag feel
+    applyThemeToDOM(newTheme);
+    lastApplied.current = newTheme;
     setThemeState(newTheme);
-    applyTheme(newTheme);
-  }, [applyTheme]);
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
       const next = prev === "light" ? "dark" : "light";
-      applyTheme(next);
+      // Apply to DOM immediately inside updater for instant visual feedback
+      applyThemeToDOM(next);
+      lastApplied.current = next;
       return next;
     });
-  }, [applyTheme]);
+  }, []);
 
-  // Keep DOM in sync on mount and theme changes
+  // Keep DOM in sync on mount (covers hydration / initial render)
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme, applyTheme]);
+    if (lastApplied.current !== theme) {
+      applyThemeToDOM(theme);
+      lastApplied.current = theme;
+    }
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>

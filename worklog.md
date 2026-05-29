@@ -102,3 +102,32 @@ Stage Summary:
 - Caddy (port 81) → port 3000 (combined server) → Convex backend (port 3210)
 - Preview URL: https://preview-1936221977589032.space.chatglm.site/
 - No more flickering - Error Boundary no longer auto-resets
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix dark/light theme toggle - light theme not working
+
+Work Log:
+- Investigated ThemeProvider.tsx - found it had proper structure but used side effects inside state updater
+- Found CollapsibleSidebar.tsx was entirely hardcoded to dark colors (bg-[#0F172A], text-white, etc.) - never changed with theme
+- Found ProfileSection.tsx was also hardcoded to dark colors
+- Found Auth.tsx had many hardcoded colors that wouldn't respond to theme (text-[#475569], bg-white, etc.)
+- Found there was NO theme toggle on the Dashboard/sidebar - user could only toggle from Landing/Auth pages
+- Fixed ThemeProvider.tsx: extracted applyThemeToDOM as standalone function, used useRef to track last-applied theme, removed redundant double-apply
+- Fixed CollapsibleSidebar.tsx: replaced all hardcoded dark colors with theme-aware CSS variables (bg-sidebar, text-sidebar-foreground, etc.), added useTheme import, added Sun/Moon theme toggle button in sidebar bottom section (both expanded and collapsed states)
+- Fixed ProfileSection.tsx: replaced hardcoded dark colors with sidebar CSS variables
+- Fixed Auth.tsx: replaced hardcoded colors (text-[#475569], bg-white, border-[#CBD5E1], etc.) with theme-aware classes (text-muted-foreground, bg-background, border-border, etc.)
+- Updated index.css light theme sidebar colors for better visual distinction
+- Fixed tsconfig.app.json: added path mappings for original-convex-react and convex/react aliases
+- Fixed safe-convex-react.ts: changed result.value to (result as any).data ?? (result as any).value
+- Built successfully with npx vite build and deployed to dist/
+
+Stage Summary:
+- Theme toggle now works for both dark→light and light→dark transitions
+- Sidebar is fully theme-aware (responds to theme changes)
+- Theme toggle added to sidebar (available on all dashboard pages)
+- Auth page colors are theme-aware
+- Profile section is theme-aware
+- Dark theme remains the default on page load
+- No lag on toggle (DOM updates happen synchronously in state updater)
+

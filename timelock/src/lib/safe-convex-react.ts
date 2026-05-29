@@ -38,7 +38,7 @@ export function useQuery(
   });
 
   if (result.status === "success") {
-    return result.value;
+    return (result as any).data ?? (result as any).value;
   }
   if (result.status === "error") {
     // Silently return undefined - don't log repeatedly as it causes performance issues
