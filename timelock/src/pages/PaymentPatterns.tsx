@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { exportPaymentReport, generateCSV } from "@/lib/exportUtils";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -321,8 +322,10 @@ export default function PaymentPatterns() {
   const maxEarned = Math.max(...monthlyTrend.map((m) => m.earned));
 
   const handleExportReport = () => {
+    // Export the full payment data as CSV
+    exportPaymentReport(recentPayments);
     toast.success("Payment report exported", {
-      description: "Your payment patterns report has been downloaded.",
+      description: "Your payment patterns CSV has been downloaded.",
     });
   };
 

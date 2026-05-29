@@ -45,6 +45,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { exportEvidence } from "@/lib/exportUtils";
 
 // --- Types ---
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
@@ -312,13 +313,27 @@ export default function EvidenceExport() {
 
     setIsExporting(true);
 
-    // Simulate export process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Generate a real downloadable file
+    try {
+      const selectedTypes = MOCK_EVIDENCE_TYPES.filter((t) => selectedEvidenceTypes.includes(t.id));
+      exportEvidence(selectedFormat, {
+        evidenceTypes: selectedTypes.map((t) => ({ id: t.id, label: t.label, count: t.count })),
+        dateRange: `${dateFrom} to ${dateTo}`,
+        project: selectedProjectLabel,
+        client: selectedClientLabel,
+        complianceScore,
+        totalItems: totalEvidenceItems,
+      });
+      toast.success("Export complete", {
+        description: `Your ${FORMAT_CONFIG[selectedFormat].label} export with ${totalEvidenceItems} items has been downloaded.`,
+      });
+    } catch (err) {
+      toast.error("Export failed", {
+        description: "An error occurred while generating the export file.",
+      });
+    }
 
     setIsExporting(false);
-    toast.success("Export started", {
-      description: `Your ${FORMAT_CONFIG[selectedFormat].label} export with ${totalEvidenceItems} items is being processed.`,
-    });
   };
 
   const handleFormatSelect = (format: ExportFormat) => {
@@ -798,7 +813,18 @@ export default function EvidenceExport() {
                         </Badge>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{exp.date}</span>
                         {exp.status === "completed" && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                            // Re-download the completed export
+                            exportEvidence(exp.format, {
+                              evidenceTypes: MOCK_EVIDENCE_TYPES.filter((t) => selectedEvidenceTypes.includes(t.id)).map((t) => ({ id: t.id, label: t.label, count: t.count })),
+                              dateRange: `${dateFrom} to ${dateTo}`,
+                              project: exp.project,
+                              client: "All Clients",
+                              complianceScore,
+                              totalItems: exp.itemCount,
+                            });
+                            toast.success("Download started", { description: `${exp.name}` });
+                          }}>
                             <Download className="h-4 w-4" />
                           </Button>
                         )}

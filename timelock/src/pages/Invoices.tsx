@@ -43,6 +43,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { generateInvoicePDF } from "@/lib/exportUtils";
 
 type InvoiceStatus = "paid" | "pending" | "overdue" | "draft";
 
@@ -928,7 +929,20 @@ export default function Invoices() {
                                       className="gap-1.5"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        toast.success("Downloading invoice PDF...", {
+                                        generateInvoicePDF({
+                                          invoiceNumber: invoice.invoiceNumber,
+                                          clientName: invoice.clientName,
+                                          projectName: invoice.projectName,
+                                          date: invoice.date,
+                                          dueDate: invoice.dueDate,
+                                          paidDate: invoice.paidDate,
+                                          status: invoice.status,
+                                          platform: invoice.platform,
+                                          items: invoice.items,
+                                          amount: invoice.amount,
+                                          notes: invoice.notes,
+                                        }, invoice.invoiceNumber);
+                                        toast.success("Invoice PDF generated", {
                                           description: invoice.invoiceNumber,
                                         });
                                       }}

@@ -150,3 +150,37 @@ Stage Summary:
 - Fix: Removed hardcoded dark class from body, added proper light theme handling in inline script
 - Light theme now works correctly when toggled
 - Created versioned backups: axia-v1-before-theme-fix.zip and axia-v2-theme-fix.zip
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix download buttons, Work Timeline UI (Day/Week/Month/Year views)
+
+Work Log:
+- Analyzed user-uploaded screenshots showing broken DayView (cramped time slots) and YearView (12 months not fitting)
+- Created `/home/z/my-project/timelock/src/lib/exportUtils.ts` — a clean export utility with real file generation for CSV, JSON, PDF, Legal Package, and Invoice PDF
+- Completely rewrote `/home/z/my-project/timelock/src/components/TimelinePopup.tsx` with:
+  - DayView: Google Calendar-style layout with hour gutter, half-hour dashed lines, proper time-block positioning using percentage-based layout
+  - WeekView: 7-column grid with day-of-week headers, today highlight, earnings/hours per day, status dots
+  - MonthView: Standard calendar grid with auto-rows-fr for proper sizing, today highlight
+  - YearView: 4×3 grid using `grid-rows-3` and `gap-2` with `h-full` — all 12 months fit without scrolling
+  - Clean color token system (STATUS_COLORS) replacing scattered hardcoded values
+  - Added "Today" navigation button
+  - Removed old 144-column 5-minute grid approach
+- Wired up download buttons:
+  - EvidenceExport: `handleExport` now calls `exportEvidence()` which generates real CSV/JSON/PDF/Legal files
+  - EvidenceExport: Recent Exports download buttons now also call `exportEvidence()`
+  - Invoices: "Download PDF" button now calls `generateInvoicePDF()` which opens a print-ready invoice
+  - PaymentPatterns: "Export" button now calls `exportPaymentReport()` which generates a real CSV
+- Built and verified successfully with Vite
+- Tested via agent-browser: DayView, WeekView, MonthView, YearView all render correctly
+- YearView confirmed: all 12 months visible without scrolling
+- Created backup: `axia-v5-download-timeline-fix.zip`
+
+Stage Summary:
+- All download buttons now generate real files (CSV, JSON, PDF via print dialog, Legal package)
+- Timeline DayView redesigned to Google Calendar style with proper hour labels and time blocks
+- YearView fixed: 12 months fit in 4×3 grid without scrolling
+- MonthView/WeekView cleaned up with proper calendar grid structure
+- Server running on port 3000 (C httpd) + port 81 (infrastructure proxy)
+- Preview URL: https://preview-1936221977589032.space.chatglm.site/
