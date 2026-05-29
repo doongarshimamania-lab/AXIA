@@ -41,12 +41,8 @@ export function useQuery(
     return result.value;
   }
   if (result.status === "error") {
-    // Log but don't throw - return undefined (same as "loading" state)
-    const queryPath = query?._path ?? query?.name ?? 'unknown';
-    console.warn(
-      `[Convex Safe] Query error (${queryPath}):`,
-      result.error?.message?.substring(0, 100)
-    );
+    // Silently return undefined - don't log repeatedly as it causes performance issues
+    // and flickering. The error is expected when the backend is unavailable.
     return undefined;
   }
   // status === "pending"

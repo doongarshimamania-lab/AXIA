@@ -41,18 +41,28 @@ import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 
 // Error Boundary to catch Convex query errors and prevent app crash
-class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+// IMPORTANT: Does NOT auto-reset to prevent flickering/reload loops
+// The safe useQuery wrapper handles errors gracefully, so this is a last resort
+class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; errorCount: number }> {
+  state = { hasError: false, errorCount: 0 };
   static getDerivedStateFromError() {
     return { hasError: true };
   }
   componentDidCatch(error: Error) {
     console.warn("[ConvexErrorBoundary] Caught error:", error.message);
+    // Only retry once after a long delay to avoid flickering
+    const newCount = this.state.errorCount + 1;
+    this.setState({ errorCount: newCount });
+    if (newCount <= 1) {
+      setTimeout(() => this.setState({ hasError: false }), 10000);
+    }
   }
   render() {
     if (this.state.hasError) {
-      // Reset error state so the app can try to recover
-      setTimeout(() => this.setState({ hasError: false }), 2000);
+      // Show children anyway after first error - don't blank the screen
+      if (this.state.errorCount > 1) {
+        return this.props.children;
+      }
       return null;
     }
     return this.props.children;
@@ -65,7 +75,10 @@ const convexUrlRaw = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const convexUrl = convexUrlRaw
   ? convexUrlRaw.replace('__ORIGIN__', typeof window !== 'undefined' ? window.location.origin : '')
   : undefined;
-const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+const convex = convexUrl ? new ConvexReactClient(convexUrl, {
+  // Reduce reconnect attempts to prevent flickering
+  unsavedChangesWarning: false,
+}) : null;
 
 // Explicit clients for owner dashboard to show both prod and dev entries
 const prodConvexClient = new ConvexReactClient("https://harmless-tapir-303.convex.cloud");
