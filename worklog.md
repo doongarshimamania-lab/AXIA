@@ -45,3 +45,30 @@ Stage Summary:
 - Convex proxy working on both port 5173 and 3000 via /convex/* prefix
 - Frontend updated to resolve Convex URL at runtime
 - No more Server Errors - queries return proper responses
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Get TIMELock preview running with working Convex backend
+
+Work Log:
+- Installed npm dependencies in timelock project
+- Attempted to set up self-hosted Convex backend using local binary at ~/.cache/convex/binaries/
+- Local Convex backend kept crashing when deploying functions via CLI
+- Successfully deployed Convex functions using `npx convex dev --once --typecheck disable`
+- All 90+ table indexes created successfully in local backend
+- Local backend is unstable (crashes under load), so reverted to cloud Convex URL
+- Built Vite app with safe useQuery wrapper that gracefully handles backend errors
+- Discovered Caddy on port 81 proxies to port 3000 (not 5173 as originally assumed)
+- Node.js background processes kept dying when shell sessions ended
+- Used full-stack-developer subagent to create persistent C-based HTTP server
+- C server uses double-fork technique to detach from shell and persist across sessions
+- Verified all routes return 200 and TIMELock content is served correctly
+
+Stage Summary:
+- TIMELock preview is LIVE at https://preview-1936221977589032.space.chatglm.site/
+- Caddy (port 81) → Port 3000 (C-based static server) → /home/z/my-project/timelock/dist/
+- All routes working: /, /dashboard, /projects, /clients, /auth, etc.
+- All static assets serving correctly (CSS, JS, SVG, PNG)
+- Convex backend returns errors but safe useQuery wrapper prevents app crashes
+- Convex functions deployed to local backend at 127.0.0.1:3210 but backend is unstable

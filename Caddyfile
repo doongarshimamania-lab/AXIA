@@ -13,6 +13,8 @@
 	}
 
 	handle {
-		reverse_proxy localhost:5173
+		root * /home/z/my-project/timelock/dist
+		try_files {path} /index.html
+		file_server
 	}
 }
