@@ -184,3 +184,30 @@ Stage Summary:
 - MonthView/WeekView cleaned up with proper calendar grid structure
 - Server running on port 3000 (C httpd) + port 81 (infrastructure proxy)
 - Preview URL: https://preview-1936221977589032.space.chatglm.site/
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix all download buttons (PDF/CSV), Work Timeline calendar, and Year Calendar
+
+Work Log:
+- Investigated all download/export code paths in the codebase
+- Found that `generatePDF()` in `exportUtils.ts` used `window.open()` + `window.print()` which opened print dialog instead of downloading PDF
+- Installed `jspdf` and `jspdf-autotable` packages for proper PDF generation
+- Rewrote `exportUtils.ts` - replaced `window.print()` approach with jsPDF-based PDF generation
+- Created an HTML content parser that extracts structured data (title, meta, tables, badges, info grids) from the HTML templates and renders them via jsPDF
+- Updated `ReportViewerModal.tsx` - replaced "Print" button with "Download PDF" button using jsPDF
+- Added receipt PDF download functionality to `Subscription.tsx` billing history Download button (was previously non-functional)
+- Fixed DayView in TimelinePopup.tsx - removed scroll, made time grid fill available space with absolute positioning
+- Added current time indicator (red line) to DayView for Google Calendar-like feel
+- Fixed YearView - all 12 months now fit within container using grid-rows-3 with proper sizing
+- Reduced padding/margins across all calendar views for better space utilization
+- Verified all changes via browser screenshots and interactive testing
+- Created versioned backup: timelock-v7-pdf-downloads-calendar-fix-20260529-193006
+
+Stage Summary:
+- PDF downloads now generate actual .pdf files using jsPDF instead of opening print dialog
+- CSV/JSON downloads continue to work as before (Blob-based download)
+- Invoice PDF, Evidence Export PDF, Legal Package PDF, Report PDF, Receipt PDF all work
+- Work Timeline Day view fits without scrolling, has Google Calendar-style layout with current time indicator
+- Year view shows all 12 months fitting within the container without scrolling
+- All changes verified via browser testing
