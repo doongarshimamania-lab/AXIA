@@ -7,6 +7,7 @@ import { ArrowRight, Search, Users, Newspaper, Radio, Tv, ShoppingBag,
 import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function OnboardingSource() {
   const navigate = useNavigate();
@@ -17,22 +18,8 @@ export default function OnboardingSource() {
   const [referrer, setReferrer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Add: Theme state and persistence
-  const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
-  );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    try {
-      localStorage.setItem("axia_theme", theme);
-    } catch {}
-  }, [theme]);
+  // Use global theme from ThemeProvider
+  const { theme, setTheme } = useTheme();
   
   const sources = [
     {

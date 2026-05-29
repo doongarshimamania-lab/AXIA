@@ -28,6 +28,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Mail, Loader2, ArrowRight } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface AuthProps {
   redirectAfterAuth?: string;
@@ -41,12 +42,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Add: UI and theme local state per Axia spec
+  // Use global theme from ThemeProvider
+  const { theme, toggleTheme } = useTheme();
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showCustomPlatformModal, setShowCustomPlatformModal] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">(
-    (localStorage.getItem("axia_theme") as "light" | "dark") || "dark"
-  );
 
   useEffect(() => {
     // Only redirect if authenticated AND on the initial sign-in page
@@ -56,32 +55,6 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       navigate(redirect);
     }
   }, [authLoading, isAuthenticated, navigate, redirectAfterAuth, step]);
-
-  // Add: apply theme to documentElement and persist
-  useEffect(() => {
-    try {
-      const saved = (localStorage.getItem("axia_theme") as "light" | "dark") || "dark";
-      setTheme(saved);
-      const root = document.documentElement;
-      if (saved === "dark") {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    try {
-      localStorage.setItem("axia_theme", theme);
-    } catch {}
-  }, [theme]);
 
   const handleEmailSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -169,7 +142,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           <button
             aria-label="Toggle theme"
             className="w-[52px] h-[28px] rounded-full bg-[#CBD5E1] dark:bg-[#475569] p-1 flex items-center transition-colors"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            onClick={toggleTheme}
           >
             <span
               className={`w-5 h-5 rounded-full bg-white shadow flex items-center justify-center transform transition-transform ${

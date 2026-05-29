@@ -13,7 +13,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
   <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; connect-src 'self' https://harmless-tapir-303.convex.cloud wss://harmless-tapir-303.convex.cloud https://bold-reindeer-389.convex.cloud wss://bold-reindeer-389.convex.cloud https: wss:; img-src 'self' https: data: blob:; font-src 'self' https: data:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; connect-src 'self' https://artful-civet-344.convex.cloud wss://artful-civet-344.convex.cloud https: wss:; img-src 'self' https: data: blob:; font-src 'self' https: data:;" />
   
   <!-- HTTP Caching via meta tags -->
   <meta http-equiv="Cache-Control" content="public, max-age=31536000, immutable" />
@@ -21,8 +21,8 @@
   <!-- Performance Hints -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://harmless-tapir-303.convex.cloud" />
-  <link rel="dns-prefetch" href="https://harmless-tapir-303.convex.cloud" />
+  <link rel="preconnect" href="https://artful-civet-344.convex.cloud" />
+  <link rel="dns-prefetch" href="https://artful-civet-344.convex.cloud" />
   
   <!-- Enhanced SEO Meta Tags -->
   <meta name="description" content="Axia prevents freelance payment denials with AI-powered compliance monitoring. Protect your Upwork, Fiverr, and Toptal income with real-time evidence collection, dispute prevention, and cross-platform verification. 83% dispute success rate, $1,028 average loss prevented." />
@@ -195,9 +195,19 @@
   
   <!-- Optimized Title Tag (50-60 characters for SEO) -->
   <title>Axia</title>
+  
+  <!-- Prevent flash of light theme: apply dark class before React loads -->
+  <script>
+    (function() {
+      var theme = localStorage.getItem('axia_theme') || 'dark';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
 </head>
 
-<body>
+<body class="dark">
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

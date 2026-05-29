@@ -20,27 +20,7 @@ export function Teams({ subscriptionTier = "free" }: TeamsProps) {
     return levels[tier] || 0;
   };
   const hasTierAccess = (requiredTier: string) => getTierLevel(subscriptionTier) >= getTierLevel(requiredTier);
-  const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
-  );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const newTheme = localStorage.getItem("axia_theme") as "light" | "dark" || "light";
-      setTheme(newTheme);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  // Theme is managed globally by ThemeProvider
 
   // Show team members for all tiers
   const teamMembers: any = [

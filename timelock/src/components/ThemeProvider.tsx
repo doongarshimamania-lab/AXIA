@@ -1,56 +1,67 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useCallback, useState, useEffect } from "react";
 
 type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Apply dark class synchronously BEFORE React renders to prevent flash
+// This runs immediately on module load — no light-mode flash
+if (typeof document !== "undefined") {
+  const stored = localStorage.getItem("axia_theme") as Theme | null;
+  const initial = stored || "dark";
+  if (initial === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Initialize from localStorage and apply immediately
     if (typeof localStorage !== "undefined") {
       const stored = localStorage.getItem("axia_theme") as Theme | null;
-      const initialTheme = stored || "light";
-      // Apply theme to DOM immediately
-      const root = document.documentElement;
-      if (initialTheme === "dark") {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
-      return initialTheme;
+      return stored || "dark";
     }
-    return "light";
+    return "dark";
   });
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("axia_theme", newTheme);
-    }
+  // Apply theme to DOM immediately when state changes
+  const applyTheme = useCallback((newTheme: Theme) => {
     const root = document.documentElement;
     if (newTheme === "dark") {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
     }
-  };
+    localStorage.setItem("axia_theme", newTheme);
+  }, []);
 
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+    applyTheme(newTheme);
+  }, [applyTheme]);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      applyTheme(next);
+      return next;
+    });
+  }, [applyTheme]);
+
+  // Keep DOM in sync on mount and theme changes
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [theme]);
+    applyTheme(theme);
+  }, [theme, applyTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

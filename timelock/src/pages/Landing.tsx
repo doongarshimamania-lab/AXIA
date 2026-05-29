@@ -1,10 +1,10 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Sun, Moon, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useTheme } from "@/components/ThemeProvider";
 
 // Import new modular components
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -16,28 +16,7 @@ import { Footer } from "@/components/landing/Footer";
 export default function Landing() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-
-  useEffect(() => {
-    try {
-      const saved = (localStorage.getItem("axia_theme") as "light" | "dark") || "dark";
-      setTheme(saved);
-      const root = document.documentElement;
-      if (saved === "dark") root.classList.add("dark");
-      else root.classList.remove("dark");
-    } catch {}
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    try {
-      localStorage.setItem("axia_theme", newTheme);
-    } catch {}
-    const root = document.documentElement;
-    if (newTheme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-  };
+  const { theme, toggleTheme } = useTheme();
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);

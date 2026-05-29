@@ -6,27 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export function ProtectionValueDashboard() {
-  const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
-  );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const newTheme = localStorage.getItem("axia_theme") as "light" | "dark" || "light";
-      setTheme(newTheme);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  // Theme is managed globally by ThemeProvider
 
   // Real backend data integration
   const metrics = useQuery(api.protection.protectionValue.getProtectionValueMetrics);

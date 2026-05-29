@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowRight, User, DollarSign, Briefcase, GraduationCap, Mail, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function OnboardingUserInformation() {
   const navigate = useNavigate();
@@ -24,22 +25,8 @@ export default function OnboardingUserInformation() {
     primaryPlatform: ''
   });
 
-  // Add: Theme state and persistence
-  const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
-  );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    try {
-      localStorage.setItem("axia_theme", theme);
-    } catch {}
-  }, [theme]);
+  // Use global theme from ThemeProvider
+  const { theme, setTheme } = useTheme();
   
   const platforms = [
     'Upwork', 'Fiverr', 'Toptal', 'Freelancer.com', 

@@ -19,8 +19,9 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Shield, LogOut, Sun, Moon } from "lucide-react";
+import { Camera, Shield, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useTheme } from "@/components/ThemeProvider";
 import { ReportLimitModal } from "@/components/ReportLimitModal";
 import { ReportViewerModal } from "@/components/ReportViewerModal";
 import { trackConversion } from "@/instrumentation";
@@ -68,10 +69,8 @@ export default function Dashboard() {
   const [profileBio, setProfileBio] = useState<string>("");
   const [isEditingBio, setIsEditingBio] = useState<boolean>(false);
 
-  // Add: Theme state and persistence
-  const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
-  );
+  // Use global theme from ThemeProvider
+  const { theme, setTheme } = useTheme();
 
   // Removed duplicate early evidenceCollector init; initialized below after currentSession is defined
 
@@ -124,17 +123,7 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    try {
-      localStorage.setItem("axia_theme", theme);
-    } catch {}
-  }, [theme]);
+  // Theme is now managed globally by ThemeProvider
 
   useEffect(() => {
     if (profile) {
