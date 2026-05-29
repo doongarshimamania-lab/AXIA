@@ -1,8 +1,8 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const distDir = path.join(__dirname, 'dist');
+const distDir = '/home/z/my-project/timelock/dist';
 const port = 3000;
 
 const mimeTypes = {
@@ -24,26 +24,23 @@ const server = http.createServer((req, res) => {
   let filePath = path.join(distDir, urlPath === '/' ? 'index.html' : urlPath);
   const ext = path.extname(filePath);
   
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    if (!ext || ext === '.html') {
+  try {
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       filePath = path.join(distDir, 'index.html');
-    } else {
-      res.writeHead(404);
-      res.end('Not found');
-      return;
     }
+  } catch(e) {
+    filePath = path.join(distDir, 'index.html');
   }
   
-  const contentType = mimeTypes[ext] || 'application/octet-stream';
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(500);
-      res.end('Server error');
-    } else {
-      res.writeHead(200, { 'Content-Type': contentType + (ext === '.js' ? '; charset=utf-8' : '') });
-      res.end(data);
-    }
-  });
+  const contentType = mimeTypes[path.extname(filePath)] || 'application/octet-stream';
+  try {
+    const data = fs.readFileSync(filePath);
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
+  } catch(e) {
+    res.writeHead(500);
+    res.end('Server error');
+  }
 });
 
 server.listen(port, '0.0.0.0', () => {
