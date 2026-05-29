@@ -108,7 +108,7 @@ export function WCVMVerificationBadge({
           <div className="flex items-center gap-2 p-2 bg-sky-50 dark:bg-sky-950 rounded-lg">
             <CheckCircle className="h-4 w-4 text-emerald-600" />
             <div className="text-xs text-sky-900 dark:text-sky-100">
-              Verified by TIMELock Context Standard 1.0
+              Verified by Axia Context Standard 1.0
             </div>
           </div>
 

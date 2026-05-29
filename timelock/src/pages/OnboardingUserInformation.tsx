@@ -26,7 +26,7 @@ export default function OnboardingUserInformation() {
 
   // Add: Theme state and persistence
   const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("timelock_theme")) as "light" | "dark") || "light"
+    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
   );
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function OnboardingUserInformation() {
       root.classList.remove("dark");
     }
     try {
-      localStorage.setItem("timelock_theme", theme);
+      localStorage.setItem("axia_theme", theme);
     } catch {}
   }, [theme]);
   
@@ -106,7 +106,7 @@ export default function OnboardingUserInformation() {
             <CardTitle className="text-2xl">Your Professional Profile</CardTitle>
           </div>
           <CardDescription>
-            Let's set up your profile so TIMELock can accurately protect your earnings
+            Let's set up your profile so Axia can accurately protect your earnings
           </CardDescription>
         </CardHeader>
         
@@ -186,7 +186,7 @@ export default function OnboardingUserInformation() {
                 <p className="text-sm text-destructive">{errors.primaryPlatform}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                TIMELock will prioritize protection standards for this platform
+                Axia will prioritize protection standards for this platform
               </p>
             </div>
             
@@ -211,7 +211,7 @@ export default function OnboardingUserInformation() {
                 <option value="5">10+ years</option>
               </select>
               <p className="text-sm text-muted-foreground">
-                Helps TIMELock tailor protection recommendations to your experience level
+                Helps Axia tailor protection recommendations to your experience level
               </p>
             </div>
             

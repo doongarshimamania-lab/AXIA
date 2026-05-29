@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { WaitlistForm } from "./WaitlistForm";
 
 const metrics = [
-  { amount: "83%", description: "Dispute success rate with TIMELock verification" },
+  { amount: "83%", description: "Dispute success rate with Axia verification" },
   { amount: "$1,028", description: "Median loss prevented per potential dispute" },
   { amount: "87 min", description: "Saved weekly on evidence collection" },
 ];
@@ -24,7 +24,7 @@ export function WaitlistCTA() {
             Start Protecting Your Income Today
           </h2>
           <p className="text-xl text-muted-foreground leading-7 max-w-[600px] mx-auto mb-10" style={{ fontFamily: "Space Grotesk" }}>
-            Join the waitlist and be among the first to access TIMELock's payment protection platform
+            Join the waitlist and be among the first to access Axia's payment protection platform
           </p>
 
           <div className="flex justify-center">

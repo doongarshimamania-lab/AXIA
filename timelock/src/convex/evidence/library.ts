@@ -243,8 +243,8 @@ function getMockEvidenceLibraryData() {
       timestamp: now - 1000 * 60 * 25,
       type: "url",
       platform: "upwork",
-      description: "Visited: github.com/timelock/core",
-      metadata: { url: "https://github.com/timelock/core" }
+      description: "Visited: github.com/axia/core",
+      metadata: { url: "https://github.com/axia/core" }
     },
     {
       id: "mock-4",

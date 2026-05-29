@@ -5,9 +5,9 @@ import { internalMutation, internalQuery } from "../_generated/server";
 import crypto from "crypto";
 
 // Get platform secret from environment
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY || "timelock-default-secret-key";
-const JWT_SECRET = process.env.JWT_SECRET_KEY || "timelock-jwt-secret";
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "timelock-encryption-key-32bytes";
+const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY || "axia-default-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET_KEY || "axia-jwt-secret";
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "axia-encryption-key-32bytes";
 
 /**
  * Generate HMAC-SHA256 hash for user ID

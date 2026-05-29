@@ -152,7 +152,7 @@ export const projectTables = {
     professionalTitle: v.string(),
     bio: v.string(),
     hourlyRate: v.number(),
-    timelockVerified: v.boolean(),
+    axiaVerified: v.boolean(),
     verificationScore: v.number(), // 0-100
     totalVerifiedHours: v.number(),
     platformsConnected: v.array(v.string()),
@@ -162,7 +162,7 @@ export const projectTables = {
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_verified", ["timelockVerified"])
+    .index("by_verified", ["axiaVerified"])
     .index("by_score", ["verificationScore"]),
 
   clientActivityLog: defineTable({

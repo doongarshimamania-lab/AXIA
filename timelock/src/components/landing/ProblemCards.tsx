@@ -14,7 +14,7 @@ const problemCategories = [
     borderColor: "border-red-200 dark:border-red-900/20",
     iconColor: "text-red-500/20 dark:text-red-500/20",
     solutionTitle: "Verify Invoices Before Submission",
-    solutionDescription: "TIMELock verifies your invoice against platform-specific requirements before submission, showing exactly what's missing with dollar-value impact.",
+    solutionDescription: "Axia verifies your invoice against platform-specific requirements before submission, showing exactly what's missing with dollar-value impact.",
     features: [
       "Invoice format validation",
       "Terms completeness check",
@@ -54,7 +54,7 @@ const problemCategories = [
     borderColor: "border-amber-200 dark:border-amber-900/20",
     iconColor: "text-amber-500/20 dark:text-amber-500/20",
     solutionTitle: "Document All Pricing Agreements",
-    solutionDescription: "TIMELock documents all pricing agreements with timestamps and client acknowledgment, creating an immutable record.",
+    solutionDescription: "Axia documents all pricing agreements with timestamps and client acknowledgment, creating an immutable record.",
     features: [
       "Rate documentation",
       "Client approval tracking",
@@ -123,10 +123,10 @@ export function ProblemCards() {
           className="text-center mb-6"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
-            5 Payment Problems TIMELock Prevents
+            5 Payment Problems Axia Prevents
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
-            Each problem costs freelancers hundreds of dollars. Here's how TIMELock stops them before they happen.
+            Each problem costs freelancers hundreds of dollars. Here's how Axia stops them before they happen.
           </p>
         </motion.div>
 
@@ -176,7 +176,7 @@ export function ProblemCards() {
               <div className="bg-white dark:bg-slate-900 p-5 md:w-1/2 flex flex-col justify-between">
                 <div>
                   <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-                    THE TIMELOCK SOLUTION
+                    THE AXIA SOLUTION
                   </div>
 
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
@@ -257,7 +257,7 @@ export function ProblemCards() {
                 <div className="bg-white dark:bg-slate-900 p-5 md:w-1/2 flex flex-col justify-between">
                   <div>
                     <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-                      THE TIMELOCK SOLUTION
+                      THE AXIA SOLUTION
                     </div>
 
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
@@ -308,7 +308,7 @@ export function ProblemCards() {
             Prevent These Problems Now →
           </button>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Join 2,000+ freelancers protecting their income with TIMELock
+            Join 2,000+ freelancers protecting their income with Axia
           </p>
         </motion.div>
       </div>

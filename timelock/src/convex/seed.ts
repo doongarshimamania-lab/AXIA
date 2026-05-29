@@ -1065,7 +1065,7 @@ export const seedClientData = mutation({
           professionalTitle: profile.professionalTitle,
           bio: profile.bio,
           hourlyRate: profile.hourlyRate,
-          timelockVerified: true,
+          axiaVerified: true,
           verificationScore: profile.verificationScore,
           totalVerifiedHours: profile.totalVerifiedHours,
           platformsConnected: ["upwork", "fiverr"],

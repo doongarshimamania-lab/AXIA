@@ -5,7 +5,7 @@ import { Quote, Star } from "lucide-react";
 const testimonials = [
   {
     id: 1,
-    quote: "I used to lose about 15% of my billable hours to 'clarification' calls and scope creep. TIMELock's evidence timeline stopped that cold. Clients don't argue with data.",
+    quote: "I used to lose about 15% of my billable hours to 'clarification' calls and scope creep. Axia's evidence timeline stopped that cold. Clients don't argue with data.",
     author: "Sarah Jenkins",
     role: "Senior UX Designer",
     platform: "Upwork Top Rated Plus"
@@ -19,7 +19,7 @@ const testimonials = [
   },
   {
     id: 3,
-    quote: "Finally, a tool that protects ME. Platforms always side with the client, but TIMELock gives me the leverage I need to get paid for every minute I work.",
+    quote: "Finally, a tool that protects ME. Platforms always side with the client, but Axia gives me the leverage I need to get paid for every minute I work.",
     author: "Elena Rodriguez",
     role: "Digital Marketer",
     platform: "Fiverr Pro"

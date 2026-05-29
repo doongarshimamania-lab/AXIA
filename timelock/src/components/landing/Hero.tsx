@@ -31,7 +31,7 @@ export function Hero() {
           className="text-[20px] font-medium text-muted-foreground leading-[28px] mb-12 max-w-[700px]"
           style={{ fontFamily: "Space Grotesk" }}
         >
-          TIMELock verifies your work context meets platform requirements—so your billable hours are payment-protected. The only platform that analyzes work against platform-specific requirements to help prevent denials.
+          Axia verifies your work context meets platform requirements—so your billable hours are payment-protected. The only platform that analyzes work against platform-specific requirements to help prevent denials.
         </p>
 
         <WaitlistForm variant="light" />

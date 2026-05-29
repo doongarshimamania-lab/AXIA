@@ -13,7 +13,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Initialize from localStorage and apply immediately
     if (typeof localStorage !== "undefined") {
-      const stored = localStorage.getItem("timelock_theme") as Theme | null;
+      const stored = localStorage.getItem("axia_theme") as Theme | null;
       const initialTheme = stored || "light";
       // Apply theme to DOM immediately
       const root = document.documentElement;
@@ -30,7 +30,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem("timelock_theme", newTheme);
+      localStorage.setItem("axia_theme", newTheme);
     }
     const root = document.documentElement;
     if (newTheme === "dark") {

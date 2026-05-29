@@ -40,7 +40,7 @@ export const upsertFreelancerProfile = mutation({
         professionalTitle: args.professionalTitle,
         bio: args.bio,
         hourlyRate: args.hourlyRate,
-        timelockVerified: true,
+        axiaVerified: true,
         verificationScore,
         totalVerifiedHours: user?.protectedHours || 0,
         platformsConnected: user?.connectedPlatforms || [],
@@ -60,7 +60,7 @@ export const getVerifiedFreelancers = query({
   handler: async (ctx) => {
     const profiles = await ctx.db
       .query("freelancerPublicProfiles")
-      .withIndex("by_verified", (q) => q.eq("timelockVerified", true))
+      .withIndex("by_verified", (q) => q.eq("axiaVerified", true))
       .collect();
 
     return profiles;

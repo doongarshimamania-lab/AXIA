@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   // Add: Theme state and persistence
   const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("timelock_theme")) as "light" | "dark") || "light"
+    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
   );
 
   // Removed duplicate early evidenceCollector init; initialized below after currentSession is defined
@@ -132,7 +132,7 @@ export default function Dashboard() {
       root.classList.remove("dark");
     }
     try {
-      localStorage.setItem("timelock_theme", theme);
+      localStorage.setItem("axia_theme", theme);
     } catch {}
   }, [theme]);
 
@@ -167,7 +167,7 @@ export default function Dashboard() {
 
   // Handle pending platform connection from Auth page
   useEffect(() => {
-    const pendingPlatform = localStorage.getItem("timelock_pending_platform");
+    const pendingPlatform = localStorage.getItem("axia_pending_platform");
     if (pendingPlatform && profile && !isLoading && userPlatformConnections) {
       // Check if already connected
       const alreadyConnected = userPlatformConnections?.some(
@@ -175,12 +175,12 @@ export default function Dashboard() {
       ) ?? false;
       
       if (alreadyConnected) {
-        localStorage.removeItem("timelock_pending_platform");
+        localStorage.removeItem("axia_pending_platform");
         return;
       }
       
       // Clear the pending platform
-      localStorage.removeItem("timelock_pending_platform");
+      localStorage.removeItem("axia_pending_platform");
       
       // Initiate and complete connection
       (async () => {
@@ -588,7 +588,7 @@ export default function Dashboard() {
               {/* Header */}
               <div className="mb-6">
                 <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
-                  Timelock Dashboard
+                  Axia Dashboard
                 </h1>
                 <p className="text-[16px] text-muted-foreground">
                   Protect your payments with real-time cross-platform compliance monitoring

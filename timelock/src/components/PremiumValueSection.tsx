@@ -45,10 +45,10 @@ export function PremiumValueSection({ protectedAmount, atRiskAmount }: PremiumVa
       <div className="p-4 bg-accent/50 rounded-lg mb-4">
         <div className="flex items-center mb-2">
           <Shield className="w-5 h-5 text-primary mr-2" />
-          <span className="font-medium text-sm text-foreground">TIMELock Expert Verification</span>
+          <span className="font-medium text-sm text-foreground">Axia Expert Verification</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          All dispute reports are verified by TIMELock's expert system with 83% success rate
+          All dispute reports are verified by Axia's expert system with 83% success rate
         </p>
       </div>
 

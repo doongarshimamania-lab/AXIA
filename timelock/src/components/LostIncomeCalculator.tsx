@@ -97,7 +97,7 @@ export function LostIncomeCalculator({
         {/* Current Status */}
         <div className="text-center">
           <div className="text-sm text-muted-foreground mb-2">
-            TIMELock has protected: 
+            Axia has protected: 
             <span className="text-destructive font-medium font-[Space_Grotesk]">
               ${animatedLoss.toFixed(2)}
             </span> this month (Free Tier)
@@ -200,7 +200,7 @@ export function LostIncomeCalculator({
 
       <div className="mt-6 text-xs text-muted-foreground text-center">
         <div className="font-semibold mb-1">Average Success Rate: 83%</div>
-        <div>Based on TIMELock Expert verification</div>
+        <div>Based on Axia Expert verification</div>
       </div>
     </motion.div>
   );

@@ -197,7 +197,7 @@ export function CustomPolicyAnalyzer({
       <div className="p-3 bg-accent/50 rounded-md">
         <p className="text-sm text-foreground">
           <span className="font-medium">How it works:</span> Upload your client's
-          requirements document and TIMELock analyzes your work patterns to ensure
+          requirements document and Axia analyzes your work patterns to ensure
           compliance
         </p>
       </div>

@@ -12,7 +12,7 @@ import { RealTimeWorkValidation } from "@/components/RealTimeWorkValidation";
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const clientEmail = localStorage.getItem("timelock_client_email");
+  const clientEmail = localStorage.getItem("axia_client_email");
 
   // Fetch client profile
   // @ts-ignore - Convex type inference causes deep instantiation error
@@ -50,7 +50,7 @@ export default function ClientDashboard() {
             <p className="text-muted-foreground">{displayProfile.email}</p>
           </div>
           <Button variant="outline" onClick={() => {
-            localStorage.removeItem("timelock_client_email");
+            localStorage.removeItem("axia_client_email");
             navigate("/client-login");
           }}>
             Logout
@@ -126,7 +126,7 @@ export default function ClientDashboard() {
           <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>Welcome to TIMELock Client Portal, {displayProfile.contactName}</CardTitle>
+                <CardTitle>Welcome to Axia Client Portal, {displayProfile.contactName}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="mb-4">
@@ -145,11 +145,11 @@ export default function ClientDashboard() {
                   )}
                 </div>
                 <p className="text-muted-foreground mb-4">
-                  Access all TIMELock verification features using the tabs above:
+                  Access all Axia verification features using the tabs above:
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                   <li><strong>WCVM Dashboard:</strong> View and manage work context verifications</li>
-                  <li><strong>Freelancer Directory:</strong> Browse verified freelancers with TIMELock protection</li>
+                  <li><strong>Freelancer Directory:</strong> Browse verified freelancers with Axia protection</li>
                   <li><strong>Verification Requests:</strong> Request work verification from freelancers</li>
                   <li><strong>Real-time Validation:</strong> Monitor active work sessions in real-time</li>
                 </ul>

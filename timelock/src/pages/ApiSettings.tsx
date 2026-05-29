@@ -171,7 +171,7 @@ export default function ApiSettings() {
 
   // Webhook state
   const [webhook, setWebhook] = useState<WebhookConfig>({
-    url: "https://myapp.com/api/timelock-webhook",
+    url: "https://myapp.com/api/axia-webhook",
     events: ["evidence.created", "protection.alert"],
     active: true,
   });
@@ -457,7 +457,7 @@ export default function ApiSettings() {
                     <Key className="h-12 w-12 mx-auto mb-3 opacity-40" />
                     <p className="font-medium">No API keys yet</p>
                     <p className="text-sm mt-1">
-                      Generate your first key to start integrating with TIMELock.
+                      Generate your first key to start integrating with Axia.
                     </p>
                   </div>
                 ) : (
@@ -605,7 +605,7 @@ export default function ApiSettings() {
                   Webhook Configuration
                 </CardTitle>
                 <CardDescription>
-                  Receive real-time notifications when events occur in TIMELock
+                  Receive real-time notifications when events occur in Axia
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -703,7 +703,7 @@ export default function ApiSettings() {
                   API Documentation
                 </CardTitle>
                 <CardDescription>
-                  Resources to help you integrate TIMELock into your workflow
+                  Resources to help you integrate Axia into your workflow
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -711,7 +711,7 @@ export default function ApiSettings() {
                   {[
                     {
                       title: "Getting Started Guide",
-                      desc: "Learn the basics of the TIMELock API",
+                      desc: "Learn the basics of the Axia API",
                       icon: "🚀",
                     },
                     {
@@ -773,7 +773,7 @@ export default function ApiSettings() {
           <DialogHeader>
             <DialogTitle>Generate New API Key</DialogTitle>
             <DialogDescription>
-              Create a new API key to authenticate with the TIMELock API.
+              Create a new API key to authenticate with the Axia API.
             </DialogDescription>
           </DialogHeader>
 

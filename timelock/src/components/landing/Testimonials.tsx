@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 const testimonials = [
   {
-    quote: "TIMELock helped me identify context gaps in my Upwork submissions that I never knew existed. I've prevented $1,872 in potential payment denials over the past 6 months.",
+    quote: "Axia helped me identify context gaps in my Upwork submissions that I never knew existed. I've prevented $1,872 in potential payment denials over the past 6 months.",
     author: "Sarah K.",
     details: "Web Developer, Upwork Top-Rated Plus",
   },
@@ -13,7 +13,7 @@ const testimonials = [
     details: "Software Engineer, 3+ years on Upwork",
   },
   {
-    quote: "I used to spend hours trying to figure out why my Upwork payments were denied. TIMELock shows me exactly what's missing in real-time.",
+    quote: "I used to spend hours trying to figure out why my Upwork payments were denied. Axia shows me exactly what's missing in real-time.",
     author: "Priya M.",
     details: "Graphic Designer, 500+ completed projects",
   },
@@ -72,7 +72,7 @@ export function Testimonials() {
             Trusted by Freelancers Worldwide
           </h2>
           <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
-            Real stories from freelancers who've protected their income with TIMELock
+            Real stories from freelancers who've protected their income with Axia
           </p>
         </motion.div>
 

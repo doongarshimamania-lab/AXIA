@@ -37,7 +37,7 @@ export default function ClientSignup() {
         website: formData.website || undefined,
       });
 
-      localStorage.setItem("timelock_client_email", formData.email);
+      localStorage.setItem("axia_client_email", formData.email);
       toast.success("Account created successfully");
       navigate("/client-dashboard");
     } catch (error: any) {
@@ -58,7 +58,7 @@ export default function ClientSignup() {
           </div>
           <CardTitle className="text-2xl">Create Client Account</CardTitle>
           <CardDescription>
-            Join TIMELock to verify freelancer work with industry-standard verification
+            Join Axia to verify freelancer work with industry-standard verification
           </CardDescription>
         </CardHeader>
         <CardContent>

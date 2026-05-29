@@ -101,7 +101,7 @@ function RouteSyncer() {
 function DashboardLayout() {
   // Initialize sidebar width CSS variable
   useEffect(() => {
-    const savedState = localStorage.getItem("timelock_sidebar_state");
+    const savedState = localStorage.getItem("axia_sidebar_state");
     const isExpanded = savedState !== "collapsed";
     document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
   }, []);
@@ -124,7 +124,7 @@ if (!convex) {
       <VlyToolbar />
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-6">
         <div className="max-w-xl text-center">
-          <img src="/logo.svg" alt="Timelock" width={48} height={48} className="mx-auto mb-4" />
+          <img src="/logo.svg" alt="Axia" width={48} height={48} className="mx-auto mb-4" />
           <h1 className="text-2xl font-semibold text-[#1E293B] mb-2">Configure Convex URL</h1>
           <p className="text-[#475569] mb-4">
             The app can't reach Convex because VITE_CONVEX_URL isn't set.

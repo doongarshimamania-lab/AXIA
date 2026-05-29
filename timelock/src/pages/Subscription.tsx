@@ -593,7 +593,7 @@ export default function Subscription() {
             Subscription
           </h1>
           <p className="text-[16px] text-muted-foreground">
-            Manage your TIMELock plan, view usage, and access billing history
+            Manage your Axia plan, view usage, and access billing history
           </p>
         </div>
 

@@ -15,14 +15,14 @@ export const seedTestProjects = mutation({
     if (!userId) {
       const guestUser = await ctx.db
         .query("users")
-        .filter((q) => q.eq(q.field("email"), "guest@timelock.demo"))
+        .filter((q) => q.eq(q.field("email"), "guest@axia.demo"))
         .first();
       
       if (guestUser) {
         userId = guestUser._id;
       } else {
         userId = await ctx.db.insert("users", {
-          email: "guest@timelock.demo",
+          email: "guest@axia.demo",
           name: "Guest User",
           subscriptionTier: "free",
           onboardingComplete: true,

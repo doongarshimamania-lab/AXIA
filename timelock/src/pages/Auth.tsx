@@ -41,11 +41,11 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Add: UI and theme local state per TIMELock spec
+  // Add: UI and theme local state per Axia spec
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showCustomPlatformModal, setShowCustomPlatformModal] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
-    (localStorage.getItem("timelock_theme") as "light" | "dark") || "dark"
+    (localStorage.getItem("axia_theme") as "light" | "dark") || "dark"
   );
 
   useEffect(() => {
@@ -60,7 +60,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   // Add: apply theme to documentElement and persist
   useEffect(() => {
     try {
-      const saved = (localStorage.getItem("timelock_theme") as "light" | "dark") || "dark";
+      const saved = (localStorage.getItem("axia_theme") as "light" | "dark") || "dark";
       setTheme(saved);
       const root = document.documentElement;
       if (saved === "dark") {
@@ -79,7 +79,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       root.classList.remove("dark");
     }
     try {
-      localStorage.setItem("timelock_theme", theme);
+      localStorage.setItem("axia_theme", theme);
     } catch {}
   }, [theme]);
 
@@ -132,7 +132,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     }
     
     // Store the platform to connect after authentication
-    localStorage.setItem("timelock_pending_platform", selectedPlatform);
+    localStorage.setItem("axia_pending_platform", selectedPlatform);
     
     toast.success(`${labels[selectedPlatform]} connection will be set up after sign-in`, {
       description: "Your data will be imported automatically.",
@@ -196,7 +196,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     <div className="flex justify-center">
                       <img
                         src="./logo.svg"
-                        alt="TIMELock Logo"
+                        alt="Axia Logo"
                         width={64}
                         height={64}
                         className="rounded-lg mb-4 mt-2 cursor-pointer"
@@ -207,7 +207,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       Protect Your Freelance Income
                     </CardTitle>
                     <CardDescription className="max-w-[360px] mx-auto text-[16px] text-[#475569]">
-                      TIMELock prevents payment denials by validating your work meets ALL requirements — with dispute‑proof evidence.
+                      Axia prevents payment denials by validating your work meets ALL requirements — with dispute‑proof evidence.
                     </CardDescription>
                   </CardHeader>
 
@@ -340,7 +340,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                         Using a different platform?
                       </div>
                       <p className="text-[14px] text-[#475569]">
-                        TIMELock can work with any platform that has time tracking
+                        Axia can work with any platform that has time tracking
                       </p>
                       <button
                         type="button"
@@ -457,7 +457,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           <DialogContent className="max-w-md rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-[24px] font-bold text-foreground" style={{ fontFamily: "Space Grotesk" }}>
-                TIMELock needs access to:
+                Axia needs access to:
               </DialogTitle>
             </DialogHeader>
             
@@ -471,13 +471,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               <div className="flex items-start gap-3">
                 <div className="mt-1 h-2 w-2 rounded-full bg-muted-foreground/40 flex-shrink-0" />
                 <p className="text-[16px] text-foreground">
-                  Manage time entries (to sync with TIMELock protection)
+                  Manage time entries (to sync with Axia protection)
                 </p>
               </div>
             </div>
 
             <p className="text-[14px] text-muted-foreground italic py-2">
-              This is how TIMELock verifies your work meets ALL payment protection requirements
+              This is how Axia verifies your work meets ALL payment protection requirements
             </p>
 
             <DialogFooter className="flex-row gap-3 sm:gap-3">
@@ -506,7 +506,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             <DialogHeader>
               <DialogTitle>Custom Platform Setup</DialogTitle>
               <DialogDescription>
-                Add a new platform to protect with TIMELock
+                Add a new platform to protect with Axia
               </DialogDescription>
             </DialogHeader>
             <form

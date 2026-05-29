@@ -18,7 +18,7 @@ async function resolveUserId(ctx: any) {
   try {
     const existingGuest = await ctx.db
       .query("users")
-      .withIndex("email", (q: any) => q.eq("email", "guest@timelock.demo"))
+      .withIndex("email", (q: any) => q.eq("email", "guest@axia.demo"))
       .first();
     
     if (existingGuest) {
@@ -31,7 +31,7 @@ async function resolveUserId(ctx: any) {
   // If no guest user exists, create one
   try {
     const guestUserId = await ctx.db.insert("users", {
-      email: "guest@timelock.demo",
+      email: "guest@axia.demo",
       name: "Guest User",
       subscriptionTier: "free",
       onboardingComplete: true,
@@ -41,7 +41,7 @@ async function resolveUserId(ctx: any) {
     // If insert fails (duplicate), try to find it again
     const existingGuest = await ctx.db
       .query("users")
-      .withIndex("email", (q: any) => q.eq("email", "guest@timelock.demo"))
+      .withIndex("email", (q: any) => q.eq("email", "guest@axia.demo"))
       .first();
     
     if (existingGuest) {

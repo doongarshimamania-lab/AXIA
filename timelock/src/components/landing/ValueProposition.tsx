@@ -5,17 +5,17 @@ const values = [
   {
     icon: BadgeCheck,
     heading: "83% Dispute Success Rate",
-    content: "Based on analysis of 12,450 Upwork disputes with TIMELock verification, compared to 22% platform average.",
+    content: "Based on analysis of 12,450 Upwork disputes with Axia verification, compared to 22% platform average.",
   },
   {
     icon: DollarSign,
     heading: "$1,028 Median Loss Prevented",
-    content: "Freelancers using TIMELock prevent an average of $1,028 per potential dispute, based on verified user data.",
+    content: "Freelancers using Axia prevent an average of $1,028 per potential dispute, based on verified user data.",
   },
   {
     icon: Clock,
     heading: "87 Minutes/Week Saved",
-    content: "On evidence collection optimization through TIMELock's adaptive recommendations.",
+    content: "On evidence collection optimization through Axia's adaptive recommendations.",
   },
 ];
 
@@ -34,7 +34,7 @@ export function ValueProposition() {
             Real Results from Real Freelancers
           </h2>
           <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
-            TIMELock helps freelancers identify and fix context gaps before submission
+            Axia helps freelancers identify and fix context gaps before submission
           </p>
         </motion.div>
 

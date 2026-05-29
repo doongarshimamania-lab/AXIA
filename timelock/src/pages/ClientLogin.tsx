@@ -26,7 +26,7 @@ export default function ClientLogin() {
     setIsLoading(true);
     
     // Allow any email for dev/demo access
-    localStorage.setItem("timelock_client_email", email);
+    localStorage.setItem("axia_client_email", email);
     toast.success("Logged in successfully (Demo Mode)");
     setTimeout(() => {
       navigate("/client-dashboard");
@@ -44,7 +44,7 @@ export default function ClientLogin() {
           </div>
           <CardTitle className="text-2xl">Client Portal</CardTitle>
           <CardDescription>
-            Verify freelancer work with TIMELock's industry-standard verification
+            Verify freelancer work with Axia's industry-standard verification
           </CardDescription>
         </CardHeader>
         <CardContent>

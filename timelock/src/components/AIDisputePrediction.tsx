@@ -135,7 +135,7 @@ export function AIDisputePrediction({
               <h3 className="font-[Space_Grotesk] font-bold text-xl text-foreground">AI Dispute Prediction</h3>
             </div>
             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-              TIMELock AI
+              Axia AI
             </span>
           </div>
           <div className="space-y-4">
@@ -154,7 +154,7 @@ export function AIDisputePrediction({
           <h3 className="font-[Space_Grotesk] font-bold text-xl text-foreground">AI Dispute Prediction</h3>
         </div>
         <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-          TIMELock AI
+          Axia AI
         </span>
       </div>
 

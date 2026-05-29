@@ -45,7 +45,7 @@ export default function WaitlistSuccess() {
   };
 
   const shareToTwitter = () => {
-    const text = `I just joined the TIMELock waitlist! Join me and we'll both move up the list. #TIMELock`;
+    const text = `I just joined the Axia waitlist! Join me and we'll both move up the list. #Axia`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`, '_blank');
   };
 
@@ -61,8 +61,8 @@ export default function WaitlistSuccess() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join TIMELock Waitlist',
-          text: 'Join me on the TIMELock waitlist!',
+          title: 'Join Axia Waitlist',
+          text: 'Join me on the Axia waitlist!',
           url: referralLink,
         });
       } catch (err) {
@@ -283,7 +283,7 @@ export default function WaitlistSuccess() {
           className="mt-8 text-center text-blue-200/60 text-sm"
         >
           <p>
-            Questions? Contact us at support@timelock.app
+            Questions? Contact us at support@axia.app
           </p>
         </motion.div>
       </div>

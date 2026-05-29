@@ -47,14 +47,14 @@ export function CollapsibleSidebar() {
   
   const [isExpanded, setIsExpanded] = useState(() => {
     if (typeof localStorage !== "undefined") {
-      return localStorage.getItem("timelock_sidebar_state") !== "collapsed";
+      return localStorage.getItem("axia_sidebar_state") !== "collapsed";
     }
     return true;
   });
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     if (typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem("timelock_sidebar_sections");
+      const saved = localStorage.getItem("axia_sidebar_sections");
       return saved ? JSON.parse(saved) : {};
     }
     return {};
@@ -118,7 +118,7 @@ export function CollapsibleSidebar() {
 
     const handleScroll = () => {
       if (typeof localStorage !== "undefined") {
-        localStorage.setItem("timelock_sidebar_scroll", container.scrollTop.toString());
+        localStorage.setItem("axia_sidebar_scroll", container.scrollTop.toString());
       }
     };
 
@@ -132,7 +132,7 @@ export function CollapsibleSidebar() {
     if (!container) return;
 
     if (typeof localStorage !== "undefined") {
-      const savedScroll = localStorage.getItem("timelock_sidebar_scroll");
+      const savedScroll = localStorage.getItem("axia_sidebar_scroll");
       if (savedScroll) {
         container.scrollTop = parseInt(savedScroll, 10);
       }
@@ -141,7 +141,7 @@ export function CollapsibleSidebar() {
 
   useEffect(() => {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem("timelock_sidebar_state", isExpanded ? "expanded" : "collapsed");
+      localStorage.setItem("axia_sidebar_state", isExpanded ? "expanded" : "collapsed");
       // Sync CSS variable immediately when state changes
       document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
     }
@@ -149,7 +149,7 @@ export function CollapsibleSidebar() {
 
   useEffect(() => {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem("timelock_sidebar_sections", JSON.stringify(expandedSections));
+      localStorage.setItem("axia_sidebar_sections", JSON.stringify(expandedSections));
     }
   }, [expandedSections]);
 
@@ -221,7 +221,7 @@ export function CollapsibleSidebar() {
                   transition={{ duration: 0.2 }}
                   className="font-[Space_Grotesk] font-semibold text-lg text-white whitespace-nowrap overflow-hidden"
                 >
-                  TIMELock
+                  Axia
                 </motion.span>
               )}
             </AnimatePresence>

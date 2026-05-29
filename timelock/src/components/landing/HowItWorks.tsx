@@ -4,7 +4,7 @@ const steps = [
   {
     number: 1,
     heading: "Track Work Context",
-    content: "TIMELock's browser extension captures work context alongside time tracking, focusing on what matters for payment protection.",
+    content: "Axia's browser extension captures work context alongside time tracking, focusing on what matters for payment protection.",
   },
   {
     number: 2,
@@ -35,7 +35,7 @@ export function HowItWorks() {
           className="text-center mb-12"
         >
           <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
-            How TIMELock Works
+            How Axia Works
           </h2>
           <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
             Four simple steps to payment protection

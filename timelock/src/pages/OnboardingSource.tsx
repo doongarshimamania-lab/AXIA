@@ -19,7 +19,7 @@ export default function OnboardingSource() {
   
   // Add: Theme state and persistence
   const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("timelock_theme")) as "light" | "dark") || "light"
+    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
   );
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function OnboardingSource() {
       root.classList.remove("dark");
     }
     try {
-      localStorage.setItem("timelock_theme", theme);
+      localStorage.setItem("axia_theme", theme);
     } catch {}
   }, [theme]);
   
@@ -156,7 +156,7 @@ export default function OnboardingSource() {
       });
       
       localStorage.removeItem('onboardingData');
-      toast.success('Welcome to TIMELock!');
+      toast.success('Welcome to Axia!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Onboarding error:', error);
@@ -188,7 +188,7 @@ export default function OnboardingSource() {
             <CardTitle className="text-2xl">How Did You Find Us?</CardTitle>
           </div>
           <CardDescription>
-            Help us understand how freelancers discover TIMELock so we can better serve you
+            Help us understand how freelancers discover Axia so we can better serve you
           </CardDescription>
         </CardHeader>
         

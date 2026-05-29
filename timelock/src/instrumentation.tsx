@@ -290,7 +290,7 @@ export function InstrumentationProvider({
 }
 
 export function trackConversion(eventName: string, payload: any) {
-  console.log(`[TIMELock Conversion] ${eventName}:`, payload);
+  console.log(`[Axia Conversion] ${eventName}:`, payload);
   
   // Future: Send to analytics service
   // await fetch('/api/analytics', { 

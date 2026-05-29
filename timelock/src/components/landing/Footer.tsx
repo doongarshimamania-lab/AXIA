@@ -38,7 +38,7 @@ export function Footer() {
 
         <div className="border-t border-border pt-6 text-center">
           <p className="text-sm text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
-            © 2025 TIMELock. All rights reserved. Protecting freelancer income worldwide.
+            © 2025 Axia. All rights reserved. Protecting freelancer income worldwide.
           </p>
         </div>
       </div>

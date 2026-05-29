@@ -141,7 +141,7 @@ export function Features() {
           className="text-center mt-16"
         >
           <p className="text-[18px] text-muted-foreground mb-6" style={{ fontFamily: "Space Grotesk" }}>
-            Join <span className="font-bold text-primary">thousands of freelancers</span> protecting their income with TIMELock
+            Join <span className="font-bold text-primary">thousands of freelancers</span> protecting their income with Axia
           </p>
           <button
             onClick={() => {

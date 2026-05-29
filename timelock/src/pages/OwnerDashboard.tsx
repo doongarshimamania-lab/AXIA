@@ -515,7 +515,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
                 className="w-full h-32 p-3 border rounded-md text-sm"
                 defaultValue={`Hi! I noticed you've had ${(MOCK_DATA.airtable.highValueUsers[0].rejectionRate * 10).toFixed(1)} hours rejected recently. 
 
-Timelock Pro could save you $${MOCK_DATA.airtable.highValueUsers[0].potentialSavings}/month by preventing these rejections with real-time compliance monitoring.
+Axia Pro could save you $${MOCK_DATA.airtable.highValueUsers[0].potentialSavings}/month by preventing these rejections with real-time compliance monitoring.
 
 Would you like to try Pro free for 7 days?`}
               />
@@ -1034,7 +1034,7 @@ function OwnerLogin({ onLogin, showError, password, setPassword }: {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-semibold" style={{ fontFamily: 'Inter' }}>
-              Timelock Owner
+              Axia Owner
             </h1>
           </div>
           
@@ -1174,7 +1174,7 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
       {/* Header */}
       <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Timelock Owner Dashboard</h1>
+          <h1 className="text-2xl font-bold">Axia Owner Dashboard</h1>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Button variant="outline" onClick={() => auth.logout()}>

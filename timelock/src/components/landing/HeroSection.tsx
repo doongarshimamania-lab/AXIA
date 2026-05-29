@@ -46,7 +46,7 @@ export function HeroSection() {
             style={{ fontFamily: "Space Grotesk" }}
           >
             35% of payment disputes happen because of simple mistakes you can prevent. 
-            TIMELock verifies your work against platform requirements <i>before</i> submission—so you get paid, every time.
+            Axia verifies your work against platform requirements <i>before</i> submission—so you get paid, every time.
           </motion.p>
 
           {/* Waitlist Form */}

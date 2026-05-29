@@ -201,7 +201,7 @@ export function PlatformConnectionCard() {
               Connect {selectedPlatform && platformLabels[selectedPlatform]}
             </DialogTitle>
             <DialogDescription>
-              TIMELock needs access to protect your income
+              Axia needs access to protect your income
             </DialogDescription>
           </DialogHeader>
 
@@ -232,7 +232,7 @@ export function PlatformConnectionCard() {
 
             <div className="bg-muted/50 p-3 rounded-lg">
               <p className="text-xs text-muted-foreground italic">
-                <strong>Why we need this:</strong> TIMELock analyzes your work patterns to ensure
+                <strong>Why we need this:</strong> Axia analyzes your work patterns to ensure
                 they meet platform requirements, preventing payment rejections before they happen.
               </p>
             </div>

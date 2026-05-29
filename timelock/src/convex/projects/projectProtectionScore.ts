@@ -936,7 +936,7 @@ async function calculateTierData(ctx: any, project: Doc<"projects">, tier: strin
       
       darkPsychology: {
         type: "authority",
-        message: "Your business is protected by TIMELock Expert Standards. Top 1% of freelancers maintain this level.",
+        message: "Your business is protected by Axia Expert Standards. Top 1% of freelancers maintain this level.",
         highlight: "Top 1%",
         action: "View Report"
       }

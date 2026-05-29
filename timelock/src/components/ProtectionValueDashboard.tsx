@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 
 export function ProtectionValueDashboard() {
   const [theme, setTheme] = useState<"light" | "dark">(
-    ((typeof localStorage !== "undefined" && localStorage.getItem("timelock_theme")) as "light" | "dark") || "light"
+    ((typeof localStorage !== "undefined" && localStorage.getItem("axia_theme")) as "light" | "dark") || "light"
   );
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function ProtectionValueDashboard() {
 
   useEffect(() => {
     const handleStorageChange = () => {
-      const newTheme = localStorage.getItem("timelock_theme") as "light" | "dark" || "light";
+      const newTheme = localStorage.getItem("axia_theme") as "light" | "dark" || "light";
       setTheme(newTheme);
     };
     window.addEventListener("storage", handleStorageChange);

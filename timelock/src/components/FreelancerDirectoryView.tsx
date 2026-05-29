@@ -52,7 +52,7 @@ export function FreelancerDirectoryView() {
                     <CardTitle className="text-lg">{freelancer.displayName}</CardTitle>
                     <p className="text-sm text-muted-foreground">{freelancer.professionalTitle}</p>
                   </div>
-                  {freelancer.timelockVerified && (
+                  {freelancer.axiaVerified && (
                     <Badge variant="default" className="flex items-center gap-1">
                       <Shield className="h-3 w-3" />
                       Verified

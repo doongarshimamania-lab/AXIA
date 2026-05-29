@@ -20,7 +20,7 @@ export default function Landing() {
 
   useEffect(() => {
     try {
-      const saved = (localStorage.getItem("timelock_theme") as "light" | "dark") || "dark";
+      const saved = (localStorage.getItem("axia_theme") as "light" | "dark") || "dark";
       setTheme(saved);
       const root = document.documentElement;
       if (saved === "dark") root.classList.add("dark");
@@ -32,7 +32,7 @@ export default function Landing() {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
     try {
-      localStorage.setItem("timelock_theme", newTheme);
+      localStorage.setItem("axia_theme", newTheme);
     } catch {}
     const root = document.documentElement;
     if (newTheme === "dark") root.classList.add("dark");
@@ -75,8 +75,8 @@ export default function Landing() {
               onClick={() => navigate("/")}
               whileHover={{ scale: 1.05 }}
             >
-              <img src="/logo.svg" alt="TIMELock" width={32} height={32} />
-              <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Space Grotesk" }}>TIMELock</span>
+              <img src="/logo.svg" alt="Axia" width={32} height={32} />
+              <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Space Grotesk" }}>Axia</span>
             </motion.div>
             
             <div className="flex items-center gap-6">

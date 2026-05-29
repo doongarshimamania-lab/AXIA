@@ -78,7 +78,7 @@ export function ProfileModal() {
             Profile & Settings
           </DialogTitle>
           <DialogDescription className="text-[#9CA3AF]">
-            Manage your TIMELock account and preferences
+            Manage your Axia account and preferences
           </DialogDescription>
         </DialogHeader>
 
@@ -186,7 +186,7 @@ export function ProfileModal() {
                 <div className="text-sm font-medium text-white mb-2">Protection Metrics</div>
                 <div className="space-y-2 text-xs text-[#9CA3AF]">
                   <div className="flex justify-between">
-                    <span>TIMELock Protection:</span>
+                    <span>Axia Protection:</span>
                     <span className="text-emerald-400">✅ Active</span>
                   </div>
                   <div className="flex justify-between">

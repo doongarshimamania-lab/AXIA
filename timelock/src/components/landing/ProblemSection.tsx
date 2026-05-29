@@ -83,7 +83,7 @@ export function ProblemSection({
           >
             <div className="pl-0 lg:pl-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00246B]/10 dark:bg-blue-900/30 text-[#00246B] dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-6">
-                The TIMELock Solution
+                The Axia Solution
               </div>
               
               <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-6" style={{ fontFamily: "Space Grotesk" }}>

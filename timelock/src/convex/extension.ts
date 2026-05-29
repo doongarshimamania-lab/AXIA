@@ -4,7 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "./_generated/dataModel";
 
 // Helper: generate cryptographically secure random token (64-character hex = 32 bytes)
-// BRAND REQUIREMENT: Strong token = TIMELock's independent security authority
+// BRAND REQUIREMENT: Strong token = Axia's independent security authority
 function randomToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);

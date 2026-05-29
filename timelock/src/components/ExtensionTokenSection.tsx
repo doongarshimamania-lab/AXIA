@@ -249,7 +249,7 @@ export function ExtensionTokenSection() {
         Chrome Extension
       </h3>
       <p className="text-muted-foreground text-sm mb-3">
-        Connect your TIMELock Chrome Extension for real-time evidence collection
+        Connect your Axia Chrome Extension for real-time evidence collection
       </p>
       
       {isGuest ? (

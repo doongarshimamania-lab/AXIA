@@ -62,38 +62,38 @@ interface SupportTicket {
 
 // --- Mock Data ---
 const MOCK_ARTICLES: HelpArticle[] = [
-  { id: "1", title: "How to set up your first project", category: "Getting Started", excerpt: "Learn how to create your first protected project in TIMELock." },
-  { id: "2", title: "Understanding evidence collection", category: "Evidence", excerpt: "How TIMELock automatically collects and stores work evidence." },
-  { id: "3", title: "Dispute resolution walkthrough", category: "Disputes", excerpt: "Step-by-step guide to using TIMELock evidence in payment disputes." },
-  { id: "4", title: "API authentication best practices", category: "API", excerpt: "Secure your API keys and manage access to the TIMELock API." },
-  { id: "5", title: "Platform integration guide", category: "Integrations", excerpt: "Connect Upwork, Fiverr, and other platforms to TIMELock." },
+  { id: "1", title: "How to set up your first project", category: "Getting Started", excerpt: "Learn how to create your first protected project in Axia." },
+  { id: "2", title: "Understanding evidence collection", category: "Evidence", excerpt: "How Axia automatically collects and stores work evidence." },
+  { id: "3", title: "Dispute resolution walkthrough", category: "Disputes", excerpt: "Step-by-step guide to using Axia evidence in payment disputes." },
+  { id: "4", title: "API authentication best practices", category: "API", excerpt: "Secure your API keys and manage access to the Axia API." },
+  { id: "5", title: "Platform integration guide", category: "Integrations", excerpt: "Connect Upwork, Fiverr, and other platforms to Axia." },
   { id: "6", title: "Milestone protection explained", category: "Protection", excerpt: "How milestone-based protection keeps your payments safe." },
   { id: "7", title: "Exporting evidence reports", category: "Evidence", excerpt: "Generate professional evidence reports for clients and disputes." },
   { id: "8", title: "Subscription plans comparison", category: "Billing", excerpt: "Compare Free, Starter, Pro, and Expert plans." },
   { id: "9", title: "Time tracking setup", category: "Getting Started", excerpt: "Configure automatic time tracking for your freelance projects." },
-  { id: "10", title: "Client risk assessment", category: "Protection", excerpt: "How TIMELock evaluates and scores client payment patterns." },
+  { id: "10", title: "Client risk assessment", category: "Protection", excerpt: "How Axia evaluates and scores client payment patterns." },
 ];
 
 const FAQ_DATA = [
   {
-    question: "What is TIMELock and how does it protect freelancers?",
+    question: "What is Axia and how does it protect freelancers?",
     answer:
-      "TIMELock is a freelancer protection platform that automatically collects work evidence, monitors milestones, and provides dispute resolution support. It continuously captures timestamps, screenshots, and activity logs to create an immutable record of your work, ensuring you have proof if a client disputes payment.",
+      "Axia is a freelancer protection platform that automatically collects work evidence, monitors milestones, and provides dispute resolution support. It continuously captures timestamps, screenshots, and activity logs to create an immutable record of your work, ensuring you have proof if a client disputes payment.",
   },
   {
     question: "How does the evidence collection system work?",
     answer:
-      "TIMELock runs in the background while you work, automatically capturing timestamps, activity patterns, and deliverable snapshots. All evidence is encrypted and stored with tamper-proof verification. You can also manually upload additional evidence like emails and contracts. The system builds a comprehensive timeline that can be exported as a professional report.",
+      "Axia runs in the background while you work, automatically capturing timestamps, activity patterns, and deliverable snapshots. All evidence is encrypted and stored with tamper-proof verification. You can also manually upload additional evidence like emails and contracts. The system builds a comprehensive timeline that can be exported as a professional report.",
   },
   {
-    question: "Can I use TIMELock with my existing freelance platforms?",
+    question: "Can I use Axia with my existing freelance platforms?",
     answer:
-      "Yes! TIMELock integrates directly with popular freelance platforms including Upwork, Fiverr, Toptal, and Freelancer.com. Once connected, it imports your project data, payment history, and client communications automatically to build a complete protection profile.",
+      "Yes! Axia integrates directly with popular freelance platforms including Upwork, Fiverr, Toptal, and Freelancer.com. Once connected, it imports your project data, payment history, and client communications automatically to build a complete protection profile.",
   },
   {
     question: "What happens if a client disputes my work?",
     answer:
-      "If a dispute arises, TIMELock generates a comprehensive evidence report including your work timeline, deliverable proof, communication logs, and compliance verification. This report can be shared directly with the platform's dispute resolution team or used in formal proceedings. Pro and Expert users also get AI-powered dispute prediction to identify risks before they escalate.",
+      "If a dispute arises, Axia generates a comprehensive evidence report including your work timeline, deliverable proof, communication logs, and compliance verification. This report can be shared directly with the platform's dispute resolution team or used in formal proceedings. Pro and Expert users also get AI-powered dispute prediction to identify risks before they escalate.",
   },
   {
     question: "How is my data secured?",
@@ -111,14 +111,14 @@ const FAQ_DATA = [
       "You can upgrade your plan anytime from the Subscription page. Changes take effect immediately, and you'll be prorated for the remainder of your billing cycle. Downgrades take effect at the end of your current billing period, so you won't lose access to features mid-cycle.",
   },
   {
-    question: "Does TIMELock support team or agency accounts?",
+    question: "Does Axia support team or agency accounts?",
     answer:
       "Yes! The Expert plan includes full team support with shared project access, team evidence pooling, and centralized billing. Each team member gets their own protected workspace while contributing to shared project evidence vaults. Agency admins can manage all team members and projects from a unified dashboard.",
   },
 ];
 
 const VIDEO_TUTORIALS = [
-  { id: "v1", title: "Getting Started with TIMELock", duration: "5:32", thumbnail: "🛡️" },
+  { id: "v1", title: "Getting Started with Axia", duration: "5:32", thumbnail: "🛡️" },
   { id: "v2", title: "Setting Up Your First Project", duration: "8:15", thumbnail: "📋" },
   { id: "v3", title: "Evidence Collection Deep Dive", duration: "12:04", thumbnail: "📸" },
   { id: "v4", title: "Dispute Resolution Walkthrough", duration: "10:28", thumbnail: "⚖️" },
@@ -244,7 +244,7 @@ export default function HelpCenter() {
             </h1>
             <p className="text-[16px] text-muted-foreground">
               Find answers, get support, and learn how to make the most of
-              TIMELock
+              Axia
             </p>
           </div>
 
@@ -402,7 +402,7 @@ export default function HelpCenter() {
                   Frequently Asked Questions
                 </CardTitle>
                 <CardDescription>
-                  Quick answers to the most common questions about TIMELock
+                  Quick answers to the most common questions about Axia
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -429,7 +429,7 @@ export default function HelpCenter() {
                   Getting Started Guide
                 </CardTitle>
                 <CardDescription>
-                  Follow these steps to set up TIMELock and start protecting your
+                  Follow these steps to set up Axia and start protecting your
                   work
                 </CardDescription>
               </CardHeader>
@@ -457,7 +457,7 @@ export default function HelpCenter() {
                     {
                       step: 4,
                       title: "Start Tracking Time",
-                      desc: "Begin tracking your work sessions. TIMELock will automatically collect evidence as you work.",
+                      desc: "Begin tracking your work sessions. Axia will automatically collect evidence as you work.",
                       icon: Clock,
                     },
                     {
@@ -501,7 +501,7 @@ export default function HelpCenter() {
                   Video Tutorials
                 </CardTitle>
                 <CardDescription>
-                  Watch walkthroughs to master TIMELock features
+                  Watch walkthroughs to master Axia features
                 </CardDescription>
               </CardHeader>
               <CardContent>

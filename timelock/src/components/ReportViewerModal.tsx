@@ -30,7 +30,7 @@ export function ReportViewerModal({ isOpen, onClose, caseId, reportContent }: Pr
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${caseId || "timelock_report"}.md`;
+      a.download = `${caseId || "axia_report"}.md`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -50,7 +50,7 @@ export function ReportViewerModal({ isOpen, onClose, caseId, reportContent }: Pr
     w.document.write(`
       <html>
         <head>
-          <title>${caseId || "TIMELock Report"}</title>
+          <title>${caseId || "Axia Report"}</title>
           <style>
             body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial; white-space: pre-wrap; padding: 24px; line-height: 1.4; }
             h1,h2,h3 { margin-top: 1rem; }

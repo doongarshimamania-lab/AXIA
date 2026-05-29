@@ -52,7 +52,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
   };
 
   const shareToTwitter = () => {
-    const text = `I just joined the TIMELock waitlist! 🎉\n\nJoin me and we'll both move up the list faster.`;
+    const text = `I just joined the Axia waitlist! 🎉\n\nJoin me and we'll both move up the list faster.`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`;
     window.open(url, '_blank', 'width=550,height=420');
   };
@@ -68,7 +68,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
   };
 
   const shareToWhatsApp = () => {
-    const text = `I just joined the TIMELock waitlist! Join me and we'll both move up the list: ${referralLink}`;
+    const text = `I just joined the Axia waitlist! Join me and we'll both move up the list: ${referralLink}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
