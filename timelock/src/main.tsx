@@ -40,31 +40,22 @@ import ApiSettings from "./pages/ApiSettings.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 
-// Error Boundary to catch Convex query errors and prevent app crash
-// IMPORTANT: Does NOT auto-reset to prevent flickering/reload loops
-// The safe useQuery wrapper handles errors gracefully, so this is a last resort
-class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; errorCount: number }> {
-  state = { hasError: false, errorCount: 0 };
+// Error Boundary to catch Convex/Auth errors and prevent app crash
+// IMPORTANT: Never blanks the screen - always renders children even on error
+// The safe useQuery wrapper handles query errors gracefully via throwOnError: false
+// This boundary catches any remaining errors from Auth provider or other sources
+class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch(error: Error) {
-    console.warn("[ConvexErrorBoundary] Caught error:", error.message);
-    // Only retry once after a long delay to avoid flickering
-    const newCount = this.state.errorCount + 1;
-    this.setState({ errorCount: newCount });
-    if (newCount <= 1) {
-      setTimeout(() => this.setState({ hasError: false }), 10000);
-    }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log once, don't spam
+    console.warn("[ConvexErrorBoundary] Caught error (rendering continues):", error.message);
   }
   render() {
-    if (this.state.hasError) {
-      // Show children anyway after first error - don't blank the screen
-      if (this.state.errorCount > 1) {
-        return this.props.children;
-      }
-      return null;
-    }
+    // ALWAYS render children - never show a blank screen
+    // The safe useQuery wrapper already handles Convex errors gracefully
     return this.props.children;
   }
 }
@@ -80,9 +71,9 @@ const convex = convexUrl ? new ConvexReactClient(convexUrl, {
   unsavedChangesWarning: false,
 }) : null;
 
-// Explicit clients for owner dashboard to show both prod and dev entries
-const prodConvexClient = new ConvexReactClient("https://harmless-tapir-303.convex.cloud");
-const devConvexClient = new ConvexReactClient("https://bold-reindeer-389.convex.cloud");
+// Explicit clients for owner dashboard - both point to the same deployment now
+const prodConvexClient = convex || new ConvexReactClient(convexUrl || "https://artful-civet-344.convex.cloud");
+const devConvexClient = convex || new ConvexReactClient(convexUrl || "https://artful-civet-344.convex.cloud");
 
 function RouteSyncer() {
   const location = useLocation();
