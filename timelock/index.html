@@ -196,18 +196,20 @@
   <!-- Optimized Title Tag (50-60 characters for SEO) -->
   <title>Axia</title>
   
-  <!-- Prevent flash of light theme: apply dark class before React loads -->
+  <!-- Prevent flash of wrong theme: apply/remove dark class before React loads -->
   <script>
     (function() {
       var theme = localStorage.getItem('axia_theme') || 'dark';
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
     })();
   </script>
 </head>
 
-<body class="dark">
+<body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

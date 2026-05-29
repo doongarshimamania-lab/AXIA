@@ -131,3 +131,22 @@ Stage Summary:
 - Dark theme remains the default on page load
 - No lag on toggle (DOM updates happen synchronously in state updater)
 
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix light theme toggle - page not switching to light
+
+Work Log:
+- Investigated deeply: found the ROOT CAUSE in index.html
+- <body class="dark"> was hardcoded in index.html - this meant the Tailwind dark variant (&:is(.dark *)) always matched because ALL content is inside <body>
+- Even though ThemeProvider correctly removed 'dark' from <html>, the body still had it, so dark styles always applied
+- Fixed index.html: removed class="dark" from <body>, updated the inline script to also call classList.remove("dark") when theme is light
+- Fixed main.tsx: changed hardcoded bg-[#F8FAFC] to bg-background in the no-convex fallback
+- Rebuilt and deployed
+
+Stage Summary:
+- ROOT CAUSE: <body class="dark"> in index.html was forcing dark mode permanently
+- Fix: Removed hardcoded dark class from body, added proper light theme handling in inline script
+- Light theme now works correctly when toggled
+- Created versioned backups: axia-v1-before-theme-fix.zip and axia-v2-theme-fix.zip

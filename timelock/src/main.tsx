@@ -122,7 +122,7 @@ if (!convex) {
   root.render(
     <StrictMode>
       <VlyToolbar />
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-6">
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <div className="max-w-xl text-center">
           <img src="/logo.svg" alt="Axia" width={48} height={48} className="mx-auto mb-4" />
           <h1 className="text-2xl font-semibold text-[#1E293B] mb-2">Configure Convex URL</h1>
