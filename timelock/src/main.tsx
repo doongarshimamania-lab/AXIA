@@ -36,7 +36,6 @@ import PaymentPatterns from "./pages/PaymentPatterns.tsx";
 import Reports from "./pages/Reports.tsx";
 import PlatformIntegrations from "./pages/PlatformIntegrations.tsx";
 import EvidenceExport from "./pages/EvidenceExport.tsx";
-import ApiSettings from "./pages/ApiSettings.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 
@@ -190,7 +189,6 @@ if (!convex) {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/platform-integrations" element={<PlatformIntegrations />} />
                   <Route path="/evidence-export" element={<EvidenceExport />} />
-                  <Route path="/api-settings" element={<ApiSettings />} />
                   <Route path="/subscription" element={<Subscription />} />
                   <Route path="/help-center" element={<HelpCenter />} />
                 </Route>

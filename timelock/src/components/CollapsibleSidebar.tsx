@@ -352,9 +352,7 @@ export function CollapsibleSidebar() {
                   <button onClick={() => navigate("/evidence-export")} className="w-full text-left" type="button">
                     <NavItem icon={FileText} label="Evidence Export" isExpanded={true} />
                   </button>
-                  <button onClick={() => navigate("/api-settings")} className="w-full text-left" type="button">
-                    <NavItem icon={Settings} label="API Settings" isExpanded={true} />
-                  </button>
+
                 </div>
 
                 {/* ADMIN Section */}
