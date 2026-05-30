@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
@@ -325,6 +325,19 @@ export function CollapsibleSidebar() {
                   </button>
                 </div>
 
+                {/* CRM Section */}
+                <div className="px-2 space-y-0.5 mt-4">
+                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+                    CRM
+                  </div>
+                  <button onClick={() => navigate("/pipeline")} className="w-full text-left" type="button">
+                    <NavItem icon={Kanban} label="Pipeline" isExpanded={true} />
+                  </button>
+                  <button onClick={() => navigate("/proposals")} className="w-full text-left" type="button">
+                    <NavItem icon={FileSignature} label="Proposals" isExpanded={true} />
+                  </button>
+                </div>
+
                 {/* BILLING Section */}
                 <div className="px-2 space-y-0.5 mt-4">
                   <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
@@ -396,6 +409,12 @@ export function CollapsibleSidebar() {
                 </button>
                 <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/pipeline")} title="Pipeline" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Kanban className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/proposals")} title="Proposals" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <FileSignature className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
                 <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <LinkIcon className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />

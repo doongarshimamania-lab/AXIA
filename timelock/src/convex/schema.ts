@@ -6,6 +6,10 @@ import { trackingTables } from "./tables/tracking";
 import { evidenceTables } from "./tables/evidence";
 import { projectTables } from "./tables/projects";
 import { featureTables } from "./tables/features";
+import { pipelineTables } from "./tables/pipeline";
+import { proposalTables } from "./tables/proposals";
+import { billingTables } from "./tables/billing";
+import { scopeTables } from "./tables/scope";
 
 export default defineSchema({
   ...authTables,
@@ -15,4 +19,8 @@ export default defineSchema({
   ...evidenceTables,
   ...projectTables,
   ...featureTables,
+  ...pipelineTables,
+  ...proposalTables,
+  ...billingTables,
+  ...scopeTables,
 });

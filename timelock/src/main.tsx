@@ -32,12 +32,16 @@ import TimeTracking from "./pages/TimeTracking.tsx";
 import Tags from "./pages/Tags.tsx";
 import Goals from "./pages/Goals.tsx";
 import Invoices from "./pages/Invoices.tsx";
+import InvoiceBuilder from "./pages/InvoiceBuilder.tsx";
 import PaymentPatterns from "./pages/PaymentPatterns.tsx";
 import Reports from "./pages/Reports.tsx";
 import PlatformIntegrations from "./pages/PlatformIntegrations.tsx";
 import EvidenceExport from "./pages/EvidenceExport.tsx";
 import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
+import Pipeline from "./pages/Pipeline.tsx";
+import Proposals from "./pages/Proposals.tsx";
+import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 
 // Error Boundary to catch Convex/Auth errors and prevent app crash
 // IMPORTANT: Never blanks the screen - always renders children even on error
@@ -185,12 +189,16 @@ if (!convex) {
                   <Route path="/tags" element={<Tags />} />
                   <Route path="/goals" element={<Goals />} />
                   <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/invoices/new" element={<InvoiceBuilder />} />
                   <Route path="/payment-patterns" element={<PaymentPatterns />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/platform-integrations" element={<PlatformIntegrations />} />
                   <Route path="/evidence-export" element={<EvidenceExport />} />
                   <Route path="/subscription" element={<Subscription />} />
                   <Route path="/help-center" element={<HelpCenter />} />
+                  <Route path="/pipeline" element={<Pipeline />} />
+                  <Route path="/proposals" element={<Proposals />} />
+                  <Route path="/proposals/new" element={<ProposalBuilder />} />
                 </Route>
 
                     {/* Catch-all (No Sidebar) */}
