@@ -69,6 +69,48 @@ const convexUrlRaw = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const convexUrl = convexUrlRaw
   ? convexUrlRaw.replace('__ORIGIN__', typeof window !== 'undefined' ? window.location.origin : '')
   : undefined;
+
+// If the Convex URL points to the same origin, we need to inject the XTransformPort
+// query parameter so the Caddy proxy forwards requests to the Convex backend.
+// This is needed because the infrastructure Caddy proxy serves static files directly
+// but supports ?XTransformPort=<port> to reverse-proxy to local services.
+if (typeof window !== 'undefined' && convexUrl) {
+  const convexOrigin = new URL(convexUrl).origin;
+  const currentOrigin = window.location.origin;
+  if (convexOrigin === currentOrigin) {
+    const TRANSFORM_PORT = '3210';
+    // Patch fetch to add XTransformPort to Convex API requests
+    const origFetch = window.fetch;
+    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes('/api/query') || url.includes('/api/mutation') || url.includes('/api/action')) {
+        const separator = url.includes('?') ? '&' : '?';
+        const newUrl = url + separator + 'XTransformPort=' + TRANSFORM_PORT;
+        return origFetch(newUrl, init);
+      }
+      return origFetch(input, init);
+    };
+    // Patch WebSocket to add XTransformPort to Convex API connections
+    const OrigWebSocket = window.WebSocket;
+    // @ts-ignore
+    window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/api/query') || urlStr.includes('/api/mutation')) {
+        const separator = urlStr.includes('?') ? '&' : '?';
+        const newUrl = urlStr + separator + 'XTransformPort=' + TRANSFORM_PORT;
+        return new OrigWebSocket(newUrl, protocols);
+      }
+      return new OrigWebSocket(urlStr, protocols);
+    } as any;
+    // Copy static properties
+    window.WebSocket.CONNECTING = OrigWebSocket.CONNECTING;
+    window.WebSocket.OPEN = OrigWebSocket.OPEN;
+    window.WebSocket.CLOSING = OrigWebSocket.CLOSING;
+    window.WebSocket.CLOSED = OrigWebSocket.CLOSED;
+    window.WebSocket.prototype = OrigWebSocket.prototype;
+  }
+}
+
 const convex = convexUrl ? new ConvexReactClient(convexUrl, {
   // Reduce reconnect attempts to prevent flickering
   unsavedChangesWarning: false,
