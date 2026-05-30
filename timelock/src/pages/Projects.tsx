@@ -93,7 +93,7 @@ export default function Projects() {
     }
   }, [safeProjects, selectedProjectId]);
 
-  const selectedProject = safeProjects.find(p => p._id === selectedProjectId);
+  const selectedProject = safeProjects.find((p: any) => p._id === selectedProjectId);
 
   // Seeding logic
   useEffect(() => {
@@ -130,10 +130,10 @@ export default function Projects() {
   };
 
   // Calculate summary metrics
-  const totalProtectedValue = safeProjects.reduce((acc, p) => acc + (p.totalValue || 0), 0);
-  const activeProjectsCount = safeProjects.filter(p => p.status === 'active').length;
+  const totalProtectedValue = safeProjects.reduce((acc: number, p: any) => acc + (p.totalValue || 0), 0);
+  const activeProjectsCount = safeProjects.filter((p: any) => p.status === 'active').length;
   const avgProtectionScore = safeProjects.length > 0 
-    ? Math.round(safeProjects.reduce((acc, p) => acc + (p.protectionScore || 0), 0) / safeProjects.length) 
+    ? Math.round(safeProjects.reduce((acc: number, p: any) => acc + (p.protectionScore || 0), 0) / safeProjects.length) 
     : 0;
 
   return (
@@ -169,7 +169,7 @@ export default function Projects() {
               <>
                 {/* Project List / Selection */}
                 <ProjectList 
-                projects={safeProjects.map(p => ({
+                projects={safeProjects.map((p: any) => ({
                   ...p,
                   _id: p._id,
                   protectionLevel: p.protectionLevel || "standard",

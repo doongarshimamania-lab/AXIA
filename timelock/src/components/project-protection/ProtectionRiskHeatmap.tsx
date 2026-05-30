@@ -139,7 +139,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
           <div className="pt-4 border-t">
             <h4 className="text-sm font-medium mb-3">Top Risk Periods</h4>
             <div className="space-y-2">
-              {topRiskPeriods.slice(0, 3).map((period, idx) => (
+              {topRiskPeriods.slice(0, 3).map((period: any, idx: number) => (
                 <div key={idx} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
                     {period.day} at {period.hour}:00
@@ -253,7 +253,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
           <div>
             <h4 className="text-sm font-medium mb-3">Highest Risk Periods</h4>
             <div className="space-y-2">
-              {topRiskPeriods.slice(0, 5).map((period, idx) => (
+              {topRiskPeriods.slice(0, 5).map((period: any, idx: number) => (
                 <div key={idx} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
                   <span className="text-muted-foreground">
                     {period.day} {period.hour}:00
@@ -279,12 +279,12 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
                     <div
                       className="h-full bg-red-500"
                       style={{
-                        width: `${(topRiskPeriods.filter((p) => p.riskLevel === "high").length / topRiskPeriods.length) * 100}%`,
+                        width: `${(topRiskPeriods.filter((p: any) => p.riskLevel === "high").length / topRiskPeriods.length) * 100}%`,
                       }}
                     />
                   </div>
                   <span className="text-xs font-medium">
-                    {topRiskPeriods.filter((p) => p.riskLevel === "high").length}
+                    {topRiskPeriods.filter((p: any) => p.riskLevel === "high").length}
                   </span>
                 </div>
               </div>
@@ -295,12 +295,12 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
                     <div
                       className="h-full bg-yellow-500"
                       style={{
-                        width: `${(topRiskPeriods.filter((p) => p.riskLevel === "medium").length / topRiskPeriods.length) * 100}%`,
+                        width: `${(topRiskPeriods.filter((p: any) => p.riskLevel === "medium").length / topRiskPeriods.length) * 100}%`,
                       }}
                     />
                   </div>
                   <span className="text-xs font-medium">
-                    {topRiskPeriods.filter((p) => p.riskLevel === "medium").length}
+                    {topRiskPeriods.filter((p: any) => p.riskLevel === "medium").length}
                   </span>
                 </div>
               </div>
@@ -311,12 +311,12 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
                     <div
                       className="h-full bg-green-500"
                       style={{
-                        width: `${(topRiskPeriods.filter((p) => p.riskLevel === "low").length / topRiskPeriods.length) * 100}%`,
+                        width: `${(topRiskPeriods.filter((p: any) => p.riskLevel === "low").length / topRiskPeriods.length) * 100}%`,
                       }}
                     />
                   </div>
                   <span className="text-xs font-medium">
-                    {topRiskPeriods.filter((p) => p.riskLevel === "low").length}
+                    {topRiskPeriods.filter((p: any) => p.riskLevel === "low").length}
                   </span>
                 </div>
               </div>

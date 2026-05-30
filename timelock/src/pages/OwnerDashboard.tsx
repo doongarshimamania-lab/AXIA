@@ -953,7 +953,7 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, index) => (
+                {(entries as any[])?.map((entry: any, index: number) => (
                   <motion.tr
                     key={entry._id}
                     initial={{ opacity: 0 }}
