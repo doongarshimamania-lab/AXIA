@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate } from "react-router";
@@ -268,8 +268,16 @@ export default function Invoices() {
     }
   };
 
-  // ── Loading ────────────────────────────────────────────────────────────
-  if (invoices === undefined) {
+  // ── Loading: Show skeleton briefly, then fall through to empty state ──
+  // If invoices is undefined for too long (Convex pending/error), we still render
+  // the page with safe fallbacks so the user can interact (seed data, etc.)
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkeleton(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (invoices === undefined && showSkeleton) {
     return (
       <motion.div
         className="w-full min-h-screen bg-background text-foreground flex items-center justify-center"

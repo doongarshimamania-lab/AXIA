@@ -78,7 +78,7 @@ if (typeof window !== 'undefined' && convexUrl) {
   const convexOrigin = new URL(convexUrl).origin;
   const currentOrigin = window.location.origin;
   if (convexOrigin === currentOrigin) {
-    const TRANSFORM_PORT = '3210';
+    const TRANSFORM_PORT = '3000';
     // Patch fetch to add XTransformPort to Convex API requests
     const origFetch = window.fetch;
     window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
@@ -95,7 +95,7 @@ if (typeof window !== 'undefined' && convexUrl) {
     // @ts-ignore
     window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
       const urlStr = typeof url === 'string' ? url : url.toString();
-      if (urlStr.includes('/api/query') || urlStr.includes('/api/mutation')) {
+      if (urlStr.includes('/api/query') || urlStr.includes('/api/mutation') || urlStr.includes('/api/sync')) {
         const separator = urlStr.includes('?') ? '&' : '?';
         const newUrl = urlStr + separator + 'XTransformPort=' + TRANSFORM_PORT;
         return new OrigWebSocket(newUrl, protocols);

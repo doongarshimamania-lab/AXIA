@@ -16,6 +16,7 @@
 #define CONVEX_PORT 3210
 #define CHUNK 131072
 #define CONVEX_PREFIX "/convex"
+#define API_PREFIX "/api/"
 
 const char* get_mime(const char* path) {
     if (strstr(path, ".css")) return "text/css; charset=utf-8";
@@ -119,33 +120,43 @@ void proxy_request(int client, const char* method, const char* convex_path, cons
         return;
     }
 
-    // Send modified request line
-    char req_line[4096];
-    snprintf(req_line, sizeof(req_line), "%s %s HTTP/1.1", method, convex_path);
-    write(convex_sock, req_line, strlen(req_line));
-    // Send rest of headers + body
-    write(convex_sock, first_line_end, req_len - (first_line_end - full_request));
+    // Find the body start (after \r\n\r\n)
+    char *body_start = strstr((char*)full_request, "\r\n\r\n");
+    int headers_len = body_start ? (body_start + 4 - full_request) : req_len;
 
-    // Read body if Content-Length present
+    // Send modified request line + headers (up to body start)
+    char req_line[4096];
+    int req_line_len = snprintf(req_line, sizeof(req_line), "%s %s HTTP/1.1", method, convex_path);
+    write(convex_sock, req_line, req_line_len);
+    // Send rest of headers (from after first line to body start)
+    int rest_headers_len = headers_len - (first_line_end - full_request);
+    if (rest_headers_len > 0) {
+        write(convex_sock, first_line_end, rest_headers_len);
+    }
+
+    // Send body that was already in the buffer
+    if (body_start) {
+        int body_in_buffer = req_len - (body_start + 4 - full_request);
+        if (body_in_buffer > 0) {
+            write(convex_sock, body_start + 4, body_in_buffer);
+        }
+    }
+
+    // Read remaining body from client if Content-Length indicates more data
     char *cl_str = strcasestr(full_request, "Content-Length:");
     if (cl_str) {
         int content_len = atoi(cl_str + 15);
-        if (content_len > 0) {
-            char *body_start = strstr((char*)full_request, "\r\n\r\n");
-            if (body_start) {
-                body_start += 4;
-                int body_in_buffer = req_len - (body_start - full_request);
-                if (body_in_buffer > 0) {
-                    write(convex_sock, body_start, body_in_buffer);
-                    content_len -= body_in_buffer;
-                }
+        if (content_len > 0 && body_start) {
+            int body_in_buffer = req_len - (body_start + 4 - full_request);
+            int remaining = content_len - body_in_buffer;
+            if (remaining > 0) {
                 char *buf = malloc(CHUNK);
-                while (content_len > 0) {
-                    int to_read = content_len > CHUNK ? CHUNK : content_len;
+                while (remaining > 0) {
+                    int to_read = remaining > CHUNK ? CHUNK : remaining;
                     int n = read(client, buf, to_read);
                     if (n <= 0) break;
                     write(convex_sock, buf, n);
-                    content_len -= n;
+                    remaining -= n;
                 }
                 free(buf);
             }
@@ -243,53 +254,31 @@ void handle_client(int client) {
     char *qs = strchr(path_copy, '?');
     if (qs) *qs = 0;
 
-    // Check if Convex API request
-    if (strncmp(path_copy, CONVEX_PREFIX, strlen(CONVEX_PREFIX)) == 0) {
-        const char* convex_path = path_copy + strlen(CONVEX_PREFIX);
-        if (*convex_path == 0) convex_path = "/";
+    // Check if Convex API request (either /convex/... or /api/... paths)
+    int is_convex_prefix = strncmp(path_copy, CONVEX_PREFIX, strlen(CONVEX_PREFIX)) == 0;
+    int is_api_prefix = strncmp(path_copy, API_PREFIX, strlen(API_PREFIX)) == 0;
+
+    if (is_convex_prefix || is_api_prefix) {
+        const char* convex_path;
+        if (is_convex_prefix) {
+            convex_path = path_copy + strlen(CONVEX_PREFIX);
+            if (*convex_path == 0) convex_path = "/";
+        } else {
+            // /api/ paths go directly without modification
+            convex_path = path_copy;
+        }
 
         // Check for WebSocket upgrade
         if (strcasestr(req, "Upgrade: websocket") || strcasestr(req, "upgrade: websocket")) {
-            // Rebuild request with path without /convex prefix
-            // Find where path starts and ends in original request
+            // For /api/ paths, use the path directly; for /convex/ paths, strip prefix
             char *orig_path_start = strchr(req, ' ') + 1;
             char *orig_path_end = strchr(orig_path_start, ' ');
-            int before_path_len = orig_path_start - req;
-
-            // Build modified request: method + space + new_path + rest
-            char *modified = malloc(n + 100);
-            memcpy(modified, req, before_path_len);
-            int prefix_len = strlen(CONVEX_PREFIX);
-
-            // Find where /convex starts in the original path
-            char *convex_in_orig = strstr(orig_path_start, CONVEX_PREFIX);
-            if (convex_in_orig && convex_in_orig < orig_path_end) {
-                int before_convex = convex_in_orig - req;
-                memcpy(modified, req, before_convex);
-                int new_path_len = 0;
-                // Skip /convex prefix
-                const char *after_convex = req + before_convex + prefix_len;
-                int after_convex_len = orig_path_end - after_convex;
-                if (after_convex_len < 0) after_convex_len = 0;
-
-                memcpy(modified + before_convex, after_convex, after_convex_len);
-                new_path_len = after_convex_len;
-                if (new_path_len == 0 || modified[before_convex] != '/') {
-                    modified[before_convex] = '/';
-                    new_path_len = 1;
-                }
-                memcpy(modified + before_convex + new_path_len, orig_path_end, n - (orig_path_end - req));
-                int modified_len = before_convex + new_path_len + (n - (orig_path_end - req));
-                handle_ws_upgrade(client, modified, modified_len);
-            } else {
-                // Fallback: just proxy as-is with the path
-                char *modified_rest = orig_path_end;
-                int rest_len = n - (modified_rest - req);
-                char modified_req[65536];
-                int mlen = snprintf(modified_req, sizeof(modified_req), "%s %s", method, convex_path);
-                memcpy(modified_req + mlen, modified_rest, rest_len);
-                handle_ws_upgrade(client, modified_req, mlen + rest_len);
-            }
+            int rest_len = n - (orig_path_end - req);
+            
+            char modified_req[65536];
+            int mlen = snprintf(modified_req, sizeof(modified_req), "%s %s", method, convex_path);
+            memcpy(modified_req + mlen, orig_path_end, rest_len);
+            handle_ws_upgrade(client, modified_req, mlen + rest_len);
             free(req);
             return;
         }
