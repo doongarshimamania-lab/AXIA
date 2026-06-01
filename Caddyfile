@@ -1,20 +1,18 @@
-:8080 {
-	@api path /api/*
-	@transform_port_query {
-		query XTransformPort=*
-	}
+:81 {
+        @api path /api/*
+        @transform_port_query {
+                query XTransformPort=*
+        }
 
-	handle @api {
-		reverse_proxy localhost:3210
-	}
+        handle @api {
+                reverse_proxy localhost:3210
+        }
 
-	handle @transform_port_query {
-		reverse_proxy localhost:{query.XTransformPort}
-	}
+        handle @transform_port_query {
+                reverse_proxy localhost:{query.XTransformPort}
+        }
 
-	handle {
-		root * /home/z/my-project/timelock/dist
-		try_files {path} /index.html
-		file_server
-	}
+        handle {
+                reverse_proxy localhost:3000
+        }
 }
