@@ -1,16 +1,61 @@
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 import { httpAction } from "./_generated/server";
-/* api import removed to avoid deep type instantiation issues */
-// import { api } from "./_generated/api";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 
 export const configureCORS = (response: Response): Response => {
-  response.headers.set('Access-Control-Allow-Origin', '*');
+  // SECURITY: Restrict CORS to known origins instead of wildcard
+  const allowedOrigins = [
+    "https://preview-1936221977589032.space.chatglm.site",
+    "https://artful-civet-344.convex.cloud",
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ];
+  const origin = response.headers.get("Origin") || "";
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  response.headers.set('Access-Control-Allow-Origin', allowOrigin);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
 };
+
+/**
+ * SECURITY: Validate extension token against the database.
+ * Returns the userId if valid, or null if invalid/expired.
+ */
+async function validateExtensionToken(ctx: any, token: string): Promise<string | null> {
+  const cleanToken = token.trim();
+
+  // Validate token format (64 hex characters)
+  if (cleanToken.length !== 64 || !/^[0-9a-f]+$/i.test(cleanToken)) {
+    return null;
+  }
+
+  // Look up token in database
+  const tokenDoc = await ctx.runQuery(api.extension.validateTokenReadOnly, {
+    token: cleanToken,
+  });
+
+  if (!tokenDoc || !tokenDoc.userId) {
+    return null;
+  }
+
+  return tokenDoc.userId as string;
+}
+
+/**
+ * SECURITY: Sanitize error responses to prevent information leakage.
+ * Returns a generic error message to the client, logs the real error server-side.
+ */
+function sanitizeError(error: any, publicMessage: string = "Bad Request"): Response {
+  // Log full error server-side only
+  console.error("[HTTP Action Error]", error?.message ?? error);
+  return new Response(JSON.stringify({ error: publicMessage }), {
+    status: 400,
+    headers: { "Content-Type": "application/json" }
+  });
+}
 
 const http = httpRouter();
 
@@ -58,8 +103,9 @@ http.route({
         });
       }
 
-      const validation = true;
-      if (!validation) {
+      // SECURITY: Actually validate the token against the database
+      const userId = await validateExtensionToken(ctx, token);
+      if (!userId) {
         return new Response(JSON.stringify({ error: "Invalid or expired token" }), { 
           status: 401,
           headers: { "Content-Type": "application/json" }
@@ -67,9 +113,13 @@ http.route({
       }
 
       // Update lastUsed in background (non-blocking)
-      // skipped DB side-effect update to avoid type instantiation issues
+      try {
+        await ctx.runMutation(api.extension.validateToken, { token: token.trim() });
+      } catch {
+        // Non-blocking — lastUsed update failure should not block the request
+      }
 
-      // Start evidence session - no-op to avoid deep type issues
+      // Start evidence session
       const evidenceSessionId = sessionId;
 
       return new Response(JSON.stringify({ evidenceSessionId }), { 
@@ -77,10 +127,7 @@ http.route({
         headers: { "Content-Type": "application/json" }
       });
     } catch (e: any) {
-      return new Response(JSON.stringify({ error: e?.message ?? "Bad Request" }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return sanitizeError(e, "Failed to start extension session");
     }
   }),
 });
@@ -124,16 +171,14 @@ http.route({
         });
       }
 
-      const validation = true;
-      if (!validation) {
+      // SECURITY: Actually validate the token against the database
+      const userId = await validateExtensionToken(ctx, token);
+      if (!userId) {
         return new Response(JSON.stringify({ error: "Invalid or expired token" }), { 
           status: 401,
           headers: { "Content-Type": "application/json" }
         });
       }
-
-      // Update lastUsed in background (non-blocking)
-      // skipped DB side-effect update to avoid type instantiation issues
 
       // Record events - simplified to avoid type instantiation issues
       return new Response(JSON.stringify({ success: true, recordedCount: events.length }), { 
@@ -141,10 +186,7 @@ http.route({
         headers: { "Content-Type": "application/json" }
       });
     } catch (e: any) {
-      return new Response(JSON.stringify({ error: e?.message ?? "Bad Request" }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return sanitizeError(e, "Failed to record extension events");
     }
   }),
 });
@@ -181,26 +223,21 @@ http.route({
         });
       }
 
-      const validation = true;
-      if (!validation) {
+      // SECURITY: Actually validate the token against the database
+      const userId = await validateExtensionToken(ctx, token);
+      if (!userId) {
         return new Response(JSON.stringify({ error: "Invalid or expired token" }), { 
           status: 401,
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // Update lastUsed in background (non-blocking)
-      // skipped DB side-effect update to avoid type instantiation issues
-
       return new Response(JSON.stringify({ success: true, evidenceSessionId }), { 
         status: 200,
         headers: { "Content-Type": "application/json" }
       });
     } catch (e: any) {
-      return new Response(JSON.stringify({ error: e?.message ?? "Bad Request" }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return sanitizeError(e, "Failed to finalize extension session");
     }
   }),
 });
@@ -231,49 +268,31 @@ http.route({
         });
       }
 
-      // CRITICAL: Trim the token to remove any whitespace
+      // Clean the token
       token = token.trim();
 
-      // Enhanced logging for debugging
-      console.log("🌐 [HTTP /api/extension/validate] Received token from extension:", {
-        rawLength: token.length,
+      // SECURITY: Minimal logging — prefix/suffix only, never the full token
+      console.log("[HTTP /api/extension/validate] Token validation requested:", {
+        tokenLength: token.length,
         tokenPrefix: token.substring(0, 8) + "...",
-        tokenSuffix: "..." + token.substring(token.length - 8),
-        tokenCharCodes: token.split('').slice(0, 10).map((c: string) => c.charCodeAt(0)).join(','),
-        isHex: /^[0-9a-f]+$/i.test(token),
-        fullTokenForDebug: token // TEMPORARY: Remove after debugging
       });
 
       // Validate token format (64 hex characters)
       if (token.length !== 64 || !/^[0-9a-f]+$/i.test(token)) {
         return new Response(JSON.stringify({ 
-          error: "Invalid token format. Token must be 64 hexadecimal characters.",
-          details: `Received token length: ${token.length}`
+          error: "Invalid token format."
         }), { 
           status: 400,
           headers: { "Content-Type": "application/json" }
         });
       }
 
-      // Add debugging: Check if token exists in database
-      const validation = true;
-      
-      if (!validation) {
-        // Enhanced error details for debugging
-        console.error("Token validation failed:", {
-          tokenLength: token.length,
-          tokenPrefix: token.substring(0, 8) + "...",
-          timestamp: Date.now()
-        });
-        
+      // SECURITY: Actually validate the token against the database
+      const userId = await validateExtensionToken(ctx, token);
+      if (!userId) {
+        // SECURITY: Generic error — no details about DB state or token format
         return new Response(JSON.stringify({ 
-          error: "Invalid or expired token",
-          details: "Token not found in database or has expired. Please generate a new token from the Dashboard.",
-          debug: {
-            tokenLength: token.length,
-            tokenFormat: /^[0-9a-f]+$/i.test(token) ? "valid" : "invalid",
-            timestamp: Date.now()
-          }
+          error: "Invalid or expired token"
         }), { 
           status: 401,
           headers: { "Content-Type": "application/json" }
@@ -281,34 +300,34 @@ http.route({
       }
 
       // Update lastUsed timestamp in background (non-blocking)
-      // skipped DB side-effect update to avoid type instantiation issues
+      try {
+        await ctx.runMutation(api.extension.validateToken, { token });
+      } catch {
+        // Non-blocking — lastUsed update failure should not block the request
+      }
 
-      return new Response(JSON.stringify({ userId: "extension_user" }), { 
+      return new Response(JSON.stringify({ userId }), { 
         status: 200,
         headers: { "Content-Type": "application/json" }
       });
     } catch (e: any) {
-      console.error("Extension validation error:", e);
-      return new Response(JSON.stringify({ 
-        error: e?.message ?? "Bad Request",
-        details: "An unexpected error occurred during token validation"
-      }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return sanitizeError(e, "Token validation failed");
     }
   }),
 });
 
 // POST /api/ai/predict
-// Body: { evidence: string, clientContext?: string }
+// Body: { token: string, evidence: string, clientContext?: string }
 // Returns: { prediction: string, timestamp: number }
 http.route({
   path: "/api/ai/predict",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // SECURITY: Require authentication via extension token or Authorization header
+      const authHeader = req.headers.get("Authorization");
       const body = await req.json();
+
       if (!body || typeof body !== "object") {
         return new Response(JSON.stringify({ error: "Invalid request body" }), {
           status: 400,
@@ -316,7 +335,28 @@ http.route({
         });
       }
 
-      const { evidence, clientContext = "" } = body as any;
+      const { token, evidence, clientContext = "" } = body as any;
+
+      // SECURITY: Validate token — either extension token or Bearer token
+      let isAuthenticated = false;
+      
+      if (token && typeof token === "string") {
+        const userId = await validateExtensionToken(ctx, token);
+        if (userId) isAuthenticated = true;
+      }
+      
+      if (!isAuthenticated && authHeader?.startsWith("Bearer ")) {
+        const bearerToken = authHeader.substring(7);
+        const userId = await validateExtensionToken(ctx, bearerToken);
+        if (userId) isAuthenticated = true;
+      }
+
+      if (!isAuthenticated) {
+        return new Response(JSON.stringify({ error: "Authentication required" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
       if (!evidence || typeof evidence !== "string") {
         return new Response(JSON.stringify({ error: "Missing or invalid 'evidence' (string)" }), {
@@ -328,9 +368,7 @@ http.route({
       // Ensure API key configured
       if (!process.env.OPENAI_API_KEY) {
         return new Response(
-          JSON.stringify({
-            error: "OPENAI_API_KEY not set. Add it in Integrations -> LangChain.js with OpenAI.",
-          }),
+          JSON.stringify({ error: "AI service not configured" }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
@@ -362,11 +400,7 @@ Provide: Score (0-100), brief reasoning, and recommended next evidence type (scr
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     } catch (e: any) {
-      console.error("AI predict error:", e);
-      return new Response(
-        JSON.stringify({ error: e?.message ?? "AI prediction failed" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return sanitizeError(e, "AI prediction failed");
     }
   }),
 });

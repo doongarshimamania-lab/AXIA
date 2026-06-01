@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
-// Register a new client company
+// Register a new client company (requires auth)
 export const registerClient = mutation({
   args: {
     email: v.string(),
@@ -12,6 +13,9 @@ export const registerClient = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
     const existing = await ctx.db
       .query("clientCompanies")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -45,10 +49,13 @@ export const registerClient = mutation({
   },
 });
 
-// Get client profile
+// Get client profile (requires auth)
 export const getClientProfile = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
     const client = await ctx.db
       .query("clientCompanies")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -58,7 +65,7 @@ export const getClientProfile = query({
   },
 });
 
-// Update client profile
+// Update client profile (requires auth)
 export const updateClientProfile = mutation({
   args: {
     clientId: v.id("clientCompanies"),
@@ -69,6 +76,9 @@ export const updateClientProfile = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
     const { clientId, companyName, contactName, industry, companySize, website } = args;
     
     const updates: any = {};

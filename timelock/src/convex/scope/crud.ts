@@ -197,12 +197,15 @@ export const approveChangeOrder = mutation({
 export const approveScopeByClient = mutation({
   args: { approvalToken: v.string() },
   handler: async (ctx, { approvalToken }) => {
+    // This is a public action via shared link — client approves without being a platform user
+    // SECURITY: Only allow approval for scopes that haven't been approved yet
     const scope = await ctx.db
       .query("scopeDefinitions")
       .withIndex("by_approval_token", (q) => q.eq("approvalToken", approvalToken))
       .first();
 
     if (!scope) throw new Error("Invalid approval token");
+    if (scope.clientApprovedAt) throw new Error("Scope has already been approved");
 
     await ctx.db.patch(scope._id, {
       clientApprovedAt: Date.now(),

@@ -520,6 +520,11 @@ export const seedDemoUsers = mutation({
     count: v.optional(v.number()), // default 5
   },
   handler: async (ctx, args) => {
+    // SECURITY: Only admins can seed demo users
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can seed demo users");
+
     const count = Math.min(Math.max(args.count ?? 5, 1), 20);
 
     const createdUsers: Array<{ userId: Id<"users">; email: string }> = [];
@@ -573,6 +578,11 @@ export const makeDevAdmin = mutation({
     subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro"))),
   },
   handler: async (ctx, args) => {
+    // SECURITY: Only existing admins can promote users
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can promote users to admin");
+
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q: any) => q.eq("email", args.email))
@@ -766,6 +776,11 @@ export const seedEvidenceData = mutation({
 export const seedEvidenceDataForEmail = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY: Only admins can seed evidence for other users
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can seed evidence for other users");
+
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q: any) => q.eq("email", args.email))
@@ -788,6 +803,11 @@ export const seedAllForEmail = mutation({
     subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro"))),
   },
   handler: async (ctx, args) => {
+    // SECURITY: Only admins can seed all data for a user
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can seed data for users");
+
     // Find or create user by email
     let user = await ctx.db
       .query("users")
@@ -919,6 +939,11 @@ export const setUserTierForEmail = mutation({
     subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
   },
   handler: async (ctx, args) => {
+    // SECURITY: Only admins can change subscription tiers
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can change subscription tiers");
+
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q: any) => q.eq("email", args.email))
@@ -943,6 +968,11 @@ export const setUserTierForEmail = mutation({
 export const seedClientData = mutation({
   args: {},
   handler: async (ctx) => {
+    // SECURITY: Only admins can seed client data
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new Error("Not authenticated");
+    if (currentUser.role !== "admin") throw new Error("Only admins can seed client data");
+
     // Create a test client company
     const testClientEmail = "client@acmecorp.com";
     

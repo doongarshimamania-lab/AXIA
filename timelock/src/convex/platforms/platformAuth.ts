@@ -3,6 +3,7 @@ import { mutation, query, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { api, internal } from "../_generated/api";
+import { obfuscateToken, simpleUserIdHash } from "../security/utils";
 
 // Initiate platform connection (generates OAuth URL or manual setup instructions)
 export const initiatePlatformConnection = mutation({
@@ -69,14 +70,18 @@ export const completePlatformConnection = mutation({
       throw new Error("Connection not found or unauthorized");
     }
 
+    // SECURITY: Obfuscate tokens before storing (prevents plaintext in DB)
+    const encryptedAccessToken = args.accessToken ? obfuscateToken(args.accessToken) : undefined;
+    const encryptedRefreshToken = args.refreshToken ? obfuscateToken(args.refreshToken) : undefined;
+
     // Update connection status
     await ctx.db.patch(args.connectionId, {
       status: "connected",
       connectedAt: Date.now(),
       platformUserId: args.platformUserId,
       platformEmail: args.platformEmail,
-      accessToken: args.accessToken, // TODO: Encrypt before storing
-      refreshToken: args.refreshToken, // TODO: Encrypt before storing
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
       tokenExpiresAt: args.tokenExpiresAt,
       lastSyncedAt: Date.now(),
     });
@@ -122,7 +127,7 @@ export const storePlatformDataInternal = internalMutation({
     reviewsData: v.any(),
   },
   handler: async (ctx, args) => {
-    const user_id_hash = `hash_${args.userId}`;
+    const user_id_hash = simpleUserIdHash(args.userId as string);
     const now = Date.now();
 
     // Store profile data

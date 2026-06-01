@@ -20,7 +20,7 @@ export const emailOtp = Email({
         },
         {
           headers: {
-            "x-api-key": "vlytothemoon2025",
+            "x-api-key": process.env.VLY_API_KEY || "",
           },
         },
       );

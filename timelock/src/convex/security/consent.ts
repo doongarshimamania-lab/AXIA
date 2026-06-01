@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "../_generated/server";
 import { getCurrentUser } from "../users";
+import { simpleUserIdHash } from "../security/utils";
 
 /**
  * Grant consent for a specific data type
@@ -17,7 +18,7 @@ export const grantConsent = mutation({
       throw new Error("Not authenticated");
     }
 
-    const user_id_hash = `hash_${user._id}`;
+    const user_id_hash = simpleUserIdHash(user._id);
     const now = Date.now();
     const expiresAt = now + (args.expiresInDays || 365) * 24 * 60 * 60 * 1000;
 

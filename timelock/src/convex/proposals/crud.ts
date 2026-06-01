@@ -216,6 +216,8 @@ export const sendProposal = mutation({
 export const markProposalViewed = mutation({
   args: { publicToken: v.string() },
   handler: async (ctx, { publicToken }) => {
+    // This is a public action via shared link — no auth required
+    // but only transitions from "sent" to "viewed"
     const proposal = await ctx.db
       .query("proposals")
       .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
@@ -234,12 +236,20 @@ export const markProposalViewed = mutation({
 export const signProposal = mutation({
   args: { publicToken: v.string(), signatureData: v.string() },
   handler: async (ctx, { publicToken, signatureData }) => {
+    // This is a public action via shared link — client signs without being a platform user
+    // SECURITY: Only allow signing proposals in "sent" or "viewed" status
     const proposal = await ctx.db
       .query("proposals")
       .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
       .first();
 
     if (!proposal) throw new Error("Proposal not found");
+    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+      throw new Error("Proposal is not in a signable state");
+    }
+    if (proposal.status === "signed") {
+      throw new Error("Proposal has already been signed");
+    }
 
     await ctx.db.patch(proposal._id, {
       status: "signed",

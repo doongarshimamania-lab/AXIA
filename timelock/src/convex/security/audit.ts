@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { getCurrentUser } from "../users";
+import { simpleUserIdHash } from "../security/utils";
 
 /**
  * Log an operation to the immutable audit trail
@@ -18,7 +19,7 @@ export const logOperation = mutation({
     }
 
     // Generate user_id_hash (will be imported from crypto module)
-    const user_id_hash = `hash_${user._id}`;
+    const user_id_hash = simpleUserIdHash(user._id);
 
     await ctx.db.insert("auditTrail", {
       userId: user._id,

@@ -80,15 +80,11 @@ export const generateToken = mutation({
       lastUsed: undefined,
     });
 
-    console.log("✅ [generateToken] Token generated and stored:", {
+    console.log("[generateToken] Token generated:", {
       tokenPrefix: cleanToken.substring(0, 8) + "...",
-      tokenSuffix: "..." + cleanToken.substring(cleanToken.length - 8),
       tokenLength: cleanToken.length,
-      tokenCharCodes: cleanToken.split('').slice(0, 10).map((c: string) => c.charCodeAt(0)).join(','),
       userId,
       expiresAt: new Date(expiresAt).toISOString(),
-      insertedId,
-      fullTokenForDebug: cleanToken // TEMPORARY: Remove after debugging
     });
 
     return { token: cleanToken, expiresAt };
@@ -163,12 +159,9 @@ export const validateTokenReadOnly = query({
     // CRITICAL FIX: Ensure we're querying with a clean token string
     const cleanToken = args.token.trim();
     
-    console.log("🔍 [validateTokenReadOnly] Validating token:", {
+    console.log("[validateTokenReadOnly] Validating token:", {
       tokenLength: cleanToken.length,
       tokenPrefix: cleanToken.substring(0, 8) + "...",
-      tokenSuffix: "..." + cleanToken.substring(cleanToken.length - 8),
-      tokenCharCodes: cleanToken.split('').slice(0, 10).map((c: string) => c.charCodeAt(0)).join(','),
-      receivedTokenForDebug: cleanToken // TEMPORARY: Remove after debugging
     });
     
     const tokenDoc = await ctx.db
@@ -177,32 +170,9 @@ export const validateTokenReadOnly = query({
       .first();
 
     if (!tokenDoc) {
-      // Enhanced debugging: Let's check if ANY tokens exist
-      const allTokens = await ctx.db.query("extensionTokens").collect();
-      console.error("❌ [validateTokenReadOnly] Token not found in database:", {
+      console.error("[validateTokenReadOnly] Token not found or expired:", {
         receivedTokenPrefix: cleanToken.substring(0, 8) + "...",
-        receivedTokenSuffix: "..." + cleanToken.substring(cleanToken.length - 8),
         receivedTokenLength: cleanToken.length,
-        receivedCharCodes: cleanToken.split('').slice(0, 10).map((c: string) => c.charCodeAt(0)).join(','),
-        totalTokensInDB: allTokens.length,
-        tokensInDB: allTokens.map(t => ({
-          prefix: t.token.substring(0, 8) + "...",
-          suffix: "..." + t.token.substring(t.token.length - 8),
-          length: t.token.length,
-          charCodes: t.token.split('').slice(0, 10).map((c: string) => c.charCodeAt(0)).join(','),
-          expired: t.expiresAt <= Date.now(),
-          exactMatch: t.token === cleanToken,
-          // Character-by-character comparison for first 10 chars
-          charComparison: Array.from({length: Math.min(10, t.token.length)}).map((_, i) => ({
-            pos: i,
-            stored: t.token[i],
-            storedCode: t.token.charCodeAt(i),
-            received: cleanToken[i] || 'missing',
-            receivedCode: cleanToken[i]?.charCodeAt(0) || 'missing',
-            match: t.token[i] === cleanToken[i]
-          }))
-        })),
-        searchedAt: new Date().toISOString()
       });
       return null;
     }

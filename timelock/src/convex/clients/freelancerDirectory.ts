@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
-// Create or update public freelancer profile
+// Create or update public freelancer profile (requires auth + can only edit own profile)
 export const upsertFreelancerProfile = mutation({
   args: {
     userId: v.id("users"),
@@ -13,6 +14,12 @@ export const upsertFreelancerProfile = mutation({
     availability: v.union(v.literal("available"), v.literal("busy"), v.literal("unavailable")),
   },
   handler: async (ctx, args) => {
+    const authUserId = await getAuthUserId(ctx);
+    if (!authUserId) throw new Error("Not authenticated");
+
+    // SECURITY: Users can only update their own profile
+    if (args.userId !== authUserId) throw new Error("Not authorized to edit another user's profile");
+
     const existing = await ctx.db
       .query("freelancerPublicProfiles")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -54,7 +61,7 @@ export const upsertFreelancerProfile = mutation({
   },
 });
 
-// Get all verified freelancers for directory
+// Get all verified freelancers for directory (public — no auth required for browsing)
 export const getVerifiedFreelancers = query({
   args: {},
   handler: async (ctx) => {
@@ -67,7 +74,7 @@ export const getVerifiedFreelancers = query({
   },
 });
 
-// Get freelancer profile by user ID
+// Get freelancer profile by user ID (public — no auth required for viewing)
 export const getFreelancerProfile = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {

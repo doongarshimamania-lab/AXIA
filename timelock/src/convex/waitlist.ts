@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { generateReferralCode, calculatePosition } from "./waitlistHelpers";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const addToWaitlist = mutation({
   args: {
@@ -109,9 +110,15 @@ export const getWaitlistCount = query({
   },
 });
 
+// SECURITY: Admin-only — requires auth + admin role
 export const getAllWaitlistEntries = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
+    if (!user || user.role !== "admin") return [];
+
     const entries = await ctx.db
       .query("waitlistEntries")
       .withIndex("by_submitted_at")
@@ -135,11 +142,15 @@ export const getEntryByReferralCode = query({
   },
 });
 
+// SECURITY: Requires auth — prevents email enumeration by unauthenticated users
 export const getEntryByEmail = query({
   args: {
     email: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
     const entry = await ctx.db
       .query("waitlistEntries")
       .withIndex("by_email", (q) => q.eq("email", args.email))

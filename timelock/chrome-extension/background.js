@@ -112,9 +112,7 @@ async function handleConnect(pairingCode) {
     convexUrl,
     tokenLength: token.length,
     tokenPrefix: token.substring(0, 8) + '...',
-    tokenSuffix: '...' + token.substring(token.length - 8),
     isHex: /^[0-9a-f]+$/i.test(token),
-    fullTokenForDebug: token // TEMPORARY: Remove after debugging
   });
 
   // CRITICAL: Convert .convex.cloud to .convex.site for HTTP Actions

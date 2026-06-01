@@ -2,9 +2,9 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+// SECURITY: storeConsentAudit now requires auth and can only log for the authenticated user
 export const storeConsentAudit = mutation({
   args: {
-    userId: v.id('users'),
     platform: v.string(),
     action: v.union(
       v.literal('consent_granted'),
@@ -12,19 +12,20 @@ export const storeConsentAudit = mutation({
       v.literal('data_accessed'),
       v.literal('data_deleted')
     ),
-    details: v.any()
+    details: v.optional(v.any())
   },
   handler: async (ctx, args) => {
-    // Note: In a real implementation, you'd extract IP from request headers
-    // For now, we'll use a placeholder
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
     const ipAddress = 'unknown'; // Would be: ctx.event?.headers?.['x-forwarded-for'] || 'unknown'
 
     await ctx.db.insert('consentAudits', {
-      userId: args.userId,
+      userId,
       platform: args.platform,
       action: args.action,
       timestamp: Date.now(),
-      details: args.details,
+      details: args.details || {},
       ipAddress
     });
     
@@ -45,11 +46,9 @@ export const logConsentAction = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    if (!userId) throw new Error("Not authenticated");
 
-    const ipAddress = 'unknown'; // Placeholder for IP address
+    const ipAddress = 'unknown';
 
     await ctx.db.insert('consentAudits', {
       userId,

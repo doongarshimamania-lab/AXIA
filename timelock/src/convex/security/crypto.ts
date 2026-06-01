@@ -4,10 +4,14 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
 import crypto from "crypto";
 
-// Get platform secret from environment
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY || "axia-default-secret-key";
-const JWT_SECRET = process.env.JWT_SECRET_KEY || "axia-jwt-secret";
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "axia-encryption-key-32bytes";
+// Get platform secret from environment — FAIL if not configured
+const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY;
+const JWT_SECRET = process.env.JWT_SECRET_KEY;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+
+if (!PLATFORM_SECRET) throw new Error("SECURITY: PLATFORM_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
+if (!JWT_SECRET) throw new Error("SECURITY: JWT_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
+if (!ENCRYPTION_KEY) throw new Error("SECURITY: ENCRYPTION_KEY environment variable is not set. Refusing to start with insecure defaults.");
 
 /**
  * Generate HMAC-SHA256 hash for user ID
