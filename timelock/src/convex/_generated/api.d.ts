@@ -67,6 +67,7 @@ import type * as scope_crud from "../scope/crud.js";
 import type * as security_audit from "../security/audit.js";
 import type * as security_consent from "../security/consent.js";
 import type * as security_crypto from "../security/crypto.js";
+import type * as security_utils from "../security/utils.js";
 import type * as seed from "../seed.js";
 import type * as seedNew from "../seedNew.js";
 import type * as seedProjects from "../seedProjects.js";
@@ -160,6 +161,7 @@ declare const fullApi: ApiFromModules<{
   "security/audit": typeof security_audit;
   "security/consent": typeof security_consent;
   "security/crypto": typeof security_crypto;
+  "security/utils": typeof security_utils;
   seed: typeof seed;
   seedNew: typeof seedNew;
   seedProjects: typeof seedProjects;
