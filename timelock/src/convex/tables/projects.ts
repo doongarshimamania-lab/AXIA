@@ -47,12 +47,21 @@ export const projectTables = {
     hourlyRate: v.number(),
     contractType: v.union(v.literal("hourly"), v.literal("fixed")),
     riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    contactEmail: v.optional(v.string()),
+    contactName: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
+    // Payment terms per client
+    defaultPaymentTerms: v.optional(v.string()), // e.g. "net_30", "net_60", "due_on_receipt"
+    defaultCurrency: v.optional(v.string()), // e.g. "USD", "EUR"
+    defaultDueDays: v.optional(v.number()), // e.g. 30, 60, 0
     addedAt: v.number(),
     lastActivityAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "clientName"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_workspace", ["workspaceId"])
+    .index("by_contact_email", ["contactEmail"]),
 
   projects: defineTable({
     userId: v.id("users"),
@@ -180,4 +189,16 @@ export const projectTables = {
   })
     .index("by_client", ["clientId"])
     .index("by_timestamp", ["timestamp"]),
+
+  // Client session tokens for portal access
+  clientSessions: defineTable({
+    clientEmail: v.string(),
+    token: v.string(),
+    clientCompanyId: v.optional(v.id("clientCompanies")),
+    clientName: v.optional(v.string()),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_email", ["clientEmail"]),
 };

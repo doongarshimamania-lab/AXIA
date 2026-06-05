@@ -58,6 +58,7 @@ export const proposalTables = {
     .index("by_status", ["status"])
     .index("by_user_and_status", ["userId", "status"])
     .index("by_public_token", ["publicToken"])
+    .index("by_client_email", ["clientEmail"])
     .index("by_workspace", ["workspaceId"]),
 
   proposalTemplates: defineTable({

@@ -102,6 +102,9 @@ export const createClient = mutation({
     contactName: v.optional(v.string()),
     notes: v.optional(v.string()),
     assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
+    defaultPaymentTerms: v.optional(v.string()),
+    defaultCurrency: v.optional(v.string()),
+    defaultDueDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -119,6 +122,9 @@ export const createClient = mutation({
       contactName: args.contactName,
       notes: args.notes,
       assignedMemberIds: args.assignedMemberIds,
+      defaultPaymentTerms: args.defaultPaymentTerms,
+      defaultCurrency: args.defaultCurrency,
+      defaultDueDays: args.defaultDueDays,
       addedAt: Date.now(),
       lastActivityAt: Date.now(),
     });
@@ -143,6 +149,9 @@ export const updateClient = mutation({
     contactName: v.optional(v.string()),
     notes: v.optional(v.string()),
     assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
+    defaultPaymentTerms: v.optional(v.string()),
+    defaultCurrency: v.optional(v.string()),
+    defaultDueDays: v.optional(v.number()),
   },
   handler: async (ctx, { clientId, ...updates }) => {
     const userId = await getAuthUserId(ctx);

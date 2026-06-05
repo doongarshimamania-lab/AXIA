@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useQuery } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
 import {
   DollarSign,
   Clock,
@@ -290,6 +292,114 @@ function formatDate(dateStr: string): string {
   });
 }
 
+// ─── Aging Report Component (Task 2) ─────────────────────────────────────────
+
+function AgingReportSection() {
+  const agingReport = useQuery(api.billing.crud.getAgingReport, {}) as any;
+
+  const buckets = [
+    { key: "current", label: "0-30 Days", color: "text-emerald-600", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
+    { key: "31_60", label: "31-60 Days", color: "text-amber-600", bg: "bg-amber-500/10", border: "border-amber-500/30" },
+    { key: "61_90", label: "61-90 Days", color: "text-orange-600", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+    { key: "90_plus", label: "90+ Days", color: "text-red-600", bg: "bg-red-500/10", border: "border-red-500/30" },
+  ];
+
+  function formatCurrency(amount: number): string {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+  }
+
+  if (!agingReport) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          Loading aging report...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const summary = agingReport.summary;
+  const byClient = agingReport.byClient;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Buckets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Aging Summary</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Unpaid invoices grouped by days past due · {agingReport.totalUnpaid} unpaid invoice(s)
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {buckets.map((bucket) => (
+              <div key={bucket.key} className={`p-4 rounded-lg border ${bucket.border} ${bucket.bg}`}>
+                <p className="text-xs font-medium text-muted-foreground mb-1">{bucket.label}</p>
+                <p className={`text-2xl font-bold ${bucket.color}`}>
+                  {formatCurrency(summary[bucket.key] || 0)}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Total Outstanding</span>
+              <span className="text-xl font-bold">{formatCurrency(summary.total || 0)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Per-Client Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Per-Client Aging Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {Object.keys(byClient).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p>No unpaid invoices found</p>
+              <p className="text-sm mt-1">All invoices are paid or in draft status.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Client</th>
+                    <th className="text-right py-2 px-3 font-medium text-emerald-600">0-30d</th>
+                    <th className="text-right py-2 px-3 font-medium text-amber-600">31-60d</th>
+                    <th className="text-right py-2 px-3 font-medium text-orange-600">61-90d</th>
+                    <th className="text-right py-2 px-3 font-medium text-red-600">90+d</th>
+                    <th className="text-right py-2 px-3 font-medium text-muted-foreground">Total</th>
+                    <th className="text-right py-2 px-3 font-medium text-muted-foreground">#</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(byClient).map(([clientName, data]: [string, any]) => (
+                    <tr key={clientName} className="border-b border-border hover:bg-muted/30">
+                      <td className="py-2 px-3 font-medium">{clientName}</td>
+                      <td className="py-2 px-3 text-right">{data.current > 0 ? formatCurrency(data.current) : "—"}</td>
+                      <td className="py-2 px-3 text-right">{data["31_60"] > 0 ? formatCurrency(data["31_60"]) : "—"}</td>
+                      <td className="py-2 px-3 text-right">{data["61_90"] > 0 ? formatCurrency(data["61_90"]) : "—"}</td>
+                      <td className="py-2 px-3 text-right">{data["90_plus"] > 0 ? formatCurrency(data["90_plus"]) : "—"}</td>
+                      <td className="py-2 px-3 text-right font-medium">{formatCurrency(data.total)}</td>
+                      <td className="py-2 px-3 text-right text-muted-foreground">{data.invoiceCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PaymentPatterns() {
@@ -461,6 +571,7 @@ export default function PaymentPatterns() {
             <TabsTrigger value="timeline">Payment Timeline</TabsTrigger>
             <TabsTrigger value="alerts">Late Alerts</TabsTrigger>
             <TabsTrigger value="risk">Risk Analysis</TabsTrigger>
+            <TabsTrigger value="aging">Aging Report</TabsTrigger>
             {isPro && <TabsTrigger value="predictions">Predictions</TabsTrigger>}
           </TabsList>
 
@@ -1165,6 +1276,11 @@ export default function PaymentPatterns() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* ── Aging Report Tab (Task 2) ── */}
+          <TabsContent value="aging" className="space-y-4">
+            <AgingReportSection />
           </TabsContent>
 
           {/* ── Predictions Tab (Pro only) ── */}

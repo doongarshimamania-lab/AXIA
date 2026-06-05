@@ -48,6 +48,7 @@ import {
   CheckCircle2,
   FileText,
   Globe,
+  Copy,
   Calendar,
   ShieldCheck,
   Paperclip,
@@ -193,6 +194,8 @@ export default function InvoiceBuilder() {
   const sendInvoiceMutation = useMutation(api.billing.crud.sendInvoice);
   const addWorkLinkMutation = useMutation(api.billing.crud.addWorkLink);
   const removeWorkLinkMutation = useMutation(api.billing.crud.removeWorkLink);
+  const autoLinkTimeMutation = useMutation(api.billing.crud.autoLinkTimeToInvoice);
+  const generateShareTokenMutation = useMutation(api.billing.crud.generateWorkLinkShareToken);
 
   // ── State ──────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -232,6 +235,72 @@ export default function InvoiceBuilder() {
 
   // Work proof panel
   const [showProofPanel, setShowProofPanel] = useState(false);
+
+  // Auto-link state
+  const [autoLinking, setAutoLinking] = useState(false);
+  const [autoLinkResult, setAutoLinkResult] = useState<{ linkedCount: number; totalSessions: number } | null>(null);
+
+  // Client selection for payment terms auto-populate
+  const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
+
+  // ── Auto-populate from client payment terms (Task 3) ────────────────
+  const handleClientNameChange = (name: string) => {
+    setClientName(name);
+    if (clients && name) {
+      const match = clients.find((c: any) => c.clientName === name);
+      if (match) {
+        if (match.defaultCurrency && match.defaultCurrency !== currency) {
+          setCurrency(match.defaultCurrency);
+        }
+        if (match.defaultDueDays !== undefined && match.defaultDueDays !== null) {
+          setDueDate(timestampToDate(Date.now() + match.defaultDueDays * 86400000));
+        }
+        if (match.contactEmail) {
+          setClientEmail(match.contactEmail);
+        }
+      }
+    }
+  };
+
+  // ── Auto-link time logs (Task 4) ─────────────────────────────────────
+  const handleAutoLinkTime = async () => {
+    if (!invoiceId) {
+      toast.error("Please save the invoice first");
+      return;
+    }
+    setAutoLinking(true);
+    try {
+      const result = await autoLinkTimeMutation({ invoiceId: invoiceId as any }) as any;
+      setAutoLinkResult({ linkedCount: result.linkedCount, totalSessions: result.totalSessions });
+      if (result.linkedCount > 0) {
+        toast.success(`Auto-linked ${result.linkedCount} time log(s)`, {
+          description: `Found ${result.totalSessions} matching session(s)`,
+        });
+      } else {
+        toast.info("No matching time logs found", {
+          description: "No work sessions found for this client within the invoice date range.",
+        });
+      }
+    } catch (err: any) {
+      toast.error("Failed to auto-link time logs", { description: err.message });
+    } finally {
+      setAutoLinking(false);
+    }
+  };
+
+  // ── Copy share link (Task 7) ─────────────────────────────────────────
+  const handleCopyShareLink = async (workLinkId: string) => {
+    try {
+      const result = await generateShareTokenMutation({ workLinkId: workLinkId as any }) as any;
+      const shareUrl = `${window.location.origin}/proof/${result.token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied!", {
+        description: "The proof link has been copied to clipboard.",
+      });
+    } catch (err: any) {
+      toast.error("Failed to generate share link", { description: err.message });
+    }
+  };
 
   // ── Load existing invoice for editing ──────────────────────────────────
   useEffect(() => {
@@ -583,6 +652,23 @@ export default function InvoiceBuilder() {
                 </span>
               )}
             </Button>
+            {invoiceId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={handleAutoLinkTime}
+                disabled={autoLinking}
+              >
+                <Clock className="h-4 w-4" />
+                {autoLinking ? "Linking..." : "Auto-link Time"}
+              </Button>
+            )}
+            {autoLinkResult && autoLinkResult.linkedCount > 0 && (
+              <Badge className="bg-[#22c55e]/15 text-[#22c55e] text-[10px]">
+                {autoLinkResult.linkedCount} linked
+              </Badge>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -639,7 +725,7 @@ export default function InvoiceBuilder() {
                             id="clientName"
                             placeholder="Enter client name"
                             value={clientName}
-                            onChange={(e) => setClientName(e.target.value)}
+                            onChange={(e) => handleClientNameChange(e.target.value)}
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -1136,6 +1222,15 @@ export default function InvoiceBuilder() {
                                   onClick={() => handleRemoveProof(proof._id)}
                                 >
                                   <Unlink className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-[#8B5CF6] flex-shrink-0"
+                                  title="Copy share link"
+                                  onClick={() => handleCopyShareLink(proof._id)}
+                                >
+                                  <Globe className="h-3 w-3" />
                                 </Button>
                               </div>
 

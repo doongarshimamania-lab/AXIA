@@ -46,6 +46,13 @@ export const clients = defineTable({
   hourlyRate: v.number(),
   contractType: v.union(v.literal("hourly"), v.literal("fixed")),
   riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  contactEmail: v.optional(v.string()),
+  contactName: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
+  defaultPaymentTerms: v.optional(v.string()),
+  defaultCurrency: v.optional(v.string()),
+  defaultDueDays: v.optional(v.number()),
   addedAt: v.number(),
   lastActivityAt: v.number(),
 })

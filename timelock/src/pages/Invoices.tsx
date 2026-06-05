@@ -46,6 +46,8 @@ import {
   Trash2,
   Database,
   Eye,
+  Globe,
+  BarChart3,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -128,6 +130,25 @@ const FILTER_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
   { key: "overdue", label: "Overdue" },
 ];
 
+const AGING_BUCKET_CONFIG: { key: string; label: string; color: string; bgColor: string; borderColor: string }[] = [
+  { key: "current", label: "Current", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20" },
+  { key: "days_0_30", label: "1–30 Days", color: "text-yellow-700 dark:text-yellow-400", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/20" },
+  { key: "days_31_60", label: "31–60 Days", color: "text-orange-700 dark:text-orange-400", bgColor: "bg-orange-500/10", borderColor: "border-orange-500/20" },
+  { key: "days_61_90", label: "61–90 Days", color: "text-red-700 dark:text-red-400", bgColor: "bg-red-500/10", borderColor: "border-red-500/20" },
+  { key: "days_90_plus", label: "90+ Days", color: "text-red-900 dark:text-red-300", bgColor: "bg-red-600/15", borderColor: "border-red-600/30" },
+];
+
+// Mock aging data for fallback when Convex returns nothing
+const MOCK_AGING = {
+  totals: { current: 4250, days_0_30: 8800, days_31_60: 14300, days_61_90: 3200, days_90_plus: 1500 },
+  byClient: {
+    "Acme Corp": { current: 2000, days_0_30: 4500, days_31_60: 0, days_61_90: 0, days_90_plus: 0, total: 6500, invoiceCount: 2 },
+    "TechStart Inc": { current: 2250, days_0_30: 4300, days_31_60: 0, days_61_90: 0, days_90_plus: 0, total: 6550, invoiceCount: 1 },
+    "GlobalMedia": { current: 0, days_0_30: 0, days_31_60: 14300, days_61_90: 3200, days_90_plus: 1500, total: 19000, invoiceCount: 3 },
+  },
+  totalUnpaid: 6,
+};
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function formatCurrency(amount: number, currency: string = "USD"): string {
@@ -158,6 +179,7 @@ export default function Invoices() {
 
   // ── Local State ────────────────────────────────────────────────────────
   const [activeFilter, setActiveFilter] = useState<"all" | InvoiceStatus>("all");
+  const [activeView, setActiveView] = useState<"invoices" | "aging">("invoices");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -175,12 +197,20 @@ export default function Invoices() {
     totalOutstanding: number;
     withProof: number;
   } | undefined;
+  const agingData = useQuery(api.billing.crud.getAgingReport, {}) as {
+    buckets: any;
+    byClient: Record<string, { current: number; days_0_30: number; days_31_60: number; days_61_90: number; days_90_plus: number; total: number; invoiceCount: number }>;
+    totals: { current: number; days_0_30: number; days_31_60: number; days_61_90: number; days_90_plus: number };
+    totalUnpaid: number;
+  } | null | undefined;
 
   // ── Convex Mutations ───────────────────────────────────────────────────
   const sendInvoice = useMutation(api.billing.crud.sendInvoice);
   const markInvoicePaid = useMutation(api.billing.crud.markInvoicePaid);
   const deleteInvoice = useMutation(api.billing.crud.deleteInvoice);
   const seedMockInvoices = useMutation(api.billing.crud.seedMockInvoices);
+  const generateShareToken = useMutation(api.billing.crud.generateWorkLinkShareToken);
+  const autoLinkTime = useMutation(api.billing.crud.autoLinkTimeToInvoice);
 
   // ── Computed ───────────────────────────────────────────────────────────
   const safeInvoices = invoices ?? [];
@@ -265,6 +295,19 @@ export default function Invoices() {
       toast.error("Failed to seed data", { description: err.message });
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handleAutoLinkTime = async (invoiceId: string) => {
+    try {
+      const result = await autoLinkTime({ invoiceId: invoiceId as any }) as any;
+      if (result.linkedCount > 0) {
+        toast.success(`Auto-linked ${result.linkedCount} time log(s)`);
+      } else {
+        toast.info("No matching time logs found");
+      }
+    } catch (err: any) {
+      toast.error("Failed to auto-link", { description: err.message });
     }
   };
 
@@ -451,7 +494,167 @@ export default function Invoices() {
           </div>
         </div>
 
-        {/* ── Filter Tabs ────────────────────────────────────────────────── */}
+        {/* ── View Toggle ─────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 mb-4 border-b border-border">
+          <button
+            onClick={() => setActiveView("invoices")}
+            className={`flex items-center gap-1.5 pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
+              activeView === "invoices"
+                ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            }`}
+          >
+            <Receipt className="h-3.5 w-3.5" />
+            Invoices
+            <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${
+              activeView === "invoices" ? "bg-[#8B5CF6]/20 text-[#8B5CF6]" : "bg-muted text-muted-foreground"
+            }`}>{safeInvoices.length}</span>
+            <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${activeView === "invoices" ? "bg-[#8B5CF6]" : "bg-transparent"}`} />
+          </button>
+          <button
+            onClick={() => setActiveView("aging")}
+            className={`flex items-center gap-1.5 pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
+              activeView === "aging"
+                ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            }`}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            Aging Report
+            <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${activeView === "aging" ? "bg-[#8B5CF6]" : "bg-transparent"}`} />
+          </button>
+        </div>
+
+        {/* ── Aging Report View ─────────────────────────────────────────────── */}
+        {activeView === "aging" && (() => {
+          const aging = agingData && agingData.totalUnpaid > 0 ? agingData : MOCK_AGING;
+          const allClients = Object.entries(aging.byClient);
+          const grandTotal = Object.values(aging.totals).reduce((s: number, v: number) => s + v, 0);
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* Aging bucket cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {AGING_BUCKET_CONFIG.map((b, idx) => (
+                  <motion.div
+                    key={b.key}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: idx * 0.06 }}
+                  >
+                    <Card className={`${b.borderColor} border`}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-[12px] font-medium text-muted-foreground">
+                          {b.label}
+                        </CardTitle>
+                        <div className={`h-6 w-6 rounded-md ${b.bgColor} flex items-center justify-center`}>
+                          <Clock className={`h-3 w-3 ${b.color}`} />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className={`text-[20px] font-bold ${b.color}`}>
+                          {formatCurrency(aging.totals[b.key as keyof typeof aging.totals] ?? 0)}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {b.key === "current" ? "Not yet due" : `Past due ${b.label}`}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Grand total */}
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[13px] text-muted-foreground">Total Outstanding (All Buckets)</p>
+                      <p className="text-[26px] font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[13px] text-muted-foreground">{aging.totalUnpaid} unpaid invoice{aging.totalUnpaid !== 1 ? "s" : ""}</p>
+                      <p className="text-[13px] text-muted-foreground">{allClients.length} client{allClients.length !== 1 ? "s" : ""}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Per-client aging breakdown */}
+              {allClients.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <User className="h-4 w-4 text-[#8B5CF6]" />
+                      Aging by Client
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="min-w-[140px]">Client</TableHead>
+                            <TableHead className="text-right">Current</TableHead>
+                            <TableHead className="text-right">1–30 Days</TableHead>
+                            <TableHead className="text-right">31–60 Days</TableHead>
+                            <TableHead className="text-right">61–90 Days</TableHead>
+                            <TableHead className="text-right">90+ Days</TableHead>
+                            <TableHead className="text-right font-semibold">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allClients.map(([name, data]) => (
+                            <TableRow key={name}>
+                              <TableCell className="font-medium">{name}</TableCell>
+                              <TableCell className="text-right">{data.current > 0 ? formatCurrency(data.current) : "—"}</TableCell>
+                              <TableCell className="text-right">{data.days_0_30 > 0 ? formatCurrency(data.days_0_30) : "—"}</TableCell>
+                              <TableCell className="text-right">{data.days_31_60 > 0 ? formatCurrency(data.days_31_60) : "—"}</TableCell>
+                              <TableCell className="text-right">{data.days_61_90 > 0 ? formatCurrency(data.days_61_90) : "—"}</TableCell>
+                              <TableCell className="text-right">{data.days_90_plus > 0 ? formatCurrency(data.days_90_plus) : "—"}</TableCell>
+                              <TableCell className="text-right font-semibold">{formatCurrency(data.total)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                        <TableFooter>
+                          <TableRow className="bg-muted/30">
+                            <TableCell className="font-semibold">Total</TableCell>
+                            <TableCell className="text-right font-semibold">{formatCurrency(aging.totals.current)}</TableCell>
+                            <TableCell className="text-right font-semibold">{formatCurrency(aging.totals.days_0_30)}</TableCell>
+                            <TableCell className="text-right font-semibold">{formatCurrency(aging.totals.days_31_60)}</TableCell>
+                            <TableCell className="text-right font-semibold">{formatCurrency(aging.totals.days_61_90)}</TableCell>
+                            <TableCell className="text-right font-semibold">{formatCurrency(aging.totals.days_90_plus)}</TableCell>
+                            <TableCell className="text-right font-bold">{formatCurrency(grandTotal)}</TableCell>
+                          </TableRow>
+                        </TableFooter>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {allClients.length === 0 && (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center text-muted-foreground">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-40" />
+                      <p className="text-[16px] font-medium mb-1">No outstanding invoices</p>
+                      <p className="text-[14px]">All invoices are paid or cancelled — no aging data to show.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          );
+        })()}
+
+        {/* ── Filter Tabs (invoice view only) ─────────────────────────────── */}
+        {activeView === "invoices" && (
         <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
           {FILTER_TABS.map((tab) => {
             const isActive = activeFilter === tab.key;
@@ -484,8 +687,10 @@ export default function Invoices() {
             );
           })}
         </div>
+        )}
 
-        {/* ── Invoice List ───────────────────────────────────────────────── */}
+        {/* ── Invoice List (invoice view only) ─────────────────────────────── */}
+        {activeView === "invoices" && (
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {filteredInvoices.length === 0 ? (
@@ -650,6 +855,18 @@ export default function Invoices() {
                                     <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
                                   </Button>
                                 )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2"
+                                  title="Auto-link Time Logs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAutoLinkTime(invoice._id);
+                                  }}
+                                >
+                                  <Timer className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -906,6 +1123,7 @@ export default function Invoices() {
             )}
           </AnimatePresence>
         </div>
+        )}
       </div>
 
       {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}

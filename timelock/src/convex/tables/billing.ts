@@ -49,6 +49,7 @@ export const billingTables = {
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
     .index("by_client", ["clientId"])
+    .index("by_client_email", ["clientEmail"])
     .index("by_public_token", ["publicToken"])
     .index("by_invoice_number", ["invoiceNumber"])
     .index("by_workspace", ["workspaceId"]),
@@ -74,12 +75,14 @@ export const billingTables = {
     url: v.optional(v.string()),
     fileName: v.optional(v.string()),
     verified: v.optional(v.boolean()),
+    publicToken: v.optional(v.string()), // for shareable proof links
     createdAt: v.number(),
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
     .index("by_line_item", ["invoiceId", "lineItemId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_workspace", ["workspaceId"])
+    .index("by_public_token", ["publicToken"]),
 
   paymentReminders: defineTable({
     userId: v.id("users"),

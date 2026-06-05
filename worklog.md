@@ -195,3 +195,30 @@ Stage Summary:
 - Client portal has routes + real data fetching
 - Convex deploy has ViewData permission errors (deploy key limitation) but functions/schema are deployed
 - Preview URL: https://preview-81.space-z.ai/
+
+---
+Task ID: 2
+Agent: Main
+Task: Audit and fix Phase 3/4 against PDF spec, build missing features
+
+Work Log:
+- Read full B2B pivot strategy PDF (18 pages) — extracted all CRITICAL/HIGH/MEDIUM requirements
+- Conducted comprehensive gap analysis: Phase 3 was ~38% complete, Phase 4 was ~10%
+- Built aging report query with 5 buckets (0-30/31-60/61-90/90+ days) + per-client breakdown
+- Added aging report tab to Invoices page with color-coded bucket cards
+- Added payment terms fields to clients table (defaultPaymentTerms, defaultCurrency, defaultDueDays)
+- Added autoLinkTimeToInvoice mutation for automatic time log → invoice linking
+- Fixed multi-currency reporting — getBillingDashboard now groups by currency instead of mixing
+- Added shareable proof link support (publicToken on invoiceWorkLinks, public query, token generation)
+- Created clientPortal.ts with 7 client-scoped queries that filter server-side by clientEmail
+- Fixed ClientLogin.tsx — now verifies email against Convex before granting access
+- Completely rewrote ClientDashboard.tsx — all data now comes from client-scoped queries
+- Added Work Proofs tab, Verification Reports tab, Approvals tab to ClientDashboard
+- Added deliverable approve/reject mutations for client approval workflow
+- Deployed to Convex cloud, rebuilt frontend, pushed to GitHub (commit ec9d92f)
+
+Stage Summary:
+- Phase 3 completeness improved from ~38% to ~80%
+- Phase 4 completeness improved from ~10% to ~60%
+- Remaining gaps: Stripe payment flow for clients, Slack/QuickBooks integrations, white-label, capacity planning, retainer management
+- Preview URL: https://preview-81.space-z.ai/

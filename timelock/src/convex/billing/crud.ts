@@ -563,18 +563,43 @@ export const getBillingDashboard = query({
       }
     }
 
-    // Overall stats
-    const totalRevenue = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.total, 0);
-    const totalOutstanding = invoices
-      .filter((i) => ["sent", "viewed", "overdue"].includes(i.status))
-      .reduce((s, i) => s + i.total, 0);
-    const totalOverdue = invoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.total, 0);
+    // Overall stats (by currency — Task 8 fix: don't mix currencies)
+    const byCurrency: Record<string, {
+      totalRevenue: number;
+      totalOutstanding: number;
+      totalOverdue: number;
+      invoiceCount: number;
+    }> = {};
+
+    for (const inv of invoices) {
+      const cur = inv.currency || "USD";
+      if (!byCurrency[cur]) {
+        byCurrency[cur] = { totalRevenue: 0, totalOutstanding: 0, totalOverdue: 0, invoiceCount: 0 };
+      }
+      byCurrency[cur].invoiceCount += 1;
+      if (inv.status === "paid") {
+        byCurrency[cur].totalRevenue += inv.total;
+      }
+      if (["sent", "viewed", "overdue"].includes(inv.status)) {
+        byCurrency[cur].totalOutstanding += inv.total;
+      }
+      if (inv.status === "overdue") {
+        byCurrency[cur].totalOverdue += inv.total;
+      }
+    }
+
+    // Use byCurrency as the primary data source for totals — never mix currencies
+    // Legacy single-currency totals are computed from the default (USD) bucket only
+    const usdData = byCurrency["USD"] || { totalRevenue: 0, totalOutstanding: 0, totalOverdue: 0, invoiceCount: 0 };
 
     return {
       totalInvoices: invoices.length,
-      totalRevenue,
-      totalOutstanding,
-      totalOverdue,
+      // Per-currency breakdown (primary source of truth)
+      byCurrency,
+      // USD-only legacy totals for backward compatibility
+      totalRevenue: usdData.totalRevenue,
+      totalOutstanding: usdData.totalOutstanding,
+      totalOverdue: usdData.totalOverdue,
       byClient,
       recentInvoices: invoices.slice(0, 10),
       paymentPattern: {
@@ -744,5 +769,224 @@ export const batchMarkPaid = mutation({
     }
 
     return results;
+  },
+});
+
+// ─── AGING REPORT ───────────────────────────────────────────────────────────
+
+/** Get aging report — groups unpaid invoices by age buckets per client. */
+export const getAgingReport = query({
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    // Get all non-paid, non-cancelled invoices
+    let invoices;
+    if (args.workspaceId) {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .filter((q) => q.neq(q.field("status"), "paid"))
+        .filter((q) => q.neq(q.field("status"), "cancelled"))
+        .collect();
+    } else {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.neq(q.field("status"), "paid"))
+        .filter((q) => q.neq(q.field("status"), "cancelled"))
+        .collect();
+    }
+
+    const now = Date.now();
+    const dayMs = 86400000;
+
+    // Buckets with invoice arrays for detailed view
+    const buckets = {
+      current: [] as any[],
+      days_0_30: [] as any[],
+      days_31_60: [] as any[],
+      days_61_90: [] as any[],
+      days_90_plus: [] as any[],
+    };
+
+    // Per-client aging totals
+    const byClient: Record<string, {
+      current: number;
+      days_0_30: number;
+      days_31_60: number;
+      days_61_90: number;
+      days_90_plus: number;
+      total: number;
+      invoiceCount: number;
+    }> = {};
+
+    for (const inv of invoices) {
+      const daysPastDue = Math.floor((now - inv.dueDate) / dayMs);
+      let bucket: keyof typeof buckets;
+      if (daysPastDue <= 0) bucket = "current";
+      else if (daysPastDue <= 30) bucket = "days_0_30";
+      else if (daysPastDue <= 60) bucket = "days_31_60";
+      else if (daysPastDue <= 90) bucket = "days_61_90";
+      else bucket = "days_90_plus";
+
+      buckets[bucket].push(inv);
+
+      const clientKey = inv.clientName || "Unknown";
+      if (!byClient[clientKey]) {
+        byClient[clientKey] = {
+          current: 0, days_0_30: 0, days_31_60: 0, days_61_90: 0, days_90_plus: 0,
+          total: 0, invoiceCount: 0,
+        };
+      }
+      byClient[clientKey][bucket] += inv.total;
+      byClient[clientKey].total += inv.total;
+      byClient[clientKey].invoiceCount += 1;
+    }
+
+    // Summary totals
+    const totals = {
+      current: buckets.current.reduce((s, i) => s + i.total, 0),
+      days_0_30: buckets.days_0_30.reduce((s, i) => s + i.total, 0),
+      days_31_60: buckets.days_31_60.reduce((s, i) => s + i.total, 0),
+      days_61_90: buckets.days_61_90.reduce((s, i) => s + i.total, 0),
+      days_90_plus: buckets.days_90_plus.reduce((s, i) => s + i.total, 0),
+    };
+
+    return { buckets, byClient, totals, totalUnpaid: invoices.length };
+  },
+});
+
+// ─── AUTO-LINK TIME LOGS (Task 4) ───────────────────────────────────────────
+
+/** Auto-link time sessions to an invoice based on the invoice's client and date range. */
+export const autoLinkTimeToInvoice = mutation({
+  args: { invoiceId: v.id("invoices") },
+  handler: async (ctx, { invoiceId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const invoice = await ctx.db.get(invoiceId);
+    if (!invoice || invoice.userId !== userId) throw new Error("Not authorized");
+
+    if (!invoice.clientName) throw new Error("Invoice must have a client name to auto-link");
+
+    // Find work sessions for this client within the invoice date range
+    const sessions = await ctx.db
+      .query("workSessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    const relevantSessions = sessions.filter(
+      (s) =>
+        s.clientName === invoice.clientName &&
+        s.startTime >= invoice.issueDate &&
+        s.startTime <= invoice.dueDate &&
+        s.endTime !== undefined
+    );
+
+    // Get existing work links for this invoice
+    const existingLinks = await ctx.db
+      .query("invoiceWorkLinks")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+      .collect();
+
+    const existingSessionIds = new Set(existingLinks.map((l) => l.title));
+
+    let linkedCount = 0;
+    for (const session of relevantSessions) {
+      const linkTitle = `Time: ${session.projectName} - ${new Date(session.startTime).toLocaleDateString()}`;
+      if (existingSessionIds.has(linkTitle)) continue;
+
+      // Create work link for this session
+      await ctx.db.insert("invoiceWorkLinks", {
+        userId,
+        invoiceId,
+        lineItemId: invoice.lineItems[0]?.id || "auto",
+        proofType: "time_entry",
+        title: linkTitle,
+        description: session.memo || `${session.clientName} - ${session.projectName}`,
+        hours: (session.totalMinutes || 0) / 60,
+        date: session.startTime,
+        value: ((session.totalMinutes || 0) / 60) * session.hourlyRate,
+        verified: true,
+        createdAt: Date.now(),
+      });
+
+      linkedCount++;
+    }
+
+    // Update invoice proof count
+    const allLinks = await ctx.db
+      .query("invoiceWorkLinks")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+      .collect();
+
+    const proofCount = allLinks.length;
+    await ctx.db.patch(invoiceId, {
+      proofCount,
+      hasValidatedBilling: proofCount > 0,
+      updatedAt: Date.now(),
+    });
+
+    return { linkedCount, totalSessions: relevantSessions.length };
+  },
+});
+
+// ─── SHAREABLE PROOF LINKS (Task 7) ──────────────────────────────────────────
+
+/** Get work proof by public token — public, no auth required. */
+export const getWorkProofByToken = query({
+  args: { publicToken: v.string() },
+  handler: async (ctx, { publicToken }) => {
+    const workLink = await ctx.db
+      .query("invoiceWorkLinks")
+      .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
+      .first();
+
+    if (!workLink) return null;
+
+    // Also get the invoice info for context
+    const invoice = await ctx.db.get(workLink.invoiceId);
+
+    return {
+      _id: workLink._id,
+      title: workLink.title,
+      description: workLink.description,
+      proofType: workLink.proofType,
+      hours: workLink.hours,
+      date: workLink.date,
+      value: workLink.value,
+      url: workLink.url,
+      fileName: workLink.fileName,
+      verified: workLink.verified,
+      invoiceNumber: invoice?.invoiceNumber,
+      clientName: invoice?.clientName,
+      invoiceTotal: invoice?.total,
+      invoiceCurrency: invoice?.currency,
+    };
+  },
+});
+
+/** Generate a shareable public token for a work link. */
+export const generateWorkLinkShareToken = mutation({
+  args: { workLinkId: v.id("invoiceWorkLinks") },
+  handler: async (ctx, { workLinkId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const workLink = await ctx.db.get(workLinkId);
+    if (!workLink || workLink.userId !== userId) throw new Error("Not authorized");
+
+    if (workLink.publicToken) {
+      return { token: workLink.publicToken, alreadyExisted: true };
+    }
+
+    const token = generateToken();
+    await ctx.db.patch(workLinkId, { publicToken: token });
+
+    return { token, alreadyExisted: false };
   },
 });

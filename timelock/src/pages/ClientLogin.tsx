@@ -5,21 +5,17 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Shield, Building2 } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
+import { Shield, Building2, Loader2 } from "lucide-react";
+import { useMutation, useConvex } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 export default function ClientLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [checkEmail, setCheckEmail] = useState<string | null>(null);
 
-  // Check if the client exists in our database
-  const clientProfile = useQuery(
-    checkEmail ? api.clients.clientAuth.getClientProfile : "skip",
-    checkEmail ? { email: checkEmail } : "skip"
-  ) as any;
+  const createClientSession = useMutation(api.clients.clientAuth.verifyClientAccess);
+  const convex = useConvex();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,22 +23,66 @@ export default function ClientLogin() {
       toast.error("Please enter your email");
       return;
     }
-    
+
     setIsLoading(true);
-    
-    // Store the email for client session
-    // In production, this would use proper auth (Convex auth or JWT)
-    localStorage.setItem("axia_client_email", email.trim());
-    localStorage.setItem("axia_client_login_at", Date.now().toString());
-    
-    toast.success("Logged in successfully", {
-      description: clientProfile ? `Welcome back, ${clientProfile.contactName || email}` : "Welcome to the Client Portal"
-    });
-    
-    setTimeout(() => {
-      navigate("/client-dashboard");
+
+    try {
+      // Step 1: Verify the email exists using the clientPortal query (no auth required)
+      const verification = await convex.query(api.clients.clientPortal.verifyClientAccess, {
+        clientEmail: email.trim(),
+      }) as any;
+
+      if (!verification || !verification.found) {
+        toast.error("Access denied", {
+          description: "No account found with this email. Please contact your freelancer.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2: Create a secure session token via the mutation
+      const result = await createClientSession({ email: email.trim() }) as any;
+
+      if (!result.success) {
+        toast.error("Access denied", {
+          description: result.error || "No account found with this email.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Store session data in localStorage
+      localStorage.setItem("axia_client_token", result.token);
+      localStorage.setItem("axia_client_email", result.clientEmail);
+      localStorage.setItem("axia_client_name", result.clientName || "");
+      localStorage.setItem("axia_client_login_at", Date.now().toString());
+
+      // Also store verification info from the query (clientPortal data)
+      localStorage.setItem("axia_client_verified", JSON.stringify({
+        email: verification.clientEmail,
+        verified: true,
+        timestamp: Date.now(),
+        clientName: verification.clientName,
+        contactName: verification.contactName,
+        clients: verification.clients,
+      }));
+
+      toast.success("Logged in successfully", {
+        description: result.clientName
+          ? `Welcome back, ${result.contactName || result.clientName}`
+          : "Welcome to the Client Portal",
+      });
+
+      setTimeout(() => {
+        navigate("/client-dashboard");
+        setIsLoading(false);
+      }, 500);
+    } catch (err: any) {
+      toast.error("Login failed", {
+        description: err.message || "Please try again.",
+      });
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -70,10 +110,18 @@ export default function ClientLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Continue"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </form>
 
