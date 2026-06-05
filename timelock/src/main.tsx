@@ -27,6 +27,7 @@ import OnboardingSource from "./pages/OnboardingSource.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import "./types/global.d.ts";
 import TimeTracking from "./pages/TimeTracking.tsx";
 import Tags from "./pages/Tags.tsx";
@@ -43,27 +44,27 @@ import Pipeline from "./pages/Pipeline.tsx";
 import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 
-// Error Boundary to catch Convex errors and prevent app crash
-// CRITICAL: Must render a fallback UI on error to prevent infinite re-render loops.
-// If we always render children on error, a component that throws on every render
-// will cause React error #185 (Maximum update depth exceeded).
-class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; errorKey: number }> {
+// The top-level error boundary has been replaced with per-route SectionErrorBoundary.
+// Each page route is wrapped in its own SectionErrorBoundary so a crash on one page
+// doesn't take down the entire app. A minimal top-level boundary remains for safety.
+
+class TopLevelErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; errorKey: number }> {
   state = { hasError: false, errorKey: 0 };
   static getDerivedStateFromError() {
     return { hasError: true, errorKey: Date.now() };
   }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.warn("[ConvexErrorBoundary] Caught error:", error.message);
+  componentDidCatch(error: Error) {
+    console.error("[TopLevelErrorBoundary] Unhandled error:", error.message);
   }
   handleReset = () => {
     this.setState({ hasError: false, errorKey: this.state.errorKey + 1 });
   };
   render() {
     if (this.state.hasError) {
-      // Render a safe fallback UI instead of re-rendering the broken children
       return (
-        <div className="flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
-          <p className="text-muted-foreground mb-3">Something went wrong loading this section.</p>
+        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-background">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h2>
+          <p className="text-muted-foreground mb-4">The application encountered an unexpected error. Please try again.</p>
           <button
             onClick={this.handleReset}
             className="px-4 py-2 text-sm bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
@@ -177,57 +178,57 @@ root.render(
           <ConvexAuthProvider client={convex}>
           <BrowserRouter>
             <RouteSyncer />
-            <ConvexErrorBoundary>
+            <TopLevelErrorBoundary>
               <WorkspaceProvider>
                 <ProfileModal />
                 <Routes>
                   {/* Owner Dashboard - uses separate Convex clients */}
-                  <Route path="/owner-dashboard" element={<OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} />} />
-                  <Route path="/owner" element={<OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} />} />
+                  <Route path="/owner-dashboard" element={<SectionErrorBoundary name="Owner Dashboard"><OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} /></SectionErrorBoundary>} />
+                  <Route path="/owner" element={<SectionErrorBoundary name="Owner Dashboard"><OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} /></SectionErrorBoundary>} />
 
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
-                  <Route path="/waitlist/success" element={<WaitlistSuccess />} />
+                  <Route path="/waitlist/success" element={<SectionErrorBoundary name="Waitlist"><WaitlistSuccess /></SectionErrorBoundary>} />
                   
                   {/* Onboarding Routes (No Sidebar) */}
-                  <Route path="/onboarding-user-information" element={<OnboardingUserInformation />} />
-                  <Route path="/onboarding-source" element={<OnboardingSource />} />
+                  <Route path="/onboarding-user-information" element={<SectionErrorBoundary name="Onboarding"><OnboardingUserInformation /></SectionErrorBoundary>} />
+                  <Route path="/onboarding-source" element={<SectionErrorBoundary name="Onboarding"><OnboardingSource /></SectionErrorBoundary>} />
                   
                   {/* Client Portal Routes (No Sidebar) */}
-                  <Route path="/client-dashboard" element={<ClientDashboard />} />
-                  <Route path="/client-login" element={<ClientLogin />} />
-                  <Route path="/client-signup" element={<ClientSignup />} />
+                  <Route path="/client-dashboard" element={<SectionErrorBoundary name="Client Portal"><ClientDashboard /></SectionErrorBoundary>} />
+                  <Route path="/client-login" element={<SectionErrorBoundary name="Client Login"><ClientLogin /></SectionErrorBoundary>} />
+                  <Route path="/client-signup" element={<SectionErrorBoundary name="Client Signup"><ClientSignup /></SectionErrorBoundary>} />
 
                   {/* Dashboard Routes (With Sidebar) */}
                   <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/clients" element={<Clients />} />
-                    <Route path="/projects" element={<Projects />} />
-                    <Route path="/protection-value" element={<ProtectionValueDashboard />} />
-                    <Route path="/network" element={<PremiumNetwork />} />
-                    <Route path="/teams" element={<TeamManagement />} />
-                    <Route path="/evidence-library" element={<EvidenceLibrary />} />
-                    <Route path="/time-tracking" element={<TimeTracking />} />
-                    <Route path="/tags" element={<Tags />} />
-                    <Route path="/goals" element={<Goals />} />
-                    <Route path="/invoices" element={<Invoices />} />
-                    <Route path="/invoices/new" element={<InvoiceBuilder />} />
-                    <Route path="/payment-patterns" element={<PaymentPatterns />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/platform-integrations" element={<PlatformIntegrations />} />
-                    <Route path="/evidence-export" element={<EvidenceExport />} />
-                    <Route path="/subscription" element={<Subscription />} />
-                    <Route path="/help-center" element={<HelpCenter />} />
-                    <Route path="/pipeline" element={<Pipeline />} />
-                    <Route path="/proposals" element={<Proposals />} />
-                    <Route path="/proposals/new" element={<ProposalBuilder />} />
+                    <Route path="/dashboard" element={<SectionErrorBoundary name="Dashboard"><Dashboard /></SectionErrorBoundary>} />
+                    <Route path="/clients" element={<SectionErrorBoundary name="Clients"><Clients /></SectionErrorBoundary>} />
+                    <Route path="/projects" element={<SectionErrorBoundary name="Projects"><Projects /></SectionErrorBoundary>} />
+                    <Route path="/protection-value" element={<SectionErrorBoundary name="Protection Value"><ProtectionValueDashboard /></SectionErrorBoundary>} />
+                    <Route path="/network" element={<SectionErrorBoundary name="Network"><PremiumNetwork /></SectionErrorBoundary>} />
+                    <Route path="/teams" element={<SectionErrorBoundary name="Teams"><TeamManagement /></SectionErrorBoundary>} />
+                    <Route path="/evidence-library" element={<SectionErrorBoundary name="Evidence Library"><EvidenceLibrary /></SectionErrorBoundary>} />
+                    <Route path="/time-tracking" element={<SectionErrorBoundary name="Time Tracking"><TimeTracking /></SectionErrorBoundary>} />
+                    <Route path="/tags" element={<SectionErrorBoundary name="Tags"><Tags /></SectionErrorBoundary>} />
+                    <Route path="/goals" element={<SectionErrorBoundary name="Goals"><Goals /></SectionErrorBoundary>} />
+                    <Route path="/invoices" element={<SectionErrorBoundary name="Invoices"><Invoices /></SectionErrorBoundary>} />
+                    <Route path="/invoices/new" element={<SectionErrorBoundary name="Invoice Builder"><InvoiceBuilder /></SectionErrorBoundary>} />
+                    <Route path="/payment-patterns" element={<SectionErrorBoundary name="Payment Patterns"><PaymentPatterns /></SectionErrorBoundary>} />
+                    <Route path="/reports" element={<SectionErrorBoundary name="Reports"><Reports /></SectionErrorBoundary>} />
+                    <Route path="/platform-integrations" element={<SectionErrorBoundary name="Integrations"><PlatformIntegrations /></SectionErrorBoundary>} />
+                    <Route path="/evidence-export" element={<SectionErrorBoundary name="Evidence Export"><EvidenceExport /></SectionErrorBoundary>} />
+                    <Route path="/subscription" element={<SectionErrorBoundary name="Subscription"><Subscription /></SectionErrorBoundary>} />
+                    <Route path="/help-center" element={<SectionErrorBoundary name="Help Center"><HelpCenter /></SectionErrorBoundary>} />
+                    <Route path="/pipeline" element={<SectionErrorBoundary name="Pipeline"><Pipeline /></SectionErrorBoundary>} />
+                    <Route path="/proposals" element={<SectionErrorBoundary name="Proposals"><Proposals /></SectionErrorBoundary>} />
+                    <Route path="/proposals/new" element={<SectionErrorBoundary name="Proposal Builder"><ProposalBuilder /></SectionErrorBoundary>} />
                   </Route>
 
                   {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </WorkspaceProvider>
-            </ConvexErrorBoundary>
+            </TopLevelErrorBoundary>
             <Toaster />
           </BrowserRouter>
           </ConvexAuthProvider>

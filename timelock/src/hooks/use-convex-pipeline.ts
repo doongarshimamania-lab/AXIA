@@ -8,7 +8,7 @@
  * Falls back gracefully when the user is not authenticated (returns empty data).
  */
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { PipelineDeal, DealStage, RichClient, RichMember, RichProposal } from "./use-app-data";
 import type { Id } from "../convex/_generated/dataModel";

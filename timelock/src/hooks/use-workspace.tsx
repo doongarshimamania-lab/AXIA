@@ -1,6 +1,6 @@
 import { useCallback, useMemo, createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 

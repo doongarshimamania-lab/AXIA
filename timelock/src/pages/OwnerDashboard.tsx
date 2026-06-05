@@ -32,7 +32,8 @@ import {
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { ConvexReactClient, useQuery } from "convex/react";
+import { ConvexReactClient } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { ConvexProvider } from "convex/react";
 
