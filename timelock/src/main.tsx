@@ -2,13 +2,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import Dashboard from "@/pages/Dashboard.tsx";
-import Clients from "@/pages/Clients.tsx";
+
 import Projects from "@/pages/Projects.tsx";
 import { ProtectionValueDashboard } from "@/components/ProtectionValueDashboard.tsx";
 import { PremiumNetwork } from "@/components/PremiumNetwork.tsx";
 import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
-import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
+
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { Component, StrictMode, useEffect } from "react";
@@ -206,12 +206,10 @@ root.render(
                   {/* Dashboard Routes (With Sidebar) */}
                   <Route element={<DashboardLayout />}>
                     <Route path="/dashboard" element={<SectionErrorBoundary name="Dashboard"><Dashboard /></SectionErrorBoundary>} />
-                    <Route path="/clients" element={<SectionErrorBoundary name="Clients"><Clients /></SectionErrorBoundary>} />
                     <Route path="/projects" element={<SectionErrorBoundary name="Projects"><Projects /></SectionErrorBoundary>} />
                     <Route path="/protection-value" element={<SectionErrorBoundary name="Protection Value"><ProtectionValueDashboard /></SectionErrorBoundary>} />
                     <Route path="/network" element={<SectionErrorBoundary name="Network"><PremiumNetwork /></SectionErrorBoundary>} />
                     <Route path="/teams" element={<SectionErrorBoundary name="Teams"><TeamManagement /></SectionErrorBoundary>} />
-                    <Route path="/evidence-library" element={<SectionErrorBoundary name="Evidence Library"><EvidenceLibrary /></SectionErrorBoundary>} />
                     <Route path="/time-tracking" element={<SectionErrorBoundary name="Time Tracking"><TimeTracking /></SectionErrorBoundary>} />
                     <Route path="/tags" element={<SectionErrorBoundary name="Tags"><Tags /></SectionErrorBoundary>} />
                     <Route path="/goals" element={<SectionErrorBoundary name="Goals"><Goals /></SectionErrorBoundary>} />
