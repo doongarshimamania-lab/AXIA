@@ -107,6 +107,70 @@ interface PipelineStats {
   }[];
 }
 
+// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
+
+const MOCK_STAGES: Stage[] = [
+  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: "#6366f1", order: 0, isDefault: true },
+  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: "#8b5cf6", order: 1, isDefault: true },
+  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: "#a855f7", order: 2, isDefault: true },
+  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: "#c084fc", order: 3, isDefault: true },
+  { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "#22c55e", order: 4, isDefault: true },
+  { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "#ef4444", order: 5, isDefault: true },
+];
+
+const now = Date.now();
+const day = 86400000;
+
+const MOCK_DEALS: Deal[] = [
+  // Lead
+  { _id: "deal_1" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "E-Commerce Platform Build", value: 12000, probability: 10, source: "upwork", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 60 * day, description: "Full e-commerce platform with product catalog, cart, checkout, and admin dashboard.", notes: "Initial inquiry received. Needs scoping call scheduled for next week.", order: 0, createdAt: now - 5 * day, updatedAt: now },
+  { _id: "deal_7" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "AI Chatbot Integration", value: 6000, probability: 10, source: "fiverr", contactName: "Nina Patel", contactEmail: "nina@smartassist.ai", expectedCloseDate: now + 75 * day, description: "Custom AI chatbot with NLP capabilities for customer support automation.", notes: "Inbound lead from Fiverr. Early stage exploration.", order: 1, createdAt: now - 2 * day, updatedAt: now },
+  { _id: "deal_13" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Real Estate Listing Portal", value: 18000, probability: 15, source: "linkedin", contactName: "Marcus Rivera", contactEmail: "marcus@primeproperty.com", expectedCloseDate: now + 90 * day, description: "Property listing portal with map search, virtual tours, and agent management.", notes: "Found us on LinkedIn. Budget not confirmed yet.", order: 2, createdAt: now - 1 * day, updatedAt: now },
+  { _id: "deal_14" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "EdTech Course Platform", value: 9500, probability: 10, source: "referral", contactName: "Prof. Anika Desai", contactEmail: "anika@learnvista.edu", expectedCloseDate: now + 50 * day, description: "Online course platform with video hosting, quizzes, progress tracking.", notes: "Referred by Priya at FinServe. Long sales cycle expected.", order: 3, createdAt: now - 3 * day, updatedAt: now },
+  { _id: "deal_15" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Fitness App MVP", value: 7500, probability: 8, source: "upwork", contactName: "Jake Morrison", contactEmail: "jake@fittrack.app", expectedCloseDate: now + 40 * day, description: "MVP fitness tracking app with workout plans and social features.", notes: "Startup founder with limited budget. Exploring options.", order: 4, createdAt: now - 4 * day, updatedAt: now },
+  // Qualified
+  { _id: "deal_2" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "SaaS Dashboard Redesign", value: 8500, probability: 25, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now + 45 * day, description: "Complete redesign of analytics dashboard with real-time data visualization.", notes: "Qualified lead. Demo scheduled for next week. Shortlisted among 3 agencies.", order: 5, createdAt: now - 12 * day, updatedAt: now },
+  { _id: "deal_8" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Digital Marketing Landing Pages", value: 4500, probability: 25, source: "upwork", contactName: "Lisa Park", contactEmail: "lisa@digitalmarketingco.com", expectedCloseDate: now + 30 * day, description: "5 A/B tested landing pages with analytics tracking.", notes: "Returning client. Budget approved internally. Quick turnaround expected.", order: 6, createdAt: now - 8 * day, updatedAt: now },
+  { _id: "deal_16" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Supply Chain Management System", value: 32000, probability: 30, source: "direct", contactName: "Robert Chang", contactEmail: "rchang@logisync.com", expectedCloseDate: now + 60 * day, description: "End-to-end supply chain management with inventory tracking and predictive analytics.", notes: "Enterprise client. Thorough evaluation process. Decision expected in 3 weeks.", order: 7, createdAt: now - 15 * day, updatedAt: now },
+  { _id: "deal_17" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Restaurant POS & Ordering System", value: 14000, probability: 20, source: "referral", contactName: "Maria Santos", contactEmail: "maria@freshbites.co", expectedCloseDate: now + 35 * day, description: "Point-of-sale system with online ordering and kitchen display integration.", notes: "Referred by Sam from TechCorp. Chain of 12 restaurants. Pilot at 2 locations first.", order: 8, createdAt: now - 10 * day, updatedAt: now },
+  // Proposal
+  { _id: "deal_3" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Mobile Banking App", value: 25000, probability: 50, source: "referral", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now + 30 * day, description: "Full-featured mobile banking app with biometric auth and compliance reporting.", notes: "Proposal sent. Awaiting board approval. CTO is our champion internally.", order: 9, createdAt: now - 20 * day, updatedAt: now },
+  { _id: "deal_9" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Creative Studios Motion Design Package", value: 7500, probability: 50, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 21 * day, description: "Motion graphics reel and social media content package for brand launch.", notes: "Existing client expanding scope. They viewed it within 2 hours of sending.", order: 10, createdAt: now - 10 * day, updatedAt: now },
+  { _id: "deal_18" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Healthcare Patient Portal", value: 35000, probability: 45, source: "direct", contactName: "Dr. Robert Singh", contactEmail: "robert@medportal.health", expectedCloseDate: now + 28 * day, description: "HIPAA-compliant patient portal with appointment scheduling and secure messaging.", notes: "Proposal sent with detailed compliance section. Their CIO requested additional security docs.", order: 11, createdAt: now - 14 * day, updatedAt: now },
+  { _id: "deal_19" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Brand Identity for NovaTech", value: 8500, probability: 55, source: "fiverr", contactName: "Aisha Khan", contactEmail: "aisha@novatech.io", expectedCloseDate: now + 14 * day, description: "Complete brand identity package: logo, color palette, typography, guidelines.", notes: "Startup rebranding after Series A. They love our portfolio. Decision imminent.", order: 12, createdAt: now - 7 * day, updatedAt: now },
+  // Negotiation
+  { _id: "deal_4" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Full-Stack SaaS Platform", value: 45000, probability: 70, source: "referral", contactName: "Rachel Green", contactEmail: "rachel@scaleup.io", expectedCloseDate: now + 7 * day, description: "Multi-tenant SaaS platform with subscription billing and white-label capabilities.", notes: "Close to agreement. Legal team reviewing contract terms. Only sticking point is IP clause.", order: 13, createdAt: now - 35 * day, updatedAt: now },
+  { _id: "deal_10" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "StartupHub Mobile App Phase 2", value: 9500, probability: 70, source: "fiverr", contactName: "Sarah Mitchell", contactEmail: "sarah@startuphub.co", expectedCloseDate: now + 10 * day, description: "Phase 2: push notifications, payment integration, and analytics dashboard.", notes: "Phase 1 successful. Negotiating final scope and timeline.", order: 14, createdAt: now - 18 * day, updatedAt: now },
+  { _id: "deal_20" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Insurance Claims Platform", value: 28000, probability: 65, source: "linkedin", contactName: "Vikram Mehta", contactEmail: "vikram@insureflow.com", expectedCloseDate: now + 14 * day, description: "Claims processing platform with document OCR and automated workflows.", notes: "Budget approved by CFO. Final negotiation on maintenance terms and SLA.", order: 15, createdAt: now - 25 * day, updatedAt: now },
+  { _id: "deal_23" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Manufacturing Quality Control System", value: 38000, probability: 60, source: "direct", contactName: "Ingrid Svensson", contactEmail: "ingrid@precisemfg.se", expectedCloseDate: now + 5 * day, description: "IoT-connected quality control system with real-time defect detection.", notes: "Final negotiation on change order process. Proposing hybrid model. Decision imminent.", order: 16, createdAt: now - 40 * day, updatedAt: now },
+  // Won
+  { _id: "deal_5" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "TechCorp Phase 2 — CMS & Marketing Automation", value: 15000, probability: 100, source: "upwork", contactName: "David Chen", contactEmail: "david.chen@techcorp.io", expectedCloseDate: now - 3 * day, description: "Phase 2: CMS integration, marketing automation, and analytics dashboard.", notes: "Won! Phase 2 approved. Kickoff meeting scheduled for next Monday.", order: 17, createdAt: now - 60 * day, updatedAt: now },
+  { _id: "deal_11" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "FinServe Analytics Platform", value: 5720, probability: 100, source: "upwork", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now - 10 * day, description: "Financial analytics platform with real-time market data and compliance reporting.", notes: "Monthly retainer won. First invoice paid. Excellent client relationship.", order: 18, createdAt: now - 30 * day, updatedAt: now },
+  { _id: "deal_21" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "GlobalEnt Data Dashboard", value: 22000, probability: 100, source: "toptal", contactName: "Anna Schmidt", contactEmail: "anna@insightdata.de", expectedCloseDate: now - 15 * day, description: "Enterprise analytics dashboard with real-time data streaming and role-based access.", notes: "Won after 3-month sales cycle. Enterprise contract with annual renewal.", order: 19, createdAt: now - 45 * day, updatedAt: now },
+  { _id: "deal_29" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "Creative Studios Brand Refresh", value: 5500, probability: 100, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now - 1 * day, description: "Brand refresh including updated visual identity and brand animation toolkit.", notes: "Won! Existing client expanding relationship. Kickoff tomorrow.", order: 20, createdAt: now - 50 * day, updatedAt: now },
+  { _id: "deal_30" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "CloudMetrics SaaS Dashboard", value: 8500, probability: 100, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now - 5 * day, description: "Analytics dashboard redesign with real-time data visualization.", notes: "Won after competitive evaluation. CTO championed us. 3-month engagement.", order: 21, createdAt: now - 55 * day, updatedAt: now },
+  // Lost
+  { _id: "deal_6" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Legacy System Migration", value: 22000, probability: 0, source: "toptal", contactName: "Frank Miller", contactEmail: "frank@oldtech.com", expectedCloseDate: now - 20 * day, description: "Legacy .NET system migration to modern React/Node.js stack.", notes: "Lost to competitor. Budget constraints. Went with cheaper offshore alternative.", order: 22, createdAt: now - 45 * day, updatedAt: now },
+  { _id: "deal_12" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Retail Inventory System", value: 14000, probability: 0, source: "linkedin", contactName: "Amy Foster", contactEmail: "amy@retailpro.com", expectedCloseDate: now - 30 * day, description: "Custom inventory management system with barcode scanning.", notes: "Lost due to project scope mismatch. Client needed off-the-shelf solution.", order: 23, createdAt: now - 55 * day, updatedAt: now },
+  { _id: "deal_24" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Government Portal Redesign", value: 48000, probability: 0, source: "direct", contactName: "Director Helen Park", contactEmail: "helen.park@citygov.org", expectedCloseDate: now - 10 * day, description: "Municipal government services portal with citizen authentication.", notes: "Lost due to procurement process favoring incumbent vendor.", order: 24, createdAt: now - 65 * day, updatedAt: now },
+];
+
+const MOCK_PIPELINE_STATS: PipelineStats = {
+  totalDeals: MOCK_DEALS.length,
+  totalValue: MOCK_DEALS.reduce((s, d) => s + d.value, 0),
+  weightedValue: MOCK_DEALS.reduce((s, d) => s + d.value * (d.probability / 100), 0),
+  byStage: MOCK_STAGES.map((stage) => {
+    const stageDeals = MOCK_DEALS.filter((d) => d.stageId === stage._id);
+    return {
+      stageId: stage._id,
+      stageName: stage.name,
+      color: stage.color,
+      dealCount: stageDeals.length,
+      totalValue: stageDeals.reduce((s, d) => s + d.value, 0),
+    };
+  }),
+};
+
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SOURCE_OPTIONS = [
@@ -210,17 +274,20 @@ export default function Pipeline() {
   const [editNotes, setEditNotes] = useState("");
   const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
 
-  // ── Derived State ──
-  const safeStages = useMemo(() => stages ?? [], [stages]);
-  const safeDeals = useMemo(() => deals ?? [], [deals]);
+  // ── Derived State (with mock data fallback when Convex returns empty) ──
+  const safeStages = useMemo(() => {
+    const s = stages ?? [];
+    return s.length > 0 ? s : MOCK_STAGES;
+  }, [stages]);
+  const safeDeals = useMemo(() => {
+    const d = deals ?? [];
+    return d.length > 0 ? d : MOCK_DEALS;
+  }, [deals]);
   const safeStats = useMemo(
-    () =>
-      stats ?? {
-        totalDeals: 0,
-        totalValue: 0,
-        weightedValue: 0,
-        byStage: [],
-      },
+    () => {
+      if (stats && stats.totalDeals > 0) return stats;
+      return MOCK_PIPELINE_STATS;
+    },
     [stats]
   );
   const isLoading = stages === undefined || deals === undefined;

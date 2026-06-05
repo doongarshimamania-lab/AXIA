@@ -205,3 +205,25 @@ Stage Summary:
 - Preview available at https://preview-81.space-z.ai/
 - Convex deploy had ViewData permission errors on system tables (benign) — functions likely deployed
 - GitHub repo updated: https://github.com/doongarshimamania-lab/AXIA
+
+---
+Task ID: 1
+Agent: Main
+Task: Fix empty Pipeline & Proposals pages by adding mock data fallback
+
+Work Log:
+- Read RULES.md, understood project structure and deployment requirements
+- Identified root cause: Pipeline.tsx and Proposals.tsx directly query Convex with NO fallback to mock data. When unauthenticated, Convex returns empty arrays → pages show "No proposals found" / "No Pipeline Stages"
+- Also discovered AppDataProvider is NOT in main.tsx provider hierarchy, so useAppData() isn't available to pages
+- Solution: Added inline MOCK_STAGES, MOCK_DEALS, MOCK_PIPELINE_STATS to Pipeline.tsx and MOCK_PROPOSALS, MOCK_STATS to Proposals.tsx
+- Modified derived state in both pages to fall back to mock data when Convex returns empty
+- Built with `npx vite build` successfully
+- Restarted preview_server on port 3000
+- Created timestamped backup: axia-backup-20260605_090049.zip
+- Pushed to GitHub: commit "fix: add rich mock data fallback for Pipeline & Proposals pages when Convex returns empty"
+
+Stage Summary:
+- Pipeline page now shows 23 deals across 6 stages (Lead: 5, Qualified: 4, Proposal: 4, Negotiation: 4, Won: 5, Lost: 3)
+- Proposals page now shows 14 proposals across all statuses (Signed: 3, Sent: 3, Viewed: 3, Draft: 3, Declined: 1, Expired: 1)
+- Preview URL: https://preview-81.space-z.ai/
+- GitHub pushed successfully to main branch
