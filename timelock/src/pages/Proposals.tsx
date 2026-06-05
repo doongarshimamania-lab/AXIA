@@ -188,6 +188,9 @@ export default function Proposals() {
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, {}) as Proposal[] | undefined;
 
+  // Track whether we're using mock data (mock IDs are not valid Convex IDs)
+  const isUsingMockData = !convexProposals || convexProposals.length === 0;
+
   // Use Convex data when available, fall back to mock data
   const proposals = useMemo(() => {
     if (convexProposals && convexProposals.length > 0) return convexProposals;
@@ -506,6 +509,7 @@ export default function Proposals() {
                   key={proposal._id}
                   proposal={proposal}
                   idx={idx}
+                  isMock={isUsingMockData}
                   formatCurrency={formatCurrency}
                   formatDate={formatDate}
                   onSend={handleSend}
@@ -550,6 +554,7 @@ export default function Proposals() {
 function ProposalCard({
   proposal,
   idx,
+  isMock,
   formatCurrency,
   formatDate,
   onSend,
@@ -559,6 +564,7 @@ function ProposalCard({
 }: {
   proposal: Proposal;
   idx: number;
+  isMock: boolean;
   formatCurrency: (a: number) => string;
   formatDate: (t: number) => string;
   onSend: (id: string) => void;
@@ -569,10 +575,12 @@ function ProposalCard({
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
 
-  // Fetch follow-ups for this proposal
+  // Fetch follow-ups for this proposal — skip when using mock data
+  // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
+  // and would cause useQuery to throw a server validation error.
   const followUps = useQuery(
     api.proposals.crud.getFollowUps,
-    { proposalId: proposal._id as any }
+    isMock ? "skip" : { proposalId: proposal._id as any }
   ) as FollowUp[] | undefined;
 
   const scheduledFollowUps = useMemo(

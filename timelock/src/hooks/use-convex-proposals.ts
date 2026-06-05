@@ -125,7 +125,9 @@ export interface ConvexProposalsData {
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useConvexProposals(): ConvexProposalsData {
-  const rawProposals = useQuery(api.proposals.crud.getProposalsEnriched, {}) as EnrichedProposalRow[] | undefined;
+  // NOTE: getProposalsEnriched does not exist yet; using getProposals instead.
+  // Enriched fields (client, assignedMember, linkedDeal) will be null.
+  const rawProposals = useQuery(api.proposals.crud.getProposals, {}) as EnrichedProposalRow[] | undefined;
 
   const sendProposalMutation = useMutation(api.proposals.crud.sendProposal);
   const signProposalMutation = useMutation(api.proposals.crud.signProposal);
