@@ -138,6 +138,11 @@ export default function ProposalBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
+  const dealId = searchParams.get("dealId");
+  const dealTitle = searchParams.get("dealTitle");
+  const dealContactName = searchParams.get("contactName");
+  const dealContactEmail = searchParams.get("contactEmail");
+  const dealValue = searchParams.get("dealValue");
 
   const isEditing = !!editId;
 
@@ -191,6 +196,19 @@ export default function ProposalBuilder() {
       setCreatedProposalId(existingProposal._id);
     }
   }, [existingProposal, isEditing]);
+
+  // Pre-fill from deal query params (only when creating new)
+  useEffect(() => {
+    if (!isEditing && dealTitle) {
+      setTitle(dealTitle);
+    }
+    if (!isEditing && dealContactName) {
+      setClientName(dealContactName);
+    }
+    if (!isEditing && dealContactEmail) {
+      setClientEmail(dealContactEmail);
+    }
+  }, [isEditing, dealTitle, dealContactName, dealContactEmail]);
 
   // Auto-calculate total value
   const totalValue = useMemo(() => calculateTotal(sections), [sections]);
@@ -344,6 +362,7 @@ export default function ProposalBuilder() {
           validUntil: validUntilTimestamp,
           notes: notes || undefined,
           currency: "USD",
+          dealId: dealId || undefined,
         });
         setCreatedProposalId(newId as string);
         toast.success("Draft saved!", {
@@ -498,6 +517,16 @@ export default function ProposalBuilder() {
           />
         ) : (
           <div className="space-y-6">
+            {/* Deal Link Indicator */}
+            {dealId && !isEditing && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 rounded-lg">
+                <FileText className="h-4 w-4 text-[#8B5CF6]" />
+                <span className="text-sm text-muted-foreground">
+                  Creating proposal from deal: <span className="font-medium text-foreground">{dealTitle}</span>
+                </span>
+              </div>
+            )}
+
             {/* ─── Title ─────────────────────────────────────────────── */}
             <Card>
               <CardContent className="p-5">

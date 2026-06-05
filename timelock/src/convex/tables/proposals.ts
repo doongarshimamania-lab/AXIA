@@ -5,6 +5,7 @@ export const proposalTables = {
   proposals: defineTable({
     userId: v.id("users"),
     clientId: v.optional(v.id("clients")),
+    dealId: v.optional(v.id("deals")),
     title: v.string(),
     status: v.union(
       v.literal("draft"),
@@ -41,6 +42,14 @@ export const proposalTables = {
     signedAt: v.optional(v.number()),
     signatureData: v.optional(v.string()),
     notes: v.optional(v.string()),
+    attachments: v.optional(v.array(v.object({
+      storageId: v.optional(v.id("_storage")),
+      name: v.string(),
+      type: v.string(), // "pdf", "csv", "png", etc.
+      size: v.optional(v.number()),
+      url: v.optional(v.string()),
+      uploadedAt: v.number(),
+    }))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

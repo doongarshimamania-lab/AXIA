@@ -26,6 +26,7 @@ export const pipelineTables = {
     contactName: v.optional(v.string()),
     expectedCloseDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    proposalId: v.optional(v.id("proposals")),
     order: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),

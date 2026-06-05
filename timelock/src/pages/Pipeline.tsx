@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -89,6 +90,7 @@ interface Deal {
   contactName?: string;
   expectedCloseDate?: number;
   notes?: string;
+  proposalId?: Id<"proposals">;
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -224,6 +226,8 @@ function getSourceInfo(source: string | undefined) {
 // ─── Main Component ────────────────────────────────────────────────────────
 
 export default function Pipeline() {
+  const navigate = useNavigate();
+
   // ── Convex Queries & Mutations ──
   const stages = useQuery(api.pipeline.crud.getStages, {}) as
     | Stage[]
@@ -1159,6 +1163,24 @@ export default function Pipeline() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          dealId: detailDeal._id,
+                          contactName: detailDeal.contactName || '',
+                          contactEmail: detailDeal.contactEmail || '',
+                          dealTitle: detailDeal.title,
+                          dealValue: String(detailDeal.value),
+                        });
+                        navigate(`/proposals/new?${params.toString()}`);
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Create Proposal
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setEditMode(true)}
                       className="gap-1.5"
                     >
@@ -1499,6 +1521,19 @@ function DealCard({
               style={{ backgroundColor: sourceInfo.color }}
             />
             {sourceInfo.label}
+          </Badge>
+        </div>
+      )}
+
+      {/* Proposal Link Indicator */}
+      {deal.proposalId && (
+        <div className="mb-2">
+          <Badge
+            variant="outline"
+            className="text-[10px] h-5 px-1.5 gap-1 bg-[#8B5CF6]/5 text-[#8B5CF6] border-[#8B5CF6]/20"
+          >
+            <FileText className="h-2.5 w-2.5" />
+            Has Proposal
           </Badge>
         </div>
       )}
