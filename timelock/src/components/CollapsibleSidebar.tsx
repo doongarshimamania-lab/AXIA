@@ -24,8 +24,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2 } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -254,6 +255,13 @@ export function CollapsibleSidebar() {
           }} 
         />
 
+        {/* Workspace Switcher */}
+        {isExpanded && (
+          <div className="px-2 py-1">
+            <WorkspaceSwitcher />
+          </div>
+        )}
+
         {/* Navigation Content */}
         <div 
           ref={scrollContainerRef}
@@ -298,6 +306,12 @@ export function CollapsibleSidebar() {
                     className="w-full text-left"
                   >
                     <NavItem icon={Users} label="Clients" isExpanded={true} />
+                  </button>
+                  <button 
+                    onClick={() => navigate("/teams")} 
+                    className="w-full text-left"
+                  >
+                    <NavItem icon={Building2} label="Team" isExpanded={true} />
                   </button>
                   <button 
                     onClick={() => navigate("/evidence-library")} 
