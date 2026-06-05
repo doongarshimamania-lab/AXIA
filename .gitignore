@@ -52,3 +52,17 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Large backup files - stored locally only
+backups/*.tar.gz
+backups/*.zip
+download/*.zip
+download/*.png
+download/*.docx
+download/*.pdf
+public/timelock/
+public/assets/index-*.js
+public/assets/index-*.css
+upload/
+skills/
+*.tar.gz
+*.zip
