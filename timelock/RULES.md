@@ -80,6 +80,128 @@ CONVEX_DEPLOY_KEY=dev:veracious-zebra-519|eyJ2MiI6IjAyMDQ3ZGM0ZDM2NTQwYTlhMmNhOT
 
 ---
 
+---
+
+## GitHub Repository
+
+- **Repo URL:** https://github.com/doongarshimamania-lab/AXIA
+- **Remote with token:** `https://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@github.com/doongarshimamania-lab/AXIA.git`
+- **Default branch:** `main`
+- **PR branch:** `fix/runtime-auth-provider`
+
+### Git Push Workflow
+
+```bash
+cd /tmp/axia-fresh-repo
+# Copy updated files from /home/z/my-project/timelock/
+# Then:
+git add -A
+git commit -m "descriptive message"
+git push origin main
+```
+
+The working git repo is at `/tmp/axia-fresh-repo/` (lean 3.8MB, no large files).
+The local `/home/z/my-project/` git repo is 317MB and too large to push directly.
+
+---
+
+## Backup Policy (MANDATORY)
+
+- **After EVERY code change**, create a timestamped backup zip
+- **Naming format:** `axia-backup-YYYYMMDD_HHMMSS.zip`
+- **Save to TWO locations:**
+  1. `/home/z/my-project/download/`
+  2. `/home/z/my-project/backups/`
+- **Push to GitHub** in `backups/` folder
+- **Backup contents:** `src/`, `dist/`, `public/`, all config files, `start.sh`, `preview_server`
+
+### Backup Commands
+
+```bash
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+cd /home/z/my-project/timelock
+zip -r "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" \
+  src/ dist/ public/ package.json package-lock.json bun.lock \
+  vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json \
+  components.json index.html .env.local convex.json \
+  preview_server.c preview_server serve-dist.cjs start.sh BACKUP_README.md \
+  -x "node_modules/*" -x ".git/*"
+cp "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" /home/z/my-project/backups/
+```
+
+---
+
+## Preview Server
+
+- **Server type:** Compiled C binary (`preview_server`) — most stable, does NOT crash
+- **Port:** 3000
+- **Caddy proxy:** Port 81 → Port 3000
+- **Preview URL:** `https://preview-81.space-z.ai/`
+- **Start command:** `cd /home/z/my-project/timelock && ./preview_server &`
+- **Rebuild + restart:**
+  ```bash
+  cd /home/z/my-project/timelock && rm -rf dist && npx vite build
+  pkill -f preview_server; sleep 1; ./preview_server &
+  ```
+
+> **NEVER use `node serve-dist.cjs`** — Node processes get killed by the container's process reaper.
+> **ALWAYS use the C binary `preview_server`** — it survives.
+
+---
+
+## Critical: Latest Code Location
+
+The LATEST updated code was found at `/tmp/latest-backup/timelock/src/` (from Jun 4).
+This code is DIFFERENT from git HEAD in the old repo. Key differences:
+
+- Uses `ConvexProvider` + `ConvexAuthProvider` (BOTH needed)
+- Has `WorkspaceProvider` wrapping routes
+- Has `TeamManagement` page at `/teams` route
+- Has `WorkspaceSwitcher` component in sidebar
+- Has `Building2` icon for Team nav in sidebar
+- No standalone Auth/Onboarding routes (auth is handled differently)
+
+**NEVER restore code from the old git HEAD** without checking if `/tmp/latest-backup/` has newer files first.
+
+---
+
+## Runtime Error Fix (CRITICAL)
+
+The app crashes if `ConvexAuthProvider` is missing. The provider hierarchy MUST be:
+
+```tsx
+<ConvexProvider client={convex}>
+  <ConvexAuthProvider client={convex}>
+    <BrowserRouter>
+      <WorkspaceProvider>
+        {/* routes */}
+      </WorkspaceProvider>
+    </BrowserRouter>
+  </ConvexAuthProvider>
+</ConvexProvider>
+```
+
+- `ConvexProvider` — provides query/mutation context
+- `ConvexAuthProvider` — provides auth context (useAuth, useAuthActions, useConvexAuth)
+- `WorkspaceProvider` — provides workspace context
+- **If you remove ConvexAuthProvider**, `useAuth()` crashes with "useAuthActions must be used within ConvexAuthProvider"
+
+---
+
+## Data Flow: Convex vs Mock
+
+The app uses a **hybrid data source** pattern:
+- When authenticated with Convex → uses Convex queries/mutations
+- When unauthenticated → falls back to rich mock data from `use-app-data.tsx`
+
+**Per-source availability check** (NOT OR logic):
+- `isPipelineConvexAvailable` = Convex has pipeline data (length > 0)
+- `isProposalsConvexAvailable` = Convex has proposals data (length > 0)
+- Each source independently decides whether to use Convex or mock data
+- **NEVER use OR logic** (`convexPipeline.isConvexAvailable || convexProposals.isConvexAvailable`) — this caused both pages to show empty data
+
+---
+
 ## Critical Reminders
 
 - **ALWAYS check this file** before deploying or configuring Convex
@@ -87,3 +209,8 @@ CONVEX_DEPLOY_KEY=dev:veracious-zebra-519|eyJ2MiI6IjAyMDQ3ZGM0ZDM2NTQwYTlhMmNhOT
 - **NEVER deploy to local Convex** — always use the cloud deployment
 - **NEVER use bold-reindeer-389** — stale deployment
 - **Frontend must use Convex queries/mutations**, not mock useState data
+- **ALWAYS create a timestamped backup after every code change**
+- **ALWAYS push code changes to GitHub after committing**
+- **NEVER use Node.js servers** — they get killed by the container. Use the C `preview_server`
+- **NEVER restore old code from git** without checking `/tmp/latest-backup/` first
+- **NEVER remove ConvexAuthProvider** — it causes runtime crashes
