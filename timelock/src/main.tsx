@@ -10,6 +10,7 @@ import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
 import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { Component, StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation, Outlet } from "react-router";
@@ -150,6 +151,7 @@ root.render(
     <ThemeProvider>
       <InstrumentationProvider>
         <ConvexProvider client={convex}>
+          <ConvexAuthProvider client={convex}>
           <BrowserRouter>
             <RouteSyncer />
             <ConvexErrorBoundary>
@@ -197,6 +199,7 @@ root.render(
             </ConvexErrorBoundary>
             <Toaster />
           </BrowserRouter>
+          </ConvexAuthProvider>
         </ConvexProvider>
       </InstrumentationProvider>
     </ThemeProvider>
