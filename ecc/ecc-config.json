@@ -1,0 +1,24 @@
+{
+  "project": "axia",
+  "version": "2.0.0-rc.1",
+  "description": "Axia — Freelancer/Agency Protection SaaS Platform",
+  "stack": {
+    "frontend": "Vite + React + TypeScript + Tailwind CSS + shadcn/ui",
+    "backend": "Convex (reactive backend at https://artful-civet-344.convex.cloud)",
+    "auth": "@convex-dev/auth",
+    "build": "Vite",
+    "packageManager": "npm"
+  },
+  "installMode": "full",
+  "convex": {
+    "cloudUrl": "https://artful-civet-344.convex.cloud",
+    "envVars": ["PLATFORM_SECRET_KEY", "JWT_SECRET_KEY", "ENCRYPTION_KEY"]
+  },
+  "principles": {
+    "agentFirst": "Route work to the right specialist as early as possible",
+    "testDriven": "Write or refresh tests before trusting implementation changes",
+    "securityFirst": "Validate inputs, protect secrets, keep safe defaults",
+    "immutability": "Prefer explicit state transitions over mutation",
+    "planBeforeExecute": "Complex changes should be broken into deliberate phases"
+  }
+}

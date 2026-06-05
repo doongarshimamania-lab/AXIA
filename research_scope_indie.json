@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/SideProject/comments/1qyrxs7/built_a_tool_that_catches_scope_creep_in",
+    "name": "Built a tool that catches scope creep in freelance contracts before",
+    "snippet": "No UI needed, just forward the sketchy request and get a response. Also has an ambiguity detector that scans contracts before you sign them and ...",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.indiehackers.com/post/3-weeks-validating-a-client-vetting-tool-for-freelancers-heres-what-i-ve-learned-858c3a060b",
+    "name": "3 weeks validating a client vetting tool for freelancers - Indie Hackers",
+    "snippet": "3 weeks ago I started validating a client vetting tool for freelancers. Here's what I've learned so far: I've talked to 50+ freelance ...",
+    "host_name": "www.indiehackers.com",
+    "rank": 1,
+    "date": "May 28, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/agent_maxsmart/i-built-a-tool-that-kills-scope-creep-for-freelancers-2k71",
+    "name": "I Built a Tool That Kills Scope Creep for Freelancers - DEV Community",
+    "snippet": "ScopeGuard generates a shareable scope agreement in 60 seconds. You fill in the project details — deliverables, price, timeline, revisions, out- ...",
+    "host_name": "dev.to",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ideabrowser.com/idea/scope-creep-guard-for-freelancers",
+    "name": "Freelance scope tracker that detects scope creep and  - Ideabrowser",
+    "snippet": "Freelancers often lose money on projects because scope creep sneaks in disguised as \"quick requests\" and \"small tweaks.",
+    "host_name": "www.ideabrowser.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/p/DXdi9fHjSsW",
+    "name": "New. Single-purpose. Built by freelancers who got tired of writing the",
+    "snippet": "This tool reads both, finds the exact line in your contract that settles the argument, and if it's out of scope, generates the polite change- ...",
+    "host_name": "www.instagram.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.indiehackers.com/post/how-do-you-handle-scope-creep-with-clients-eeda9ad8f8",
+    "name": "How do you handle scope creep with clients? - Indie Hackers",
+    "snippet": "Curious how people here deal with clients who keep adding work after the project starts, ad a bad experience myself",
+    "host_name": "www.indiehackers.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/reel/DVgIZH9lhLO",
+    "name": "You don't need clients to create proof. Proof is anything that shows",
+    "snippet": "Here's the truth most freelancers miss: it's not your skill that loses deals, it's your pricing structure. Hourly pricing creates anxiety, flat ...",
+    "host_name": "www.instagram.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/p/DWCYEB2j6yI",
+    "name": "This open-source SaaS makes $17K/month. - Instagram",
+    "snippet": "Solo startup founders, this is the ultimate startup cheat sheet to build a SaaS business fast in 2026 Use AI tools and no-code stack like n8n ...",
+    "host_name": "www.instagram.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/1859263538149985/posts/1935081997234805",
+    "name": "Free tool to extract startup ideas from Reddit - Facebook",
+    "snippet": "I built a ruthless evaluation engine that scans Reddit posts and tells you — in seconds — whether it's: Just a prompt A no-code automation ...",
+    "host_name": "www.facebook.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/freelancers-hub/building-your-personal-brand-as-a-tech-freelancer-dce6af312ac0",
+    "name": "Building Your Personal Brand as a Tech Freelancer - Medium",
+    "snippet": "I got the job. It paid out to roughly $8/hour after all the unpaid proposal writing, scope creep, and revision rounds. That same month, a ...",
+    "host_name": "medium.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

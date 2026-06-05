@@ -1,0 +1,209 @@
+import { useState, useMemo } from "react";
+import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { EvidenceTimeline } from "@/components/evidence-library/EvidenceTimeline";
+import { EvidenceQualityScorecard } from "@/components/evidence-library/EvidenceQualityScorecard";
+import { TeamValidation } from "@/components/evidence-library/TeamValidation";
+import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
+import { EvidenceHealthScore } from "@/components/evidence-library/EvidenceHealthScore";
+import { Card } from "@/components/ui/card";
+
+type ViewType = "date" | "project" | "client" | "type";
+
+// Mock data for demo/guest mode - no Convex dependency
+const MOCK_HEALTH_SCORE = {
+  overallScore: 87,
+  evidenceCompleteness: 92,
+  contextRelevance: 78,
+  protectionStrength: 85,
+  lastUpdated: Date.now(),
+  trend: "improving" as const,
+  recommendations: [
+    "Add more client-specific keywords to work memos",
+    "Increase screenshot frequency during high-value tasks",
+    "Document all client communication in evidence",
+  ],
+};
+
+const MOCK_TIMELINE = [
+  {
+    id: "ev_1",
+    timestamp: Date.now() - 2 * 60 * 60 * 1000,
+    type: "screenshot" as const,
+    description: "Work progress screenshot captured",
+    platform: "upwork" as const,
+    projectId: "proj_1",
+    clientName: "TechCorp Solutions",
+    complianceScore: 95,
+    tags: ["development", "frontend"],
+  },
+  {
+    id: "ev_2",
+    timestamp: Date.now() - 3 * 60 * 60 * 1000,
+    type: "memo" as const,
+    description: "Completed responsive header implementation",
+    platform: "upwork" as const,
+    projectId: "proj_1",
+    clientName: "TechCorp Solutions",
+    complianceScore: 90,
+    tags: ["development", "css"],
+  },
+  {
+    id: "ev_3",
+    timestamp: Date.now() - 5 * 60 * 60 * 1000,
+    type: "activity" as const,
+    description: "Active coding session - 47 mouse events, 23 keyboard events",
+    platform: "fiverr" as const,
+    projectId: "proj_2",
+    clientName: "StartupHub Inc",
+    complianceScore: 82,
+    tags: ["development", "backend"],
+  },
+  {
+    id: "ev_4",
+    timestamp: Date.now() - 8 * 60 * 60 * 1000,
+    type: "screenshot" as const,
+    description: "API endpoint testing evidence",
+    platform: "toptal" as const,
+    projectId: "proj_3",
+    clientName: "Global Enterprises",
+    complianceScore: 75,
+    tags: ["testing", "api"],
+  },
+  {
+    id: "ev_5",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    type: "communication" as const,
+    description: "Client requirements clarification call documented",
+    platform: "upwork" as const,
+    projectId: "proj_1",
+    clientName: "TechCorp Solutions",
+    complianceScore: 88,
+    tags: ["communication", "requirements"],
+  },
+  {
+    id: "ev_6",
+    timestamp: Date.now() - 26 * 60 * 60 * 1000,
+    type: "memo" as const,
+    description: "Database schema update and migration notes",
+    platform: "upwork" as const,
+    projectId: "proj_1",
+    clientName: "TechCorp Solutions",
+    complianceScore: 91,
+    tags: ["database", "backend"],
+  },
+];
+
+const MOCK_EVIDENCE_ITEMS = [
+  {
+    _id: "ei_1" as any,
+    type: "screenshot" as const,
+    description: "Dashboard UI implementation",
+    timestamp: Date.now() - 2 * 60 * 60 * 1000,
+    platform: "upwork" as const,
+    projectName: "Website Redesign",
+    clientName: "TechCorp Solutions",
+    complianceScore: 95,
+    tags: ["ui", "frontend"],
+    fileUrl: "/placeholder-evidence.png",
+  },
+  {
+    _id: "ei_2" as any,
+    type: "memo" as const,
+    description: "Fixed critical payment processing bug",
+    timestamp: Date.now() - 5 * 60 * 60 * 1000,
+    platform: "fiverr" as const,
+    projectName: "E-Commerce Fix",
+    clientName: "StartupHub Inc",
+    complianceScore: 82,
+    tags: ["bugfix", "backend"],
+    fileUrl: null,
+  },
+  {
+    _id: "ei_3" as any,
+    type: "activity" as const,
+    description: "Full-stack development session - 3h 22m",
+    timestamp: Date.now() - 8 * 60 * 60 * 1000,
+    platform: "toptal" as const,
+    projectName: "Mobile App Backend",
+    clientName: "Global Enterprises",
+    complianceScore: 78,
+    tags: ["development", "fullstack"],
+    fileUrl: null,
+  },
+  {
+    _id: "ei_4" as any,
+    type: "communication" as const,
+    description: "Sprint planning and task allocation call",
+    timestamp: Date.now() - 24 * 60 * 60 * 1000,
+    platform: "upwork" as const,
+    projectName: "Website Redesign",
+    clientName: "TechCorp Solutions",
+    complianceScore: 90,
+    tags: ["planning", "communication"],
+    fileUrl: null,
+  },
+  {
+    _id: "ei_5" as any,
+    type: "screenshot" as const,
+    description: "API documentation and endpoint testing",
+    timestamp: Date.now() - 48 * 60 * 60 * 1000,
+    platform: "upwork" as const,
+    projectName: "API Development",
+    clientName: "Digital Marketing Co",
+    complianceScore: 87,
+    tags: ["api", "documentation"],
+    fileUrl: "/placeholder-evidence.png",
+  },
+];
+
+export default function EvidenceLibrary() {
+  const { tier: subscriptionTier } = useSubscriptionTier();
+  const [viewMode, setViewMode] = useState<ViewType>("date");
+
+  const getTierLevel = (tier: string) => {
+    const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3, client: 0 };
+    return levels[tier] || 0;
+  };
+  const hasTierAccess = (requiredTier: string) => getTierLevel(subscriptionTier) >= getTierLevel(requiredTier);
+
+  // Using mock data - no Convex queries needed
+  const healthScore = MOCK_HEALTH_SCORE;
+  const protectedHours = 42.5;
+  const timeline = MOCK_TIMELINE;
+  const evidenceItems = MOCK_EVIDENCE_ITEMS;
+
+  return (
+    <div className="w-full min-h-screen bg-background">
+      <div className="p-8 space-y-6">
+        <div>
+          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            Evidence Library
+          </h1>
+          <p className="text-[16px] text-muted-foreground">
+            Monitor capture health, anticipate gaps early, and export airtight proof on demand.
+          </p>
+        </div>
+
+        <EvidenceHealthScore
+          protectedHours={protectedHours}
+          healthScore={healthScore}
+        />
+
+        <EvidenceTimeline timeline={timeline} />
+
+        <EvidenceQualityScorecard
+          hasAccess={hasTierAccess("pro")}
+          healthScore={healthScore}
+        />
+
+        <TeamValidation hasAccess={hasTierAccess("expert")} />
+
+        <EvidenceItemsList
+          evidenceItems={evidenceItems}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
+      </div>
+    </div>
+  );
+}
