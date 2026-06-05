@@ -17,17 +17,19 @@ interface ProjectRiskTimelineProps {
   guestUserId?: string;
 }
 
-const isValidProjectId = (value: unknown): value is Id<"projects"> => {
-  return typeof value === "string" && value.length > 0;
+const isValidConvexId = (value: unknown): value is Id<"projects"> => {
+  // Convex IDs are alphanumeric strings (e.g., "kg2abc123def456") with no underscores
+  // Mock IDs like "proj_1", "deal_1" contain underscores and will cause Convex errors
+  return typeof value === "string" && value.length >= 10 && !value.includes("_");
 };
 
 const isValidUserId = (value: unknown): value is Id<"users"> => {
-  return typeof value === "string" && value.length > 0;
+  return typeof value === "string" && value.length >= 10 && !value.includes("_");
 };
 
 export function ProjectRiskTimeline({ projectData, tier, onUpgrade, guestUserId }: ProjectRiskTimelineProps) {
   const projectId = projectData?._id;
-  const hasValidProjectId = isValidProjectId(projectId);
+  const hasValidProjectId = isValidConvexId(projectId);
   
   // Ensure guestUserId is treated as a string or undefined for the query
   const validGuestUserId = isValidUserId(guestUserId) ? guestUserId : undefined;

@@ -39,8 +39,8 @@ export function ProjectHealthDashboardNew({ projectData, tier, onUpgrade }: Proj
     projectId ? { projectId, userTier: tier, guestUserId: projectData.userId } : "skip"
   );
 
-  // Loading state
-  if (backendData === undefined) {
+  // Loading state — only show when we have a valid projectId and are actually waiting
+  if (projectId && backendData === undefined) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="text-center py-8">
@@ -51,13 +51,15 @@ export function ProjectHealthDashboardNew({ projectData, tier, onUpgrade }: Proj
     );
   }
 
-  // Error state
+  // Error state — no data available (either skipped or failed)
   if (!backendData) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="text-center py-4">
           <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Failed to load timeline health data</p>
+          <p className="text-sm text-muted-foreground">
+            {projectId ? "Failed to load timeline health data" : "Select a project with real data to view health dashboard"}
+          </p>
         </div>
       </Card>
     );

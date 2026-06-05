@@ -13,16 +13,22 @@ interface ProtectionRiskHeatmapProps {
   onUpgrade?: () => void;
 }
 
+// Convex IDs are alphanumeric (e.g., "kg2abc123def456") — mock IDs like "proj_1" contain underscores
+const isValidConvexId = (id: unknown): id is Id<"projects"> =>
+  typeof id === "string" && id.length >= 10 && !id.includes("_");
+
 export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: ProtectionRiskHeatmapProps) {
+  const validProjectId = isValidConvexId(projectId) ? projectId : null;
+
   const heatmapData = useQuery(
     api.projects.projectProtection.getProjectRiskHeatmap,
-    projectId ? { projectId } : "skip"
+    validProjectId ? { projectId: validProjectId } : "skip"
   );
 
   const normalizedTier = tier.toLowerCase();
 
   // Loading state
-  if (heatmapData === undefined && projectId) {
+  if (heatmapData === undefined && validProjectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">
@@ -34,7 +40,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
     );
   }
 
-  if (!projectId) {
+  if (!validProjectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">

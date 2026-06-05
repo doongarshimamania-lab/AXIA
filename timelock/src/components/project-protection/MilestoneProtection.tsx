@@ -14,13 +14,19 @@ interface MilestoneProtectionProps {
   onUpgrade?: () => void;
 }
 
+// Convex IDs are alphanumeric (e.g., "kg2abc123def456") — mock IDs like "proj_1" contain underscores
+const isValidConvexId = (id: unknown): id is Id<"projects"> =>
+  typeof id === "string" && id.length >= 10 && !id.includes("_");
+
 export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestoneProtectionProps) {
+  const validProjectId = isValidConvexId(projectId) ? projectId : null;
+
   const milestoneData = useQuery(
     api.projects.milestoneProtection.getMilestoneProtection,
-    projectId ? { projectId, userTier: tier } : "skip"
+    validProjectId ? { projectId: validProjectId, userTier: tier } : "skip"
   );
 
-  if (!projectId) {
+  if (!validProjectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">
@@ -33,7 +39,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
     );
   }
 
-  if (projectId && milestoneData === undefined) {
+  if (validProjectId && milestoneData === undefined) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="flex items-center justify-center py-12">
@@ -105,7 +111,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
         latestReport={latestReport}
         snapshots={snapshots}
         onUpgrade={onUpgrade}
-        projectId={projectId || undefined}
+        projectId={validProjectId || undefined}
       />
     );
   }
@@ -122,7 +128,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
         alerts={alerts}
         latestReport={latestReport}
         snapshots={snapshots}
-        projectId={projectId || undefined}
+        projectId={validProjectId || undefined}
       />
     );
   }

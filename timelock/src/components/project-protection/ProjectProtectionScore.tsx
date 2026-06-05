@@ -14,13 +14,15 @@ interface ProjectProtectionScoreProps {
   onUpgrade?: () => void;
 }
 
-const isValidProjectId = (value: unknown): value is Id<"projects"> => {
-  return typeof value === "string" && value.length > 0;
+const isValidConvexId = (value: unknown): value is Id<"projects"> => {
+  // Convex IDs are alphanumeric strings (e.g., "kg2abc123def456") with no underscores
+  // Mock IDs like "proj_1", "deal_1" contain underscores and will cause Convex errors
+  return typeof value === "string" && value.length >= 10 && !value.includes("_");
 };
 
 export function ProjectProtectionScore({ projectId, tier, onUpgrade }: ProjectProtectionScoreProps) {
   const normalizedTier = tier.toLowerCase();
-  const validProjectId = isValidProjectId(projectId) ? (projectId as Id<"projects">) : null;
+  const validProjectId = isValidConvexId(projectId) ? (projectId as Id<"projects">) : null;
   const isDemoMode = !validProjectId;
 
   const queryFn: any = api.projects.projectProtectionScore.getProjectProtectionScore;
