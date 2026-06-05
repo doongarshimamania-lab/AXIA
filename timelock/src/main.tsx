@@ -21,6 +21,7 @@ import OwnerDashboard from "./pages/OwnerDashboard.tsx";
 import ClientDashboard from "./pages/ClientDashboard.tsx";
 import ClientLogin from "./pages/ClientLogin.tsx";
 import ClientSignup from "./pages/ClientSignup.tsx";
+import ClientWorkspace from "./pages/ClientWorkspace.tsx";
 import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
 import OnboardingUserInformation from "./pages/OnboardingUserInformation.tsx";
 import OnboardingSource from "./pages/OnboardingSource.tsx";
@@ -198,6 +199,9 @@ root.render(
                   <Route path="/client-dashboard" element={<SectionErrorBoundary name="Client Portal"><ClientDashboard /></SectionErrorBoundary>} />
                   <Route path="/client-login" element={<SectionErrorBoundary name="Client Login"><ClientLogin /></SectionErrorBoundary>} />
                   <Route path="/client-signup" element={<SectionErrorBoundary name="Client Signup"><ClientSignup /></SectionErrorBoundary>} />
+
+                  {/* Client Workspace — Shareable link, no login required */}
+                  <Route path="/workspace/:token" element={<SectionErrorBoundary name="Client Workspace"><ClientWorkspace /></SectionErrorBoundary>} />
 
                   {/* Dashboard Routes (With Sidebar) */}
                   <Route element={<DashboardLayout />}>
