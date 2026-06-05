@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, FileSignature, Kanban, Building2 } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2 } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
@@ -295,20 +295,30 @@ export function CollapsibleSidebar() {
                   >
                     <NavItem icon={Home} label="Dashboard" isExpanded={true} />
                   </button>
-                  <button 
-                    onClick={() => navigate("/projects")} 
+                  <button
+                    onClick={() => navigate("/projects")}
                     className="w-full text-left"
                   >
                     <NavItem icon={Briefcase} label="Projects" isExpanded={true} />
                   </button>
-
-                  <button 
-                    onClick={() => navigate("/teams")} 
+                  <button
+                    onClick={() => navigate("/clients")}
+                    className="w-full text-left"
+                  >
+                    <NavItem icon={Users} label="Clients" isExpanded={true} />
+                  </button>
+                  <button
+                    onClick={() => navigate("/teams")}
                     className="w-full text-left"
                   >
                     <NavItem icon={Building2} label="Team" isExpanded={true} />
                   </button>
-
+                  <button
+                    onClick={() => navigate("/evidence-library")}
+                    className="w-full text-left"
+                  >
+                    <NavItem icon={Database} label="Evidence Library" isExpanded={true} />
+                  </button>
                   <button 
                     onClick={() => navigate("/time-tracking")} 
                     className="w-full text-left"
@@ -405,7 +415,12 @@ export function CollapsibleSidebar() {
                 <button onClick={() => navigate("/projects")} title="Projects" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Briefcase className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-
+                <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
 
                 <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />

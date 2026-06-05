@@ -40,6 +40,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { exportPaymentReport, generateCSV } from "@/lib/exportUtils";
+import { ClientPaymentPattern } from "@/components/client-protection/ClientPaymentPattern";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -572,6 +573,7 @@ export default function PaymentPatterns() {
             <TabsTrigger value="alerts">Late Alerts</TabsTrigger>
             <TabsTrigger value="risk">Risk Analysis</TabsTrigger>
             <TabsTrigger value="aging">Aging Report</TabsTrigger>
+            <TabsTrigger value="client-patterns">Client Patterns</TabsTrigger>
             {isPro && <TabsTrigger value="predictions">Predictions</TabsTrigger>}
           </TabsList>
 
@@ -1281,6 +1283,29 @@ export default function PaymentPatterns() {
           {/* ── Aging Report Tab (Task 2) ── */}
           <TabsContent value="aging" className="space-y-4">
             <AgingReportSection />
+          </TabsContent>
+
+          {/* ── Client Payment Pattern Tab ── */}
+          <TabsContent value="client-patterns" className="space-y-4">
+            <ClientPaymentPattern
+              paymentPattern={{
+                hasPattern: true,
+                disputeRate: 15,
+                disputeCycle: "End of month payment disputes",
+                highRiskPeriod: "Last week of each month",
+                paymentTriggers: [
+                  "Client reviews invoices on the 25th of each month",
+                  "Disputes typically filed 2-3 days after invoice review",
+                  "Higher dispute rate when project milestones are unclear"
+                ],
+                protectionPlan: [
+                  { action: "Send detailed work summary 3 days before month-end", impact: "Reduces disputes by 40%" },
+                  { action: "Schedule brief check-in call on the 23rd", impact: "Improves communication clarity" },
+                  { action: "Ensure all evidence is uploaded by the 20th", impact: "Provides dispute protection buffer" }
+                ]
+              }}
+              tier={tier}
+            />
           </TabsContent>
 
           {/* ── Predictions Tab (Pro only) ── */}

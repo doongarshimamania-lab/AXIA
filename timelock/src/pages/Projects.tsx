@@ -34,13 +34,14 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
-import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
-import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
-import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
-import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
-import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
-import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
-import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
+// The following components are hidden for now — will be re-enabled when ready:
+// import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
+// import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
+// import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
+// import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
+// import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
+// import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
+// import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
 
 interface Project {
   _id: Id<"projects">;
@@ -209,100 +210,7 @@ export default function Projects() {
                 onUpgrade={() => navigate("/subscription")}
               />
 
-                {/* Main Feature Dashboard - Always visible */}
-                <div className="space-y-8">
-                    
-                    {/* 1. Protection Score - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Protection Score</h2>
-                      </div>
-                      <SectionErrorBoundary name="Protection Score">
-                        <ProjectProtectionScore 
-                        projectId={selectedProjectId as Id<"projects">}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                    {/* 2. Health Dashboard - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Project Health Dashboard</h2>
-                      </div>
-                      <SectionErrorBoundary name="Health Dashboard">
-                        <ProjectHealthDashboardNew 
-                        projectData={selectedProject}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                    {/* 3. Risk Timeline Analysis - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Risk Timeline Analysis</h2>
-                      </div>
-                      <SectionErrorBoundary name="Risk Timeline">
-                        <ProjectRiskTimeline 
-                        projectData={selectedProject}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                    {/* 4. Milestone Protection - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Milestone Protection</h2>
-                      </div>
-                      <SectionErrorBoundary name="Milestone Protection">
-                        <MilestoneProtection 
-                        projectId={selectedProjectId as Id<"projects">}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                    {/* 5. Adaptive Evidence System - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Adaptive Evidence System</h2>
-                      </div>
-                      <SectionErrorBoundary name="Adaptive Evidence">
-                        <AdaptiveEvidenceSystem 
-                        projectId={selectedProjectId as Id<"projects">}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                    {/* 6. Protection Risk Heatmap - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Protection Risk Heatmap</h2>
-                      </div>
-                      <SectionErrorBoundary name="Risk Heatmap">
-                        <ProtectionRiskHeatmap 
-                        projectId={selectedProjectId as Id<"projects">}
-                        tier={tier}
-                        onUpgrade={handleUpgrade}
-                      />
-                      </SectionErrorBoundary>
-                  </div>
-
-                </div>
+                {/* Feature sections hidden — will be re-enabled when ready */}
               </>
             )}
           </div>
