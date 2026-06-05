@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2 } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
@@ -314,6 +314,12 @@ export function CollapsibleSidebar() {
                     <NavItem icon={Building2} label="Team" isExpanded={true} />
                   </button>
                   <button
+                    onClick={() => navigate("/messages")}
+                    className="w-full text-left"
+                  >
+                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} />
+                  </button>
+                  <button
                     onClick={() => navigate("/evidence-library")}
                     className="w-full text-left"
                   >
@@ -417,6 +423,9 @@ export function CollapsibleSidebar() {
                 </button>
                 <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
                 <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />

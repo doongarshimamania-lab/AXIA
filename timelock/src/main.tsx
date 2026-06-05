@@ -44,6 +44,7 @@ import HelpCenter from "./pages/HelpCenter.tsx";
 import Pipeline from "./pages/Pipeline.tsx";
 import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
+import Messages from "./pages/Messages.tsx";
 
 // The top-level error boundary has been replaced with per-route SectionErrorBoundary.
 // Each page route is wrapped in its own SectionErrorBoundary so a crash on one page
@@ -226,6 +227,7 @@ root.render(
                     <Route path="/pipeline" element={<SectionErrorBoundary name="Pipeline"><Pipeline /></SectionErrorBoundary>} />
                     <Route path="/proposals" element={<SectionErrorBoundary name="Proposals"><Proposals /></SectionErrorBoundary>} />
                     <Route path="/proposals/new" element={<SectionErrorBoundary name="Proposal Builder"><ProposalBuilder /></SectionErrorBoundary>} />
+                    <Route path="/messages" element={<SectionErrorBoundary name="Messages"><Messages /></SectionErrorBoundary>} />
                   </Route>
 
                   {/* Catch-all */}

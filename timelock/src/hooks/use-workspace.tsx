@@ -78,7 +78,7 @@ function saveToStorage(key: string, value: any) {
 }
 
 // Check if an ID looks like a valid Convex ID (not a mock string like "ws_team_default")
-function isValidConvexId(id: string | null): boolean {
+export function isValidConvexId(id: string | null): boolean {
   if (!id) return false;
   return id.length >= 10 && !id.includes("_");
 }

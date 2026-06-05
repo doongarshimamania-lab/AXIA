@@ -11,6 +11,7 @@ import { proposalTables } from "./tables/proposals";
 import { billingTables } from "./tables/billing";
 import { scopeTables } from "./tables/scope";
 import { workspaceTables } from "./tables/workspaces";
+import { messagingTables } from "./tables/messaging";
 
 export default defineSchema({
   ...authTables,
@@ -25,4 +26,5 @@ export default defineSchema({
   ...billingTables,
   ...scopeTables,
   ...workspaceTables,
+  ...messagingTables,
 });
