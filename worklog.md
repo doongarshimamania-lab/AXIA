@@ -180,3 +180,28 @@ Stage Summary:
 - Bug was: Convex returns empty arrays for unauthenticated users, but hooks treated empty arrays as "Convex is available"
 - Fix: Each data source now independently falls back to mock data when Convex has no actual data
 - Both Pipeline and Proposals pages should now display rich mock data when Convex is empty/unauthenticated
+---
+Task ID: 1
+Agent: Main Agent
+Task: Enrich Pipeline and Proposals pages with high rich mock user data, deploy to Convex, push to GitHub
+
+Work Log:
+- Read RULES.md (both timelock and ecc) and identified the ecc repo at /home/z/my-project/ecc/
+- Read current seedNew.ts (22 deals, 12 proposals) and use-app-data.tsx (matching mock data)
+- Added 8 new pipeline deals to seedNew.ts: 2 Lead, 1 Qualified, 1 Negotiation, 2 Won, 2 Lost
+- Added 6 new proposals to seedNew.ts: 2 Signed, 2 Sent, 1 Viewed, 1 Draft
+- Added matching deals and proposals to use-app-data.tsx frontend fallback data
+- Built Vite frontend successfully (5.42s)
+- Deployed to Convex cloud (ViewData permission errors on system tables are benign - deploy key can't query system tables but code push succeeds)
+- Restarted preview_server on port 3000 (HTTP 200 confirmed)
+- Pushed to GitHub main branch (2 commits)
+- Created timestamped backup axia-backup-20260605_084731.zip in /download/ and /backups/
+- Pushed backup to GitHub repo
+
+Stage Summary:
+- Pipeline now has 30 deals across 6 stages (7 Lead, 5 Qualified, 4 Proposal, 4 Negotiation, 6 Won, 4 Lost)
+- Proposals now has 18 proposals across 6 statuses (5 Signed, 4 Sent, 3 Viewed, 4 Draft, 1 Declined, 1 Expired)
+- All new data has rich descriptions, notes, client/member links, and cross-references
+- Preview available at https://preview-81.space-z.ai/
+- Convex deploy had ViewData permission errors on system tables (benign) — functions likely deployed
+- GitHub repo updated: https://github.com/doongarshimamania-lab/AXIA

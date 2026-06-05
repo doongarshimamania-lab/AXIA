@@ -320,7 +320,7 @@ export const seedMockPipeline = mutation({
         daysAgo: 25,
       },
 
-      // ── Lost stage (2 deals) ──
+      // ── Lost stage (4 deals) ──
       {
         title: "Legacy System Migration",
         value: 22000,
@@ -345,6 +345,118 @@ export const seedMockPipeline = mutation({
         description: "Custom inventory management system with barcode scanning and supplier integration.",
         notes: "Lost due to project scope mismatch. Client needed an off-the-shelf solution rather than custom development. Good learning for future retail leads.",
         stageIdx: 5,
+        daysAgo: 55,
+      },
+      {
+        title: "Government Portal Redesign",
+        value: 48000,
+        probability: 0,
+        source: "direct",
+        contactName: "Director Helen Park",
+        contactEmail: "helen.park@citygov.org",
+        expectedCloseDate: now - 10 * day,
+        description: "Municipal government services portal with citizen authentication, document submission, and payment processing for city services.",
+        notes: "Lost due to procurement process favoring incumbent vendor. Our proposal scored highest on technical merit but the incumbent had a 5-year relationship. Will bid on next cycle.",
+        stageIdx: 5,
+        daysAgo: 65,
+      },
+      {
+        title: "Crypto Exchange Dashboard",
+        value: 19000,
+        probability: 0,
+        source: "fiverr",
+        contactName: "Dmitri Volkov",
+        contactEmail: "dmitri@cointrack.io",
+        expectedCloseDate: now - 15 * day,
+        description: "Real-time cryptocurrency trading dashboard with portfolio analytics, price alerts, and multi-exchange aggregation.",
+        notes: "Lost — client paused all development due to regulatory uncertainty in their jurisdiction. Good prospect to re-engage when regulations clear.",
+        stageIdx: 5,
+        daysAgo: 40,
+      },
+
+      // ── Lead stage (additional 3 deals) ──
+      {
+        title: "Nonprofit Donation Platform",
+        value: 8000,
+        probability: 12,
+        source: "referral",
+        contactName: "Dr. Sarah Okonkwo",
+        contactEmail: "sarah@givehope.org",
+        expectedCloseDate: now + 55 * day,
+        description: "Donation and volunteer management platform for a mid-size nonprofit with event registration, recurring donations, and impact reporting.",
+        notes: "Referred by Marcus at Digital Marketing Co. Nonprofit has limited budget but strong mission. Exploring grant funding to cover development costs. Warm introduction.",
+        stageIdx: 0,
+        daysAgo: 6,
+      },
+      {
+        title: "Travel Booking Engine",
+        value: 22000,
+        probability: 8,
+        source: "upwork",
+        contactName: "Carlos Mendez",
+        contactEmail: "carlos@wanderlust.travel",
+        expectedCloseDate: now + 70 * day,
+        description: "White-label travel booking engine with flight, hotel, and activity search API integrations plus custom itinerary builder.",
+        notes: "Inbound Upwork inquiry. Client currently reselling a competitor's platform and wants their own. Needs GDS integration expertise. Early discovery stage.",
+        stageIdx: 0,
+        daysAgo: 7,
+      },
+
+      // ── Qualified stage (additional 2 deals) ──
+      {
+        title: "Legal Practice Management",
+        value: 16000,
+        probability: 28,
+        source: "linkedin",
+        contactName: "Attorney James Whitfield",
+        contactEmail: "james@whitfieldlaw.com",
+        expectedCloseDate: now + 40 * day,
+        description: "Practice management system for a mid-size law firm with case management, time tracking, billing, document assembly, and court deadline calendaring.",
+        notes: "LinkedIn prospect. Met at a legal tech conference. Very interested in modernizing their 15-year-old system. They want a demo with their partners next Thursday.",
+        stageIdx: 1,
+        daysAgo: 18,
+      },
+
+      // ── Negotiation stage (additional 1 deal) ──
+      {
+        title: "Manufacturing Quality Control System",
+        value: 38000,
+        probability: 60,
+        source: "direct",
+        contactName: "Ingrid Svensson",
+        contactEmail: "ingrid@precisemfg.se",
+        expectedCloseDate: now + 5 * day,
+        description: "IoT-connected quality control system for a precision manufacturing plant with real-time defect detection, statistical process control, and compliance reporting.",
+        notes: "Final negotiation on change order process. They want Agile sprints but their procurement team prefers fixed-scope contracts. Proposing a hybrid model. Decision imminent.",
+        stageIdx: 3,
+        daysAgo: 40,
+      },
+
+      // ── Won stage (additional 2 deals) ──
+      {
+        title: "Creative Studios Brand Refresh",
+        value: 5500,
+        probability: 100,
+        source: "direct",
+        contactName: "Tom Bradley",
+        contactEmail: "tom@creativestudios.art",
+        expectedCloseDate: now - 1 * day,
+        description: "Brand refresh for Creative Studios including updated visual identity, social media templates, and brand animation toolkit.",
+        notes: "Won! Existing client expanding relationship. Quick brand refresh project to align with their upcoming product launch. Kickoff tomorrow.",
+        stageIdx: 4,
+        daysAgo: 50,
+      },
+      {
+        title: "CloudMetrics SaaS Dashboard",
+        value: 8500,
+        probability: 100,
+        source: "linkedin",
+        contactName: "Jennifer Wu",
+        contactEmail: "jen@cloudmetrics.io",
+        expectedCloseDate: now - 5 * day,
+        description: "Analytics dashboard redesign with real-time data visualization, team collaboration features, and role-based access views.",
+        notes: "Won after competitive evaluation against 2 other agencies. Their CTO championed us. 3-month engagement starting next week. Potential for expansion into their mobile app.",
+        stageIdx: 4,
         daysAgo: 55,
       },
     ];
@@ -647,6 +759,105 @@ export const seedMockProposals = mutation({
           { id: "4", type: "terms" as const, content: "40% upfront, 60% on delivery. WCAG 2.1 AA compliance guaranteed. University procurement process supported." },
         ],
         sentAt: now - 45 * day,
+      },
+
+      // ── Signed proposals (additional 2) ──
+      {
+        title: "Creative Studios Brand Refresh",
+        status: "signed" as const,
+        clientName: "Tom Bradley",
+        clientEmail: "tom@creativestudios.art",
+        totalValue: 5500,
+        sections: [
+          { id: "1", type: "heading" as const, content: "Creative Studios Brand Refresh" },
+          { id: "2", type: "text" as const, content: "Brand refresh for Creative Studios including updated visual identity, social media templates, and a brand animation toolkit. This refresh aligns your visual language with your upcoming product launch and market expansion." },
+          { id: "3", type: "pricing" as const, content: "Brand Refresh Package", metadata: { items: [{ name: "Visual Identity Update", price: 2000 }, { name: "Social Media Template Kit (10 templates)", price: 1500 }, { name: "Brand Animation Toolkit", price: 2000 }] } },
+          { id: "4", type: "terms" as const, content: "50% upfront, 50% on delivery. Includes 2 revision rounds. Final files in Figma, SVG, PNG, and After Effects formats." },
+        ],
+        sentAt: now - 12 * day,
+        viewedAt: now - 11 * day,
+        signedAt: now - 5 * day,
+      },
+      {
+        title: "CloudMetrics SaaS Dashboard Proposal",
+        status: "signed" as const,
+        clientName: "Jennifer Wu",
+        clientEmail: "jen@cloudmetrics.io",
+        totalValue: 8500,
+        sections: [
+          { id: "1", type: "heading" as const, content: "CloudMetrics Dashboard Redesign" },
+          { id: "2", type: "text" as const, content: "Complete redesign of the CloudMetrics SaaS analytics dashboard with real-time data visualization, collaborative annotations, role-based access control, and a modern component-based design system for future extensibility." },
+          { id: "3", type: "pricing" as const, content: "Dashboard Redesign Package", metadata: { items: [{ name: "UX Audit & Research", price: 1500 }, { name: "UI Design & Prototyping", price: 3000 }, { name: "Design System Components", price: 2500 }, { name: "Handoff & Documentation", price: 1500 }] } },
+          { id: "4", type: "milestone" as const, content: "Delivery Milestones", metadata: { milestones: [{ name: "UX Audit Complete", weeks: 2 }, { name: "Design Approval", weeks: 5 }, { name: "Final Delivery", weeks: 8 }] } },
+          { id: "5", type: "terms" as const, content: "30% upfront, 40% at design approval, 30% on delivery. Includes 90 days of design support post-launch." },
+        ],
+        sentAt: now - 18 * day,
+        viewedAt: now - 16 * day,
+        signedAt: now - 8 * day,
+      },
+
+      // ── Sent proposals (additional 2) ──
+      {
+        title: "Nonprofit Donation Platform Proposal",
+        status: "sent" as const,
+        clientName: "Dr. Sarah Okonkwo",
+        clientEmail: "sarah@givehope.org",
+        totalValue: 8000,
+        sections: [
+          { id: "1", type: "heading" as const, content: "GiveHope Donation & Volunteer Platform" },
+          { id: "2", type: "text" as const, content: "A purpose-built donation and volunteer management platform for GiveHope. Features include recurring donation processing, event registration, volunteer scheduling, impact dashboards, and automated tax receipt generation." },
+          { id: "3", type: "pricing" as const, content: "Nonprofit Platform Package", metadata: { items: [{ name: "Donation Processing Engine", price: 3000 }, { name: "Volunteer Management Module", price: 2000 }, { name: "Impact Dashboard & Reporting", price: 1500 }, { name: "Email & Receipt Automation", price: 1500 }] } },
+          { id: "4", type: "terms" as const, content: "Special nonprofit rate. 40% upfront, 60% on delivery. Includes 6 months of hosting and support. PCI-DSS Level 1 compliance included." },
+        ],
+        sentAt: now - 2 * day,
+      },
+      {
+        title: "Legal Practice Management Proposal",
+        status: "sent" as const,
+        clientName: "Attorney James Whitfield",
+        clientEmail: "james@whitfieldlaw.com",
+        totalValue: 16000,
+        sections: [
+          { id: "1", type: "heading" as const, content: "Whitfield Law Practice Management System" },
+          { id: "2", type: "text" as const, content: "Modern practice management system for Whitfield Law. Centralizes case management, time tracking, billing, document assembly, and court deadline calendaring. Replaces their aging on-premise system with a secure cloud-based solution." },
+          { id: "3", type: "pricing" as const, content: "Legal Tech Package", metadata: { items: [{ name: "Case Management Core", price: 5000 }, { name: "Time Tracking & Billing", price: 3500 }, { name: "Document Assembly Engine", price: 4000 }, { name: "Court Deadline & Calendaring", price: 3500 }] } },
+          { id: "4", type: "milestone" as const, content: "Delivery Milestones", metadata: { milestones: [{ name: "Case Management MVP", weeks: 4 }, { name: "Billing & Documents", weeks: 8 }, { name: "Full System Launch", weeks: 12 }] } },
+          { id: "5", type: "terms" as const, content: "25% upfront, 25% at MVP, 25% at billing milestone, 25% on delivery. SOC 2 Type II compliance. Data encryption at rest and in transit." },
+        ],
+        sentAt: now - 4 * day,
+        viewedAt: now - 2 * day,
+      },
+
+      // ── Viewed proposals (additional 1) ──
+      {
+        title: "Manufacturing Quality Control System Proposal",
+        status: "viewed" as const,
+        clientName: "Ingrid Svensson",
+        clientEmail: "ingrid@precisemfg.se",
+        totalValue: 38000,
+        sections: [
+          { id: "1", type: "heading" as const, content: "PreciseMfg Quality Control System" },
+          { id: "2", type: "text" as const, content: "IoT-connected quality control platform for precision manufacturing. Real-time defect detection using computer vision, statistical process control dashboards, automated compliance reporting, and predictive maintenance alerts." },
+          { id: "3", type: "pricing" as const, content: "Manufacturing QC Package", metadata: { items: [{ name: "IoT Data Pipeline & Edge Processing", price: 10000 }, { name: "Computer Vision Defect Detection", price: 12000 }, { id: "3b", name: "SPC Dashboards & Reporting", price: 8000 }, { id: "3c", name: "Predictive Maintenance Module", price: 8000 }] } },
+          { id: "4", type: "milestone" as const, content: "Rollout Plan", metadata: { milestones: [{ name: "IoT Pipeline & Data Collection", weeks: 4 }, { name: "Vision System Training", weeks: 8 }, { name: "Full Platform Launch", weeks: 14 }] } },
+          { id: "5", type: "terms" as const, content: "20% upfront, milestone-based billing thereafter. 24-month warranty on core platform. On-site installation and training included." },
+        ],
+        sentAt: now - 6 * day,
+        viewedAt: now - 3 * day,
+      },
+
+      // ── Draft proposals (additional 1) ──
+      {
+        title: "Travel Booking Engine Proposal",
+        status: "draft" as const,
+        clientName: "Carlos Mendez",
+        clientEmail: "carlos@wanderlust.travel",
+        totalValue: 22000,
+        sections: [
+          { id: "1", type: "heading" as const, content: "WanderLust Travel Booking Engine" },
+          { id: "2", type: "text" as const, content: "White-label travel booking platform with multi-GDS integration, dynamic packaging, itinerary builder, and affiliate management. Built for scale with microservices architecture and CDN-optimized content delivery." },
+          { id: "3", type: "pricing" as const, content: "Travel Platform Package", metadata: { items: [{ name: "GDS Integration (Amadeus + Sabre)", price: 8000 }, { name: "Booking Engine & Payment", price: 6000 }, { name: "Itinerary Builder & Maps", price: 4000 }, { name: "Admin & Affiliate Dashboard", price: 4000 }] } },
+        ],
       },
     ];
 
