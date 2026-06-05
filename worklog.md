@@ -82,3 +82,25 @@ Stage Summary:
 - No login required — the token IS the auth
 - GitHub Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/client-workspace-20260605
 - Backup: /home/z/my-project/download/axia-client-workspace-20260605_184031.zip
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix sub-component issues - remove evidence components, restore clients listing, push to GitHub
+
+Work Log:
+- Removed EvidenceHealthScore, DisputeSuccessSimulation, EvidenceGapPrediction from EvidenceLibrary.tsx (imports and JSX)
+- Added back "All Clients" tab with full table listing to Clients page (Clients.tsx)
+- Created tabbed interface: "All Clients" (table) + "Client Policy Profile" (existing)
+- Added search, summary cards, and proper data table with platform/rate/hours/value/protection/risk/status columns
+- Verified 6 feature components remain properly commented out in Projects.tsx
+- Confirmed ClientPaymentPattern already exists on PaymentPatterns page (no move needed)
+- Build verified successfully with Vite
+- Pushed to GitHub with IST timestamp: 2026-06-06_01-28-41_AM_IST
+- Created backup zip: AXIA_backup_2026-06-06_01-28-48_AM_IST.zip
+
+Stage Summary:
+- EvidenceLibrary: 3 components removed (EvidenceHealthScore, DisputeSuccessSimulation, EvidenceGapPrediction)
+- Clients: Full listing tab restored with table view, tabs for "All Clients" and "Client Policy Profile"
+- Projects: 6 hidden features confirmed still hidden
+- GitHub commit: 000af30 pushed to main
+- Backup: AXIA_backup_2026-06-06_01-28-48_AM_IST.zip saved to download/
