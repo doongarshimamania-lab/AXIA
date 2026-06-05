@@ -227,3 +227,26 @@ Stage Summary:
 - Proposals page now shows 14 proposals across all statuses (Signed: 3, Sent: 3, Viewed: 3, Draft: 3, Declined: 1, Expired: 1)
 - Preview URL: https://preview-81.space-z.ai/
 - GitHub pushed successfully to main branch
+
+---
+Task ID: fix-proposals-runtime-error
+Agent: Main Agent
+Task: Fix proposals page runtime error
+
+Work Log:
+- Investigated proposals page runtime error
+- Root cause: ProposalCard component calls useQuery(api.proposals.crud.getFollowUps) with mock data IDs like "prop_1", which are not valid Convex Id<"proposals"> values, causing Convex to throw a validation error
+- Fixed by adding `isMock` prop to ProposalCard and using `"skip"` for Convex query when using mock data
+- Also fixed use-convex-proposals.ts: changed getProposalsEnriched (nonexistent) to getProposals
+- Rebuilt Vite project successfully
+- Restarted preview server
+- Verified both Pipeline (25 deals) and Proposals (14 proposals) pages render without errors
+- No console errors in browser
+
+Stage Summary:
+- Proposals page runtime error FIXED
+- Both Pipeline and Proposals pages now render correctly with mock data
+- Fix: skip Convex getFollowUps query when using mock data IDs (isMock ? "skip" : {...})
+- Preview URL: https://preview-81.space-z.ai/
+- Backup created: /home/z/my-project/download/axia-backup-20260605T092851.zip
+- Git push to GitHub in progress (may be slow due to network)
