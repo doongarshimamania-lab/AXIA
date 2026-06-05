@@ -4,21 +4,31 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
 import crypto from "crypto";
 
-// Get platform secret from environment — FAIL if not configured
-const PLATFORM_SECRET = process.env.PLATFORM_SECRET_KEY;
-const JWT_SECRET = process.env.JWT_SECRET_KEY;
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+// Get platform secret from environment — lazy validation so module doesn't crash at import
+function getPlatformSecret(): string {
+  const key = process.env.PLATFORM_SECRET_KEY;
+  if (!key) throw new Error("SECURITY: PLATFORM_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
+  return key;
+}
 
-if (!PLATFORM_SECRET) throw new Error("SECURITY: PLATFORM_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
-if (!JWT_SECRET) throw new Error("SECURITY: JWT_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
-if (!ENCRYPTION_KEY) throw new Error("SECURITY: ENCRYPTION_KEY environment variable is not set. Refusing to start with insecure defaults.");
+function getJwtSecret(): string {
+  const key = process.env.JWT_SECRET_KEY;
+  if (!key) throw new Error("SECURITY: JWT_SECRET_KEY environment variable is not set. Refusing to start with insecure defaults.");
+  return key;
+}
+
+function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) throw new Error("SECURITY: ENCRYPTION_KEY environment variable is not set. Refusing to start with insecure defaults.");
+  return key;
+}
 
 /**
  * Generate HMAC-SHA256 hash for user ID
  * Format: user_id_hash = HMAC-SHA256(user_uuid, platform_secret)
  */
 export function generateUserIdHash(userId: string): string {
-  const hmac = crypto.createHmac("sha256", PLATFORM_SECRET);
+  const hmac = crypto.createHmac("sha256", getPlatformSecret());
   hmac.update(userId);
   return hmac.digest("hex");
 }
@@ -56,7 +66,7 @@ export function generateJWT(payload: Record<string, any>, expiresIn: string = "5
   const encodedPayload = Buffer.from(JSON.stringify(jwtPayload)).toString("base64url");
   
   const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", getJwtSecret())
     .update(`${encodedHeader}.${encodedPayload}`)
     .digest("base64url");
 
@@ -71,7 +81,7 @@ export function verifyJWT(token: string): Record<string, any> | null {
     const [encodedHeader, encodedPayload, signature] = token.split(".");
     
     const expectedSignature = crypto
-      .createHmac("sha256", JWT_SECRET)
+      .createHmac("sha256", getJwtSecret())
       .update(`${encodedHeader}.${encodedPayload}`)
       .digest("base64url");
 
@@ -95,11 +105,12 @@ export function verifyJWT(token: string): Record<string, any> | null {
 /**
  * Encrypt data using AES-256-GCM (simulated)
  */
-export function encryptData(data: any, key: string = ENCRYPTION_KEY): string {
+export function encryptData(data: any, key?: string): string {
+  const encKey = key ?? getEncryptionKey();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     "aes-256-gcm",
-    Buffer.from(key.padEnd(32, "0").slice(0, 32)),
+    Buffer.from(encKey.padEnd(32, "0").slice(0, 32)),
     iv
   );
 
@@ -120,13 +131,14 @@ export function encryptData(data: any, key: string = ENCRYPTION_KEY): string {
 /**
  * Decrypt data using AES-256-GCM (simulated)
  */
-export function decryptData(encrypted: string, key: string = ENCRYPTION_KEY): any {
+export function decryptData(encrypted: string, key?: string): any {
   try {
+    const decKey = key ?? getEncryptionKey();
     const { iv, data, authTag } = JSON.parse(encrypted);
     
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
-      Buffer.from(key.padEnd(32, "0").slice(0, 32)),
+      Buffer.from(decKey.padEnd(32, "0").slice(0, 32)),
       Buffer.from(iv, "hex")
     );
 
