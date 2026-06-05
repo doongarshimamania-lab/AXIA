@@ -2,11 +2,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Plus, Lock, Share2, Copy, Check, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+
+// Check if an ID is a mock/demo ID (not a real Convex document ID)
+// Convex IDs for table "clients" always start with "clients:" or are 22+ char base62 strings
+function isMockId(id: string): boolean {
+  // Real Convex IDs are long hex-ish strings, typically 22+ chars with no underscores
+  // Mock IDs like "client_1", "client_2" are clearly not Convex IDs
+  if (id.startsWith("client_") || id.startsWith("mem_") || id.startsWith("proj_")) return true;
+  // Convex document IDs for the "clients" table are typically 22+ chars
+  // and contain only alphanumeric characters (no underscores)
+  if (id.length < 16 || id.includes("_")) return true;
+  return false;
+}
+
+// Generate a demo token locally (for mock data)
+function generateDemoToken(clientId: string): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const segments: string[] = ["demo"];
+  for (let s = 0; s < 3; s++) {
+    let seg = "";
+    for (let i = 0; i < 8; i++) {
+      seg += chars[Math.floor(Math.random() * chars.length)];
+    }
+    segments.push(seg);
+  }
+  return segments.join("-");
+}
 
 interface Client {
   _id: string;
@@ -45,21 +71,30 @@ export function ClientList({
 
   const generateToken = useMutation(api.clients.clientWorkspace.generateClientWorkspaceToken);
 
-  const handleShare = async (clientId: string, e: React.MouseEvent) => {
+  const handleShare = useCallback(async (clientId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setShareClientId(clientId);
     setShareLoading(true);
+    setShareToken(null);
+
     try {
-      const result = await generateToken({ clientId: clientId as any });
-      if (result) {
-        setShareToken(result.token);
+      if (isMockId(clientId)) {
+        // Demo mode: generate a local token, no Convex call needed
+        const demoToken = generateDemoToken(clientId);
+        setShareToken(demoToken);
+      } else {
+        // Real Convex data: call the mutation with proper ID
+        const result = await generateToken({ clientId: clientId as any });
+        if (result) {
+          setShareToken(result.token);
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to generate share link. You may need to be authenticated.");
       setShareClientId(null);
     }
     setShareLoading(false);
-  };
+  }, [generateToken]);
 
   const copyLink = () => {
     if (!shareToken) return;
@@ -227,7 +262,9 @@ export function ClientList({
             <div className="space-y-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                 <p className="text-sm text-green-700 dark:text-green-300 font-medium">
-                  Share link generated successfully!
+                  {shareToken?.startsWith("demo-")
+                    ? "Demo share link generated! (Using demo data — link will show sample content)"
+                    : "Share link generated successfully!"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
