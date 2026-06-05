@@ -15,13 +15,21 @@ interface AdaptiveEvidenceTimelineProps {
   onUpgrade?: () => void;
 }
 
+// Check if a project ID looks like a valid Convex ID (not a mock string like "proj_1")
+function isValidConvexId(id: string | undefined): id is string {
+  if (!id) return false;
+  // Convex IDs are typically 17+ character alphanumeric strings, not "proj_1" style mock IDs
+  return id.length >= 10 && !id.includes("_");
+}
+
 export function AdaptiveEvidenceTimeline({ projectData, tier, onUpgrade }: AdaptiveEvidenceTimelineProps) {
   const projectId = projectData?._id;
-  
-  const data = useQuery(api.projects.adaptiveEvidenceSystem.getAdaptiveEvidenceSystem, {
-    projectId: projectId as Id<"projects">,
-    userTier: tier,
-  });
+  const validProjectId = isValidConvexId(projectId) ? (projectId as Id<"projects">) : null;
+
+  const data = useQuery(
+    api.projects.adaptiveEvidenceSystem.getAdaptiveEvidenceSystem,
+    validProjectId ? { projectId: validProjectId, userTier: tier } : "skip"
+  );
 
   if (!data) {
     return (

@@ -342,10 +342,18 @@ const MOCK_STATS = {
   protectionScore: 94,
 };
 
+// Check if an ID looks like a valid Convex ID (not a mock string like "ws_team_default")
+function isValidConvexId(id: string | null): boolean {
+  if (!id) return false;
+  return id.length >= 10 && !id.includes("_");
+}
+
 export function useWorkspaceMembers(workspaceId: string | null) {
+  // Skip Convex query if workspaceId is not a valid Convex ID (e.g. "ws_team_default")
+  const validWorkspaceId = isValidConvexId(workspaceId) ? workspaceId : null;
   const convexMembers = useQuery(
     api.workspaces.members.getMembers,
-    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
+    validWorkspaceId ? { workspaceId: validWorkspaceId as Id<"workspaces"> } : "skip"
   ) as any[] | undefined;
 
   // If Convex returns data, map it. Otherwise fall back to mock.
@@ -371,9 +379,11 @@ export function useWorkspaceMembers(workspaceId: string | null) {
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
+  // Skip Convex query if workspaceId is not a valid Convex ID
+  const validWorkspaceId = isValidConvexId(workspaceId) ? workspaceId : null;
   const convexStats = useQuery(
     api.workspaces.crud.getWorkspaceStats,
-    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
+    validWorkspaceId ? { workspaceId: validWorkspaceId as Id<"workspaces"> } : "skip"
   ) as any | undefined;
 
   if (convexStats) {

@@ -28,14 +28,16 @@ export function ProjectHealthDashboardNew({ projectData, tier, onUpgrade }: Proj
     );
   }
 
-  const projectId = projectData._id as Id<"projects">;
+  // Check if project ID is a valid Convex ID (not a mock string like "proj_1")
+  const rawId = projectData._id as string;
+  const isValidConvexId = rawId && rawId.length >= 10 && !rawId.includes("_");
+  const projectId = isValidConvexId ? (rawId as Id<"projects">) : null;
 
-  // Fetch backend data
-  const backendData = useQuery(api.projects.projectHealthDashboard.getProjectHealthDashboard, {
-    projectId,
-    userTier: tier,
-    guestUserId: projectData.userId, 
-  });
+  // Fetch backend data — skip if projectId is not a valid Convex ID
+  const backendData = useQuery(
+    api.projects.projectHealthDashboard.getProjectHealthDashboard,
+    projectId ? { projectId, userTier: tier, guestUserId: projectData.userId } : "skip"
+  );
 
   // Loading state
   if (backendData === undefined) {

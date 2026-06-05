@@ -40,16 +40,35 @@ import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 
 // Error Boundary to catch Convex errors and prevent app crash
-class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+// CRITICAL: Must render a fallback UI on error to prevent infinite re-render loops.
+// If we always render children on error, a component that throws on every render
+// will cause React error #185 (Maximum update depth exceeded).
+class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; errorKey: number }> {
+  state = { hasError: false, errorKey: 0 };
   static getDerivedStateFromError() {
-    return { hasError: true };
+    return { hasError: true, errorKey: Date.now() };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.warn("[ConvexErrorBoundary] Caught error (rendering continues):", error.message);
+    console.warn("[ConvexErrorBoundary] Caught error:", error.message);
   }
+  handleReset = () => {
+    this.setState({ hasError: false, errorKey: this.state.errorKey + 1 });
+  };
   render() {
-    // ALWAYS render children - never show a blank screen
+    if (this.state.hasError) {
+      // Render a safe fallback UI instead of re-rendering the broken children
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
+          <p className="text-muted-foreground mb-3">Something went wrong loading this section.</p>
+          <button
+            onClick={this.handleReset}
+            className="px-4 py-2 text-sm bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
