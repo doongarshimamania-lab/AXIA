@@ -475,3 +475,274 @@ export const seedMockInvoices = mutation({
     return { seeded: true, count: mockInvoices.length };
   },
 });
+
+// ─── MULTI-CLIENT BILLING QUERIES ──────────────────────────────────────────
+
+/** Get billing dashboard — aggregates invoice data across clients. */
+export const getBillingDashboard = query({
+  args: {
+    workspaceId: v.optional(v.id("workspaces")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    let invoices;
+    if (args.workspaceId) {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .collect();
+    } else {
+      invoices = await ctx.db
+        .query("invoices")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+    }
+
+    // Aggregate by client
+    const byClient: Record<string, {
+      totalInvoiced: number;
+      totalPaid: number;
+      totalOutstanding: number;
+      totalOverdue: number;
+      invoiceCount: number;
+      paidCount: number;
+      overdueCount: number;
+      avgPaymentDays: number;
+      onTimeRate: number;
+    }> = {};
+
+    for (const inv of invoices) {
+      const clientKey = inv.clientName || "Unknown";
+      if (!byClient[clientKey]) {
+        byClient[clientKey] = {
+          totalInvoiced: 0,
+          totalPaid: 0,
+          totalOutstanding: 0,
+          totalOverdue: 0,
+          invoiceCount: 0,
+          paidCount: 0,
+          overdueCount: 0,
+          avgPaymentDays: 0,
+          onTimeRate: 0,
+        };
+      }
+      const c = byClient[clientKey];
+      c.totalInvoiced += inv.total;
+      c.invoiceCount += 1;
+
+      if (inv.status === "paid") {
+        c.totalPaid += inv.total;
+        c.paidCount += 1;
+      } else if (inv.status === "overdue") {
+        c.totalOverdue += inv.total;
+        c.overdueCount += 1;
+      }
+
+      if (["sent", "viewed", "overdue"].includes(inv.status)) {
+        c.totalOutstanding += inv.total;
+      }
+    }
+
+    // Calculate payment patterns
+    for (const [clientName, data] of Object.entries(byClient)) {
+      const clientInvoices = invoices.filter(
+        (i) => (i.clientName || "Unknown") === clientName && i.status === "paid" && i.paidDate && i.issueDate
+      );
+      if (clientInvoices.length > 0) {
+        const paymentDays = clientInvoices.map((i) =>
+          Math.floor(((i.paidDate || 0) - i.issueDate) / (1000 * 60 * 60 * 24))
+        );
+        data.avgPaymentDays = Math.round(
+          paymentDays.reduce((s, d) => s + d, 0) / paymentDays.length
+        );
+        const onTime = clientInvoices.filter((i) => (i.paidDate || 0) <= i.dueDate).length;
+        data.onTimeRate = Math.round((onTime / clientInvoices.length) * 100);
+      }
+    }
+
+    // Overall stats
+    const totalRevenue = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.total, 0);
+    const totalOutstanding = invoices
+      .filter((i) => ["sent", "viewed", "overdue"].includes(i.status))
+      .reduce((s, i) => s + i.total, 0);
+    const totalOverdue = invoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.total, 0);
+
+    return {
+      totalInvoices: invoices.length,
+      totalRevenue,
+      totalOutstanding,
+      totalOverdue,
+      byClient,
+      recentInvoices: invoices.slice(0, 10),
+      paymentPattern: {
+        avgPaymentDays: Object.values(byClient).length > 0
+          ? Math.round(
+              Object.values(byClient).reduce((s, c) => s + c.avgPaymentDays, 0) /
+              Object.values(byClient).filter((c) => c.avgPaymentDays > 0).length
+            )
+          : 0,
+        onTimeRate: Object.values(byClient).length > 0
+          ? Math.round(
+              Object.values(byClient).reduce((s, c) => s + c.onTimeRate, 0) /
+              Object.values(byClient).filter((c) => c.onTimeRate > 0).length
+            )
+          : 100,
+      },
+    };
+  },
+});
+
+/** Get work links for a specific invoice (proof for billing). */
+export const getWorkLinksForInvoice = query({
+  args: { invoiceId: v.id("invoices") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice || invoice.userId !== userId) return [];
+
+    return await ctx.db
+      .query("invoiceWorkLinks")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
+      .collect();
+  },
+});
+
+/** Get client billing summary — payment pattern analysis for a specific client. */
+export const getClientBillingSummary = query({
+  args: { clientName: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const invoices = await ctx.db
+      .query("invoices")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("clientName"), args.clientName))
+      .collect();
+
+    const paid = invoices.filter((i) => i.status === "paid");
+    const outstanding = invoices.filter((i) => ["sent", "viewed", "overdue"].includes(i.status));
+    const overdue = invoices.filter((i) => i.status === "overdue");
+
+    // Payment pattern
+    const paymentDays = paid
+      .filter((i) => i.paidDate && i.issueDate)
+      .map((i) => Math.floor(((i.paidDate || 0) - i.issueDate) / (1000 * 60 * 60 * 24)));
+
+    const avgPaymentDays = paymentDays.length > 0
+      ? Math.round(paymentDays.reduce((s, d) => s + d, 0) / paymentDays.length)
+      : 0;
+
+    const onTimePayments = paid.filter((i) => (i.paidDate || 0) <= i.dueDate).length;
+    const onTimeRate = paid.length > 0 ? Math.round((onTimePayments / paid.length) * 100) : 100;
+
+    return {
+      clientName: args.clientName,
+      totalInvoiced: invoices.reduce((s, i) => s + i.total, 0),
+      totalPaid: paid.reduce((s, i) => s + i.total, 0),
+      totalOutstanding: outstanding.reduce((s, i) => s + i.total, 0),
+      totalOverdue: overdue.reduce((s, i) => s + i.total, 0),
+      invoiceCount: invoices.length,
+      paidCount: paid.length,
+      outstandingCount: outstanding.length,
+      overdueCount: overdue.length,
+      avgPaymentDays,
+      onTimeRate,
+      invoices: invoices.slice(0, 20),
+    };
+  },
+});
+
+// ─── BATCH OPERATIONS ───────────────────────────────────────────────────────
+
+/** Send multiple invoices at once. */
+export const batchSendInvoices = mutation({
+  args: {
+    invoiceIds: v.array(v.id("invoices")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const results: { invoiceId: string; success: boolean; error?: string }[] = [];
+
+    for (const invoiceId of args.invoiceIds) {
+      try {
+        const invoice = await ctx.db.get(invoiceId);
+        if (!invoice || invoice.userId !== userId) {
+          results.push({ invoiceId: invoiceId as string, success: false, error: "Not authorized" });
+          continue;
+        }
+
+        if (invoice.status !== "draft") {
+          results.push({ invoiceId: invoiceId as string, success: false, error: "Not a draft" });
+          continue;
+        }
+
+        await ctx.db.patch(invoiceId, {
+          status: "sent",
+          sentAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+
+        results.push({ invoiceId: invoiceId as string, success: true });
+      } catch (err: any) {
+        results.push({ invoiceId: invoiceId as string, success: false, error: err.message });
+      }
+    }
+
+    return results;
+  },
+});
+
+/** Mark multiple invoices as paid. */
+export const batchMarkPaid = mutation({
+  args: {
+    invoiceIds: v.array(v.id("invoices")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const results: { invoiceId: string; success: boolean; error?: string }[] = [];
+
+    for (const invoiceId of args.invoiceIds) {
+      try {
+        const invoice = await ctx.db.get(invoiceId);
+        if (!invoice || invoice.userId !== userId) {
+          results.push({ invoiceId: invoiceId as string, success: false, error: "Not authorized" });
+          continue;
+        }
+
+        await ctx.db.patch(invoiceId, {
+          status: "paid",
+          paidDate: Date.now(),
+          updatedAt: Date.now(),
+        });
+
+        // Cancel reminders
+        const reminders = await ctx.db
+          .query("paymentReminders")
+          .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+          .collect();
+
+        for (const r of reminders) {
+          if (r.status === "scheduled") {
+            await ctx.db.patch(r._id, { status: "cancelled" });
+          }
+        }
+
+        results.push({ invoiceId: invoiceId as string, success: true });
+      } catch (err: any) {
+        results.push({ invoiceId: invoiceId as string, success: false, error: err.message });
+      }
+    }
+
+    return results;
+  },
+});

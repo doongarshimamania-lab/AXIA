@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const trackingTables = {
   workSessions: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     startTime: v.number(),
     endTime: v.optional(v.number()),
     totalMinutes: v.optional(v.number()),
@@ -11,11 +12,17 @@ export const trackingTables = {
     clientName: v.string(),
     projectName: v.string(),
     hourlyRate: v.number(),
-  }).index("by_user", ["userId"]).index("by_user_and_project", ["userId", "projectName"]).index("by_user_and_date", ["userId", "startTime"]),
+    memo: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_project", ["userId", "projectName"])
+    .index("by_user_and_date", ["userId", "startTime"])
+    .index("by_workspace", ["workspaceId"]),
 
   timeBlocks: defineTable({
     sessionId: v.id("workSessions"),
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     startTime: v.number(),
     endTime: v.number(),
     activity: v.string(),
@@ -25,10 +32,14 @@ export const trackingTables = {
     mouseActivity: v.boolean(),
     keyboardActivity: v.boolean(),
     inactiveDuration: v.number(), // seconds of inactivity
-  }).index("by_session", ["sessionId"]).index("by_user", ["userId"]),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
 
   appUsage: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     sessionId: v.optional(v.id("workSessions")),
     appName: v.string(),
     startTime: v.number(),
@@ -36,10 +47,14 @@ export const trackingTables = {
     duration: v.optional(v.number()),
     workRelated: v.boolean(),
     syncedToUpwork: v.boolean(),
-  }).index("by_user", ["userId"]).index("by_session", ["sessionId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_session", ["sessionId"])
+    .index("by_workspace", ["workspaceId"]),
 
   complianceAlerts: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     sessionId: v.optional(v.id("workSessions")),
     alertType: v.union(
       v.literal("at_risk"),
@@ -51,5 +66,8 @@ export const trackingTables = {
     triggeredAt: v.number(),
     acknowledged: v.boolean(),
     actionTaken: v.optional(v.string()),
-  }).index("by_user", ["userId"]).index("by_user_and_type", ["userId", "alertType"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_type", ["userId", "alertType"])
+    .index("by_workspace", ["workspaceId"]),
 };

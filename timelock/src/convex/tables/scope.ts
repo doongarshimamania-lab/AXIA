@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const scopeTables = {
   scopeDefinitions: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     projectId: v.optional(v.id("projects")),
     proposalId: v.optional(v.id("proposals")),
     title: v.string(),
@@ -38,10 +39,12 @@ export const scopeTables = {
     .index("by_user", ["userId"])
     .index("by_project", ["projectId"])
     .index("by_proposal", ["proposalId"])
-    .index("by_approval_token", ["approvalToken"]),
+    .index("by_approval_token", ["approvalToken"])
+    .index("by_workspace", ["workspaceId"]),
 
   scopeChangeOrders: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     scopeId: v.id("scopeDefinitions"),
     title: v.string(),
     description: v.string(),
@@ -72,5 +75,6 @@ export const scopeTables = {
   })
     .index("by_scope", ["scopeId"])
     .index("by_user", ["userId"])
-    .index("by_approval_token", ["clientApprovalToken"]),
+    .index("by_approval_token", ["clientApprovalToken"])
+    .index("by_workspace", ["workspaceId"]),
 };

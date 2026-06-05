@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 export const clientPolicies = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -28,10 +29,12 @@ export const clientPolicies = defineTable({
   createdAt: v.number(),
   lastUpdated: v.number(),
 })
-  .index("by_user", ["userId"]);
+  .index("by_user", ["userId"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const clients = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -47,7 +50,8 @@ export const clients = defineTable({
   lastActivityAt: v.number(),
 })
   .index("by_user", ["userId"])
-  .index("by_user_and_name", ["userId", "clientName"]);
+  .index("by_user_and_name", ["userId", "clientName"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const clientCompanies = defineTable({
   email: v.string(),

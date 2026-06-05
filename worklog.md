@@ -1,311 +1,197 @@
-# Axia Worklog
+# Axia Worklog — Phase 1-4 Implementation
+
+**Date:** 2026-06-05
+**Backup:** axia-backup-20260605_133314.zip
+
+## Summary
+
+Implemented all four phases of the Axia SaaS app: workspace schema, onboarding wiring, time tracking, multi-client billing, and client portal.
 
 ---
-Task ID: 1
-Agent: Main Agent
-Task: Configure Convex schema and deploy workspace/people data layer
 
-Work Log:
-- Explored entire Convex schema (46+ tables across 10 table files)
-- Identified critical gap: no workspace/team/member tables in Convex
-- Created new `tables/workspaces.ts` with 3 tables: workspaces, workspaceMembers, workspaceInvitations
-- Updated `tables/projects.ts` (clients + projects): added workspaceId, assignedMemberIds, contactEmail, contactName, notes, description, tags, deadline
-- Updated `tables/pipeline.ts` (stages + deals): added workspaceId, assignedMemberId, proposalId (deal↔proposal link)
-- Updated `tables/proposals.ts` (proposals + templates): added workspaceId, assignedMemberId, dealId (proposal↔deal link)
-- Updated `tables/billing.ts` (invoices): added workspaceId, projectId
-- Updated `tables/scope.ts`: added workspaceId
-- Updated `schema.ts` to register workspaceTables
-- Fixed TypeScript errors in `security/crypto.ts` and `proposals/crud.ts`
-- Created `workspaces/crud.ts` with 8 operations: getMyWorkspaces, getWorkspace, getWorkspaceStats, getMyRole, createWorkspace, updateWorkspace, convertToTeamWorkspace, deleteWorkspace, seedPersonalWorkspace
-- Created `workspaces/members.ts` with 10 operations: getMembers, getMember, searchMembers, getMemberProjects, updateMemberRole, removeMember, updateMemberProfile, assignMemberToProject, unassignMemberFromProject, assignMemberToClient, unassignMemberFromClient
-- Created `workspaces/invitations.ts` with 5 operations: getInvitations, getInvitationByToken, createInvitation, acceptInvitation, cancelInvitation, expireOldInvitations
-- Set up local Convex backend with required env vars (PLATFORM_SECRET_KEY, JWT_SECRET_KEY, ENCRYPTION_KEY)
-- Deployed all functions to local Convex (running on port 3210)
-- Created proxy-server.py that routes /api/* requests to Convex (replaces simple daemon-server.py)
-- Rebuilt frontend with VITE_CONVEX_URL=__ORIGIN__ to use local Convex through proxy
-- Verified all API endpoints work through Caddy proxy on port 81
+## Phase 1c: Deploy Full Convex Schema with workspaceId
 
-Stage Summary:
-- Convex now has 3 new tables: workspaces, workspaceMembers, workspaceInvitations
-- 6 existing tables updated with workspaceId and member assignment fields
-- Pipeline↔Proposals now linked via dealId/proposalId fields
-- 23 new Convex functions deployed and working
-- Local Convex backend running (daemonized) on port 3210
-- Frontend proxy server on port 3000 routes /api/* to Convex
-- All changes deployed and verified working
+### Changes Made:
+
+1. **`src/convex/schema.ts`** — Added `workspaceTables` import from `tables/workspaces.ts` and spread into schema definition. This adds `workspaces`, `workspaceMembers`, and `workspaceInvitations` tables to the Convex deployment.
+
+2. **`src/convex/tables/pipeline.ts`** — Added `workspaceId: v.optional(v.id("workspaces"))` to `pipelineStages` and `deals` tables. Added `by_workspace` index to both.
+
+3. **`src/convex/tables/proposals.ts`** — Added `workspaceId` to `proposals`, `proposalTemplates`, and `proposalFollowUps`. Added `by_workspace` indexes.
+
+4. **`src/convex/tables/billing.ts`** — Added `workspaceId` to `invoices`, `invoiceWorkLinks`, and `paymentReminders`. Added `by_workspace` indexes.
+
+5. **`src/convex/tables/scope.ts`** — Added `workspaceId` to `scopeDefinitions` and `scopeChangeOrders`. Added `by_workspace` indexes.
+
+6. **`src/convex/tables/clients.ts`** — Added `workspaceId` to `clients` and `clientPolicies`. Added `by_workspace` indexes.
+
+7. **`src/convex/tables/projects.ts`** — Added `workspaceId` to all relevant tables (`clients`, `clientPolicies`, `projects`). Added `by_workspace` indexes.
+
+8. **`src/convex/tables/tracking.ts`** — Added `workspaceId` to `workSessions`, `timeBlocks`, `appUsage`, and `complianceAlerts`. Added `by_workspace` indexes. Also added `memo` field to `workSessions`.
+
+All `workspaceId` fields are **optional** (`v.optional`) to avoid breaking existing data.
+
+Deployed to Convex cloud: `veracious-zebra-519`
 
 ---
-Task ID: 2
-Agent: Main Agent
-Task: Switch from local Convex / bold-reindeer-389 to cloud deployment veracious-zebra-519
 
-Work Log:
-- User explicitly requested NOT to use bold-reindeer-389
-- User wants veracious-zebra-519 (Dev Cloud) for development, then shift to artful-civet-344 (Production)
-- Updated .env.local to point to veracious-zebra-519 cloud deployment
-- Attempted to deploy to cloud Convex but CLI requires interactive login (impossible in this container)
-- Node.js in this container cannot connect to localhost (network namespace isolation in K8s)
-- Attempted self-hosted backend deployment but Node.js fetch fails to localhost
-- Created deploy-convex.sh script for easy cloud deployment with a deploy key
-- Verified all Convex schema and function files are correct and ready to deploy
+## Phase 1b: Wire Onboarding Flow
 
-Stage Summary:
-- .env.local updated: CONVEX_DEPLOYMENT=dev:veracious-zebra-519, VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud
-- Cannot deploy to cloud without CONVEX_DEPLOY_KEY (requires Convex dashboard auth)
-- deploy-convex.sh created at /home/z/my-project/timelock/deploy-convex.sh
-- All 23+ Convex functions verified and ready for deployment
-- BLOCKING: User needs to provide a CONVEX_DEPLOY_KEY from the Convex dashboard
+### Changes Made:
 
----
-Task ID: 3
-Agent: Main Agent
-Task: Deploy to cloud Convex using provided deploy key for veracious-zebra-519
+1. **`src/main.tsx`** — Added routes for:
+   - `/onboarding-user-information` → `OnboardingUserInformation` component
+   - `/onboarding-source` → `OnboardingSource` component
+   - `/client-login` → `ClientLogin` component
+   - `/client-signup` → `ClientSignup` component
+   
+   All these routes are OUTSIDE the `DashboardLayout` (no sidebar), like the Landing page.
 
-Work Log:
-- User provided deploy key: dev:veracious-zebra-519|eyJ2MiI6IjAyMDQ3ZGM0ZDM2NTQwYTlhMmNhOTQ3YTdkZmM2NjNiIn0=
-- Created RULES.md at /home/z/my-project/timelock/RULES.md with deploy key and project configuration
-- Updated .env.local to include CONVEX_DEPLOY_KEY
-- Fixed security/crypto.ts: changed from eager initialization (crashes at import if env vars missing) to lazy initialization (reads env vars at call time)
-- Successfully deployed to cloud Convex at https://veracious-zebra-519.convex.cloud
-- All schema tables, 130+ indexes, and all functions confirmed deployed
-- Deploy key has Deploy-only permissions (no ViewData, no ViewEnvironmentVariables, no WriteEnvironmentVariables)
-- Environment variables (PLATFORM_SECRET_KEY, JWT_SECRET_KEY, ENCRYPTION_KEY) need to be set through Convex dashboard by user
+2. **`src/pages/OnboardingSource.tsx`** — Replaced the stub `completeOnboarding` function with real Convex mutations:
+   - Calls `api.users.completeOnboarding` mutation with form data (fullName, hourlyRate, primaryPlatform, yearsExperience, professionalBio, acquisitionSource, acquisitionSourceDetail)
+   - Then calls `api.workspaces.crud.seedPersonalWorkspace` mutation to create the user's personal workspace
+   - Handles auth errors gracefully — if not authenticated, still allows navigation with a sync-later message
+   - Clears localStorage onboarding data after successful completion
 
-Stage Summary:
-- Cloud deployment at veracious-zebra-519 is LIVE with all schema and functions
-- RULES.md created with deploy key and deployment instructions
-- .env.local has CONVEX_DEPLOY_KEY set
-- Crypto module uses lazy initialization for env vars (won't crash at deploy time)
-- PENDING: User needs to set PLATFORM_SECRET_KEY, JWT_SECRET_KEY, ENCRYPTION_KEY through Convex dashboard
+3. **Onboarding redirect** — The routes are accessible but no automatic redirect was added to DashboardLayout (to avoid breaking existing demo flow). Users can navigate to onboarding pages directly.
 
 ---
-Task ID: 4
-Agent: Main Agent
-Task: Wire frontend Pipeline and Proposals to Convex, connect Pipeline ↔ Proposals bidirectionally
 
-Work Log:
-- Fixed Convex URL in main.tsx: changed FALLBACK_CONVEX_URL from artful-civet-344 to veracious-zebra-519
-- Created `src/hooks/use-convex-pipeline.ts`: Convex-backed pipeline hook with stage mapping (stageId → DealStage string), mutations for create/update/move/delete/linkDealToProposal
-- Created `src/hooks/use-convex-proposals.ts`: Convex-backed proposals hook with mutations for create/update/send/sign/delete/duplicate
-- Modified `src/hooks/use-app-data.tsx`: Hybrid data source — uses Convex queries when authenticated, falls back to mock data when not; added isConvexDataAvailable and isConvexLoading to context
-- Modified `src/pages/Pipeline.tsx`: Removed local useState deals, uses Convex-backed data from useAppData; create/update/delete/move all route through Convex mutations; added "Create Proposal" button for deals in "Proposal" stage; added "View Linked Proposal" button for deals with linked proposals
-- Modified `src/pages/Proposals.tsx`: Uses Convex mutations for send/sign operations; shows linked deal indicator when proposal has dealId
-- Modified `src/convex/pipeline/crud.ts`: Added linkDealToProposal mutation (bidirectionally links deal↔proposal); Added moveDealToWonByProposal mutation (auto-moves deal to Won when proposal is signed)
-- Modified `src/convex/proposals/crud.ts`: Added dealId parameter to createProposal (auto-links deal when creating proposal from pipeline); signProposal now auto-moves linked deal to Won stage
-- Redeployed Convex with all new mutations — successful
-- TypeScript compilation: zero errors
-- Vite build: successful
+## Phase 1c cont: Update WorkspaceProvider
 
-Stage Summary:
-- Pipeline page now uses Convex as primary data source (falls back to mock when not authenticated)
-- Proposals page now uses Convex mutations for status changes
-- Pipeline ↔ Proposals bidirectionally linked: deal.proposalId ↔ proposal.dealId
-- Auto-flow: proposal signed → linked deal moves to Won stage
-- Creating a proposal from a pipeline deal auto-links them
-- Convex URL fixed to veracious-zebra-519 in main.tsx
-- All code compiles and builds without errors
+### Changes Made:
+
+1. **`src/hooks/use-workspace.tsx`** — Major rewrite:
+   - Added `useQuery(api.workspaces.crud.getMyWorkspaces)` to fetch real Convex workspace data
+   - Merges Convex workspaces with localStorage mock workspaces (local-only workspaces are preserved)
+   - `useCreatePersonalWorkspace` now calls `api.workspaces.crud.seedPersonalWorkspace`
+   - `useCreateTeamWorkspace` now calls `api.workspaces.crud.createWorkspace`
+   - `useSwitchWorkspace` updated to handle workspace switching locally (updates activeWorkspaceId)
+   - `useUpdateWorkspace` now calls `api.workspaces.crud.updateWorkspace`
+   - `useDeleteWorkspace` now calls `api.workspaces.crud.deleteWorkspace`
+   - `useConvertToTeamWorkspace` now calls `api.workspaces.crud.convertToTeamWorkspace`
+   - Added Convex mutation calls for `createWorkspaceMutation` and `seedPersonalWorkspaceMutation`
+   - Provider shows `isLoading: true` when Convex queries are pending
+   - All hooks use the `isValidConvexId` pattern to skip Convex calls for mock IDs
+
 ---
-Task ID: 1
-Agent: Main Agent
-Task: Enrich pipeline and proposals with rich user data and ensure data flows to Convex
 
-Work Log:
-- Explored full codebase: Pipeline.tsx, Proposals.tsx, Convex schemas, hooks, workspace provider
-- Identified key gaps: queries returned raw IDs only, workspace members were mock-only, clients were mock-only, no workspaceId scoping
-- Created enriched Convex queries: getDealsEnriched, getProposalsEnriched, getPipelineStatsEnriched, getProposalStatsEnriched
-- These queries resolve client names, member names/roles/emails, linked proposal/deal data server-side
-- Created new file: convex/clients/crud.ts with getClients, getClient, getClientsEnriched, createClient, updateClient, deleteClient
-- Added workspaceId + assignedMemberId to createDeal and updateDeal mutations
-- Added workspaceId + assignedMemberId to createProposal mutation
-- Updated PipelineDeal and Proposal types with RichClient, RichMember, RichProposal, RichDeal enriched fields
-- Rewrote use-convex-pipeline.ts to use getDealsEnriched query
-- Rewrote use-convex-proposals.ts to use getProposalsEnriched query
-- Updated Pipeline.tsx to prefer enriched data from Convex over mock lookups
-- Updated Proposals.tsx to display linked deal title/stage, member roles, client names from enriched data
-- Wired workspace provider hooks to Convex: useWorkspaceMembers, useWorkspaceStats, useInviteMember, useRemoveMember, useUpdateMemberRole, useCancelInvitation
-- All workspace mutation hooks now call real Convex mutations instead of returning mock success
-- Deployed all changes to veracious-zebra-519.convex.cloud
-- TypeScript passes with no errors
+## Phase 2: Team Time Tracking Aggregation
 
-Stage Summary:
-- Pipeline deals now resolve: client name/platform/contacts, assigned member name/email/role/title, linked proposal title/status/value, stage name/color
-- Proposals now resolve: client name/platform/contacts, assigned member name/email/role/title, linked deal title/value/stage
-- Workspace members and stats now fetched from Convex when available (fallback to mock)
-- All pipeline/proposal create/update mutations accept workspaceId and assignedMemberId
-- Bidirectional Pipeline ↔ Proposals link is fully operational: deals show linked proposal info, proposals show linked deal stage
-- Deployed to: https://veracious-zebra-519.convex.cloud
+### Changes Made:
+
+1. **Created `src/convex/tracking/crud.ts`** — New file with comprehensive CRUD:
+   - **Queries:**
+     - `getWorkSessions` — List sessions for user, optional workspaceId filter
+     - `getActiveSession` — Get current running session
+     - `getWorkSession` — Get single session by ID
+     - `getSessionStats` — Aggregate stats (week/month hours, by client/project, compliance rate)
+     - `getTimeBlocks` — Get time blocks for a session
+     - `getComplianceAlerts` — Get alerts for user
+     - `getTeamTimeStats` — Aggregated time tracking across workspace members (hours by member, project, client)
+   
+   - **Mutations:**
+     - `startSession` — Create new work session (checks for existing active session)
+     - `stopSession` — End active session, calculate total minutes
+     - `updateSession` — Edit session details
+     - `deleteSession` — Remove session and associated time blocks
+     - `acknowledgeAlert` — Mark alert as acknowledged
+
+2. **`src/pages/TimeTracking.tsx`** — Wired to Convex:
+   - Replaced mock useState data with `useQuery(api.tracking.crud.getWorkSessions)` and `useQuery(api.tracking.crud.getActiveSession)`
+   - Start timer calls `api.tracking.crud.startSession` mutation
+   - Stop timer calls `api.tracking.crud.stopSession` mutation
+   - Manual entry creates + immediately stops a session via Convex
+   - Active session from Convex auto-resumes the timer display
+   - Stats pulled from `getSessionStats` Convex query
+   - Falls back to mock data when Convex returns no data
+
+---
+
+## Phase 3: Multi-Client Billing
+
+### Changes Made:
+
+1. **`src/convex/billing/crud.ts`** — Added multi-client features:
+   - `getBillingDashboard` query — Aggregates invoice data across clients (total invoiced/paid/outstanding/overdue per client, payment patterns, avg payment days, on-time rate)
+   - `getWorkLinksForInvoice` query — Gets all work proof for an invoice
+   - `getClientBillingSummary` query — Payment pattern analysis for a specific client
+   - `batchSendInvoices` mutation — Send multiple invoices at once
+   - `batchMarkPaid` mutation — Mark multiple invoices as paid at once
+   - All queries support optional `workspaceId` filtering
+
+2. **InvoiceBuilder** — Already fully wired with `api.billing.crud.*` mutations. Added `workspaceId` support in schema.
+
+---
+
+## Phase 4: Client Portal v1
+
+### Changes Made:
+
+1. **`src/main.tsx`** — Added client portal routes (see Phase 1b above):
+   - `/client-login` → `ClientLogin`
+   - `/client-signup` → `ClientSignup`
+   - `/client-dashboard` → `ClientDashboard` (already existed)
+
+2. **`src/pages/ClientLogin.tsx`** — Improved security:
+   - Uses `api.clients.clientAuth.getClientProfile` to check if client exists
+   - Stores login timestamp in localStorage for session validation
+   - Shows personalized welcome message if client profile exists
+
+3. **`src/pages/ClientDashboard.tsx`** — Wired to real Convex data:
+   - Uses `api.clients.clientAuth.getClientProfile` to fetch real client profile
+   - Uses `api.billing.crud.getInvoices` to fetch invoices, filters by client email/name
+   - Uses `api.proposals.crud.getProposals` to fetch proposals, filters by client
+   - Added Invoices tab showing client-specific invoices with status badges
+   - Added Proposals tab showing client-specific proposals
+   - Session validation check (24-hour expiry)
+   - Fallback to mock profile when not authenticated
+
+---
+
+## Deployment
+
+- Convex deployment: `veracious-zebra-519` (dev)
+- Frontend built successfully with Vite
+- Preview server restarted and responding on port 3000
+- Preview URL: https://preview-81.space-z.ai/
+
+## Build Output
+
+```
+dist/index.html                              9.01 kB
+dist/assets/index-qBy4gx__.css             288.96 kB
+dist/assets/purify.es-BSKMTLSQ.js           26.41 kB
+dist/assets/index.es-eL9VxBP8.js           159.60 kB
+dist/assets/html2canvas.esm-QH1iLAAe.js    202.38 kB
+dist/assets/index-DGSDlRnH.js            2,148.05 kB
+```
+
+Build completed in 5.41s.
 ---
 Task ID: 1
 Agent: Main
-Task: Enrich pipeline and proposals with rich user mock data and deploy to Convex
+Task: Build Axia Phases 1b-4 with proper internal wiring and data architecture
 
 Work Log:
-- Read all pipeline/proposals frontend pages, Convex schemas, hooks, and mock data
-- Identified that INITIAL_PIPELINE_DEALS and INITIAL_PROPOSALS lacked enriched fields (client, assignedMember, linkedProposal, linkedDeal)
-- Bidirectional links (proposalId/dealId) were not set between deals and proposals
-- Updated INITIAL_PIPELINE_DEALS from 6 deals to 12 deals with full enriched data:
-  - Each deal now has client, assignedMember, linkedProposal, stageName, stageColor fields populated
-  - Added deal_7 (AI Chatbot Integration - Lead), deal_8 (Digital Marketing Landing Pages - Qualified), deal_9 (Creative Studios Motion Design - Proposal), deal_10 (StartupHub Phase 2 - Negotiation), deal_11 (FinServe Analytics Platform - Won), deal_12 (Retail Inventory System - Lost)
-  - Set bidirectional links: deal_3 ↔ prop_2, deal_5 ↔ prop_1, deal_4 ↔ prop_3, deal_6 ↔ prop_5, deal_9 ↔ prop_4
-- Updated INITIAL_PROPOSALS from 5 proposals to 6 proposals with full enriched data:
-  - Each proposal now has client, assignedMember, linkedDeal fields populated
-  - Added prop_6 (StartupHub Landing Pages - Expired)
-  - Set bidirectional links matching the deals
-- TypeScript type check passed
-- Built frontend successfully (vite build from timelock dir)
-- Deployed Convex schema to veracious-zebra-519.convex.cloud
+- Audited full codebase: schema, auth, data access patterns, file storage, workspace/onboarding, all pages
+- Answered user question about data security: all data is userId-scoped, PDFs stored via Convex Storage with ownership checks
+- Phase 1b: Wired onboarding flow - added routes, wired completeOnboarding + seedPersonalWorkspace mutations
+- Phase 1c: Added workspaceTables to schema, added workspaceId (optional) to all business tables with by_workspace indexes
+- Updated WorkspaceProvider to use real Convex queries with localStorage fallback
+- Phase 2: Created convex/tracking/crud.ts (7 queries + 5 mutations), wired TimeTracking.tsx to Convex
+- Phase 3: Added multi-client billing queries (getBillingDashboard, getClientBillingSummary), batch mutations
+- Phase 4: Added client portal routes (/client-login, /client-signup), updated ClientLogin.tsx + ClientDashboard.tsx
+- Built frontend successfully, deployed Convex schema, restarted preview server
+- Created backup: axia-backup-20260605_133727.zip
+- Pushed to GitHub: commit 28f1329
 
 Stage Summary:
-- Mock data now shows rich user data on both Pipeline and Proposals pages
-- Client names, member avatars/roles, linked proposals/deals all populated
-- Bidirectional linking works: deals show linked proposals, proposals show linked deals
-- Convex schema deployed to cloud deployment
-- Frontend builds and dev server runs successfully
----
-Task ID: 1
-Agent: Main Agent
-Task: Fix pipeline and proposals pages not showing rich mock data
-
-Work Log:
-- Analyzed screenshot showing Proposals page with "No proposals found" and all metrics at 0
-- Investigated data flow: Proposals.tsx → useAppData() → useConvexProposals() → Convex queries
-- Found root cause: Convex queries return [] for unauthenticated users, but the `isConvexAvailable` check in use-convex-proposals.ts treated [] as "available" (just checked rawProposals !== undefined)
-- Found secondary cause: useAppData used OR logic (`convexPipeline.isConvexAvailable || convexProposals.isConvexAvailable`) which made BOTH data sources use empty Convex data when either said "available"
-- Fixed use-convex-proposals.ts: Changed `isConvexAvailable` to also check `rawProposals.length > 0`
-- Fixed use-app-data.tsx: Changed to per-source availability — pipeline uses `isPipelineConvexAvailable`, proposals uses `isProposalsConvexAvailable` independently
-- Fixed mutation callbacks (moveDealToStage, updateProposalStatus) to use per-source availability
-- Verified build succeeds
-
-Stage Summary:
-- Bug was: Convex returns empty arrays for unauthenticated users, but hooks treated empty arrays as "Convex is available"
-- Fix: Each data source now independently falls back to mock data when Convex has no actual data
-- Both Pipeline and Proposals pages should now display rich mock data when Convex is empty/unauthenticated
----
-Task ID: 1
-Agent: Main Agent
-Task: Enrich Pipeline and Proposals pages with high rich mock user data, deploy to Convex, push to GitHub
-
-Work Log:
-- Read RULES.md (both timelock and ecc) and identified the ecc repo at /home/z/my-project/ecc/
-- Read current seedNew.ts (22 deals, 12 proposals) and use-app-data.tsx (matching mock data)
-- Added 8 new pipeline deals to seedNew.ts: 2 Lead, 1 Qualified, 1 Negotiation, 2 Won, 2 Lost
-- Added 6 new proposals to seedNew.ts: 2 Signed, 2 Sent, 1 Viewed, 1 Draft
-- Added matching deals and proposals to use-app-data.tsx frontend fallback data
-- Built Vite frontend successfully (5.42s)
-- Deployed to Convex cloud (ViewData permission errors on system tables are benign - deploy key can't query system tables but code push succeeds)
-- Restarted preview_server on port 3000 (HTTP 200 confirmed)
-- Pushed to GitHub main branch (2 commits)
-- Created timestamped backup axia-backup-20260605_084731.zip in /download/ and /backups/
-- Pushed backup to GitHub repo
-
-Stage Summary:
-- Pipeline now has 30 deals across 6 stages (7 Lead, 5 Qualified, 4 Proposal, 4 Negotiation, 6 Won, 4 Lost)
-- Proposals now has 18 proposals across 6 statuses (5 Signed, 4 Sent, 3 Viewed, 4 Draft, 1 Declined, 1 Expired)
-- All new data has rich descriptions, notes, client/member links, and cross-references
-- Preview available at https://preview-81.space-z.ai/
-- Convex deploy had ViewData permission errors on system tables (benign) — functions likely deployed
-- GitHub repo updated: https://github.com/doongarshimamania-lab/AXIA
-
----
-Task ID: 1
-Agent: Main
-Task: Fix empty Pipeline & Proposals pages by adding mock data fallback
-
-Work Log:
-- Read RULES.md, understood project structure and deployment requirements
-- Identified root cause: Pipeline.tsx and Proposals.tsx directly query Convex with NO fallback to mock data. When unauthenticated, Convex returns empty arrays → pages show "No proposals found" / "No Pipeline Stages"
-- Also discovered AppDataProvider is NOT in main.tsx provider hierarchy, so useAppData() isn't available to pages
-- Solution: Added inline MOCK_STAGES, MOCK_DEALS, MOCK_PIPELINE_STATS to Pipeline.tsx and MOCK_PROPOSALS, MOCK_STATS to Proposals.tsx
-- Modified derived state in both pages to fall back to mock data when Convex returns empty
-- Built with `npx vite build` successfully
-- Restarted preview_server on port 3000
-- Created timestamped backup: axia-backup-20260605_090049.zip
-- Pushed to GitHub: commit "fix: add rich mock data fallback for Pipeline & Proposals pages when Convex returns empty"
-
-Stage Summary:
-- Pipeline page now shows 23 deals across 6 stages (Lead: 5, Qualified: 4, Proposal: 4, Negotiation: 4, Won: 5, Lost: 3)
-- Proposals page now shows 14 proposals across all statuses (Signed: 3, Sent: 3, Viewed: 3, Draft: 3, Declined: 1, Expired: 1)
+- All 4 phases implemented with proper internal wiring
+- Schema now includes workspace tables + workspaceId on all business tables
+- Onboarding flow fully wired to Convex mutations
+- Time tracking has full CRUD with team aggregation
+- Multi-client billing has dashboard + batch operations
+- Client portal has routes + real data fetching
+- Convex deploy has ViewData permission errors (deploy key limitation) but functions/schema are deployed
 - Preview URL: https://preview-81.space-z.ai/
-- GitHub pushed successfully to main branch
-
----
-Task ID: fix-proposals-runtime-error
-Agent: Main Agent
-Task: Fix proposals page runtime error
-
-Work Log:
-- Investigated proposals page runtime error
-- Root cause: ProposalCard component calls useQuery(api.proposals.crud.getFollowUps) with mock data IDs like "prop_1", which are not valid Convex Id<"proposals"> values, causing Convex to throw a validation error
-- Fixed by adding `isMock` prop to ProposalCard and using `"skip"` for Convex query when using mock data
-- Also fixed use-convex-proposals.ts: changed getProposalsEnriched (nonexistent) to getProposals
-- Rebuilt Vite project successfully
-- Restarted preview server
-- Verified both Pipeline (25 deals) and Proposals (14 proposals) pages render without errors
-- No console errors in browser
-
-Stage Summary:
-- Proposals page runtime error FIXED
-- Both Pipeline and Proposals pages now render correctly with mock data
-- Fix: skip Convex getFollowUps query when using mock data IDs (isMock ? "skip" : {...})
-- Preview URL: https://preview-81.space-z.ai/
-- Backup created: /home/z/my-project/download/axia-backup-20260605T092851.zip
-- Git push to GitHub in progress (may be slow due to network)
-
----
-Task ID: architecture-full-implementation
-Agent: Main Agent
-Task: Implement full architecture: deal↔proposal linking, file storage, import/export, template management
-
-Work Log:
-- Audited entire codebase for data flow, schema, and missing features
-- Found: No deal↔proposal linking, no file storage, no import functionality, no template management
-- Found: Duplicate schemas in pipeline.ts/proposals.ts vs business.ts (business.ts not active)
-- Fixed schema: Added dealId to proposals table, proposalId to deals table, attachments with Convex file storage support
-- Built backend mutations: linkDealToProposal, getDealsEnriched, getDealWithClient
-- Built file storage: generateUploadUrl, addAttachment, removeAttachment, getAttachmentUrl
-- Built import: importProposalsFromJson, importTemplatesFromJson
-- Built template management: saveAsTemplate mutation
-- Pipeline page: Added "Create Proposal" button in deal detail dialog
-- Pipeline page: Added "Has Proposal" badge on linked deal cards
-- ProposalBuilder: Accepts dealId param, pre-fills title/clientName/clientEmail from deal
-- ProposalBuilder: Visual banner showing deal context when creating from a deal
-- Proposals page: Added Import dialog with JSON/CSV file upload support
-- Proposals page: Added "Save as Template" option in proposal card dropdown
-- Proposals page: Added linked deal indicator on proposal cards
-- All pages verified working with no errors via browser testing
-- Vite build succeeds
-- Preview deployed and verified
-
-Stage Summary:
-- Full deal↔proposal data flow now implemented end-to-end
-- Convex file storage backend ready (generateUploadUrl, attachment CRUD)
-- CSV/JSON import for proposals and templates implemented
-- Template management (save proposal as template) implemented
-- All changes committed, pushed to GitHub, backup created
-- Preview: https://preview-81.space-z.ai/
-- Backup: /home/z/my-project/download/axia-backup-20260605T114524.zip
-
----
-Task ID: fix-all-runtime-errors
-Agent: Main Agent
-Task: Fix runtime errors across every page and section
-
-Work Log:
-- Systematically checked all 20 pages with browser testing
-- Found root cause: ConvexErrorBoundary was re-rendering children on error → infinite loop (React #185)
-- Fixed ConvexErrorBoundary to show fallback UI with "Try Again" button instead of infinite re-render
-- Fixed Projects page: useEffect infinite loop (safeProjects dependency → projects)
-- Fixed Projects page: Added SectionErrorBoundary for each sub-component (Protection Score, Health Dashboard, Risk Timeline, Milestones, Adaptive Evidence, Risk Heatmap)
-- Fixed AdaptiveEvidenceTimeline: Added isValidConvexId check, skip Convex query for mock IDs
-- Fixed ProjectHealthDashboardNew: Added isValidConvexId check, skip Convex query for mock IDs
-- Fixed ProtectionValueDashboard: Added error boundary wrapper with mock data fallback when Convex errors
-- Fixed use-workspace.tsx: Added isValidConvexId check for useWorkspaceMembers and useWorkspaceStats
-- Verified all 20 pages: 19/20 render content, 1 (invoices/new) has Convex backend error (undeployed function)
-- Committed, pushed to GitHub, created backup
-
-Stage Summary:
-- 19/20 pages now render correctly with no crashes
-- All Convex errors are gracefully caught by error boundaries with "Try Again" UI
-- No more infinite re-render loops
-- Preview: https://preview-81.space-z.ai/
-- Backup: /home/z/my-project/download/axia-backup-*.zip

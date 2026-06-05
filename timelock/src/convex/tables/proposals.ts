@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const proposalTables = {
   proposals: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.optional(v.id("clients")),
     dealId: v.optional(v.id("deals")),
     title: v.string(),
@@ -56,10 +57,12 @@ export const proposalTables = {
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_public_token", ["publicToken"]),
+    .index("by_public_token", ["publicToken"])
+    .index("by_workspace", ["workspaceId"]),
 
   proposalTemplates: defineTable({
     userId: v.optional(v.id("users")), // system templates have no userId
+    workspaceId: v.optional(v.id("workspaces")),
     name: v.string(),
     industry: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -83,10 +86,12 @@ export const proposalTables = {
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_system", ["isSystem"]),
+    .index("by_system", ["isSystem"])
+    .index("by_workspace", ["workspaceId"]),
 
   proposalFollowUps: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     proposalId: v.id("proposals"),
     dayNumber: v.number(), // 3, 7, or 14
     subject: v.string(),
@@ -104,5 +109,6 @@ export const proposalTables = {
   })
     .index("by_proposal", ["proposalId"])
     .index("by_user", ["userId"])
-    .index("by_status_and_date", ["status", "scheduledAt"]),
+    .index("by_status_and_date", ["status", "scheduledAt"])
+    .index("by_workspace", ["workspaceId"]),
 };

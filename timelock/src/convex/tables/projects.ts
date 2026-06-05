@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const projectTables = {
   clientPolicies: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientName: v.string(),
     platform: v.union(
       v.literal("upwork"),
@@ -29,10 +30,12 @@ export const projectTables = {
     createdAt: v.number(),
     lastUpdated: v.number(),
   })
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
 
   clients: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientName: v.string(),
     platform: v.union(
       v.literal("upwork"),
@@ -48,10 +51,12 @@ export const projectTables = {
     lastActivityAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_name", ["userId", "clientName"]),
+    .index("by_user_and_name", ["userId", "clientName"])
+    .index("by_workspace", ["workspaceId"]),
 
   projects: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.id("clients"),
     projectName: v.string(),
     hourlyRate: v.number(),
@@ -89,7 +94,8 @@ export const projectTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "projectName"])
-    .index("by_client", ["clientId"]),
+    .index("by_client", ["clientId"])
+    .index("by_workspace", ["workspaceId"]),
 
   clientCompanies: defineTable({
     email: v.string(),

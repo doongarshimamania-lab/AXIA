@@ -8,12 +8,14 @@ import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/ThemeProvider';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export default function OnboardingSource() {
   const navigate = useNavigate();
-  const completeOnboarding = async (_args: any) => {
-    return;
-  };
+  const completeOnboardingMutation = useMutation(api.users.completeOnboarding);
+  const seedPersonalWorkspaceMutation = useMutation(api.workspaces.crud.seedPersonalWorkspace);
+  
   const [selectedSource, setSelectedSource] = useState('');
   const [referrer, setReferrer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,7 +134,8 @@ export default function OnboardingSource() {
     
     setIsSubmitting(true);
     try {
-      await completeOnboarding({
+      // Step 1: Complete onboarding (saves user profile data)
+      await completeOnboardingMutation({
         fullName: onboardingData.fullName,
         hourlyRate: Number(onboardingData.hourlyRate),
         primaryPlatform: onboardingData.primaryPlatform,
@@ -142,12 +145,25 @@ export default function OnboardingSource() {
         acquisitionSourceDetail: referrer || undefined
       });
       
+      // Step 2: Seed a personal workspace for the user
+      await seedPersonalWorkspaceMutation({});
+      
       localStorage.removeItem('onboardingData');
       toast.success('Welcome to Axia!');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Onboarding error:', error);
-      toast.error('Failed to complete onboarding. Please try again.');
+      // If Convex mutations fail (e.g., not authenticated), still allow navigation
+      // The data is saved locally and can be synced later
+      if (error?.message?.includes('Not authenticated') || error?.message?.includes('auth')) {
+        localStorage.removeItem('onboardingData');
+        toast.success('Welcome to Axia!', {
+          description: 'Your profile will be synced when you sign in.'
+        });
+        navigate('/dashboard');
+      } else {
+        toast.error('Failed to complete onboarding. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

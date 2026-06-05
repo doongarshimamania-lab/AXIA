@@ -19,7 +19,11 @@ import Landing from "./pages/Landing.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import OwnerDashboard from "./pages/OwnerDashboard.tsx";
 import ClientDashboard from "./pages/ClientDashboard.tsx";
+import ClientLogin from "./pages/ClientLogin.tsx";
+import ClientSignup from "./pages/ClientSignup.tsx";
 import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
+import OnboardingUserInformation from "./pages/OnboardingUserInformation.tsx";
+import OnboardingSource from "./pages/OnboardingSource.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
@@ -184,7 +188,15 @@ root.render(
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
+                  
+                  {/* Onboarding Routes (No Sidebar) */}
+                  <Route path="/onboarding-user-information" element={<OnboardingUserInformation />} />
+                  <Route path="/onboarding-source" element={<OnboardingSource />} />
+                  
+                  {/* Client Portal Routes (No Sidebar) */}
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
+                  <Route path="/client-login" element={<ClientLogin />} />
+                  <Route path="/client-signup" element={<ClientSignup />} />
 
                   {/* Dashboard Routes (With Sidebar) */}
                   <Route element={<DashboardLayout />}>

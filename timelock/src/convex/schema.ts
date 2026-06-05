@@ -10,6 +10,7 @@ import { pipelineTables } from "./tables/pipeline";
 import { proposalTables } from "./tables/proposals";
 import { billingTables } from "./tables/billing";
 import { scopeTables } from "./tables/scope";
+import { workspaceTables } from "./tables/workspaces";
 
 export default defineSchema({
   ...authTables,
@@ -23,4 +24,5 @@ export default defineSchema({
   ...proposalTables,
   ...billingTables,
   ...scopeTables,
+  ...workspaceTables,
 });

@@ -4,16 +4,19 @@ import { v } from "convex/values";
 export const pipelineTables = {
   pipelineStages: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     name: v.string(),
     color: v.string(),
     order: v.number(),
     isDefault: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_order", ["userId", "order"]),
+    .index("by_user_and_order", ["userId", "order"])
+    .index("by_workspace", ["workspaceId"]),
 
   deals: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     stageId: v.id("pipelineStages"),
     clientId: v.optional(v.id("clients")),
     title: v.string(),
@@ -33,5 +36,6 @@ export const pipelineTables = {
   })
     .index("by_user", ["userId"])
     .index("by_stage", ["stageId"])
-    .index("by_user_and_stage", ["userId", "stageId"]),
+    .index("by_user_and_stage", ["userId", "stageId"])
+    .index("by_workspace", ["workspaceId"]),
 };

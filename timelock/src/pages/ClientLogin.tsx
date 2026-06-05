@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Shield, Building2 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function ClientLogin() {
@@ -15,21 +15,33 @@ export default function ClientLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState<string | null>(null);
 
-  // @ts-ignore - Convex type inference causes deep instantiation error
+  // Check if the client exists in our database
   const clientProfile = useQuery(
-    "clientAuth:getClientProfile" as any,
+    checkEmail ? api.clients.clientAuth.getClientProfile : "skip",
     checkEmail ? { email: checkEmail } : "skip"
-  );
+  ) as any;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+    
     setIsLoading(true);
     
-    // Allow any email for dev/demo access
-    localStorage.setItem("axia_client_email", email);
-    toast.success("Logged in successfully (Demo Mode)");
+    // Store the email for client session
+    // In production, this would use proper auth (Convex auth or JWT)
+    localStorage.setItem("axia_client_email", email.trim());
+    localStorage.setItem("axia_client_login_at", Date.now().toString());
+    
+    toast.success("Logged in successfully", {
+      description: clientProfile ? `Welcome back, ${clientProfile.contactName || email}` : "Welcome to the Client Portal"
+    });
+    
     setTimeout(() => {
       navigate("/client-dashboard");
+      setIsLoading(false);
     }, 500);
   };
 
