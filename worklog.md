@@ -250,3 +250,37 @@ Stage Summary:
 - Preview URL: https://preview-81.space-z.ai/
 - Backup created: /home/z/my-project/download/axia-backup-20260605T092851.zip
 - Git push to GitHub in progress (may be slow due to network)
+
+---
+Task ID: architecture-full-implementation
+Agent: Main Agent
+Task: Implement full architecture: deal↔proposal linking, file storage, import/export, template management
+
+Work Log:
+- Audited entire codebase for data flow, schema, and missing features
+- Found: No deal↔proposal linking, no file storage, no import functionality, no template management
+- Found: Duplicate schemas in pipeline.ts/proposals.ts vs business.ts (business.ts not active)
+- Fixed schema: Added dealId to proposals table, proposalId to deals table, attachments with Convex file storage support
+- Built backend mutations: linkDealToProposal, getDealsEnriched, getDealWithClient
+- Built file storage: generateUploadUrl, addAttachment, removeAttachment, getAttachmentUrl
+- Built import: importProposalsFromJson, importTemplatesFromJson
+- Built template management: saveAsTemplate mutation
+- Pipeline page: Added "Create Proposal" button in deal detail dialog
+- Pipeline page: Added "Has Proposal" badge on linked deal cards
+- ProposalBuilder: Accepts dealId param, pre-fills title/clientName/clientEmail from deal
+- ProposalBuilder: Visual banner showing deal context when creating from a deal
+- Proposals page: Added Import dialog with JSON/CSV file upload support
+- Proposals page: Added "Save as Template" option in proposal card dropdown
+- Proposals page: Added linked deal indicator on proposal cards
+- All pages verified working with no errors via browser testing
+- Vite build succeeds
+- Preview deployed and verified
+
+Stage Summary:
+- Full deal↔proposal data flow now implemented end-to-end
+- Convex file storage backend ready (generateUploadUrl, attachment CRUD)
+- CSV/JSON import for proposals and templates implemented
+- Template management (save proposal as template) implemented
+- All changes committed, pushed to GitHub, backup created
+- Preview: https://preview-81.space-z.ai/
+- Backup: /home/z/my-project/download/axia-backup-20260605T114524.zip
