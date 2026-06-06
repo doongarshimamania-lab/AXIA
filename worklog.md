@@ -58,3 +58,29 @@ Stage Summary:
 - Feature Connectivity: Connectors, workflow actions, activity timeline across all key pages ✅
 - All features interconnected: proposals→projects→time→evidence→invoices→payments ✅
 - Build passes ✅, GitHub pushed ✅, Backup created ✅
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix runtime errors on Messages/Team pages, restore ClientList share button, remove TruthLayerBadge from Projects
+
+Work Log:
+- Investigated GitHub history (commit 4d9b2c6 had the share button, 1afd755 stripped it)
+- Found that ClientList share button was removed during a previous "fix" commit
+- Found that TruthLayerBadge was added as unwanted new feature to ProjectList
+- Found that anyApi() Proxy objects make all API existence checks return true, breaking useQuery guards
+- Restored ClientList.tsx with full share button functionality (Share2 icon, dialog, demo token generation, copy link)
+- Removed TruthLayerBadge import and usage from ProjectList.tsx
+- Improved safe-convex-react.ts: useQuery handles "skip"/null/undefined refs, useMutation handles null refs
+- Added hasXxxApi guards to Messages.tsx useQuery/useMutation calls
+- Added hasXxxApi guards to use-workspace.tsx hooks (useWorkspaceMembers, useWorkspaceStats, etc.)
+- Built successfully, pushed to GitHub (commit 920080a)
+- Started preview server on port 3000, proxy on port 8080
+
+Stage Summary:
+- ClientList: Share button restored with demo token support for mock clients
+- ProjectList: TruthLayerBadge removed (was unwanted "new feature")
+- Messages page: Added defensive guards for Convex API calls
+- Team page: Added defensive guards for workspace API calls
+- safe-convex-react: Improved error handling for null/undefined/skip references
+- Code pushed to GitHub: doongarshimamania-lab/AXIA.git main branch
