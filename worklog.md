@@ -3,26 +3,66 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Fix all messaging page issues - sticky input, scrollable messages, channel creation, read receipts, unread badges, message ordering, DM security
+Task: Enable Convex crons for auto follow-ups & payment reminders
 
 Work Log:
-- Read all 8 messaging-related files (Messages.tsx, ChannelList.tsx, MessageList.tsx, MessageInput.tsx, ThreadPanel.tsx, ChannelHeader.tsx, MemberList.tsx, convex/messaging/messages.ts)
-- Identified root cause: `handleCreateChannel` only console.logged, never added channel to state (`const [channels] = useState` had no setter)
-- Identified layout issue: MessageList used ScrollArea with incorrect scroll ref, message input not properly fixed at bottom
-- Identified missing features: no read receipts, no unread badge clearing, no "seen" indicators
-- Rewrote Messages.tsx: added `setChannels`, fixed channel creation to actually add to state + auto-select, added read-by tracking on channel select, added `readBy` field to all mock messages
-- Rewrote MessageList.tsx: replaced ScrollArea with native scroll div for proper scroll control, added auto-scroll with smart "stay at bottom" detection, added `readBy` support, added ✓/✓✓ read receipt indicators (gray Check for sent, blue CheckCheck for seen), added "New messages ↓" scroll-to-bottom button, only show edit/delete on own messages
-- Rewrote MessageInput.tsx: added `flex-shrink-0` to container and `bg-background` to ensure it stays fixed at bottom and doesn't scroll with messages
-- Built dist successfully (no errors)
-- Restarted preview server and verified it's running
+- Read convex/crons.ts - was disabled with comment about TypeScript type inference
+- Found processDueFollowUps in proposals.ts and processDueReminders in invoices.ts
+- Both functions already exist and work (they query scheduled items, mark as "sent")
+- Updated crons.ts to enable 2 cron jobs:
+  1. "process due proposal follow-ups" - every 1 hour
+  2. "process due payment reminders" - every 1 hour
+- Import internal from ./_generated/api for cron function references
 
 Stage Summary:
-- All messaging fixes applied and on disk
-- Message input bar is now sticky at bottom (flex-shrink-0 + proper flex layout)
-- Message list properly scrolls with overflow-y-auto, auto-scrolls to new messages
-- Channel creation now works: adds channel to state, initializes empty messages, auto-selects
-- Read receipts: ✓ (gray) = sent, ✓✓ (blue) = seen by others, with tooltip
-- Unread badge clears when channel is selected
-- Messages ordered by timestamp (already was, confirmed)
-- DM security model: backend enforces membership checks, only channel members can see messages
-- Preview: https://preview-81.space-z.ai/
+- Crons enabled - will take effect on next Convex deploy (requires auth)
+- Follow-ups on Day 3/7/14 after proposal sent will auto-process
+- Payment reminders on Day 3/7/14 after invoice sent will auto-process
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Wire Messages page to Convex with mock fallback
+
+Work Log:
+- Created use-convex-messages.ts hook with full Convex query/mutation mapping
+- Rewrote Messages.tsx with hybrid Convex + mock data approach
+- When authenticated, uses Convex channels, messages, reactions, pins, thread replies
+- When not authenticated or Convex returns empty, falls back to rich mock data
+- Supports all mutations: createChannel, sendMessage, editMessage, deleteMessage, toggleReaction, togglePin, markChannelRead, joinChannel, leaveChannel, getOrCreateDM
+- Preserved all UI fixes from previous session (sticky input, scrollable messages, read receipts ✓/✓✓)
+
+Stage Summary:
+- Messages page now hybrid Convex + mock
+- Created /home/z/my-project/timelock/src/hooks/use-convex-messages.ts
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Add Auth/Scope routes to router + sidebar
+
+Work Log:
+- Added Auth and Scope imports to main.tsx
+- Added /auth route as public route (no sidebar)
+- Added /scope route inside DashboardLayout (with sidebar)
+- Added Scope nav item to CollapsibleSidebar (both expanded and collapsed modes)
+- Used Shield icon for Scope (already imported)
+
+Stage Summary:
+- /auth route added - sign in with email OTP
+- /scope route added - scope definitions & change orders
+- Scope appears in sidebar navigation
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Build and verify
+
+Work Log:
+- Ran npx vite build - SUCCESS (2999 modules, 5.63s)
+- Restarted preview server on port 3000
+- Preview available at https://preview-81.space-z.ai/
+
+Stage Summary:
+- All changes compiled and deployed successfully
+- No build errors

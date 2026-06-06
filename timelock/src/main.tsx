@@ -39,6 +39,8 @@ import Pipeline from "./pages/Pipeline.tsx";
 import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
+import Auth from "./pages/Auth.tsx";
+import Scope from "./pages/Scope.tsx";
 
 // Error Boundary to catch Convex errors and prevent app crash
 class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -177,6 +179,7 @@ root.render(
                   <Route path="/" element={<Landing />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
+                  <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
 
                   {/* Dashboard Routes (With Sidebar) */}
                   <Route element={<DashboardLayout />}>
@@ -202,6 +205,7 @@ root.render(
                     <Route path="/proposals" element={<Proposals />} />
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
                     <Route path="/messages" element={<Messages />} />
+                    <Route path="/scope" element={<Scope />} />
                   </Route>
 
                   {/* Catch-all */}

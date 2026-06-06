@@ -1,16 +1,24 @@
 import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Note: Cron job temporarily disabled due to TypeScript type inference limitation
-// To re-enable: uncomment the code below after Convex updates type definitions
-// 
-// import { internal } from "./_generated/api";
-// crons.interval(
-//   "create weekly milestone snapshots",
-//   { hours: 168 },
-//   internal.projects.milestoneSnapshots.autoCreateWeeklySnapshots,
-//   {}
-// );
+// Process due proposal follow-ups every hour
+// This finds follow-ups scheduled for Day 3/7/14 that are now due and marks them as "sent"
+crons.interval(
+  "process due proposal follow-ups",
+  { hours: 1 },
+  internal.proposals.processDueFollowUps,
+  {}
+);
+
+// Process due payment reminders every hour
+// This finds reminders scheduled for Day 3/7/14 after invoice sent that are now due
+crons.interval(
+  "process due payment reminders",
+  { hours: 1 },
+  internal.invoices.processDueReminders,
+  {}
+);
 
 export default crons;

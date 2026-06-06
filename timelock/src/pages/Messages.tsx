@@ -1,4 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { MessageSquare } from "lucide-react";
 import { ChannelList, type Channel } from "@/components/messaging/ChannelList";
 import { ChannelHeader } from "@/components/messaging/ChannelHeader";
@@ -7,7 +10,7 @@ import { MessageInput } from "@/components/messaging/MessageInput";
 import { ThreadPanel, type ThreadReply } from "@/components/messaging/ThreadPanel";
 import { MemberList, type Member } from "@/components/messaging/MemberList";
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
+// ── Mock Data (fallback when Convex returns empty) ─────────────────────────────
 
 const CURRENT_USER_ID = "u-me";
 
@@ -82,6 +85,17 @@ const INITIAL_THREAD_REPLIES: Record<string, ThreadReply[]> = {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Messages() {
+  // ── Convex Queries & Mutations ──
+  const convexChannels = useQuery(api.messaging.channels.listChannels, {}) as any[] | undefined;
+  const markChannelReadMutation = useMutation(api.messaging.messages.markChannelRead);
+  const createChannelMutation = useMutation(api.messaging.channels.createChannel);
+  const sendMessageMutation = useMutation(api.messaging.messages.sendMessage);
+  const editMessageMutation = useMutation(api.messaging.messages.editMessage);
+  const deleteMessageMutation = useMutation(api.messaging.messages.deleteMessage);
+  const toggleReactionMutation = useMutation(api.messaging.messages.toggleReaction);
+  const togglePinMutation = useMutation(api.messaging.messages.togglePinMessage);
+
+  // ── Local State (used when Convex has no data or for mock fallback) ──
   const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
   const [activeChannelId, setActiveChannelId] = useState<string | null>("ch-1");
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(INITIAL_MESSAGES);
@@ -89,22 +103,84 @@ export default function Messages() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [threadRepliesMap, setThreadRepliesMap] = useState<Record<string, ThreadReply[]>>(INITIAL_THREAD_REPLIES);
 
-  const activeChannel = channels.find((c) => c.id === activeChannelId);
-  const activeMessages = activeChannelId ? messagesMap[activeChannelId] || [] : [];
+  // ── Determine data source ──
+  const isConvexAvailable = convexChannels !== undefined && convexChannels.length > 0;
+
+  // Use Convex channels when available, otherwise use local mock
+  const activeChannels = isConvexAvailable
+    ? convexChannels.map((ch: any) => ({
+        id: ch._id,
+        name: ch.name ?? "",
+        type: (ch.type ?? "channel") as "channel" | "dm",
+        isPrivate: ch.isPrivate ?? false,
+        unreadCount: 0,
+        lastMessage: ch.lastMessage ?? undefined,
+        lastMessageTime: ch.lastMessageAt ?? undefined,
+        members: ch.memberCount ?? 0,
+      }))
+    : channels;
+
+  // ── Convex messages for active channel ──
+  const isConvexChannel = isConvexAvailable && activeChannelId && activeChannelId.startsWith("k");
+  const convexMessages = useQuery(
+    api.messaging.messages.listMessages,
+    isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
+  ) as any[] | undefined;
+
+  const convexThreadReplies = useQuery(
+    api.messaging.messages.getThreadReplies,
+    activeThreadId && isConvexChannel ? { parentMessageId: activeThreadId as Id<"messages"> } : "skip"
+  ) as any[] | undefined;
+
+  const activeChannel = activeChannels.find((c) => c.id === activeChannelId);
+
+  // Map Convex messages → frontend Message[] when available
+  const activeMessages: Message[] = (() => {
+    if (isConvexChannel && convexMessages && convexMessages.length > 0) {
+      return convexMessages.map((m: any) => ({
+        id: m._id,
+        authorId: m.authorId ?? "",
+        authorName: m.authorName ?? "Unknown",
+        content: m.content ?? "",
+        timestamp: m._creationTime ?? Date.now(),
+        isEdited: m.isEdited ?? false,
+        isPinned: m.isPinned ?? false,
+        reactions: m.reactions ?? [],
+        threadReplyCount: m.threadReplyCount ?? 0,
+        readBy: m.readBy ?? [],
+      }));
+    }
+    return activeChannelId ? messagesMap[activeChannelId] || [] : [];
+  })();
 
   const activeThreadParent = activeThreadId
     ? activeMessages.find((m) => m.id === activeThreadId) || null
     : null;
-  const activeThreadReplies = activeThreadId
-    ? threadRepliesMap[activeThreadId] || []
-    : [];
+
+  const activeThreadReplies: ThreadReply[] = (() => {
+    if (isConvexChannel && convexThreadReplies && convexThreadReplies.length > 0) {
+      return convexThreadReplies.map((r: any) => ({
+        id: r._id,
+        authorId: r.authorId ?? "",
+        authorName: r.authorName ?? "Unknown",
+        content: r.content ?? "",
+        timestamp: r._creationTime ?? Date.now(),
+      }));
+    }
+    return activeThreadId ? threadRepliesMap[activeThreadId] || [] : [];
+  })();
 
   // Mark messages as read when channel is selected
   const handleChannelSelect = useCallback((channelId: string) => {
     setActiveChannelId(channelId);
     setActiveThreadId(null);
 
-    // Clear unread count for the selected channel
+    // Mark as read in Convex
+    if (isConvexAvailable && channelId.startsWith("k")) {
+      markChannelReadMutation({ channelId: channelId as Id<"channels"> }).catch(() => {});
+    }
+
+    // Clear unread count for local state
     setChannels((prev) =>
       prev.map((c) =>
         c.id === channelId ? { ...c, unreadCount: 0 } : c
@@ -120,7 +196,7 @@ export default function Messages() {
       });
       return { ...prev, [channelId]: updated };
     });
-  }, []);
+  }, [isConvexAvailable, markChannelReadMutation]);
 
   // Also mark messages as read on initial load for the default channel
   useEffect(() => {
@@ -139,11 +215,20 @@ export default function Messages() {
         return { ...prev, [activeChannelId]: updated };
       });
     }
-    // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateChannel = useCallback((name: string, isPrivate: boolean) => {
+    // Try Convex first
+    if (isConvexAvailable) {
+      createChannelMutation({
+        name,
+        isPrivate,
+        type: "channel" as const,
+      }).catch(() => {});
+      return;
+    }
+
+    // Fallback to local state
     const newChannel: Channel = {
       id: `ch-${Date.now()}`,
       name: name.toLowerCase().replace(/\s+/g, "-"),
@@ -154,17 +239,26 @@ export default function Messages() {
       lastMessage: undefined,
       lastMessageTime: undefined,
     };
-    // Actually add the channel to state and initialize empty messages
     setChannels((prev) => [...prev, newChannel]);
     setMessagesMap((prev) => ({ ...prev, [newChannel.id]: [] }));
-    // Auto-select the new channel
     setActiveChannelId(newChannel.id);
     setActiveThreadId(null);
-  }, []);
+  }, [isConvexAvailable, createChannelMutation]);
 
   const handleSendMessage = useCallback(
     (content: string) => {
       if (!activeChannelId) return;
+
+      // Try Convex first
+      if (isConvexChannel) {
+        sendMessageMutation({
+          channelId: activeChannelId as Id<"channels">,
+          content,
+        }).catch(() => {});
+        return;
+      }
+
+      // Fallback to local state
       const newMsg: Message = {
         id: `m-${Date.now()}`,
         authorId: CURRENT_USER_ID,
@@ -175,13 +269,12 @@ export default function Messages() {
         isPinned: false,
         reactions: [],
         threadReplyCount: 0,
-        readBy: [CURRENT_USER_ID], // Sender has "read" their own message
+        readBy: [CURRENT_USER_ID],
       };
       setMessagesMap((prev) => ({
         ...prev,
         [activeChannelId]: [...(prev[activeChannelId] || []), newMsg],
       }));
-      // Update channel last message
       setChannels((prev) =>
         prev.map((c) =>
           c.id === activeChannelId
@@ -190,11 +283,20 @@ export default function Messages() {
         )
       );
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, sendMessageMutation]
   );
 
   const handleReact = useCallback(
     (messageId: string, emoji: string) => {
+      // Try Convex first
+      if (isConvexChannel) {
+        toggleReactionMutation({
+          messageId: messageId as Id<"messages">,
+          emoji,
+        }).catch(() => {});
+        return;
+      }
+
       if (!activeChannelId) return;
       setMessagesMap((prev) => {
         const msgs = prev[activeChannelId] || [];
@@ -218,11 +320,15 @@ export default function Messages() {
         };
       });
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, toggleReactionMutation]
   );
 
   const handlePin = useCallback(
     (messageId: string) => {
+      if (isConvexChannel) {
+        togglePinMutation({ messageId: messageId as Id<"messages"> }).catch(() => {});
+        return;
+      }
       if (!activeChannelId) return;
       setMessagesMap((prev) => {
         const msgs = prev[activeChannelId] || [];
@@ -234,11 +340,15 @@ export default function Messages() {
         };
       });
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, togglePinMutation]
   );
 
   const handleEdit = useCallback(
     (messageId: string, newContent: string) => {
+      if (isConvexChannel) {
+        editMessageMutation({ messageId: messageId as Id<"messages">, content: newContent }).catch(() => {});
+        return;
+      }
       if (!activeChannelId) return;
       setMessagesMap((prev) => {
         const msgs = prev[activeChannelId] || [];
@@ -250,11 +360,15 @@ export default function Messages() {
         };
       });
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, editMessageMutation]
   );
 
   const handleDelete = useCallback(
     (messageId: string) => {
+      if (isConvexChannel) {
+        deleteMessageMutation({ messageId: messageId as Id<"messages"> }).catch(() => {});
+        return;
+      }
       if (!activeChannelId) return;
       setMessagesMap((prev) => {
         const msgs = prev[activeChannelId] || [];
@@ -264,15 +378,12 @@ export default function Messages() {
         };
       });
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, deleteMessageMutation]
   );
 
-  const handleReply = useCallback(
-    (messageId: string) => {
-      setActiveThreadId(messageId);
-    },
-    []
-  );
+  const handleReply = useCallback((messageId: string) => {
+    setActiveThreadId(messageId);
+  }, []);
 
   const handleOpenThread = useCallback((messageId: string) => {
     setActiveThreadId(messageId);
@@ -280,6 +391,15 @@ export default function Messages() {
 
   const handleSendThreadReply = useCallback(
     (parentId: string, content: string) => {
+      if (isConvexChannel) {
+        sendMessageMutation({
+          channelId: activeChannelId as Id<"channels">,
+          content,
+          parentId: parentId as Id<"messages">,
+        }).catch(() => {});
+        return;
+      }
+
       const newReply: ThreadReply = {
         id: `tr-${Date.now()}`,
         authorId: CURRENT_USER_ID,
@@ -291,7 +411,6 @@ export default function Messages() {
         ...prev,
         [parentId]: [...(prev[parentId] || []), newReply],
       }));
-      // Update thread count on parent message
       setMessagesMap((prev) => {
         if (!activeChannelId) return prev;
         const msgs = prev[activeChannelId] || [];
@@ -305,20 +424,18 @@ export default function Messages() {
         };
       });
     },
-    [activeChannelId]
+    [activeChannelId, isConvexChannel, sendMessageMutation]
   );
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background">
-      {/* Channel Sidebar */}
       <ChannelList
-        channels={channels}
+        channels={activeChannels}
         activeChannelId={activeChannelId}
         onChannelSelect={handleChannelSelect}
         onCreateChannel={handleCreateChannel}
       />
 
-      {/* Main Content Area */}
       {activeChannel ? (
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <ChannelHeader
@@ -332,9 +449,7 @@ export default function Messages() {
           />
 
           <div className="flex-1 flex min-h-0 overflow-hidden">
-            {/* Messages Area - this takes remaining space and handles its own scroll */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
-              {/* Scrollable messages - fills all space above input */}
               <MessageList
                 messages={activeMessages}
                 currentUserId={CURRENT_USER_ID}
@@ -345,14 +460,12 @@ export default function Messages() {
                 onDelete={handleDelete}
                 onOpenThread={handleOpenThread}
               />
-              {/* Fixed message input at bottom */}
               <MessageInput
                 onSend={handleSendMessage}
                 channelName={activeChannel.name}
               />
             </div>
 
-            {/* Thread Panel */}
             {activeThreadId && (
               <ThreadPanel
                 parentMessage={activeThreadParent}
@@ -362,7 +475,6 @@ export default function Messages() {
               />
             )}
 
-            {/* Member List */}
             {showMemberList && <MemberList members={MOCK_MEMBERS} />}
           </div>
         </div>

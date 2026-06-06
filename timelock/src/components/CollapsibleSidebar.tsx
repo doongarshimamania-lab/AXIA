@@ -320,6 +320,12 @@ export function CollapsibleSidebar() {
                     <NavItem icon={MessageSquare} label="Messages" isExpanded={true} />
                   </button>
                   <button 
+                    onClick={() => navigate("/scope")} 
+                    className="w-full text-left"
+                  >
+                    <NavItem icon={Shield} label="Scope" isExpanded={true} />
+                  </button>
+                  <button 
                     onClick={() => navigate("/evidence-library")} 
                     className="w-full text-left"
                   >
@@ -429,6 +435,9 @@ export function CollapsibleSidebar() {
                 </button>
                 <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/scope")} title="Scope" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Shield className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
                 <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
