@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { MessageSquare } from "lucide-react";
 import { ChannelList, type Channel } from "@/components/messaging/ChannelList";
 import { ChannelHeader } from "@/components/messaging/ChannelHeader";
 import { MessageList, type Message } from "@/components/messaging/MessageList";

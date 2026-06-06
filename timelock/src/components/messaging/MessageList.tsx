@@ -17,6 +17,7 @@ import {
   Trash2,
   Check,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -109,8 +110,8 @@ export function MessageList({
   };
 
   return (
-    <ScrollArea className="flex-1" ref={scrollRef}>
-      <div className="p-4 space-y-0.5">
+    <ScrollArea className="flex-1">
+      <div className="p-4 space-y-0.5" ref={scrollRef}>
         {grouped.map((group) => (
           <div key={group.date}>
             {/* Date Divider */}
