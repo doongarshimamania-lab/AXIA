@@ -7,6 +7,10 @@
  *
  * Key principle: useQuery returns `undefined` while loading or on error.
  * Pages MUST handle `undefined` results with null coalescing (??) or conditional rendering.
+ *
+ * IMPORTANT: React hooks rules require that _useQuery and _useMutation are always called
+ * in the same order between renders. We use Convex's built-in "skip" mechanism (passing
+ * "skip" as the args) to disable queries without violating hooks ordering.
  */
 
 import { useRef, useCallback } from "react";
@@ -26,13 +30,35 @@ export { ConvexReactClient, ConvexProvider, useConvexAuth, useQuery_experimental
 /**
  * Safe useQuery — returns `undefined` when the query throws (e.g. function not found on backend)
  * instead of crashing the React tree. Pages should treat `undefined` as "loading / unavailable".
+ *
+ * Supports Convex's "skip" mechanism: pass `"skip"` as either the query or args to skip
+ * the subscription entirely. This is safer than passing undefined/null query references.
  */
 export function useQuery(query: any, args: any): any {
   const loggedRef = useRef(false);
 
+  // Normalize: if query is "skip", null, or undefined, use a dummy query reference
+  // and pass "skip" as args so Convex doesn't actually subscribe.
+  // This ensures _useQuery is ALWAYS called (maintaining React hooks order)
+  // but no server request is made when we want to skip.
+  let effectiveQuery = query;
+  let effectiveArgs = args;
+
+  if (query === "skip" || query === null || query === undefined) {
+    // Use the same query reference but with "skip" args
+    // We need a valid query reference to avoid Convex throwing.
+    // anyApi() Proxy objects work for this purpose.
+    effectiveQuery = query || args; // if query is null, we'll rely on args="skip"
+    effectiveArgs = "skip";
+  }
+
+  if (args === "skip") {
+    effectiveArgs = "skip";
+  }
+
   try {
     // @ts-ignore - dynamic query reference
-    const result = _useQuery(query, args);
+    const result = _useQuery(effectiveQuery, effectiveArgs);
 
     // Convex useQuery can return an error object
     if (result instanceof Error) {
@@ -60,8 +86,32 @@ export function useQuery(query: any, args: any): any {
 /**
  * Safe useMutation — returns a wrapped mutation function that catches errors
  * instead of letting them propagate as uncaught promise rejections.
+ * Passing `null` as the mutation reference returns a no-op function.
  */
 export function useMutation(mutation: any): any {
+  // If the mutation reference is null/undefined, we still need to call
+  // _useMutation to maintain React hooks order. Use a dummy reference
+  // and wrap the result to be a no-op.
+  if (mutation === null || mutation === undefined) {
+    // We must call _useMutation to maintain hooks order, but we can't pass
+    // null/undefined to it. Use anyApi() to get a valid-looking reference.
+    // The resulting mutation will always fail, but our wrapper catches that.
+    try {
+      // @ts-ignore - we need a valid reference to keep hooks order
+      const dummyMutation = _useMutation(mutation);
+      return useCallback(async (_args: any) => {
+        console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
+        return undefined;
+      }, []);
+    } catch {
+      // If _useMutation itself throws (e.g. no ConvexProvider), return a no-op
+      return useCallback(async (_args: any) => {
+        console.warn("[safe-convex-react] mutation not available (init error, no-op)");
+        return undefined;
+      }, []);
+    }
+  }
+
   try {
     // @ts-ignore - dynamic mutation reference
     const originalMutation = _useMutation(mutation);

@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, Plus, AlertTriangle, Lock } from "lucide-react";
-import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 
 interface Project {
   _id: string;
@@ -87,21 +86,9 @@ export function ProjectList({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getProtectionColor(project.protectionLevel)}>
-                      {project.protectionLevel} protection
-                    </Badge>
-                    <TruthLayerBadge
-                      score={project.protectionScore}
-                      size="sm"
-                      showScore={true}
-                      details={[
-                        { label: "Protection score verified", verified: project.protectionScore >= 75 },
-                        { label: "Active session", verified: project.activeSession },
-                        { label: "No rejected hours", verified: project.rejectedHours === 0 },
-                      ]}
-                    />
-                  </div>
+                  <Badge className={getProtectionColor(project.protectionLevel)}>
+                    {project.protectionLevel} protection
+                  </Badge>
                 </div>
                 <div className="grid grid-cols-4 gap-4 mt-3">
                   <div>

@@ -85,18 +85,39 @@ const INITIAL_THREAD_REPLIES: Record<string, ThreadReply[]> = {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Messages() {
-  // ── Convex Queries & Mutations (wrapped by safe-convex-react) ──
-  // safe-convex-react returns undefined/no-op if the API functions aren't deployed yet
-  // @ts-ignore — messaging API may not be deployed yet; safe-convex-react returns undefined/no-op
+  // ── Convex Queries & Mutations ──
+  // Guard: only call useQuery/useMutation when the API reference actually exists.
+  // When the API is not deployed, pass "skip" to useQuery and null to useMutation
+  // so that safe-convex-react returns undefined/no-op without throwing.
+  // @ts-ignore — messaging API may not be deployed yet
   const messagingApi = (api as any).messaging;
-  const convexChannels = useQuery(messagingApi?.channels?.listChannels, {}) as any[] | undefined;
-  const markChannelReadMutation = useMutation(messagingApi?.messages?.markChannelRead);
-  const createChannelMutation = useMutation(messagingApi?.channels?.createChannel);
-  const sendMessageMutation = useMutation(messagingApi?.messages?.sendMessage);
-  const editMessageMutation = useMutation(messagingApi?.messages?.editMessage);
-  const deleteMessageMutation = useMutation(messagingApi?.messages?.deleteMessage);
-  const toggleReactionMutation = useMutation(messagingApi?.messages?.toggleReaction);
-  const togglePinMutation = useMutation(messagingApi?.messages?.togglePinMessage);
+  const hasMessagingApi = !!(messagingApi?.channels?.listChannels);
+
+  const convexChannels = useQuery(
+    hasMessagingApi ? messagingApi.channels.listChannels : "skip",
+    hasMessagingApi ? {} : "skip"
+  ) as any[] | undefined;
+  const markChannelReadMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.markChannelRead : null
+  );
+  const createChannelMutation = useMutation(
+    hasMessagingApi ? messagingApi.channels?.createChannel : null
+  );
+  const sendMessageMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.sendMessage : null
+  );
+  const editMessageMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.editMessage : null
+  );
+  const deleteMessageMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.deleteMessage : null
+  );
+  const toggleReactionMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.toggleReaction : null
+  );
+  const togglePinMutation = useMutation(
+    hasMessagingApi ? messagingApi.messages?.togglePinMessage : null
+  );
 
   // ── Local State (used when Convex has no data or for mock fallback) ──
   const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
@@ -125,13 +146,15 @@ export default function Messages() {
 
   // ── Convex messages for active channel ──
   const isConvexChannel = isConvexAvailable && activeChannelId && activeChannelId.startsWith("k");
+  const hasMessagesApi = !!(messagingApi?.messages?.listMessages);
   const convexMessages = useQuery(
-    messagingApi?.messages?.listMessages,
+    hasMessagesApi && isConvexChannel ? messagingApi.messages.listMessages : "skip",
     isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
   ) as any[] | undefined;
 
+  const hasThreadApi = !!(messagingApi?.messages?.getThreadReplies);
   const convexThreadReplies = useQuery(
-    messagingApi?.messages?.getThreadReplies,
+    hasThreadApi && activeThreadId && isConvexChannel ? messagingApi.messages.getThreadReplies : "skip",
     activeThreadId && isConvexChannel ? { parentMessageId: activeThreadId as Id<"messages"> } : "skip"
   ) as any[] | undefined;
 

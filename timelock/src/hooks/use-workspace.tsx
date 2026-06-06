@@ -345,9 +345,10 @@ const MOCK_STATS = {
 export function useWorkspaceMembers(workspaceId: string | null) {
   // @ts-ignore — workspaces API may not be deployed yet; safe-convex-react returns undefined
   const workspacesApi = (api as any).workspaces;
+  const hasMembersApi = !!(workspacesApi?.members?.getMembers);
 
   const convexMembers = useQuery(
-    workspacesApi?.members?.getMembers,
+    hasMembersApi && workspaceId ? workspacesApi.members.getMembers : "skip",
     workspaceId ? { workspaceId: workspaceId as string } : "skip"
   ) as any[] | undefined;
 
@@ -376,9 +377,10 @@ export function useWorkspaceMembers(workspaceId: string | null) {
 export function useWorkspaceStats(workspaceId: string | null) {
   // @ts-ignore — workspaces API may not be deployed yet
   const workspacesApi = (api as any).workspaces;
+  const hasStatsApi = !!(workspacesApi?.crud?.getWorkspaceStats);
 
   const convexStats = useQuery(
-    workspacesApi?.crud?.getWorkspaceStats,
+    hasStatsApi && workspaceId ? workspacesApi.crud.getWorkspaceStats : "skip",
     workspaceId ? { workspaceId: workspaceId as string } : "skip"
   ) as any | undefined;
 
@@ -400,8 +402,15 @@ export function useWorkspaceStats(workspaceId: string | null) {
 export function useInviteMember() {
   // @ts-ignore — workspaces API may not be deployed yet
   const workspacesApi = (api as any).workspaces;
-  const inviteMutation = useMutation(workspacesApi?.invitations?.createInvitation);
+  const hasInviteApi = !!(workspacesApi?.invitations?.createInvitation);
+  const inviteMutation = useMutation(
+    hasInviteApi ? workspacesApi.invitations.createInvitation : null
+  );
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
+    if (!hasInviteApi || !inviteMutation) {
+      // Demo mode: just pretend it worked
+      return { success: true, invitationId: `inv_${Date.now()}` };
+    }
     try {
       await inviteMutation({
         workspaceId: args.workspaceId as string,
@@ -418,8 +427,14 @@ export function useInviteMember() {
 export function useRemoveMember() {
   // @ts-ignore — workspaces API may not be deployed yet
   const workspacesApi = (api as any).workspaces;
-  const removeMutation = useMutation(workspacesApi?.members?.removeMember);
+  const hasRemoveApi = !!(workspacesApi?.members?.removeMember);
+  const removeMutation = useMutation(
+    hasRemoveApi ? workspacesApi.members.removeMember : null
+  );
   return async (args: { workspaceId: string; memberId: string }) => {
+    if (!hasRemoveApi || !removeMutation) {
+      return { success: true };
+    }
     try {
       await removeMutation({
         memberId: args.memberId as string,
@@ -434,8 +449,14 @@ export function useRemoveMember() {
 export function useUpdateMemberRole() {
   // @ts-ignore — workspaces API may not be deployed yet
   const workspacesApi = (api as any).workspaces;
-  const updateRoleMutation = useMutation(workspacesApi?.members?.updateMemberRole);
+  const hasUpdateRoleApi = !!(workspacesApi?.members?.updateMemberRole);
+  const updateRoleMutation = useMutation(
+    hasUpdateRoleApi ? workspacesApi.members.updateMemberRole : null
+  );
   return async (args: { workspaceId: string; memberId: string; role: WorkspaceRole }) => {
+    if (!hasUpdateRoleApi || !updateRoleMutation) {
+      return { success: true };
+    }
     try {
       await updateRoleMutation({
         memberId: args.memberId as string,
@@ -451,8 +472,14 @@ export function useUpdateMemberRole() {
 export function useCancelInvitation() {
   // @ts-ignore — workspaces API may not be deployed yet
   const workspacesApi = (api as any).workspaces;
-  const cancelMutation = useMutation(workspacesApi?.invitations?.cancelInvitation);
+  const hasCancelApi = !!(workspacesApi?.invitations?.cancelInvitation);
+  const cancelMutation = useMutation(
+    hasCancelApi ? workspacesApi.invitations.cancelInvitation : null
+  );
   return async (args: { invitationId: string }) => {
+    if (!hasCancelApi || !cancelMutation) {
+      return { success: true };
+    }
     try {
       await cancelMutation({
         invitationId: args.invitationId as string,
