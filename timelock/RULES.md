@@ -105,29 +105,64 @@ The local `/home/z/my-project/` git repo is 317MB and too large to push directly
 
 ---
 
-## Backup Policy (MANDATORY)
+## Backup Policy (MANDATORY — CRITICAL)
 
-- **After EVERY code change**, create a timestamped backup zip
-- **Naming format:** `axia-backup-YYYYMMDD_HHMMSS.zip`
+### Rule: EVERY BACKUP MUST BE A COMPLETE, WORKING PROJECT
+
+- **After EVERY code change**, create a COMPLETE project backup zip
+- **The backup MUST contain the ENTIRE project** — not just changed files
+- **Anyone should be able to:** extract the zip → `npm install` → `npm run dev` → app runs completely
+- **Naming format:** `AXIA-COMPLETE-BACKUP-YYYY-MM-DD_HH-MM-SS_IST.zip`
+- **Timestamp:** Always use **IST (Asia/Kolkata)** timezone: `TZ='Asia/Kolkata' date '+%Y-%m-%d_%H-%M-%S_IST'`
 - **Save to TWO locations:**
   1. `/home/z/my-project/download/`
   2. `/home/z/my-project/backups/`
-- **Push to GitHub** in `backups/` folder
-- **Backup contents:** `src/`, `dist/`, `public/`, all config files, `start.sh`, `preview_server`
+- **Push to GitHub** after every backup
+
+### What the COMPLETE Backup MUST Include
+
+- `src/` — ALL source code (pages, components, hooks, convex, etc.)
+- `public/` — Static assets
+- `dist/` — Built files (so no rebuild needed)
+- `package.json` + `package-lock.json` — Dependencies
+- `vite.config.ts` — Vite configuration
+- `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` — TypeScript config
+- `components.json` — shadcn/ui config
+- `index.html` — Entry HTML
+- `convex.json` — Convex config
+- `preview_server` — C binary for serving dist
+- `preview_server.c` — Source for the C binary
+- `start.sh` — Startup script
+- `.env.local` — Environment variables (if exists)
+- `RULES.md`, `README.md`, `CHANGELOG.md` — Documentation
+- ALL other config files in the project root
 
 ### Backup Commands
 
 ```bash
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+# Get IST timestamp
+IST_TIME=$(TZ='Asia/Kolkata' date '+%Y-%m-%d_%H-%M-%S_IST')
+BACKUP_NAME="AXIA-COMPLETE-BACKUP-${IST_TIME}"
+
 cd /home/z/my-project/timelock
-zip -r "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" \
-  src/ dist/ public/ package.json package-lock.json bun.lock \
-  vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json \
-  components.json index.html .env.local convex.json \
-  preview_server.c preview_server serve-dist.cjs start.sh BACKUP_README.md \
-  -x "node_modules/*" -x ".git/*"
-cp "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" /home/z/my-project/backups/
+
+# Create COMPLETE project backup (exclude only node_modules, .git, logs, old backups)
+zip -r "/home/z/my-project/download/${BACKUP_NAME}.zip" . \
+  -x "node_modules/*" \
+  -x "dist/*" \
+  -x ".git/*" \
+  -x "backups/*" \
+  -x "*.log"
+
+# Copy to backups directory
+cp "/home/z/my-project/download/${BACKUP_NAME}.zip" /home/z/my-project/backups/
+
+# Verify backup contains key files
+unzip -l "/home/z/my-project/download/${BACKUP_NAME}.zip" | grep -E "package.json|vite.config.ts|src/pages/|src/components/"
 ```
+
+### ⚠️ NEVER create partial backups. ALWAYS include the COMPLETE project.
+### ⚠️ ALWAYS verify the backup zip contains ALL source files before considering it done.
 
 ---
 
@@ -135,7 +170,7 @@ cp "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" /home/z/my-project
 
 - **Server type:** Compiled C binary (`preview_server`) — most stable, does NOT crash
 - **Port:** 3000
-- **Caddy proxy:** Port 81 → Port 3000
+- **Caddy proxy:** Port 81 → Port 3000 (platform-managed Caddy on port 81, PID 2, root-owned)
 - **Preview URL:** `https://preview-81.space-z.ai/`
 - **Start command:** `cd /home/z/my-project/timelock && ./preview_server &`
 - **Rebuild + restart:**
@@ -143,9 +178,18 @@ cp "/home/z/my-project/download/axia-backup-${TIMESTAMP}.zip" /home/z/my-project
   cd /home/z/my-project/timelock && rm -rf dist && npx vite build
   pkill -f preview_server; sleep 1; ./preview_server &
   ```
+- **The Caddy on port 81 is managed by the platform (PID 2, root). It proxies to localhost:3000.**
+- **The preview_server C binary serves the `dist/` folder as static files.**
+- **Source code for the preview:** Always from `/home/z/my-project/timelock/src/` and `/home/z/my-project/timelock/dist/`
+- **When the user says "start the preview":**
+  1. Pull latest code from GitHub: `cd /home/z/my-project/timelock && git pull origin main`
+  2. If there are new source changes, rebuild: `rm -rf dist && npx vite build`
+  3. Start the preview_server: `pkill -f preview_server; sleep 1; ./preview_server &`
+  4. Verify: `curl -s http://localhost:3000/ | head -3` should show the Axia HTML
 
 > **NEVER use `node serve-dist.cjs`** — Node processes get killed by the container's process reaper.
 > **ALWAYS use the C binary `preview_server`** — it survives.
+> **NEVER try to kill or reconfigure the Caddy on port 81** — it's root-owned and managed by the platform.
 
 ---
 
