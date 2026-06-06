@@ -67,7 +67,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
   };
 
   return (
-    <div className="border-t border-border p-3">
+    <div className="flex-shrink-0 border-t border-border bg-background p-3">
       <div
         className={`rounded-lg border transition-colors ${
           isFocused ? "border-primary/50 ring-1 ring-primary/20" : "border-border"

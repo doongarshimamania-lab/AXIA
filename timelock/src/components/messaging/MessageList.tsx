@@ -1,5 +1,4 @@
-import { useRef, useEffect, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +17,7 @@ import {
   Check,
   X,
   MessageSquare,
+  CheckCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -34,10 +34,12 @@ export interface Message {
   threadReplyCount: number;
   lastThreadReplyTime?: number;
   threadParticipants?: string[];
+  readBy?: string[];
 }
 
 interface MessageListProps {
   messages: Message[];
+  currentUserId: string;
   onReact: (messageId: string, emoji: string) => void;
   onReply: (messageId: string) => void;
   onPin: (messageId: string) => void;
@@ -64,6 +66,7 @@ function groupMessagesByDate(messages: Message[]): { date: string; messages: Mes
 
 export function MessageList({
   messages,
+  currentUserId,
   onReact,
   onReply,
   onPin,
@@ -71,16 +74,34 @@ export function MessageList({
   onDelete,
   onOpenThread,
 }: MessageListProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
+  // Auto-scroll to bottom when new messages arrive (only if user is already at bottom)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (isUserAtBottom && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isUserAtBottom]);
+
+  // Track whether user has scrolled up (away from bottom)
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    setIsUserAtBottom(atBottom);
+  }, []);
+
+  // Initial scroll to bottom
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, []);
 
   const grouped = groupMessagesByDate(messages);
 
@@ -109,9 +130,21 @@ export function MessageList({
     );
   };
 
+  // Read receipt logic: show check marks only on YOUR messages
+  const getReadStatus = (msg: Message) => {
+    if (msg.authorId !== currentUserId) return null;
+    const readByOthers = (msg.readBy || []).filter((id) => id !== currentUserId);
+    if (readByOthers.length > 0) return "seen"; // ✓✓ blue
+    return "sent"; // ✓ gray
+  };
+
   return (
-    <ScrollArea className="flex-1">
-      <div className="p-4 space-y-0.5" ref={scrollRef}>
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto min-h-0"
+    >
+      <div className="p-4 space-y-0.5">
         {grouped.map((group) => (
           <div key={group.date}>
             {/* Date Divider */}
@@ -127,6 +160,7 @@ export function MessageList({
             {group.messages.map((msg, idx) => {
               const prevMsg = idx > 0 ? group.messages[idx - 1] : null;
               const consecutive = isConsecutive(msg, prevMsg);
+              const readStatus = getReadStatus(msg);
 
               return (
                 <div
@@ -195,12 +229,33 @@ export function MessageList({
                         </Button>
                       </div>
                     ) : (
-                      <div className="text-sm leading-relaxed break-words">
-                        {msg.content}
-                        {msg.isEdited && (
-                          <span className="text-[10px] text-muted-foreground ml-1">
-                            (edited)
-                          </span>
+                      <div className="flex items-end gap-1.5">
+                        <div className="text-sm leading-relaxed break-words">
+                          {msg.content}
+                          {msg.isEdited && (
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              (edited)
+                            </span>
+                          )}
+                        </div>
+                        {/* Read receipt indicator */}
+                        {readStatus && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="flex-shrink-0 mb-0.5">
+                                  {readStatus === "seen" ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                                  ) : (
+                                    <Check className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                  )}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                {readStatus === "seen" ? "Seen" : "Sent"}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                     )}
@@ -298,32 +353,36 @@ export function MessageList({
                             {msg.isPinned ? "Unpin" : "Pin"}
                           </TooltipContent>
                         </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleStartEdit(msg)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => onDelete(msg.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete</TooltipContent>
-                        </Tooltip>
+                        {msg.authorId === currentUserId && (
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleStartEdit(msg)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => onDelete(msg.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                          </>
+                        )}
                       </TooltipProvider>
                     </div>
                   )}
@@ -332,7 +391,26 @@ export function MessageList({
             })}
           </div>
         ))}
+        {/* Invisible element to scroll to */}
+        <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+
+      {/* Scroll-to-bottom button when user has scrolled up */}
+      {!isUserAtBottom && messages.length > 0 && (
+        <div className="sticky bottom-2 flex justify-center pointer-events-none">
+          <button
+            onClick={() => {
+              if (bottomRef.current) {
+                bottomRef.current.scrollIntoView({ behavior: "smooth" });
+                setIsUserAtBottom(true);
+              }
+            }}
+            className="pointer-events-auto px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-medium shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+          >
+            <span>↓</span> New messages
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
