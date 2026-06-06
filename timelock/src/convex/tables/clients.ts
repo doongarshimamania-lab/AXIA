@@ -3,7 +3,6 @@ import { v } from "convex/values";
 
 export const clientPolicies = defineTable({
   userId: v.id("users"),
-  workspaceId: v.optional(v.id("workspaces")),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -29,12 +28,10 @@ export const clientPolicies = defineTable({
   createdAt: v.number(),
   lastUpdated: v.number(),
 })
-  .index("by_user", ["userId"])
-  .index("by_workspace", ["workspaceId"]);
+  .index("by_user", ["userId"]);
 
 export const clients = defineTable({
   userId: v.id("users"),
-  workspaceId: v.optional(v.id("workspaces")),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -46,19 +43,11 @@ export const clients = defineTable({
   hourlyRate: v.number(),
   contractType: v.union(v.literal("hourly"), v.literal("fixed")),
   riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-  contactEmail: v.optional(v.string()),
-  contactName: v.optional(v.string()),
-  notes: v.optional(v.string()),
-  assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
-  defaultPaymentTerms: v.optional(v.string()),
-  defaultCurrency: v.optional(v.string()),
-  defaultDueDays: v.optional(v.number()),
   addedAt: v.number(),
   lastActivityAt: v.number(),
 })
   .index("by_user", ["userId"])
-  .index("by_user_and_name", ["userId", "clientName"])
-  .index("by_workspace", ["workspaceId"]);
+  .index("by_user_and_name", ["userId", "clientName"]);
 
 export const clientCompanies = defineTable({
   email: v.string(),

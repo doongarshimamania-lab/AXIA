@@ -1,47 +1,25 @@
-import { useState, useEffect, Component } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, Loader2, Plus, AlertTriangle, CheckCircle, Clock, LayoutDashboard, Activity, Target, Fingerprint, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router";
-
-// Per-section error boundary so one failing section doesn't crash the whole page
-class SectionErrorBoundary extends Component<{ children: React.ReactNode; name: string }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(err: Error) { console.warn(`[SectionErrorBoundary:${this.props.name}]`, err.message); }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <Card className="p-6 bg-card rounded-xl border border-border">
-          <div className="text-center py-4">
-            <AlertTriangle className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground mb-2">Failed to load {this.props.name}</p>
-            <Button variant="outline" size="sm" onClick={() => this.setState({ hasError: false })}>Retry</Button>
-          </div>
-        </Card>
-      );
-    }
-    return this.props.children;
-  }
-}
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
-// The following components are hidden for now — will be re-enabled when ready:
-// import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
-// import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
-// import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
-// import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
-// import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
-// import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
-// import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
+import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
+import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
+import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
+import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
+import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
+import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
+import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
 
 interface Project {
   _id: Id<"projects">;
@@ -110,10 +88,10 @@ export default function Projects() {
 
   // Auto-select first project if none selected
   useEffect(() => {
-    if (!selectedProjectId && projects && projects.length > 0) {
-      setSelectedProjectId(projects[0]._id);
+    if (!selectedProjectId && safeProjects.length > 0) {
+      setSelectedProjectId(safeProjects[0]._id);
     }
-  }, [projects, selectedProjectId]);
+  }, [safeProjects, selectedProjectId]);
 
   const selectedProject = safeProjects.find((p: any) => p._id === selectedProjectId);
 
@@ -210,7 +188,88 @@ export default function Projects() {
                 onUpgrade={() => navigate("/subscription")}
               />
 
-                {/* Feature sections hidden — will be re-enabled when ready */}
+                {/* Main Feature Dashboard - Always visible */}
+                <div className="space-y-8">
+                    
+                    {/* 1. Protection Score - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Protection Score</h2>
+                      </div>
+                      <ProjectProtectionScore 
+                      projectId={selectedProjectId as Id<"projects">}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                    {/* 2. Health Dashboard - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Project Health Dashboard</h2>
+                      </div>
+                      <ProjectHealthDashboardNew 
+                      projectData={selectedProject}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                    {/* 3. Risk Timeline Analysis - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Risk Timeline Analysis</h2>
+                      </div>
+                      <ProjectRiskTimeline 
+                      projectData={selectedProject}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                    {/* 4. Milestone Protection - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Milestone Protection</h2>
+                      </div>
+                      <MilestoneProtection 
+                      projectId={selectedProjectId as Id<"projects">}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                    {/* 5. Adaptive Evidence System - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Adaptive Evidence System</h2>
+                      </div>
+                      <AdaptiveEvidenceSystem 
+                      projectId={selectedProjectId as Id<"projects">}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                    {/* 6. Protection Risk Heatmap - Full Width */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-primary" />
+                        <h2 className="text-xl font-semibold">Protection Risk Heatmap</h2>
+                      </div>
+                      <ProtectionRiskHeatmap 
+                      projectId={selectedProjectId as Id<"projects">}
+                      tier={tier}
+                      onUpgrade={handleUpgrade}
+                    />
+                  </div>
+
+                </div>
               </>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, UserPlus, MessageSquare, Calendar, CheckCircle, Lock, AlertCircle } from "lucide-react";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";

@@ -3,68 +3,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Star, Clock, Search } from "lucide-react";
+import { useQuery } from "convex/react";
 import { useState } from "react";
-
-// Mock data — the backend function "clients/freelancerDirectory:getVerifiedFreelancers"
-// does not exist yet, so we use local mock data instead of a crashing useQuery call.
-const MOCK_FREELANCERS = [
-  {
-    _id: "fl_1",
-    displayName: "Sarah Chen",
-    professionalTitle: "Full-Stack Developer",
-    bio: "Specialized in React, Node.js, and cloud architecture with 8+ years of experience.",
-    skills: ["React", "Node.js", "AWS", "TypeScript", "PostgreSQL"],
-    axiaVerified: true,
-    verificationScore: 95,
-    totalVerifiedHours: 2400,
-    hourlyRate: 85,
-    availability: "available",
-  },
-  {
-    _id: "fl_2",
-    displayName: "Marcus Rivera",
-    professionalTitle: "UI/UX Designer",
-    bio: "Award-winning designer focused on SaaS products and design systems.",
-    skills: ["Figma", "Design Systems", "User Research", "Prototyping"],
-    axiaVerified: true,
-    verificationScore: 88,
-    totalVerifiedHours: 1800,
-    hourlyRate: 75,
-    availability: "available",
-  },
-  {
-    _id: "fl_3",
-    displayName: "Priya Patel",
-    professionalTitle: "Data Scientist",
-    bio: "Machine learning specialist with a focus on NLP and computer vision applications.",
-    skills: ["Python", "TensorFlow", "NLP", "Data Analysis", "SQL"],
-    axiaVerified: false,
-    verificationScore: 72,
-    totalVerifiedHours: 950,
-    hourlyRate: 95,
-    availability: "busy",
-  },
-  {
-    _id: "fl_4",
-    displayName: "Alex Thompson",
-    professionalTitle: "DevOps Engineer",
-    bio: "Infrastructure automation expert helping teams ship faster and more reliably.",
-    skills: ["Docker", "Kubernetes", "CI/CD", "Terraform", "AWS"],
-    axiaVerified: true,
-    verificationScore: 91,
-    totalVerifiedHours: 2100,
-    hourlyRate: 90,
-    availability: "available",
-  },
-];
 
 export function FreelancerDirectoryView() {
   const [searchQuery, setSearchQuery] = useState("");
+  const freelancers = useQuery("clients/freelancerDirectory:getVerifiedFreelancers" as any);
 
-  const filteredFreelancers = MOCK_FREELANCERS.filter((f) =>
+  if (!freelancers) {
+    return <div className="text-muted-foreground">Loading freelancer directory...</div>;
+  }
+
+  const filteredFreelancers = freelancers.filter((f: any) =>
     f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.professionalTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.skills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+    f.skills.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -91,7 +44,7 @@ export function FreelancerDirectoryView() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredFreelancers.map((freelancer) => (
+          {filteredFreelancers.map((freelancer: any) => (
             <Card key={freelancer._id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -109,7 +62,7 @@ export function FreelancerDirectoryView() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm">{freelancer.bio}</p>
-
+                
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 text-yellow-500" />
@@ -122,7 +75,7 @@ export function FreelancerDirectoryView() {
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {freelancer.skills.slice(0, 5).map((skill) => (
+                  {freelancer.skills.slice(0, 5).map((skill: string) => (
                     <Badge key={skill} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>

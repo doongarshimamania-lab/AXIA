@@ -295,32 +295,32 @@ export function CollapsibleSidebar() {
                   >
                     <NavItem icon={Home} label="Dashboard" isExpanded={true} />
                   </button>
-                  <button
-                    onClick={() => navigate("/projects")}
+                  <button 
+                    onClick={() => navigate("/projects")} 
                     className="w-full text-left"
                   >
                     <NavItem icon={Briefcase} label="Projects" isExpanded={true} />
                   </button>
-                  <button
-                    onClick={() => navigate("/clients")}
+                  <button 
+                    onClick={() => navigate("/clients")} 
                     className="w-full text-left"
                   >
                     <NavItem icon={Users} label="Clients" isExpanded={true} />
                   </button>
-                  <button
-                    onClick={() => navigate("/teams")}
+                  <button 
+                    onClick={() => navigate("/teams")} 
                     className="w-full text-left"
                   >
                     <NavItem icon={Building2} label="Team" isExpanded={true} />
                   </button>
-                  <button
-                    onClick={() => navigate("/messages")}
+                  <button 
+                    onClick={() => navigate("/messages")} 
                     className="w-full text-left"
                   >
                     <NavItem icon={MessageSquare} label="Messages" isExpanded={true} />
                   </button>
-                  <button
-                    onClick={() => navigate("/evidence-library")}
+                  <button 
+                    onClick={() => navigate("/evidence-library")} 
                     className="w-full text-left"
                   >
                     <NavItem icon={Database} label="Evidence Library" isExpanded={true} />
@@ -424,13 +424,12 @@ export function CollapsibleSidebar() {
                 <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
-                </button>
                 <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-
+                <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
                 <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>

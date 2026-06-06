@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,19 +14,13 @@ interface MilestoneProtectionProps {
   onUpgrade?: () => void;
 }
 
-// Convex IDs are alphanumeric (e.g., "kg2abc123def456") — mock IDs like "proj_1" contain underscores
-const isValidConvexId = (id: unknown): id is Id<"projects"> =>
-  typeof id === "string" && id.length >= 10 && !id.includes("_");
-
 export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestoneProtectionProps) {
-  const validProjectId = isValidConvexId(projectId) ? projectId : null;
-
   const milestoneData = useQuery(
     api.projects.milestoneProtection.getMilestoneProtection,
-    validProjectId ? { projectId: validProjectId, userTier: tier } : "skip"
+    projectId ? { projectId, userTier: tier } : "skip"
   );
 
-  if (!validProjectId) {
+  if (!projectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">
@@ -39,7 +33,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
     );
   }
 
-  if (validProjectId && milestoneData === undefined) {
+  if (projectId && milestoneData === undefined) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="flex items-center justify-center py-12">
@@ -111,7 +105,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
         latestReport={latestReport}
         snapshots={snapshots}
         onUpgrade={onUpgrade}
-        projectId={validProjectId || undefined}
+        projectId={projectId || undefined}
       />
     );
   }
@@ -128,7 +122,7 @@ export function MilestoneProtection({ projectId, tier, onUpgrade }: MilestonePro
         alerts={alerts}
         latestReport={latestReport}
         snapshots={snapshots}
-        projectId={validProjectId || undefined}
+        projectId={projectId || undefined}
       />
     );
   }

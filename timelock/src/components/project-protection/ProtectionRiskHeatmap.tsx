@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,22 +13,16 @@ interface ProtectionRiskHeatmapProps {
   onUpgrade?: () => void;
 }
 
-// Convex IDs are alphanumeric (e.g., "kg2abc123def456") — mock IDs like "proj_1" contain underscores
-const isValidConvexId = (id: unknown): id is Id<"projects"> =>
-  typeof id === "string" && id.length >= 10 && !id.includes("_");
-
 export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: ProtectionRiskHeatmapProps) {
-  const validProjectId = isValidConvexId(projectId) ? projectId : null;
-
   const heatmapData = useQuery(
     api.projects.projectProtection.getProjectRiskHeatmap,
-    validProjectId ? { projectId: validProjectId } : "skip"
+    projectId ? { projectId } : "skip"
   );
 
   const normalizedTier = tier.toLowerCase();
 
   // Loading state
-  if (heatmapData === undefined && validProjectId) {
+  if (heatmapData === undefined && projectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">
@@ -40,7 +34,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
     );
   }
 
-  if (!validProjectId) {
+  if (!projectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">

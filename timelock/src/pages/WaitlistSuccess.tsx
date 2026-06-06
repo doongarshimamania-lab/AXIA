@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";

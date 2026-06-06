@@ -4,7 +4,6 @@ import { v } from "convex/values";
 export const billingTables = {
   invoices: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.optional(v.id("clients")),
     invoiceNumber: v.string(), // INV-001 format
     publicToken: v.string(), // for client-facing view
@@ -49,14 +48,11 @@ export const billingTables = {
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
     .index("by_client", ["clientId"])
-    .index("by_client_email", ["clientEmail"])
     .index("by_public_token", ["publicToken"])
-    .index("by_invoice_number", ["invoiceNumber"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_invoice_number", ["invoiceNumber"]),
 
   invoiceWorkLinks: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     invoiceId: v.id("invoices"),
     lineItemId: v.string(),
     proofType: v.union(
@@ -75,18 +71,14 @@ export const billingTables = {
     url: v.optional(v.string()),
     fileName: v.optional(v.string()),
     verified: v.optional(v.boolean()),
-    publicToken: v.optional(v.string()), // for shareable proof links
     createdAt: v.number(),
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
-    .index("by_line_item", ["invoiceId", "lineItemId"])
-    .index("by_workspace", ["workspaceId"])
-    .index("by_public_token", ["publicToken"]),
+    .index("by_line_item", ["invoiceId", "lineItemId"]),
 
   paymentReminders: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     invoiceId: v.id("invoices"),
     dayNumber: v.number(), // 3, 7, or 14
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
@@ -105,6 +97,5 @@ export const billingTables = {
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
-    .index("by_status_and_date", ["status", "scheduledAt"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_status_and_date", ["status", "scheduledAt"]),
 };

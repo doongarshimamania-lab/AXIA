@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Card } from "@/components/ui/card";
@@ -28,19 +28,17 @@ export function ProjectHealthDashboardNew({ projectData, tier, onUpgrade }: Proj
     );
   }
 
-  // Check if project ID is a valid Convex ID (not a mock string like "proj_1")
-  const rawId = projectData._id as string;
-  const isValidConvexId = rawId && rawId.length >= 10 && !rawId.includes("_");
-  const projectId = isValidConvexId ? (rawId as Id<"projects">) : null;
+  const projectId = projectData._id as Id<"projects">;
 
-  // Fetch backend data — skip if projectId is not a valid Convex ID
-  const backendData = useQuery(
-    api.projects.projectHealthDashboard.getProjectHealthDashboard,
-    projectId ? { projectId, userTier: tier, guestUserId: projectData.userId } : "skip"
-  );
+  // Fetch backend data
+  const backendData = useQuery(api.projects.projectHealthDashboard.getProjectHealthDashboard, {
+    projectId,
+    userTier: tier,
+    guestUserId: projectData.userId, 
+  });
 
-  // Loading state — only show when we have a valid projectId and are actually waiting
-  if (projectId && backendData === undefined) {
+  // Loading state
+  if (backendData === undefined) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="text-center py-8">
@@ -51,15 +49,13 @@ export function ProjectHealthDashboardNew({ projectData, tier, onUpgrade }: Proj
     );
   }
 
-  // Error state — no data available (either skipped or failed)
+  // Error state
   if (!backendData) {
     return (
       <Card className="p-6 bg-card rounded-xl border border-border">
         <div className="text-center py-4">
           <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            {projectId ? "Failed to load timeline health data" : "Select a project with real data to view health dashboard"}
-          </p>
+          <p className="text-sm text-muted-foreground">Failed to load timeline health data</p>
         </div>
       </Card>
     );

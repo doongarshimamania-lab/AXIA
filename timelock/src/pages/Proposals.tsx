@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate } from "react-router";
@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -42,13 +41,6 @@ import {
   TrendingUp,
   Mail,
   Loader2,
-  Upload,
-  Download,
-  FileUp,
-  FileDown,
-  BookmarkPlus,
-  LayoutTemplate,
-  X,
 } from "lucide-react";
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -70,7 +62,6 @@ interface Proposal {
   totalValue: number;
   currency?: string;
   sections: ProposalSection[];
-  dealId?: string;
   sentAt?: number;
   viewedAt?: number;
   signedAt?: number;
@@ -176,14 +167,6 @@ export default function Proposals() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importType, setImportType] = useState<"proposals" | "templates">("proposals");
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [saveTemplateDialogId, setSaveTemplateDialogId] = useState<string | null>(null);
-  const [templateName, setTemplateName] = useState("");
-  const [templateIndustry, setTemplateIndustry] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Convex queries
   const convexProposals = useQuery(api.proposals.crud.getProposals, activeFilter === "all" ? {} : { status: activeFilter }) as Proposal[] | undefined;
@@ -201,9 +184,6 @@ export default function Proposals() {
   const duplicateProposal = useMutation(api.proposals.crud.duplicateProposal);
   const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
-  const importProposalsFromJson = useMutation(api.proposals.crud.importProposalsFromJson);
-  const importTemplatesFromJson = useMutation(api.proposals.crud.importTemplatesFromJson);
-  const saveAsTemplate = useMutation(api.proposals.crud.saveAsTemplate);
 
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, {}) as Proposal[] | undefined;
@@ -312,93 +292,6 @@ export default function Proposals() {
     }
   };
 
-  const handleImport = useCallback(async () => {
-    if (!importFile) {
-      toast.error("Please select a file to import");
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const text = await importFile.text();
-      const fileName = importFile.name.toLowerCase();
-
-      if (fileName.endsWith(".csv")) {
-        // Parse CSV - expected columns: title, clientName, clientEmail, totalValue, status, notes
-        const lines = text.split("\n").filter(l => l.trim());
-        if (lines.length < 2) {
-          toast.error("CSV file must have a header row and at least one data row");
-          setIsImporting(false);
-          return;
-        }
-        const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, ""));
-        const proposals = [];
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(",").map(v => v.trim().replace(/"/g, ""));
-          const obj: any = {};
-          headers.forEach((h, idx) => { obj[h] = values[idx] || undefined; });
-          if (obj.title) {
-            proposals.push({
-              title: obj.title,
-              clientName: obj.clientName,
-              clientEmail: obj.clientEmail,
-              totalValue: obj.totalValue ? Number(obj.totalValue) : 0,
-              status: obj.status || "draft",
-              notes: obj.notes,
-            });
-          }
-        }
-        if (proposals.length === 0) {
-          toast.error("No valid proposals found in CSV");
-          setIsImporting(false);
-          return;
-        }
-        const result = await importProposalsFromJson({ proposals });
-        toast.success(`Imported ${(result as any).imported} proposals`);
-      } else {
-        // JSON file
-        const data = JSON.parse(text);
-        if (importType === "proposals") {
-          const proposals = Array.isArray(data) ? data : data.proposals || [data];
-          const result = await importProposalsFromJson({ proposals });
-          toast.success(`Imported ${(result as any).imported} proposals`);
-        } else {
-          const templates = Array.isArray(data) ? data : data.templates || [data];
-          const result = await importTemplatesFromJson({ templates });
-          toast.success(`Imported ${(result as any).imported} templates`);
-        }
-      }
-
-      setImportDialogOpen(false);
-      setImportFile(null);
-    } catch (err: any) {
-      console.error("Import failed:", err);
-      toast.error("Import failed", { description: err.message });
-    } finally {
-      setIsImporting(false);
-    }
-  }, [importFile, importType, importProposalsFromJson, importTemplatesFromJson]);
-
-  const handleSaveAsTemplate = useCallback(async () => {
-    if (!saveTemplateDialogId || !templateName.trim()) {
-      toast.error("Please enter a template name");
-      return;
-    }
-    try {
-      await saveAsTemplate({
-        proposalId: saveTemplateDialogId as any,
-        templateName: templateName.trim(),
-        industry: templateIndustry.trim() || undefined,
-      });
-      toast.success("Saved as template!");
-      setSaveTemplateDialogId(null);
-      setTemplateName("");
-      setTemplateIndustry("");
-    } catch (err: any) {
-      toast.error("Failed to save template", { description: err.message });
-    }
-  }, [saveTemplateDialogId, templateName, templateIndustry, saveAsTemplate]);
-
   return (
     <motion.div
       className="flex-1 min-h-screen bg-background text-foreground transition-colors"
@@ -431,15 +324,6 @@ export default function Proposals() {
                 <Sparkles className="h-4 w-4" />
               )}
               Seed Data
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 text-muted-foreground"
-              onClick={() => setImportDialogOpen(true)}
-            >
-              <FileUp className="h-4 w-4" />
-              Import
             </Button>
             <Button
               className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
@@ -632,7 +516,6 @@ export default function Proposals() {
                   onDuplicate={handleDuplicate}
                   onDelete={setDeleteDialogId}
                   onView={() => navigate(`/proposals/new?edit=${proposal._id}`)}
-                  onSaveAsTemplate={setSaveTemplateDialogId}
                 />
               ))
             )}
@@ -662,159 +545,6 @@ export default function Proposals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileUp className="h-5 w-5 text-[#8B5CF6]" />
-              Import Data
-            </DialogTitle>
-            <DialogDescription>
-              Import proposals or templates from a JSON or CSV file.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* Import Type */}
-            <div className="grid gap-2">
-              <Label className="text-[13px] font-medium">Import Type</Label>
-              <div className="flex gap-2">
-                <Button
-                  variant={importType === "proposals" ? "default" : "outline"}
-                  size="sm"
-                  className={importType === "proposals" ? "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" : ""}
-                  onClick={() => setImportType("proposals")}
-                >
-                  <FileText className="h-3.5 w-3.5 mr-1.5" />
-                  Proposals
-                </Button>
-                <Button
-                  variant={importType === "templates" ? "default" : "outline"}
-                  size="sm"
-                  className={importType === "templates" ? "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" : ""}
-                  onClick={() => setImportType("templates")}
-                >
-                  <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />
-                  Templates
-                </Button>
-              </div>
-            </div>
-
-            {/* File Input */}
-            <div className="grid gap-2">
-              <Label className="text-[13px] font-medium">Select File</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-[#8B5CF6]/40 transition-colors">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".json,.csv"
-                  className="hidden"
-                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                />
-                {importFile ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <FileDown className="h-5 w-5 text-[#8B5CF6]" />
-                    <span className="text-sm font-medium">{importFile.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        setImportFile(null);
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to select a <span className="font-medium">.json</span> or <span className="font-medium">.csv</span> file
-                    </p>
-                    {importType === "proposals" && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        CSV columns: title, clientName, clientEmail, totalValue, status, notes
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setImportDialogOpen(false); setImportFile(null); }}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
-              onClick={handleImport}
-              disabled={!importFile || isImporting}
-            >
-              {isImporting ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-              ) : (
-                <FileUp className="h-4 w-4 mr-1.5" />
-              )}
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Save as Template Dialog */}
-      <Dialog open={!!saveTemplateDialogId} onOpenChange={() => { setSaveTemplateDialogId(null); setTemplateName(""); setTemplateIndustry(""); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookmarkPlus className="h-5 w-5 text-[#8B5CF6]" />
-              Save as Template
-            </DialogTitle>
-            <DialogDescription>
-              Save this proposal's sections as a reusable template.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="grid gap-2">
-              <Label className="text-[13px] font-medium">Template Name</Label>
-              <Input
-                placeholder="e.g., Standard Web Development Proposal"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-[13px] font-medium">Industry (optional)</Label>
-              <Input
-                placeholder="e.g., Technology, Creative, Professional Services"
-                value={templateIndustry}
-                onChange={(e) => setTemplateIndustry(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setSaveTemplateDialogId(null); setTemplateName(""); setTemplateIndustry(""); }}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
-              onClick={handleSaveAsTemplate}
-              disabled={!templateName.trim()}
-            >
-              Save Template
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 }
@@ -831,7 +561,6 @@ function ProposalCard({
   onDuplicate,
   onDelete,
   onView,
-  onSaveAsTemplate,
 }: {
   proposal: Proposal;
   idx: number;
@@ -842,7 +571,6 @@ function ProposalCard({
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onView: () => void;
-  onSaveAsTemplate: (id: string) => void;
 }) {
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
@@ -911,13 +639,6 @@ function ProposalCard({
                   Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onSaveAsTemplate(proposal._id)}
-                  className="gap-2 cursor-pointer"
-                >
-                  <BookmarkPlus className="h-3.5 w-3.5" />
-                  Save as Template
-                </DropdownMenuItem>
-                <DropdownMenuItem
                   onClick={() => onDelete(proposal._id)}
                   className="gap-2 cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
                 >
@@ -982,14 +703,6 @@ function ProposalCard({
             <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
               <Clock className="h-3 w-3" />
               <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
-            </div>
-          )}
-
-          {/* Linked Deal Indicator */}
-          {proposal.dealId && (
-            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit mt-2">
-              <FileText className="h-3 w-3" />
-              <span>Linked to deal</span>
             </div>
           )}
 

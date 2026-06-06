@@ -4,7 +4,6 @@ import { v } from "convex/values";
 export const projectTables = {
   clientPolicies: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     clientName: v.string(),
     platform: v.union(
       v.literal("upwork"),
@@ -30,12 +29,10 @@ export const projectTables = {
     createdAt: v.number(),
     lastUpdated: v.number(),
   })
-    .index("by_user", ["userId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_user", ["userId"]),
 
   clients: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     clientName: v.string(),
     platform: v.union(
       v.literal("upwork"),
@@ -47,25 +44,14 @@ export const projectTables = {
     hourlyRate: v.number(),
     contractType: v.union(v.literal("hourly"), v.literal("fixed")),
     riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-    contactEmail: v.optional(v.string()),
-    contactName: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
-    // Payment terms per client
-    defaultPaymentTerms: v.optional(v.string()), // e.g. "net_30", "net_60", "due_on_receipt"
-    defaultCurrency: v.optional(v.string()), // e.g. "USD", "EUR"
-    defaultDueDays: v.optional(v.number()), // e.g. 30, 60, 0
     addedAt: v.number(),
     lastActivityAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_name", ["userId", "clientName"])
-    .index("by_workspace", ["workspaceId"])
-    .index("by_contact_email", ["contactEmail"]),
+    .index("by_user_and_name", ["userId", "clientName"]),
 
   projects: defineTable({
     userId: v.id("users"),
-    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.id("clients"),
     projectName: v.string(),
     hourlyRate: v.number(),
@@ -103,8 +89,7 @@ export const projectTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "projectName"])
-    .index("by_client", ["clientId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_client", ["clientId"]),
 
   clientCompanies: defineTable({
     email: v.string(),
@@ -189,34 +174,4 @@ export const projectTables = {
   })
     .index("by_client", ["clientId"])
     .index("by_timestamp", ["timestamp"]),
-
-  // Client session tokens for portal access
-  clientSessions: defineTable({
-    clientEmail: v.string(),
-    token: v.string(),
-    clientCompanyId: v.optional(v.id("clientCompanies")),
-    clientName: v.optional(v.string()),
-    expiresAt: v.number(),
-    createdAt: v.number(),
-  })
-    .index("by_token", ["token"])
-    .index("by_email", ["clientEmail"]),
-
-  // Client workspace tokens — shareable links for no-login access
-  // A freelancer generates one per client; the client opens /workspace/:token
-  clientWorkspaceTokens: defineTable({
-    token: v.string(),
-    clientId: v.id("clients"),
-    clientName: v.string(),
-    contactEmail: v.optional(v.string()),
-    workspaceId: v.optional(v.id("workspaces")),
-    freelancerUserId: v.string(),
-    createdAt: v.number(),
-    lastAccessedAt: v.optional(v.number()),
-    accessCount: v.optional(v.number()),
-    revoked: v.optional(v.boolean()),
-  })
-    .index("by_token", ["token"])
-    .index("by_client", ["clientId"])
-    .index("by_freelancer", ["freelancerUserId"]),
 };

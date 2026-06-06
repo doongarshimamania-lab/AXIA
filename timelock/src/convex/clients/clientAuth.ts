@@ -2,144 +2,6 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-// ─── CLIENT SESSION SYSTEM ──────────────────────────────────────────────────
-
-function generateToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 48; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-  return result;
-}
-
-/** Verify client access by email — creates a session token for the client portal.
- *  Public — no freelancer auth required. Just looks up the email. */
-export const verifyClientAccess = mutation({
-  args: { email: v.string() },
-  handler: async (ctx, { email }) => {
-    if (!email || !email.trim()) throw new Error("Email is required");
-
-    const trimmedEmail = email.trim().toLowerCase();
-
-    // Check if there's a clientCompany with this email
-    const clientCompany = await ctx.db
-      .query("clientCompanies")
-      .withIndex("by_email", (q) => q.eq("email", trimmedEmail))
-      .first();
-
-    // Also check if there's a freelancer client record with this email
-    const clientRecord = await ctx.db
-      .query("clients")
-      .withIndex("by_contact_email", (q) => q.eq("contactEmail", trimmedEmail))
-      .first();
-
-    // Also check invoices for this email
-    const invoiceForClient = await ctx.db
-      .query("invoices")
-      .withIndex("by_client_email", (q) => q.eq("clientEmail", trimmedEmail))
-      .first();
-
-    // If no record at all, deny access
-    if (!clientCompany && !clientRecord && !invoiceForClient) {
-      return {
-        success: false,
-        error: "No account found with this email. Please contact your freelancer.",
-      };
-    }
-
-    // Clean up expired sessions for this email
-    const now = Date.now();
-    const existingSessions = await ctx.db
-      .query("clientSessions")
-      .withIndex("by_email", (q) => q.eq("clientEmail", trimmedEmail))
-      .collect();
-    for (const session of existingSessions) {
-      if (session.expiresAt < now) {
-        await ctx.db.delete(session._id);
-      }
-    }
-
-    // Create new session token
-    const token = generateToken();
-    const expiresAt = now + 24 * 60 * 60 * 1000; // 24 hours
-
-    await ctx.db.insert("clientSessions", {
-      clientEmail: trimmedEmail,
-      token,
-      clientCompanyId: clientCompany?._id,
-      clientName: clientCompany?.companyName || clientRecord?.clientName || trimmedEmail,
-      expiresAt,
-      createdAt: now,
-    });
-
-    // Update lastLoginAt on clientCompany if exists
-    if (clientCompany) {
-      await ctx.db.patch(clientCompany._id, { lastLoginAt: now });
-    }
-
-    return {
-      success: true,
-      token,
-      clientEmail: trimmedEmail,
-      clientName: clientCompany?.companyName || clientRecord?.clientName || trimmedEmail,
-      contactName: clientCompany?.contactName || clientRecord?.contactName || "",
-    };
-  },
-});
-
-/** Validate a client session token. Returns client info if valid. */
-export const getClientSession = query({
-  args: { token: v.string() },
-  handler: async (ctx, { token }) => {
-    if (!token) return null;
-
-    const session = await ctx.db
-      .query("clientSessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .first();
-
-    if (!session) return null;
-
-    // Check if expired
-    if (session.expiresAt < Date.now()) {
-      return null;
-    }
-
-    // Get client company info
-    let clientCompany = null;
-    if (session.clientCompanyId) {
-      clientCompany = await ctx.db.get(session.clientCompanyId);
-    }
-
-    return {
-      clientEmail: session.clientEmail,
-      clientName: session.clientName || clientCompany?.companyName || session.clientEmail,
-      contactName: clientCompany?.contactName || "",
-      industry: clientCompany?.industry || "",
-      companySize: clientCompany?.companySize || "",
-      verificationCount: clientCompany?.verificationCount || 0,
-    };
-  },
-});
-
-/** Logout — invalidate session token. */
-export const logoutClientSession = mutation({
-  args: { token: v.string() },
-  handler: async (ctx, { token }) => {
-    const session = await ctx.db
-      .query("clientSessions")
-      .withIndex("by_token", (q) => q.eq("token", token))
-      .first();
-
-    if (session) {
-      await ctx.db.delete(session._id);
-    }
-
-    return { success: true };
-  },
-});
-
-// ─── EXISTING CLIENT COMPANY AUTH (requires freelancer auth) ─────────────────
-
 // Register a new client company (requires auth)
 export const registerClient = mutation({
   args: {
@@ -178,12 +40,12 @@ export const registerClient = mutation({
 
     await ctx.db.insert("clientActivityLog", {
       clientId,
-      action: "client_registered",
+      action: "client_registered" as const,
       metadata: { companyName: args.companyName },
       timestamp: Date.now(),
     });
 
-    return { clientId: clientId as string, success: true };
+    return { clientId: clientId as string, success: true as const };
   },
 });
 
@@ -218,7 +80,7 @@ export const updateClientProfile = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const { clientId, companyName, contactName, industry, companySize, website } = args;
-
+    
     const updates: any = {};
     if (companyName !== undefined) updates.companyName = companyName;
     if (contactName !== undefined) updates.contactName = contactName;

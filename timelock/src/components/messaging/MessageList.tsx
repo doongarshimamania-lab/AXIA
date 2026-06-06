@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { useRef, useEffect, useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
   TooltipContent,
@@ -10,110 +9,53 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
+  Smile,
   Reply,
+  MoreHorizontal,
   Pin,
+  Pencil,
   Trash2,
-  Edit3,
-  SmilePlus,
   Check,
-  MessagesSquare,
-  Link2,
-  Clock,
+  X,
 } from "lucide-react";
+import { format } from "date-fns";
 
-export interface MessageInfo {
-  _id: string;
-  channelId: string;
+export interface Message {
+  id: string;
   authorId: string;
   authorName: string;
-  authorImage?: string;
-  authorEmail?: string;
-  body: string;
-  messageType: "text" | "system" | "file" | "link";
+  authorAvatar?: string;
+  content: string;
+  timestamp: number;
   isEdited: boolean;
   isPinned: boolean;
-  editedAt?: number;
-  createdAt: number;
-  reactions: { emoji: string; count: number; hasUser: boolean }[];
+  reactions: { emoji: string; count: number; hasReacted: boolean }[];
   threadReplyCount: number;
-  lastReplyAt?: number;
-  attachments?: { name: string; type: string; size: number; url?: string }[];
+  lastThreadReplyTime?: number;
+  threadParticipants?: string[];
 }
 
 interface MessageListProps {
-  messages: MessageInfo[];
-  currentUserId?: string;
+  messages: Message[];
   onReact: (messageId: string, emoji: string) => void;
-  onDelete: (messageId: string) => void;
-  onEdit: (messageId: string, newBody: string) => void;
-  onOpenThread: (messageId: string) => void;
+  onReply: (messageId: string) => void;
   onPin: (messageId: string) => void;
-  className?: string;
+  onEdit: (messageId: string, newContent: string) => void;
+  onDelete: (messageId: string) => void;
+  onOpenThread: (messageId: string) => void;
 }
 
-const EMOJI_REACTIONS = ["👍", "❤️", "😂", "🎉", "🤔", "👀", "🔥", "✅"];
+function groupMessagesByDate(messages: Message[]): { date: string; messages: Message[] }[] {
+  const groups: { date: string; messages: Message[] }[] = [];
+  let currentDate = "";
 
-function formatMessageTime(ts: number): string {
-  const date = new Date(ts);
-  const now = new Date();
-  const diff = now.getTime() - ts;
-
-  if (diff < 60000) return "just now";
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `Yesterday ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-
-  return date.toLocaleDateString([], { month: "short", day: "numeric" }) + ` ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-}
-
-function formatDateDivider(ts: number): string {
-  const date = new Date(ts);
-  const now = new Date();
-  const diff = now.getTime() - ts;
-
-  if (diff < 86400000 && date.getDate() === now.getDate()) return "Today";
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-
-  return date.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
-}
-
-function groupMessagesByDate(messages: MessageInfo[]): { date: string; timestamp: number; messages: MessageInfo[] }[] {
-  const groups: { date: string; timestamp: number; messages: MessageInfo[] }[] = [];
   for (const msg of messages) {
-    const dateStr = formatDateDivider(msg.createdAt);
-    const lastGroup = groups[groups.length - 1];
-    if (lastGroup && lastGroup.date === dateStr) {
-      lastGroup.messages.push(msg);
+    const msgDate = format(new Date(msg.timestamp), "MMMM d, yyyy");
+    if (msgDate !== currentDate) {
+      currentDate = msgDate;
+      groups.push({ date: msgDate, messages: [msg] });
     } else {
-      groups.push({ date: dateStr, timestamp: msg.createdAt, messages: [msg] });
+      groups[groups.length - 1].messages.push(msg);
     }
   }
   return groups;
@@ -121,275 +63,266 @@ function groupMessagesByDate(messages: MessageInfo[]): { date: string; timestamp
 
 export function MessageList({
   messages,
-  currentUserId,
   onReact,
-  onDelete,
-  onEdit,
-  onOpenThread,
+  onReply,
   onPin,
-  className,
+  onEdit,
+  onDelete,
+  onOpenThread,
 }: MessageListProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [editContent, setEditContent] = useState("");
 
-  const grouped = useMemo(() => groupMessagesByDate(messages), [messages]);
-
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
-      const container = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]");
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length]);
+  }, [messages]);
 
-  useEffect(() => {
-    if (editingMessageId && editInputRef.current) {
-      editInputRef.current.focus();
-    }
-  }, [editingMessageId]);
+  const grouped = groupMessagesByDate(messages);
 
-  const startEdit = (msg: MessageInfo) => {
-    setEditingMessageId(msg._id);
-    setEditText(msg.body);
+  const handleStartEdit = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setEditContent(msg.content);
   };
 
-  const saveEdit = () => {
-    if (editingMessageId && editText.trim()) {
-      onEdit(editingMessageId, editText.trim());
-      setEditingMessageId(null);
-      setEditText("");
+  const handleSaveEdit = (messageId: string) => {
+    if (editContent.trim()) {
+      onEdit(messageId, editContent.trim());
     }
-  };
-
-  const cancelEdit = () => {
     setEditingMessageId(null);
-    setEditText("");
+    setEditContent("");
+  };
+
+  const formatTime = (ts: number) => {
+    return format(new Date(ts), "h:mm a");
+  };
+
+  const isConsecutive = (msg: Message, prevMsg: Message | null) => {
+    if (!prevMsg) return false;
+    return (
+      msg.authorId === prevMsg.authorId &&
+      msg.timestamp - prevMsg.timestamp < 300000 // 5 min
+    );
   };
 
   return (
-    <ScrollArea className={cn("flex-1", className)} ref={scrollRef}>
-      <div className="p-4 space-y-1">
+    <ScrollArea className="flex-1" ref={scrollRef}>
+      <div className="p-4 space-y-0.5">
         {grouped.map((group) => (
           <div key={group.date}>
             {/* Date Divider */}
-            <div className="flex items-center gap-4 py-4">
+            <div className="flex items-center gap-3 my-4">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {group.date}
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
 
             {/* Messages */}
-            {group.messages.map((msg) => {
-              if (msg.messageType === "system") {
-                return (
-                  <div key={msg._id} className="py-1 px-4">
-                    <p className="text-xs text-muted-foreground italic">
-                      <span className="font-medium not-italic">{msg.authorName}</span>{" "}
-                      {msg.body}
-                    </p>
-                  </div>
-                );
-              }
-
-              const isOwn = msg.authorId === currentUserId;
+            {group.messages.map((msg, idx) => {
+              const prevMsg = idx > 0 ? group.messages[idx - 1] : null;
+              const consecutive = isConsecutive(msg, prevMsg);
 
               return (
                 <div
-                  key={msg._id}
-                  className={cn(
-                    "group relative flex gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/30 transition-colors",
-                    hoveredMessageId === msg._id && "bg-muted/30"
-                  )}
-                  onMouseEnter={() => setHoveredMessageId(msg._id)}
+                  key={msg.id}
+                  className={`group relative flex gap-3 px-2 py-0.5 rounded-lg transition-colors ${
+                    hoveredMessageId === msg.id ? "bg-accent/50" : ""
+                  } ${consecutive ? "ml-11" : ""}`}
+                  onMouseEnter={() => setHoveredMessageId(msg.id)}
                   onMouseLeave={() => setHoveredMessageId(null)}
                 >
                   {/* Avatar */}
-                  <Avatar className="h-9 w-9 mt-0.5 shrink-0">
-                    <AvatarImage src={msg.authorImage} />
-                    <AvatarFallback className="text-xs bg-gradient-to-br from-primary/30 to-primary/50 text-primary-foreground">
-                      {getInitials(msg.authorName)}
-                    </AvatarFallback>
-                  </Avatar>
+                  {!consecutive && (
+                    <Avatar className="h-8 w-8 mt-0.5 flex-shrink-0">
+                      <AvatarImage src={msg.authorAvatar} />
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
+                        {msg.authorName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
 
-                  {/* Content */}
+                  {/* Message Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <span className={cn("text-sm font-semibold", isOwn ? "text-primary" : "text-foreground")}>
-                        {msg.authorName}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">
-                        {formatMessageTime(msg.createdAt)}
-                      </span>
-                      {msg.isEdited && (
-                        <span className="text-[10px] text-muted-foreground">(edited)</span>
-                      )}
-                      {msg.isPinned && (
-                        <Pin className="h-3 w-3 text-amber-500" />
-                      )}
-                    </div>
-
-                    {/* Body */}
-                    {editingMessageId === msg._id ? (
-                      <div className="mt-1 flex gap-2">
-                        <input
-                          ref={editInputRef}
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveEdit();
-                            if (e.key === "Escape") cancelEdit();
-                          }}
-                          className="flex-1 bg-background border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
-                        <Button size="sm" variant="ghost" onClick={saveEdit}>
-                          <Check className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          ✕
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="mt-0.5 text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
-                        {msg.body}
+                    {!consecutive && (
+                      <div className="flex items-baseline gap-2 mb-0.5">
+                        <span className="font-semibold text-sm">
+                          {msg.authorName}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatTime(msg.timestamp)}
+                        </span>
                       </div>
                     )}
 
-                    {/* Attachments */}
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {msg.attachments.map((att, i) => (
-                          <div
-                            key={i}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 border rounded-md text-xs"
-                          >
-                            <Link2 className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium truncate max-w-[200px]">{att.name}</span>
-                            <span className="text-muted-foreground">{formatFileSize(att.size)}</span>
-                          </div>
-                        ))}
+                    {editingMessageId === msg.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveEdit(msg.id);
+                            if (e.key === "Escape") setEditingMessageId(null);
+                          }}
+                          className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() => handleSaveEdit(msg.id)}
+                        >
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() => setEditingMessageId(null)}
+                        >
+                          <X className="h-3.5 w-3.5 text-red-500" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-sm leading-relaxed break-words">
+                        {msg.content}
+                        {msg.isEdited && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            (edited)
+                          </span>
+                        )}
                       </div>
                     )}
 
                     {/* Reactions */}
                     {msg.reactions.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {msg.reactions.map((reaction) => (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {msg.reactions.map((r) => (
                           <button
-                            key={reaction.emoji}
-                            onClick={() => onReact(msg._id, reaction.emoji)}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
-                              reaction.hasUser
-                                ? "bg-primary/10 border-primary/30 text-primary"
-                                : "bg-muted/50 border-border hover:bg-muted"
-                            )}
+                            key={r.emoji}
+                            onClick={() => onReact(msg.id, r.emoji)}
+                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
+                              r.hasReacted
+                                ? "border-primary/50 bg-primary/10 text-primary"
+                                : "border-border hover:border-primary/30 bg-background"
+                            }`}
                           >
-                            <span>{reaction.emoji}</span>
-                            <span className="font-medium">{reaction.count}</span>
+                            <span>{r.emoji}</span>
+                            <span className="text-[10px]">{r.count}</span>
                           </button>
                         ))}
                       </div>
                     )}
 
-                    {/* Thread Reply Indicator */}
+                    {/* Thread Indicator */}
                     {msg.threadReplyCount > 0 && (
                       <button
-                        onClick={() => onOpenThread(msg._id)}
-                        className="mt-1.5 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                        onClick={() => onOpenThread(msg.id)}
+                        className="flex items-center gap-1.5 mt-1 text-xs text-primary hover:underline"
                       >
-                        <MessagesSquare className="h-3 w-3" />
-                        {msg.threadReplyCount} {msg.threadReplyCount === 1 ? "reply" : "replies"}
-                        {msg.lastReplyAt && (
-                          <span className="text-muted-foreground">
-                            · Last reply {formatMessageTime(msg.lastReplyAt)}
-                          </span>
-                        )}
+                        <MessageSquare className="h-3 w-3" />
+                        <span>
+                          {msg.threadReplyCount}{" "}
+                          {msg.threadReplyCount === 1 ? "reply" : "replies"}
+                        </span>
                       </button>
                     )}
                   </div>
 
-                  {/* Action Bar (on hover) */}
-                  {hoveredMessageId === msg._id && editingMessageId !== msg._id && (
-                    <div className="absolute -top-3 right-2 flex items-center gap-0.5 bg-background border rounded-md shadow-sm px-0.5 py-0.5 z-10">
-                      <TooltipProvider delayDuration={100}>
-                        {/* Quick reactions */}
-                        {EMOJI_REACTIONS.slice(0, 4).map((emoji) => (
-                          <Tooltip key={emoji}>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => onReact(msg._id, emoji)}
-                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted text-sm"
-                              >
-                                {emoji}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs">
-                              React {emoji}
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-
-                        <div className="h-4 w-px bg-border mx-0.5" />
-
+                  {/* Hover Actions */}
+                  {hoveredMessageId === msg.id && editingMessageId !== msg.id && (
+                    <div className="absolute -top-3 right-2 flex items-center bg-background border border-border rounded-md shadow-sm">
+                      <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button
-                              onClick={() => onOpenThread(msg._id)}
-                              className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted"
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => onReact(msg.id, "+1")}
+                            >
+                              <Smile className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>React</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => onReply(msg.id)}
                             >
                               <Reply className="h-3.5 w-3.5" />
-                            </button>
+                            </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs">
-                            Reply in thread
+                          <TooltipContent>Reply in thread</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => onOpenThread(msg.id)}
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Open thread</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => onPin(msg.id)}
+                            >
+                              <Pin className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {msg.isPinned ? "Unpin" : "Pin"}
                           </TooltipContent>
                         </Tooltip>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-muted">
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            {EMOJI_REACTIONS.slice(4).map((emoji) => (
-                              <DropdownMenuItem
-                                key={emoji}
-                                onClick={() => onReact(msg._id, emoji)}
-                              >
-                                <span className="mr-2">{emoji}</span>
-                                React
-                              </DropdownMenuItem>
-                            ))}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onPin(msg._id)}>
-                              <Pin className="h-4 w-4 mr-2" />
-                              {msg.isPinned ? "Unpin" : "Pin"} message
-                            </DropdownMenuItem>
-                            {isOwn && (
-                              <DropdownMenuItem onClick={() => startEdit(msg)}>
-                                <Edit3 className="h-4 w-4 mr-2" />
-                                Edit message
-                              </DropdownMenuItem>
-                            )}
-                            {(isOwn || true) && (
-                              <DropdownMenuItem
-                                onClick={() => onDelete(msg._id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete message
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleStartEdit(msg)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => onDelete(msg.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
                       </TooltipProvider>
                     </div>
                   )}
@@ -398,21 +331,7 @@ export function MessageList({
             })}
           </div>
         ))}
-
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <MessageSquare className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="font-medium text-foreground">No messages yet</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Start the conversation by sending a message below
-            </p>
-          </div>
-        )}
       </div>
     </ScrollArea>
   );
 }
-
-import { MessageSquare } from "lucide-react";

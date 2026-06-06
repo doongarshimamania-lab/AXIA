@@ -1,38 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Plus, Lock, Share2, Copy, Check, ExternalLink } from "lucide-react";
-import { useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useMutation } from "@/lib/safe-convex-react";
-import { api } from "@/convex/_generated/api";
-import { toast } from "sonner";
-
-// Check if an ID is a mock/demo ID (not a real Convex document ID)
-// Convex IDs for table "clients" always start with "clients:" or are 22+ char base62 strings
-function isMockId(id: string): boolean {
-  // Real Convex IDs are long hex-ish strings, typically 22+ chars with no underscores
-  // Mock IDs like "client_1", "client_2" are clearly not Convex IDs
-  if (id.startsWith("client_") || id.startsWith("mem_") || id.startsWith("proj_")) return true;
-  // Convex document IDs for the "clients" table are typically 22+ chars
-  // and contain only alphanumeric characters (no underscores)
-  if (id.length < 16 || id.includes("_")) return true;
-  return false;
-}
-
-// Generate a demo token locally (for mock data)
-function generateDemoToken(clientId: string): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const segments: string[] = ["demo"];
-  for (let s = 0; s < 3; s++) {
-    let seg = "";
-    for (let i = 0; i < 8; i++) {
-      seg += chars[Math.floor(Math.random() * chars.length)];
-    }
-    segments.push(seg);
-  }
-  return segments.join("-");
-}
+import { Shield, Plus, Lock } from "lucide-react";
 
 interface Client {
   _id: string;
@@ -64,47 +33,6 @@ export function ClientList({
   subscriptionTier = "free",
   onUpgrade
 }: ClientListProps) {
-  const [shareClientId, setShareClientId] = useState<string | null>(null);
-  const [shareToken, setShareToken] = useState<string | null>(null);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const generateToken = useMutation(api.clients.clientWorkspace.generateClientWorkspaceToken);
-
-  const handleShare = useCallback(async (clientId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShareClientId(clientId);
-    setShareLoading(true);
-    setShareToken(null);
-
-    try {
-      if (isMockId(clientId)) {
-        // Demo mode: generate a local token, no Convex call needed
-        const demoToken = generateDemoToken(clientId);
-        setShareToken(demoToken);
-      } else {
-        // Real Convex data: call the mutation with proper ID
-        const result = await generateToken({ clientId: clientId as any });
-        if (result) {
-          setShareToken(result.token);
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate share link. You may need to be authenticated.");
-      setShareClientId(null);
-    }
-    setShareLoading(false);
-  }, [generateToken]);
-
-  const copyLink = () => {
-    if (!shareToken) return;
-    const url = `${window.location.origin}/workspace/${shareToken}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast.success("Link copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case "low": return "text-emerald-500 bg-emerald-500/10";
@@ -166,21 +94,9 @@ export function ClientList({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getRiskColor(client.riskLevel)}>
-                      {client.riskLevel} risk
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30"
-                      onClick={(e) => handleShare(client._id, e)}
-                      title="Share workspace with client"
-                    >
-                      <Share2 className="h-3.5 w-3.5 mr-1" />
-                      Share
-                    </Button>
-                  </div>
+                  <Badge className={getRiskColor(client.riskLevel)}>
+                    {client.riskLevel} risk
+                  </Badge>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mt-3">
                   <div>
@@ -241,67 +157,6 @@ export function ClientList({
           </div>
         )}
       </CardContent>
-
-      {/* Share Link Dialog */}
-      <Dialog open={shareClientId !== null} onOpenChange={(open) => { if (!open) { setShareClientId(null); setShareToken(null); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-violet-500" />
-              Share Client Workspace
-            </DialogTitle>
-            <DialogDescription>
-              Generate a shareable link for this client. They can view their projects, proposals, invoices, and team — no login required.
-            </DialogDescription>
-          </DialogHeader>
-          {shareLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : shareToken ? (
-            <div className="space-y-4">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                <p className="text-sm text-green-700 dark:text-green-300 font-medium">
-                  {shareToken?.startsWith("demo-")
-                    ? "Demo share link generated! (Using demo data — link will show sample content)"
-                    : "Share link generated successfully!"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 font-mono truncate">
-                  {window.location.origin}/workspace/{shareToken}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyLink}
-                  className="shrink-0"
-                >
-                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-              <a
-                href={`/workspace/${shareToken}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400 hover:underline"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Preview as client
-              </a>
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  <strong>Note:</strong> Anyone with this link can view this client's projects, proposals, and invoices. The client will only see their own data.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4 text-sm text-gray-500">
-              Unable to generate link. Make sure you're authenticated.
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

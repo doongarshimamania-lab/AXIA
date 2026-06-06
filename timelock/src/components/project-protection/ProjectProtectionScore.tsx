@@ -1,5 +1,5 @@
 import { AlertTriangle, Shield } from "lucide-react";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { ProjectProtectionScoreData } from "@/types/projectProtection";
@@ -14,15 +14,13 @@ interface ProjectProtectionScoreProps {
   onUpgrade?: () => void;
 }
 
-const isValidConvexId = (value: unknown): value is Id<"projects"> => {
-  // Convex IDs are alphanumeric strings (e.g., "kg2abc123def456") with no underscores
-  // Mock IDs like "proj_1", "deal_1" contain underscores and will cause Convex errors
-  return typeof value === "string" && value.length >= 10 && !value.includes("_");
+const isValidProjectId = (value: unknown): value is Id<"projects"> => {
+  return typeof value === "string" && value.length > 0;
 };
 
 export function ProjectProtectionScore({ projectId, tier, onUpgrade }: ProjectProtectionScoreProps) {
   const normalizedTier = tier.toLowerCase();
-  const validProjectId = isValidConvexId(projectId) ? (projectId as Id<"projects">) : null;
+  const validProjectId = isValidProjectId(projectId) ? (projectId as Id<"projects">) : null;
   const isDemoMode = !validProjectId;
 
   const queryFn: any = api.projects.projectProtectionScore.getProjectProtectionScore;

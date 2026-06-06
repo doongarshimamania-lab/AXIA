@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, ArrowRight } from "lucide-react";
-import { useMutation, useQuery } from "@/lib/safe-convex-react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSearchParams } from "react-router";
 import { WaitlistSuccessModal } from "@/components/WaitlistSuccessModal";

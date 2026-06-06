@@ -1,61 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, TrendingUp, DollarSign, AlertTriangle, Award, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect, Component } from "react";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useState, useEffect } from "react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-// Error boundary wrapper so Convex errors don't crash the entire page
-class ProtectionValueErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(err: Error) { console.warn("[ProtectionValueDashboard] Caught:", err.message); }
-  render() {
-    if (this.state.hasError) {
-      return <ProtectionValueContent useMockData />;
-    }
-    return this.props.children;
-  }
-}
-
 export function ProtectionValueDashboard() {
-  return (
-    <ProtectionValueErrorBoundary>
-      <ProtectionValueContent />
-    </ProtectionValueErrorBoundary>
-  );
-}
-
-function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean }) {
   // Theme is managed globally by ThemeProvider
 
-  // Real backend data integration — skip when using mock data (fallback from error boundary)
-  const metrics = useQuery(
-    api.protection.protectionValue.getProtectionValueMetrics,
-    useMockData ? "skip" : {}
-  );
-  const history = useQuery(
-    api.protection.protectionValue.getValueHistory,
-    useMockData ? "skip" : {}
-  );
+  // Real backend data integration
+  const metrics = useQuery(api.protection.protectionValue.getProtectionValueMetrics);
+  const history = useQuery(api.protection.protectionValue.getValueHistory);
 
-  // Fallback mock data when Convex backend is unavailable
-  const mockMetrics: any = {
-    subscriptionTier: "starter",
-    lifetime: { protectedValue: 48500, protectedHours: 312 },
-    monthly: { protectedValue: 8200, atRiskValue: 1250, atRiskHours: 14, protectedHours: 48 },
-    valueTrend: 12.5,
-    savedValue: 6750,
-    resolvedReports: 3,
-    tierProtectionRate: 67,
-    subscriptionCost: 29,
-    roi: 232,
-    platformBreakdown: { upwork: 3200, fiverr: 2100, direct: 1800, linkedin: 1100 },
-  };
-
-  const data = metrics || mockMetrics;
-
-  if (!data) {
+  if (!metrics) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -97,7 +54,7 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
           </p>
         </div>
         <Badge variant="outline" className="text-xs">
-          {tierDisplayNames[data.subscriptionTier] || "Free Plan"}
+          {tierDisplayNames[metrics.subscriptionTier] || "Free Plan"}
         </Badge>
       </div>
 
@@ -113,10 +70,10 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-500">
-              ${data.lifetime.protectedValue.toLocaleString()}
+              ${metrics.lifetime.protectedValue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {data.lifetime.protectedHours}h protected
+              {metrics.lifetime.protectedHours}h protected
             </p>
           </CardContent>
         </Card>
@@ -131,10 +88,10 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              ${data.monthly.protectedValue.toLocaleString()}
+              ${metrics.monthly.protectedValue.toLocaleString()}
             </div>
-            <p className={`text-xs mt-1 ${getTrendColor(data.valueTrend)}`}>
-              {getTrendIcon(data.valueTrend)} {Math.abs(data.valueTrend).toFixed(1)}% vs last month
+            <p className={`text-xs mt-1 ${getTrendColor(metrics.valueTrend)}`}>
+              {getTrendIcon(metrics.valueTrend)} {Math.abs(metrics.valueTrend).toFixed(1)}% vs last month
             </p>
           </CardContent>
         </Card>
@@ -149,10 +106,10 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">
-              ${data.monthly.atRiskValue.toLocaleString()}
+              ${metrics.monthly.atRiskValue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {data.monthly.atRiskHours}h flagged
+              {metrics.monthly.atRiskHours}h flagged
             </p>
           </CardContent>
         </Card>
@@ -167,10 +124,10 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-500">
-              ${data.savedValue.toLocaleString()}
+              ${metrics.savedValue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {data.resolvedReports} resolved
+              {metrics.resolvedReports} resolved
             </p>
           </CardContent>
         </Card>
@@ -181,7 +138,7 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Return on Investment (ROI) - {data.tierProtectionRate}% Protection Rate
+            Return on Investment (ROI) - {metrics.tierProtectionRate}% Protection Rate
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -189,37 +146,37 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
             <div>
               <div className="text-xs text-muted-foreground mb-1">Monthly Subscription</div>
               <div className="text-xl font-bold text-foreground">
-                ${data.subscriptionCost.toFixed(2)}
+                ${metrics.subscriptionCost.toFixed(2)}
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">Value Saved</div>
               <div className="text-xl font-bold text-emerald-500">
-                ${data.savedValue.toLocaleString()}
+                ${metrics.savedValue.toLocaleString()}
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">ROI</div>
-              <div className={`text-xl font-bold ${data.roi > 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
-                {data.roi > 0 ? `+${data.roi.toFixed(0)}%` : "N/A"}
+              <div className={`text-xl font-bold ${metrics.roi > 0 ? "text-emerald-500" : "text-muted-foreground"}`}>
+                {metrics.roi > 0 ? `+${metrics.roi.toFixed(0)}%` : "N/A"}
               </div>
             </div>
           </div>
-          {data.subscriptionTier === "free" && (
+          {metrics.subscriptionTier === "free" && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
               <p className="text-sm text-foreground">
                 💡 <strong>Upgrade to Starter (67% protection)</strong> for only $4/mo to unlock compliance monitoring and increase your protection rate by 45%
               </p>
             </div>
           )}
-          {data.subscriptionTier === "starter" && (
+          {metrics.subscriptionTier === "starter" && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
               <p className="text-sm text-foreground">
                 💡 <strong>Upgrade to Pro (85% protection)</strong> for only $8/mo to unlock dispute prevention and increase your protection rate by 18%
               </p>
             </div>
           )}
-          {data.subscriptionTier === "pro" && (
+          {metrics.subscriptionTier === "pro" && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
               <p className="text-sm text-foreground">
                 💡 <strong>Upgrade to Expert (95% protection)</strong> for only $16/mo to unlock success optimization and maximize your protection rate
@@ -236,8 +193,8 @@ function ProtectionValueContent({ useMockData = false }: { useMockData?: boolean
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {Object.entries(data.platformBreakdown).map(([platform, value]) => {
-              const total = Object.values(data.platformBreakdown).reduce((a: number, b: any) => a + (b as number), 0) as number;
+            {Object.entries(metrics.platformBreakdown).map(([platform, value]) => {
+              const total = Object.values(metrics.platformBreakdown).reduce((a: number, b: any) => a + (b as number), 0) as number;
               const percentage = total > 0 ? ((value as number) / total) * 100 : 0;
               
               return (

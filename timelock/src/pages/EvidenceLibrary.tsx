@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-// Removed: EvidenceHealthScore, DisputeSuccessSimulation, EvidenceGapPrediction
+import { EvidenceHealthScore } from "@/components/evidence-library/EvidenceHealthScore";
+import { DisputeSuccessSimulation } from "@/components/evidence-library/DisputeSuccessSimulation";
 import { WorkContentAnalysis } from "@/components/evidence-library/WorkContentAnalysis";
+import { EvidenceGapPrediction } from "@/components/evidence-library/EvidenceGapPrediction";
 import { EvidenceTimeline } from "@/components/evidence-library/EvidenceTimeline";
 import { EvidenceQualityScorecard } from "@/components/evidence-library/EvidenceQualityScorecard";
 import { TeamValidation } from "@/components/evidence-library/TeamValidation";
@@ -110,10 +112,26 @@ export default function EvidenceLibrary() {
               </p>
             </div>
 
+            <EvidenceHealthScore
+              protectedHours={safeTimelineData.protectedHours}
+              healthScore={safeEvidenceData.healthScore}
+            />
+
+            <DisputeSuccessSimulation
+              successRate={safeEvidenceData.disputeSuccessRate}
+              hasAccess={hasTierAccess("starter")}
+              disputeData={safeEvidenceData.disputeData}
+            />
+
             <WorkContentAnalysis
               qualityScore={safeEvidenceData.contentQualityScore}
               hasAccess={hasTierAccess("pro")}
               contentData={safeEvidenceData.contentData}
+            />
+
+            <EvidenceGapPrediction
+              gapData={safeEvidenceData.gapPrediction}
+              hasAccess={hasTierAccess("starter")}
             />
 
             <EvidenceTimeline timeline={safeTimelineData.timeline} />

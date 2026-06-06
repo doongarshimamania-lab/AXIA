@@ -1,6 +1,6 @@
 import { useCallback, useMemo, createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -77,12 +77,6 @@ function saveToStorage(key: string, value: any) {
   } catch {}
 }
 
-// Check if an ID looks like a valid Convex ID (not a mock string like "ws_team_default")
-export function isValidConvexId(id: string | null): boolean {
-  if (!id) return false;
-  return id.length >= 10 && !id.includes("_");
-}
-
 const WorkspaceCtx = createContext<WorkspaceContext>({
   activeWorkspace: DEFAULT_SOLO_WORKSPACE,
   workspaces: [DEFAULT_SOLO_WORKSPACE],
@@ -109,53 +103,21 @@ export function useWorkspaceContext() {
 }
 
 // ─── Provider Component ───────────────────────────────────────
-// Uses Convex queries for workspace data with localStorage fallback.
+// Uses localStorage for workspace state so it works without auth.
+// Convex queries are NOT called here because the workspace tables
+// haven't been deployed to Convex yet. When they are, we can add
+// safe query hooks back.
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [accountMode, setAccountModeState] = useState<AccountMode>(
     loadFromStorage(STORAGE_KEY_MODE, "team")
   );
-  const [localWorkspaces, setLocalWorkspaces] = useState<WorkspaceInfo[]>(
+  const [workspaces, setWorkspaces] = useState<WorkspaceInfo[]>(
     loadFromStorage(STORAGE_KEY_WORKSPACES, DEFAULT_WORKSPACES)
   );
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(
     loadFromStorage(STORAGE_KEY_ACTIVE_WS, DEFAULT_TEAM_WORKSPACE._id)
   );
-
-  // ── Convex Queries ──────────────────────────────────────────
-  const convexWorkspaces = useQuery(api.workspaces.crud.getMyWorkspaces) as any[] | undefined;
-
-  // ── Convex Mutations ────────────────────────────────────────
-  const seedPersonalWorkspaceMutation = useMutation(api.workspaces.crud.seedPersonalWorkspace);
-  const createWorkspaceMutation = useMutation(api.workspaces.crud.createWorkspace);
-
-  // ── Merge Convex + Local workspaces ─────────────────────────
-  const workspaces = useMemo<WorkspaceInfo[]>(() => {
-    if (convexWorkspaces && convexWorkspaces.length > 0) {
-      // Convert Convex workspace docs to WorkspaceInfo format
-      const convexWs: WorkspaceInfo[] = convexWorkspaces.map((w: any) => ({
-        _id: w._id,
-        name: w.name,
-        type: w.type as WorkspaceType,
-        description: w.description,
-        membership: { role: "owner" as WorkspaceRole }, // simplified — could look up membership
-      }));
-
-      // If Convex returns data, prefer it but keep local-only workspaces too
-      // (so demo/mock workspaces aren't lost)
-      const convexIds = new Set(convexWs.map(w => w._id));
-      const localOnly = localWorkspaces.filter(w => !convexIds.has(w._id) && !isValidConvexId(w._id));
-      
-      const merged = [...convexWs, ...localOnly];
-      
-      // Save merged list to localStorage for offline access
-      saveToStorage(STORAGE_KEY_WORKSPACES, merged);
-      
-      return merged;
-    }
-    // Fallback to localStorage data
-    return localWorkspaces;
-  }, [convexWorkspaces, localWorkspaces]);
 
   const activeWorkspace = useMemo(() => {
     return workspaces.find(ws => ws._id === activeWorkspaceId) || workspaces[0] || DEFAULT_SOLO_WORKSPACE;
@@ -191,50 +153,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaces]);
 
-  const createTeamWorkspace = useCallback(async (name: string, description?: string) => {
-    try {
-      // Try creating via Convex first
-      const workspaceId = await createWorkspaceMutation({
-        name,
-        type: "team",
-        description,
-      });
-      
-      // The Convex query will automatically update via reactivity,
-      // but we also update local state for immediate feedback
-      const newWs: WorkspaceInfo = {
-        _id: workspaceId as string,
-        name,
-        type: "team",
-        description,
-        membership: { role: "owner" },
-      };
-      const updated = [...workspaces, newWs];
-      setLocalWorkspaces(updated);
-      saveToStorage(STORAGE_KEY_WORKSPACES, updated);
-      setActiveWorkspaceId(newWs._id);
-      saveToStorage(STORAGE_KEY_ACTIVE_WS, newWs._id);
-      setAccountModeState("team");
-      saveToStorage(STORAGE_KEY_MODE, "team");
-    } catch (err) {
-      // Fallback to local-only workspace
-      console.warn("Failed to create workspace via Convex, using local fallback:", err);
-      const newWs: WorkspaceInfo = {
-        _id: `ws_team_${Date.now()}`,
-        name,
-        type: "team",
-        description,
-        membership: { role: "owner" },
-      };
-      const updated = [...workspaces, newWs];
-      setLocalWorkspaces(updated);
-      saveToStorage(STORAGE_KEY_WORKSPACES, updated);
-      setActiveWorkspaceId(newWs._id);
-      saveToStorage(STORAGE_KEY_ACTIVE_WS, newWs._id);
-      setAccountModeState("team");
-      saveToStorage(STORAGE_KEY_MODE, "team");
-    }
-  }, [workspaces, createWorkspaceMutation]);
+  const createTeamWorkspace = useCallback((name: string, description?: string) => {
+    const newWs: WorkspaceInfo = {
+      _id: `ws_team_${Date.now()}`,
+      name,
+      type: "team",
+      description,
+      membership: { role: "owner" },
+    };
+    const updated = [...workspaces, newWs];
+    setWorkspaces(updated);
+    saveToStorage(STORAGE_KEY_WORKSPACES, updated);
+    setActiveWorkspaceId(newWs._id);
+    saveToStorage(STORAGE_KEY_ACTIVE_WS, newWs._id);
+    setAccountModeState("team");
+    saveToStorage(STORAGE_KEY_MODE, "team");
+  }, [workspaces]);
 
   const upgradeToTeam = useCallback(() => {
     const updated = workspaces.map(ws => {
@@ -243,7 +177,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       return ws;
     });
-    setLocalWorkspaces(updated);
+    setWorkspaces(updated);
     saveToStorage(STORAGE_KEY_WORKSPACES, updated);
     setAccountModeState("team");
     saveToStorage(STORAGE_KEY_MODE, "team");
@@ -262,13 +196,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     canManageTeam: role === "owner" || role === "manager",
     canManageBilling: role === "owner",
     activeWorkspaceId,
-    isLoading: convexWorkspaces === undefined,
+    isLoading: false,
     isAvailable: true,
     setAccountMode,
     switchToWorkspace,
     createTeamWorkspace,
     upgradeToTeam,
-  }), [activeWorkspace, workspaces, role, accountMode, activeWorkspaceId, convexWorkspaces, setAccountMode, switchToWorkspace, createTeamWorkspace, upgradeToTeam]);
+  }), [activeWorkspace, workspaces, role, accountMode, activeWorkspaceId, setAccountMode, switchToWorkspace, createTeamWorkspace, upgradeToTeam]);
 
   return (
     <WorkspaceCtx.Provider value={contextValue}>
@@ -409,11 +343,9 @@ const MOCK_STATS = {
 };
 
 export function useWorkspaceMembers(workspaceId: string | null) {
-  // Skip Convex query if workspaceId is not a valid Convex ID (e.g. "ws_team_default")
-  const validWorkspaceId = isValidConvexId(workspaceId) ? workspaceId : null;
   const convexMembers = useQuery(
     api.workspaces.members.getMembers,
-    validWorkspaceId ? { workspaceId: validWorkspaceId as Id<"workspaces"> } : "skip"
+    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
   ) as any[] | undefined;
 
   // If Convex returns data, map it. Otherwise fall back to mock.
@@ -439,11 +371,9 @@ export function useWorkspaceMembers(workspaceId: string | null) {
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
-  // Skip Convex query if workspaceId is not a valid Convex ID
-  const validWorkspaceId = isValidConvexId(workspaceId) ? workspaceId : null;
   const convexStats = useQuery(
     api.workspaces.crud.getWorkspaceStats,
-    validWorkspaceId ? { workspaceId: validWorkspaceId as Id<"workspaces"> } : "skip"
+    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
   ) as any | undefined;
 
   if (convexStats) {
@@ -451,7 +381,7 @@ export function useWorkspaceStats(workspaceId: string | null) {
       memberCount: convexStats.memberCount ?? 0,
       clientCount: convexStats.clientCount ?? 0,
       activeProjectCount: convexStats.activeProjectCount ?? 0,
-      pendingInvoiceCount: convexStats.pendingInvitationCount ?? 0,
+      pendingInvoiceCount: convexStats.pendingInvoiceCount ?? 0,
       totalRevenue: convexStats.totalRevenue ?? 0,
       totalHoursThisWeek: convexStats.totalHoursThisWeek ?? 0,
       protectionScore: convexStats.protectionScore ?? 0,
@@ -521,88 +451,38 @@ export function useCancelInvitation() {
 }
 
 export function useConvertToTeamWorkspace() {
-  const convertMutation = useMutation(api.workspaces.crud.convertToTeamWorkspace);
-  return async (args: { workspaceId: string; name: string }) => {
-    try {
-      if (isValidConvexId(args.workspaceId)) {
-        await convertMutation({
-          workspaceId: args.workspaceId as Id<"workspaces">,
-          name: args.name,
-        });
-      }
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useCreatePersonalWorkspace() {
-  const seedMutation = useMutation(api.workspaces.crud.seedPersonalWorkspace);
-  return async (_args?: any) => {
-    try {
-      const workspaceId = await seedMutation({});
-      return { success: true, workspaceId };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useCreateTeamWorkspace() {
-  const createMutation = useMutation(api.workspaces.crud.createWorkspace);
-  return async (args: { name: string; description?: string }) => {
-    try {
-      const workspaceId = await createMutation({
-        name: args.name,
-        type: "team",
-        description: args.description,
-      });
-      return { success: true, workspaceId };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useSwitchWorkspace() {
-  // Switching workspace is handled locally (updating activeWorkspaceId in context)
-  // This hook is for external consumers who need to trigger a switch
-  return async (args: { workspaceId: string }) => {
-    // The actual switching is done via WorkspaceProvider.switchToWorkspace
+  return async (_args: any) => {
     return { success: true };
   };
 }
 
 export function useUpdateWorkspace() {
-  const updateMutation = useMutation(api.workspaces.crud.updateWorkspace);
-  return async (args: { workspaceId: string; name?: string; description?: string }) => {
-    try {
-      if (isValidConvexId(args.workspaceId)) {
-        await updateMutation({
-          workspaceId: args.workspaceId as Id<"workspaces">,
-          name: args.name,
-          description: args.description,
-        });
-      }
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useAcceptInvitation() {
-  const acceptMutation = useMutation(api.workspaces.invitations.acceptInvitation);
-  return async (args: { invitationId: string }) => {
-    try {
-      await acceptMutation({
-        invitationId: args.invitationId as Id<"workspaceInvitations">,
-      });
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
@@ -619,18 +499,8 @@ export function useTransferOwnership() {
 }
 
 export function useDeleteWorkspace() {
-  const deleteMutation = useMutation(api.workspaces.crud.deleteWorkspace);
-  return async (args: { workspaceId: string }) => {
-    try {
-      if (isValidConvexId(args.workspaceId)) {
-        await deleteMutation({
-          workspaceId: args.workspaceId as Id<"workspaces">,
-        });
-      }
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 

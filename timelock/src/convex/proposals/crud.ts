@@ -125,7 +125,6 @@ export const createProposal = mutation({
     })),
     totalValue: v.number(),
     clientId: v.optional(v.id("clients")),
-    dealId: v.optional(v.id("deals")),
     clientName: v.optional(v.string()),
     clientEmail: v.optional(v.string()),
     templateId: v.optional(v.id("proposalTemplates")),
@@ -160,7 +159,6 @@ export const updateProposal = mutation({
     }))),
     totalValue: v.optional(v.number()),
     clientId: v.optional(v.id("clients")),
-    dealId: v.optional(v.id("deals")),
     clientName: v.optional(v.string()),
     clientEmail: v.optional(v.string()),
     validUntil: v.optional(v.number()),
@@ -248,6 +246,9 @@ export const signProposal = mutation({
     if (!proposal) throw new Error("Proposal not found");
     if (proposal.status !== "sent" && proposal.status !== "viewed") {
       throw new Error("Proposal is not in a signable state");
+    }
+    if (proposal.status === "signed") {
+      throw new Error("Proposal has already been signed");
     }
 
     await ctx.db.patch(proposal._id, {
@@ -373,178 +374,5 @@ export const seedTemplates = mutation({
         createdAt: Date.now(),
       });
     }
-  },
-});
-
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-
-export const addAttachment = mutation({
-  args: {
-    proposalId: v.id("proposals"),
-    storageId: v.id("_storage"),
-    name: v.string(),
-    type: v.string(),
-    size: v.optional(v.number()),
-  },
-  handler: async (ctx, { proposalId, storageId, name, type, size }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const proposal = await ctx.db.get(proposalId);
-    if (!proposal || proposal.userId !== userId) throw new Error("Not authorized");
-
-    const url = await ctx.storage.getUrl(storageId);
-    const attachments = proposal.attachments || [];
-    attachments.push({
-      storageId,
-      name,
-      type,
-      size,
-      url: url || undefined,
-      uploadedAt: Date.now(),
-    });
-
-    await ctx.db.patch(proposalId, { attachments, updatedAt: Date.now() });
-  },
-});
-
-export const removeAttachment = mutation({
-  args: {
-    proposalId: v.id("proposals"),
-    attachmentIndex: v.number(),
-  },
-  handler: async (ctx, { proposalId, attachmentIndex }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const proposal = await ctx.db.get(proposalId);
-    if (!proposal || proposal.userId !== userId) throw new Error("Not authorized");
-
-    const attachments = proposal.attachments || [];
-    if (attachmentIndex >= 0 && attachmentIndex < attachments.length) {
-      // Delete from storage
-      if (attachments[attachmentIndex].storageId) {
-        await ctx.storage.delete(attachments[attachmentIndex].storageId!);
-      }
-      attachments.splice(attachmentIndex, 1);
-      await ctx.db.patch(proposalId, { attachments, updatedAt: Date.now() });
-    }
-  },
-});
-
-export const getAttachmentUrl = query({
-  args: { storageId: v.id("_storage") },
-  handler: async (ctx, { storageId }) => {
-    return await ctx.storage.getUrl(storageId);
-  },
-});
-
-export const saveAsTemplate = mutation({
-  args: {
-    proposalId: v.id("proposals"),
-    templateName: v.string(),
-    industry: v.optional(v.string()),
-  },
-  handler: async (ctx, { proposalId, templateName, industry }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const proposal = await ctx.db.get(proposalId);
-    if (!proposal || proposal.userId !== userId) throw new Error("Not authorized");
-
-    return await ctx.db.insert("proposalTemplates", {
-      userId,
-      name: templateName,
-      industry,
-      sections: proposal.sections,
-      isSystem: false,
-      usageCount: 0,
-      createdAt: Date.now(),
-    });
-  },
-});
-
-export const importProposalsFromJson = mutation({
-  args: {
-    proposals: v.array(v.object({
-      title: v.string(),
-      clientName: v.optional(v.string()),
-      clientEmail: v.optional(v.string()),
-      totalValue: v.optional(v.number()),
-      status: v.optional(v.string()),
-      sections: v.optional(v.array(v.object({
-        id: v.string(),
-        type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
-        content: v.string(),
-        metadata: v.optional(v.any()),
-      }))),
-      notes: v.optional(v.string()),
-    })),
-  },
-  handler: async (ctx, { proposals }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const created = [];
-    for (const p of proposals) {
-      const id = await ctx.db.insert("proposals", {
-        userId,
-        title: p.title,
-        clientName: p.clientName,
-        clientEmail: p.clientEmail,
-        totalValue: p.totalValue ?? 0,
-        status: (p.status as any) || "draft",
-        sections: p.sections || [],
-        publicToken: generateToken(),
-        notes: p.notes,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-      created.push(id);
-    }
-    return { imported: created.length, ids: created };
-  },
-});
-
-export const importTemplatesFromJson = mutation({
-  args: {
-    templates: v.array(v.object({
-      name: v.string(),
-      industry: v.optional(v.string()),
-      description: v.optional(v.string()),
-      sections: v.array(v.object({
-        id: v.string(),
-        type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
-        content: v.string(),
-        metadata: v.optional(v.any()),
-      })),
-    })),
-  },
-  handler: async (ctx, { templates }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const created = [];
-    for (const t of templates) {
-      const id = await ctx.db.insert("proposalTemplates", {
-        userId,
-        name: t.name,
-        industry: t.industry,
-        description: t.description,
-        sections: t.sections,
-        isSystem: false,
-        usageCount: 0,
-        createdAt: Date.now(),
-      });
-      created.push(id);
-    }
-    return { imported: created.length, ids: created };
   },
 });

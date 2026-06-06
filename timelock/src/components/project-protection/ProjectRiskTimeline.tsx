@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Card } from "@/components/ui/card";
@@ -17,19 +17,17 @@ interface ProjectRiskTimelineProps {
   guestUserId?: string;
 }
 
-const isValidConvexId = (value: unknown): value is Id<"projects"> => {
-  // Convex IDs are alphanumeric strings (e.g., "kg2abc123def456") with no underscores
-  // Mock IDs like "proj_1", "deal_1" contain underscores and will cause Convex errors
-  return typeof value === "string" && value.length >= 10 && !value.includes("_");
+const isValidProjectId = (value: unknown): value is Id<"projects"> => {
+  return typeof value === "string" && value.length > 0;
 };
 
 const isValidUserId = (value: unknown): value is Id<"users"> => {
-  return typeof value === "string" && value.length >= 10 && !value.includes("_");
+  return typeof value === "string" && value.length > 0;
 };
 
 export function ProjectRiskTimeline({ projectData, tier, onUpgrade, guestUserId }: ProjectRiskTimelineProps) {
   const projectId = projectData?._id;
-  const hasValidProjectId = isValidConvexId(projectId);
+  const hasValidProjectId = isValidProjectId(projectId);
   
   // Ensure guestUserId is treated as a string or undefined for the query
   const validGuestUserId = isValidUserId(guestUserId) ? guestUserId : undefined;

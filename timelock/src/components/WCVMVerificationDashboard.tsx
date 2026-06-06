@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
 
 interface WCVMVerificationDashboardProps {
@@ -8,13 +9,13 @@ interface WCVMVerificationDashboardProps {
 }
 
 export function WCVMVerificationDashboard({ clientId }: WCVMVerificationDashboardProps) {
-  // Skip query entirely - this component is not used on any active page currently
-  // and the string-cast query reference was causing runtime errors.
-  // Will be properly wired when the WCVM verification feature is built out.
-  const verificationResults: any[] = [];
+  const verificationResults = useQuery(
+    "clients/verificationRequests:getClientVerificationRequests" as any,
+    clientId ? { clientId } : "skip"
+  );
 
-  if (!verificationResults || verificationResults.length === 0) {
-    return <div className="text-muted-foreground text-sm">No verification requests yet.</div>;
+  if (!verificationResults) {
+    return <div className="text-muted-foreground">Loading verification data...</div>;
   }
 
   const completedVerifications = verificationResults.filter((v: any) => v.status === "completed");

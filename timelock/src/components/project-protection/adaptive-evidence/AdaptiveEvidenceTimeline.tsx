@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { TierHeader } from "./TierHeader";
@@ -15,21 +15,13 @@ interface AdaptiveEvidenceTimelineProps {
   onUpgrade?: () => void;
 }
 
-// Check if a project ID looks like a valid Convex ID (not a mock string like "proj_1")
-function isValidConvexId(id: string | undefined): id is string {
-  if (!id) return false;
-  // Convex IDs are typically 17+ character alphanumeric strings, not "proj_1" style mock IDs
-  return id.length >= 10 && !id.includes("_");
-}
-
 export function AdaptiveEvidenceTimeline({ projectData, tier, onUpgrade }: AdaptiveEvidenceTimelineProps) {
   const projectId = projectData?._id;
-  const validProjectId = isValidConvexId(projectId) ? (projectId as Id<"projects">) : null;
-
-  const data = useQuery(
-    api.projects.adaptiveEvidenceSystem.getAdaptiveEvidenceSystem,
-    validProjectId ? { projectId: validProjectId, userTier: tier } : "skip"
-  );
+  
+  const data = useQuery(api.projects.adaptiveEvidenceSystem.getAdaptiveEvidenceSystem, {
+    projectId: projectId as Id<"projects">,
+    userTier: tier,
+  });
 
   if (!data) {
     return (

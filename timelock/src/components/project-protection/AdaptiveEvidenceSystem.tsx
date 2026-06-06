@@ -9,12 +9,8 @@ interface AdaptiveEvidenceSystemProps {
   onUpgrade?: () => void;
 }
 
-// Convex IDs are alphanumeric (e.g., "kg2abc123def456") — mock IDs like "proj_1" contain underscores
-const isValidConvexId = (id: unknown): id is Id<"projects"> =>
-  typeof id === "string" && id.length >= 10 && !id.includes("_");
-
 export function AdaptiveEvidenceSystem({ projectId, tier, onUpgrade }: AdaptiveEvidenceSystemProps) {
-  if (!projectId || !isValidConvexId(projectId)) {
+  if (!projectId) {
     return (
       <Card className="border border-border">
         <CardContent className="p-6">
