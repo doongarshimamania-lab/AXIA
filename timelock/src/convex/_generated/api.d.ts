@@ -14,6 +14,7 @@ import type * as audit_storeConsentAudit from "../audit/storeConsentAudit.js";
 import type * as auth from "../auth.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as billing_crud from "../billing/crud.js";
+import type * as billing_reminders from "../billing/reminders.js";
 import type * as clientAuth from "../clientAuth.js";
 import type * as clients_clientAuth from "../clients/clientAuth.js";
 import type * as clients_clientDisputeSimulation from "../clients/clientDisputeSimulation.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "auth/emailOtp": typeof auth_emailOtp;
   "billing/crud": typeof billing_crud;
+  "billing/reminders": typeof billing_reminders;
   clientAuth: typeof clientAuth;
   "clients/clientAuth": typeof clients_clientAuth;
   "clients/clientDisputeSimulation": typeof clients_clientDisputeSimulation;

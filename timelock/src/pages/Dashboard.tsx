@@ -38,6 +38,7 @@ import { RealTimeProtectionAdvisor } from "@/components/RealTimeProtectionAdviso
 import { PersonalizedProtectionPlan } from "@/components/PersonalizedProtectionPlan";
 import { Teams } from "@/components/Teams";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { TruthLayerWidget } from "@/components/truth-layer/TruthLayerWidget";
 
 export default function Dashboard() {
   const { user, isLoading, signOut } = useAuth();
@@ -582,6 +583,11 @@ export default function Dashboard() {
                 <p className="text-[16px] text-muted-foreground">
                   Protect your payments with real-time cross-platform compliance monitoring
                 </p>
+              </div>
+
+              {/* Truth Layer Widget */}
+              <div className="mb-6">
+                <TruthLayerWidget />
               </div>
 
               {/* Stats Cards */}

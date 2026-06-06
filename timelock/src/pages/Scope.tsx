@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 import {
   Shield,
   Plus,
@@ -34,6 +35,11 @@ import {
   MessageSquare,
   DollarSign,
 } from "lucide-react";
+import { FeatureConnector } from "@/components/connectors/FeatureConnector";
+import { WorkflowActions, getScopeActions } from "@/components/connectors/WorkflowActions";
+import { ActivityTimeline, buildProjectTimeline } from "@/components/connectors/ActivityTimeline";
+import type { Connection } from "@/components/connectors/FeatureConnector";
+import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -423,6 +429,17 @@ function ScopeCard({
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-bold text-foreground truncate">{scope.title}</h3>
               {getStatusBadge(scope.status)}
+              <TruthLayerBadge
+                score={scope.clientApprovedAt ? 85 : scope.approvalToken ? 50 : 20}
+                size="sm"
+                showScore={true}
+                details={[
+                  { label: "Client approved", verified: !!scope.clientApprovedAt },
+                  { label: "Approval token generated", verified: !!scope.approvalToken },
+                  { label: "Deliverables defined", verified: scope.deliverables.length > 0 },
+                  { label: "Scope is active", verified: scope.status === "active" },
+                ]}
+              />
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">{scope.description}</p>
             {scope.projectName && (

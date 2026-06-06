@@ -41,7 +41,14 @@ import {
   TrendingUp,
   Mail,
   Loader2,
+  Briefcase,
+  Receipt,
+  ShieldCheck,
 } from "lucide-react";
+import { FeatureConnector } from "@/components/connectors/FeatureConnector";
+import { WorkflowActions, getProposalActions } from "@/components/connectors/WorkflowActions";
+import { ActivityTimeline, buildProjectTimeline } from "@/components/connectors/ActivityTimeline";
+import type { Connection } from "@/components/connectors/FeatureConnector";
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
 
@@ -523,6 +530,35 @@ export default function Proposals() {
         </div>
       </div>
 
+      {/* ── Inter-Feature Connectors ─────────────────────────────────────── */}
+      {filteredProposals.length > 0 && (
+        <div className="mt-8 space-y-6">
+          {/* Activity Timeline */}
+          <ActivityTimeline
+            steps={getDefaultTimeline("proposal", filteredProposals[0]?._id || "")}
+          />
+
+          {/* Workflow Actions for the first signed proposal */}
+          {filteredProposals.find((p) => p.status === "signed") && (
+            <WorkflowActions
+              feature="proposal"
+              itemId={filteredProposals.find((p) => p.status === "signed")!._id}
+              actions={getProposalActions(
+                filteredProposals.find((p) => p.status === "signed")!._id,
+                "signed"
+              )}
+            />
+          )}
+
+          {/* Feature Connector */}
+          <FeatureConnector
+            currentFeature="proposal"
+            currentItemId={filteredProposals[0]?._id || ""}
+            connections={getProposalConnections(filteredProposals)}
+          />
+        </div>
+      )}
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>
         <DialogContent>
@@ -549,6 +585,77 @@ export default function Proposals() {
   );
 }
 
+// ─── Proposal Connections Helper ────────────────────────────────────────────────
+
+function getProposalConnections(proposals: Proposal[]): Connection[] {
+  const signedProposals = proposals.filter((p) => p.status === "signed");
+  const sentProposals = proposals.filter((p) => p.status === "sent" || p.status === "viewed");
+
+  const connections: Connection[] = [];
+
+  // Project connection
+  if (signedProposals.length > 0) {
+    connections.push({
+      feature: "project",
+      itemId: signedProposals[0]._id,
+      label: "Create Project",
+      status: "create_new",
+      url: `/projects?createFromProposal=${signedProposals[0]._id}`,
+      description: `Convert "${signedProposals[0].title}" into an active project`,
+    });
+  } else {
+    connections.push({
+      feature: "project",
+      label: "Project",
+      status: "available",
+      url: "/projects",
+      description: "No signed proposals yet — sign a proposal first to create a project",
+    });
+  }
+
+  // Scope connection
+  if (signedProposals.length > 0) {
+    connections.push({
+      feature: "scope",
+      itemId: signedProposals[0]._id,
+      label: "Define Scope",
+      status: "create_new",
+      url: `/scope?proposal=${signedProposals[0]._id}`,
+      description: "Create scope definition from signed proposal",
+    });
+  } else {
+    connections.push({
+      feature: "scope",
+      label: "Scope",
+      status: "available",
+      url: "/scope",
+      description: "Define project scope and deliverables",
+    });
+  }
+
+  // Invoice connection
+  if (signedProposals.length > 0) {
+    connections.push({
+      feature: "invoice",
+      itemId: signedProposals[0]._id,
+      label: "Create Invoice",
+      status: "create_new",
+      url: `/invoices/new?proposalId=${signedProposals[0]._id}`,
+      description: `Generate invoice for $${signedProposals[0].totalValue.toLocaleString()} proposal`,
+    });
+  } else {
+    connections.push({
+      feature: "invoice",
+      label: "Invoice",
+      status: "available",
+      url: "/invoices",
+      description: "Create invoices for your work",
+    });
+  }
+
+  return connections;
+}
+
 // ─── Proposal Card Component ──────────────────────────────────────────────────
 
 function ProposalCard({
@@ -572,6 +679,7 @@ function ProposalCard({
   onDelete: (id: string) => void;
   onView: () => void;
 }) {
+  const navigate = useNavigate();
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
 
@@ -725,6 +833,35 @@ function ProposalCard({
               >
                 <FilePenLine className="h-3 w-3" />
                 Edit
+              </Button>
+            </div>
+          )}
+
+          {/* Quick Actions for Signed — Convert to Project */}
+          {proposal.status === "signed" && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/projects?createFromProposal=${proposal._id}`);
+                }}
+              >
+                <Briefcase className="h-3 w-3" />
+                Convert to Project
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-[12px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/scope?proposal=${proposal._id}`);
+                }}
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Define Scope
               </Button>
             </div>
           )}

@@ -98,4 +98,17 @@ export const billingTables = {
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
     .index("by_status_and_date", ["status", "scheduledAt"]),
+
+  reminderSettings: defineTable({
+    userId: v.id("users"),
+    autoRemindersEnabled: v.boolean(),
+    day3Enabled: v.optional(v.boolean()),
+    day7Enabled: v.optional(v.boolean()),
+    day14Enabled: v.optional(v.boolean()),
+    day21Enabled: v.optional(v.boolean()),
+    defaultChannel: v.optional(v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"))),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]),
 };
