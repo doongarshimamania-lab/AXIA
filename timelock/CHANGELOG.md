@@ -120,3 +120,75 @@ Every change to this codebase is tracked here with timestamped backups.
 - `src/pages/Scope.tsx` — NEW (780+ lines)
 - `src/main.tsx` — Added Scope import + route
 - `src/components/CollapsibleSidebar.tsx` — Added Scope nav item + GitBranch icon
+
+---
+
+## [20260606T120000] Messaging System Fixes
+
+**Files changed:**
+- `src/components/messaging/ChannelList.tsx` — Fixed channel creation (was console.log only, now actually creates channels via onCreateChannel callback)
+- `src/components/messaging/MessageList.tsx` — Added auto-scroll to bottom, "New messages" scroll-to-bottom button, read receipts (✓ sent / ✓✓ seen), readBy tracking on messages, date dividers
+- `src/components/messaging/MessageInput.tsx` — Fixed sticky input bar at bottom (flex-shrink-0), auto-resize textarea, formatting toolbar
+- `src/components/messaging/ChannelHeader.tsx` — Unread badge clearing on channel select
+- `src/pages/Messages.tsx` — Integration fixes for all messaging components
+
+**Details:**
+- Channel creation was broken: only console.log, now actually adds channels
+- Message input bar moved with content: fixed with flex-shrink-0 and proper flex layout
+- Messages didn't auto-scroll: added native scroll container with bottom ref
+- No read receipts: added readBy field with ✓/✓✓ indicators (gray = sent, blue = seen)
+- Unread badges didn't clear: added logic to mark messages read on channel select
+
+---
+
+## [20260606T123000] Truth Layer Verification, Payment Reminders, Feature Connectivity
+
+**Git commit:** 230533e
+**Files changed:**
+- `src/components/truth-layer/TruthLayerBadge.tsx` — Verification badge with score, animated progress, tooltip details
+- `src/components/truth-layer/TruthLayerWidget.tsx` — Full Truth Layer verification widget with circular score, category breakdown, recommendations, compact mode
+- `src/components/truth-layer/truthLayerHelpers.ts` — Score calculation engine (time, invoicing, scope, messaging verification)
+- `src/components/billing/PaymentReminders.tsx` — Full payment reminders UI with overdue invoices, reminder templates (Day 3/7/14/21), auto-reminders toggle, send/schedule/skip actions
+- `src/convex/billing/reminders.ts` — Convex backend for payment reminders (getOverdueInvoices, sendReminder, scheduleAutoReminders, updateReminderSettings)
+- `src/convex/scope.ts` — Full scope protection backend (14 functions: CRUD, activate, clientApprove, recordRevision, checkRevisionStatus, createChangeOrder, clientApproveChangeOrder, clientRejectChangeOrder, linkChangeOrderToInvoice)
+- `src/components/connectors/FeatureConnector.tsx` — Cross-feature connection component
+- `src/components/connectors/WorkflowActions.tsx` — Workflow action buttons (scope actions, invoice actions)
+- `src/components/connectors/ActivityTimeline.tsx` — Activity timeline for cross-feature events
+- `src/components/connectors/navigationHelpers.ts` — Navigation helpers for cross-feature routing
+
+**Details:**
+- Truth Layer: Calculates verification score across 4 categories (Time Evidence, Invoicing, Scope, Messaging). Shows recommendations for weak areas with action routes.
+- Payment Reminders: Day 3 (friendly nudge), Day 7 (firm follow-up), Day 14 (urgent final notice), Day 21 (escalation). Auto-scheduling, manual send, toggle controls.
+- Scope Protection Backend: Full CRUD with client approval tokens, revision tracking, auto-generated change orders when revision limit exceeded, client approve/reject flows via approval links.
+- Feature Connectivity: FeatureConnector component creates visual links between features (proposals→invoices→time tracking→evidence→payments).
+
+---
+
+## [20260606T130000] Chrome Extension - Full Build
+
+**Files changed:**
+- `chrome-extension/manifest.json` — Manifest V3 with storage, activeTab, scripting, alarms permissions; host_permissions for Upwork, Fiverr, Toptal, Freelancer, Convex
+- `chrome-extension/background.js` — Service worker with: pairing code validation, token-based auth via Convex HTTP actions, evidence session management, event buffering with 5s flush, platform detection, alarm-based periodic flush
+- `chrome-extension/content.js` — Content script for Upwork/Fiverr/Toptal/Freelancer: mouse tracking (throttled 250ms), keyboard tracking (debounced 100ms), URL change observer, visibility state tracking, platform status reporting
+- `chrome-extension/popup.html` — Extension popup UI with setup/connected views
+- `chrome-extension/popup.js` — Popup controller with pairing code input, auto-paste from clipboard, connect/disconnect, status display
+- `chrome-extension/icons/` — Extension icons (16, 24, 32, 48, 128px)
+
+**Details:**
+- Extension uses pairing code format: "convexUrl::64-char-hex-token"
+- Background validates token via Convex HTTP action at /api/extension/validate
+- Evidence collection starts automatically after pairing
+- Events buffered and flushed every 5s via fetch to /api/extension/record
+- Sessions finalized via /api/extension/finalize
+- CRITICAL: Uses .convex.site (not .convex.cloud) for HTTP Actions
+
+---
+
+## [20260606T133000] Push to GitHub, Rebuild Dist, Sync Public Assets
+
+**Git commits pushed:** 9 unpushed commits pushed to origin/main
+**Actions:**
+- Pushed all commits to `doongarshimamania-lab/AXIA.git`
+- Rebuilt dist with `npx vite build` (6 chunks, 5.67s)
+- Copied dist to public/ for preview server
+- Updated CHANGELOG.md with all missing entries
