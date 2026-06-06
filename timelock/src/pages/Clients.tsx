@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { toast } from "sonner";
-import { ClientList } from "@/components/client-protection/ClientList";
 import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 
+// REMOVED: ClientList — moved to dedicated page structure
+// REMOVED: ClientPaymentPattern — moved to /payment-patterns page
+// REMOVED: ClientTrustScore, ClientProtectionScore, ClientDisputeSimulation, ClientGapPrediction, TeamEvidenceValidation — removed per requirements
+
 export default function Clients() {
   const { tier: subscriptionTier } = useSubscriptionTier();
 
-  const [showAddClient, setShowAddClient] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>("client_1");
 
   const clients = [
@@ -87,14 +88,14 @@ export default function Clients() {
   return (
     <div className="w-full min-h-screen bg-background">
       <div className="flex-1 transition-all duration-300 p-8 space-y-6">
-        <ClientList
-          clients={clients}
-          selectedClientId={selectedClientId}
-          onSelectClient={setSelectedClientId}
-          onAddClient={() => setShowAddClient(true)}
-          subscriptionTier={subscriptionTier}
-          onUpgrade={() => toast.info("Upgrade feature coming soon")}
-        />
+        <div>
+          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            Clients
+          </h1>
+          <p className="text-[16px] text-muted-foreground">
+            Manage client policy profiles and protection settings.
+          </p>
+        </div>
 
         {/* Client Policy Profile */}
         <div className="space-y-6">
