@@ -2,10 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { EvidenceHealthScore } from "@/components/evidence-library/EvidenceHealthScore";
-import { DisputeSuccessSimulation } from "@/components/evidence-library/DisputeSuccessSimulation";
 import { WorkContentAnalysis } from "@/components/evidence-library/WorkContentAnalysis";
-import { EvidenceGapPrediction } from "@/components/evidence-library/EvidenceGapPrediction";
 import { EvidenceTimeline } from "@/components/evidence-library/EvidenceTimeline";
 import { EvidenceQualityScorecard } from "@/components/evidence-library/EvidenceQualityScorecard";
 import { TeamValidation } from "@/components/evidence-library/TeamValidation";
@@ -31,7 +28,6 @@ export default function EvidenceLibrary() {
 
   const startOfDay = useMemo(() => new Date().setHours(0, 0, 0, 0), []);
 
-  // Use ?? null to ensure we get null instead of undefined for easier checks
   const evidenceData = useQuery(api.evidence.library.getEvidenceLibraryData, {
     view: viewMode,
     startDate: dateRange.start,
@@ -48,10 +44,8 @@ export default function EvidenceLibrary() {
   };
   const hasTierAccess = (requiredTier: string) => getTierLevel(subscriptionTier) >= getTierLevel(requiredTier);
 
-  // Check if queries are still loading (undefined means not yet resolved)
   const isLoading = evidenceData === undefined || timelineData === undefined;
   
-  // Use fallback data if queries return null (error case)
   const safeEvidenceData = evidenceData ?? {
     totalCount: 0,
     disputeSuccessRate: 0,
@@ -74,7 +68,6 @@ export default function EvidenceLibrary() {
     timeline: [],
   };
 
-  // Add timeout fallback - if still loading after 5 seconds, show error
   const [showTimeout, setShowTimeout] = useState(false);
   useEffect(() => {
     if (isLoading) {
@@ -112,26 +105,10 @@ export default function EvidenceLibrary() {
               </p>
             </div>
 
-            <EvidenceHealthScore
-              protectedHours={safeTimelineData.protectedHours}
-              healthScore={safeEvidenceData.healthScore}
-            />
-
-            <DisputeSuccessSimulation
-              successRate={safeEvidenceData.disputeSuccessRate}
-              hasAccess={hasTierAccess("starter")}
-              disputeData={safeEvidenceData.disputeData}
-            />
-
             <WorkContentAnalysis
               qualityScore={safeEvidenceData.contentQualityScore}
               hasAccess={hasTierAccess("pro")}
               contentData={safeEvidenceData.contentData}
-            />
-
-            <EvidenceGapPrediction
-              gapData={safeEvidenceData.gapPrediction}
-              hasAccess={hasTierAccess("starter")}
             />
 
             <EvidenceTimeline timeline={safeTimelineData.timeline} />

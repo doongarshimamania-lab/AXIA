@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Loader2, Plus, AlertTriangle, CheckCircle, Clock, LayoutDashboard, Activity, Target, Fingerprint, FileText, Download } from "lucide-react";
+import { Shield, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -13,13 +13,18 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
-import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
-import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
-import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
-import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
-import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
-import { EvidenceItemsList } from "@/components/evidence-library/EvidenceItemsList";
-import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
+// HIDDEN: ProjectProtectionScore — Component commented out
+// import { ProjectProtectionScore } from "@/components/project-protection/ProjectProtectionScore";
+// HIDDEN: ProjectHealthDashboardNew — Component commented out
+// import { ProjectHealthDashboardNew } from "@/components/project-protection/ProjectHealthDashboardNew";
+// HIDDEN: ProjectRiskTimeline — Component commented out
+// import { ProjectRiskTimeline } from "@/components/project-protection/ProjectRiskTimeline";
+// HIDDEN: MilestoneProtection — Component commented out
+// import { MilestoneProtection } from "@/components/project-protection/MilestoneProtection";
+// HIDDEN: AdaptiveEvidenceSystem — Component commented out
+// import { AdaptiveEvidenceSystem } from "@/components/project-protection/AdaptiveEvidenceSystem";
+// HIDDEN: ProtectionRiskHeatmap — Component commented out
+// import { ProtectionRiskHeatmap } from "@/components/project-protection/ProtectionRiskHeatmap";
 
 interface Project {
   _id: Id<"projects">;
@@ -50,26 +55,14 @@ export default function Projects() {
   
   const handleUpgrade = () => navigate("/subscription");
 
-  // Query projects - this will automatically use guest user if not authenticated
   const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
-  // Debug: Log projects state
   useEffect(() => {
     console.log("Projects query result:", projects);
     console.log("Projects length:", projects?.length ?? 0);
   }, [projects]);
 
-  // Evidence & Reports Data
-  const [viewMode, setViewMode] = useState<"date" | "project" | "client" | "type">("date");
-  const evidenceData = useQuery(api.evidence.library.getEvidenceLibraryData, {
-    view: viewMode,
-    startDate: Date.now() - 30 * 24 * 60 * 60 * 1000, // Last 30 days
-    endDate: Date.now(),
-  });
-  const reports = useQuery(api.disputeReports.getUserDisputeReports, {});
-
-  // Check if queries are still loading
   const [queryTimeout, setQueryTimeout] = useState(false);
   
   useEffect(() => {
@@ -86,16 +79,12 @@ export default function Projects() {
   const isLoading = (projects === undefined && !queryTimeout);
   const safeProjects = projects ?? [];
 
-  // Auto-select first project if none selected
   useEffect(() => {
     if (!selectedProjectId && safeProjects.length > 0) {
       setSelectedProjectId(safeProjects[0]._id);
     }
   }, [safeProjects, selectedProjectId]);
 
-  const selectedProject = safeProjects.find((p: any) => p._id === selectedProjectId);
-
-  // Seeding logic
   useEffect(() => {
     if (isSeeding) {
       const timer = setTimeout(() => {
@@ -128,13 +117,6 @@ export default function Projects() {
       toast.error("Failed to create test projects");
     }
   };
-
-  // Calculate summary metrics
-  const totalProtectedValue = safeProjects.reduce((acc: number, p: any) => acc + (p.totalValue || 0), 0);
-  const activeProjectsCount = safeProjects.filter((p: any) => p.status === 'active').length;
-  const avgProtectionScore = safeProjects.length > 0 
-    ? Math.round(safeProjects.reduce((acc: number, p: any) => acc + (p.protectionScore || 0), 0) / safeProjects.length) 
-    : 0;
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
@@ -188,88 +170,13 @@ export default function Projects() {
                 onUpgrade={() => navigate("/subscription")}
               />
 
-                {/* Main Feature Dashboard - Always visible */}
-                <div className="space-y-8">
-                    
-                    {/* 1. Protection Score - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Protection Score</h2>
-                      </div>
-                      <ProjectProtectionScore 
-                      projectId={selectedProjectId as Id<"projects">}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                    {/* 2. Health Dashboard - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Project Health Dashboard</h2>
-                      </div>
-                      <ProjectHealthDashboardNew 
-                      projectData={selectedProject}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                    {/* 3. Risk Timeline Analysis - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Risk Timeline Analysis</h2>
-                      </div>
-                      <ProjectRiskTimeline 
-                      projectData={selectedProject}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                    {/* 4. Milestone Protection - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Milestone Protection</h2>
-                      </div>
-                      <MilestoneProtection 
-                      projectId={selectedProjectId as Id<"projects">}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                    {/* 5. Adaptive Evidence System - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Adaptive Evidence System</h2>
-                      </div>
-                      <AdaptiveEvidenceSystem 
-                      projectId={selectedProjectId as Id<"projects">}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                    {/* 6. Protection Risk Heatmap - Full Width */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">Protection Risk Heatmap</h2>
-                      </div>
-                      <ProtectionRiskHeatmap 
-                      projectId={selectedProjectId as Id<"projects">}
-                      tier={tier}
-                      onUpgrade={handleUpgrade}
-                    />
-                  </div>
-
-                </div>
+                {/* HIDDEN: All 6 feature components commented out below */}
+                {/* HIDDEN: Protection Score — <ProjectProtectionScore /> */}
+                {/* HIDDEN: Project Health Dashboard — <ProjectHealthDashboardNew /> */}
+                {/* HIDDEN: Risk Timeline Analysis — <ProjectRiskTimeline /> */}
+                {/* HIDDEN: Milestone Protection — <MilestoneProtection /> */}
+                {/* HIDDEN: Adaptive Evidence System — <AdaptiveEvidenceSystem /> */}
+                {/* HIDDEN: Protection Risk Heatmap — <ProtectionRiskHeatmap /> */}
               </>
             )}
           </div>

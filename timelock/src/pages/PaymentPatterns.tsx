@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { ClientPaymentPattern } from "@/components/client-protection/ClientPaymentPattern";
 import { exportPaymentReport, generateCSV } from "@/lib/exportUtils";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -1347,6 +1348,27 @@ export default function PaymentPatterns() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Client Payment Pattern Analysis - Moved from Clients page */}
+        <ClientPaymentPattern
+          paymentPattern={{
+            hasPattern: true,
+            disputeRate: 15,
+            disputeCycle: "End of month payment disputes",
+            highRiskPeriod: "Last week of each month",
+            paymentTriggers: [
+              "Client reviews invoices on the 25th of each month",
+              "Disputes typically filed 2-3 days after invoice review",
+              "Higher dispute rate when project milestones are unclear"
+            ],
+            protectionPlan: [
+              { action: "Send detailed work summary 3 days before month-end", impact: "Reduces disputes by 40%" },
+              { action: "Schedule brief check-in call on the 23rd", impact: "Improves communication clarity" },
+              { action: "Ensure all evidence is uploaded by the 20th", impact: "Provides dispute protection buffer" }
+            ]
+          }}
+          tier={tier}
+        />
       </div>
     </motion.div>
   );
