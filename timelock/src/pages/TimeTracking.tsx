@@ -15,8 +15,7 @@ import {
   Calendar, Briefcase, ChevronDown, ChevronUp, Trash2, Edit3
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { WorkflowActions, getTimeTrackingActions } from "@/components/connectors/WorkflowActions";
-import { FeatureConnector, type Connection } from "@/components/connectors/FeatureConnector";
+
 
 interface TimeEntry {
   id: string;
@@ -524,39 +523,6 @@ export default function TimeTracking() {
           </CardContent>
         </Card>
 
-        {/* Workflow Actions */}
-        <WorkflowActions
-          actions={getTimeTrackingActions(selectedProject || undefined)}
-        />
-
-        {/* Feature Connector */}
-        <FeatureConnector
-          currentFeature="time"
-          connections={[
-            {
-              feature: "project",
-              label: selectedProject || "Select a Project",
-              status: selectedProject ? "connected" as const : "available" as const,
-              url: "/projects",
-              description: "View the project for this time entry",
-            },
-            {
-              feature: "invoice",
-              label: "Create Invoice",
-              status: "create_new" as const,
-              url: "/invoices/new",
-              description: "Generate an invoice from tracked time",
-            },
-            {
-              feature: "evidence",
-              label: "Evidence Library",
-              status: "available" as const,
-              url: "/evidence-library",
-              description: "Attach evidence to support your time entries",
-            },
-          ]}
-        />
-
         {/* Manual Entry Dialog */}
         <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
           <DialogContent className="sm:max-w-[500px]">
@@ -601,73 +567,7 @@ export default function TimeTracking() {
           </DialogContent>
         </Dialog>
 
-        {/* ── Inter-Feature Connectors ─────────────────────────────────────── */}
-        <div className="space-y-6 mt-6">
-          {/* Workflow Actions */}
-          <WorkflowActions
-            feature="time"
-            itemId={selectedProject || "default"}
-            actions={getTimeTrackingActions(selectedProject || undefined)}
-          />
-
-          {/* Activity Timeline */}
-          <ActivityTimeline
-            steps={getDefaultTimeline("time", selectedProject || "default")}
-          />
-
-          {/* Feature Connector */}
-          <FeatureConnector
-            currentFeature="time"
-            currentItemId={selectedProject || "default"}
-            connections={getTimeConnections(timeEntries, selectedProject)}
-          />
-        </div>
       </div>
     </motion.div>
   );
-}
-
-// Helper to generate time tracking connections
-function getTimeConnections(timeEntries: TimeEntry[], currentProject?: string): Connection[] {
-  const projectFromEntry = currentProject || timeEntries[0]?.project;
-  const hasEntries = timeEntries.length > 0;
-
-  return [
-    {
-      feature: "project",
-      label: projectFromEntry ? `Project: ${projectFromEntry}` : "Go to Projects",
-      status: projectFromEntry ? "connected" : "available",
-      url: projectFromEntry ? `/projects?select=${projectFromEntry}` : "/projects",
-      description: projectFromEntry
-        ? "View the project associated with these time entries"
-        : "Select a project to link your time entries",
-    },
-    {
-      feature: "invoice",
-      label: "Create Invoice",
-      status: hasEntries ? "create_new" : "available",
-      url: projectFromEntry
-        ? `/invoices/new?projectId=${projectFromEntry}&fromTime=true`
-        : "/invoices/new",
-      description: hasEntries
-        ? "Create an invoice from your tracked time entries"
-        : "Track time first, then create an invoice",
-    },
-    {
-      feature: "evidence",
-      label: "Add Evidence",
-      status: "available",
-      url: projectFromEntry
-        ? `/evidence-library?project=${projectFromEntry}`
-        : "/evidence-library",
-      description: "Collect evidence to support your time tracking records",
-    },
-    {
-      feature: "scope",
-      label: "Scope",
-      status: "available",
-      url: projectFromEntry ? `/scope?project=${projectFromEntry}` : "/scope",
-      description: "Check if your tracked time is within scope",
-    },
-  ];
 }

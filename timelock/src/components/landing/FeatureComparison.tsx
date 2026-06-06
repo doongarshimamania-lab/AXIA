@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useState } from "react";

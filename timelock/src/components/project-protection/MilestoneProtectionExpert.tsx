@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle, XCircle, TrendingUp, TrendingDown, Minus, Shield, LineChart, Calendar, FileText, Bell, Sparkles, Camera, TestTube } from "lucide-react";
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import type { Id } from "@/convex/_generated/dataModel";

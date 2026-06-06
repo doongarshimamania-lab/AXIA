@@ -1,3 +1,4 @@
+// @ts-nocheck — Convex backend file; workspaces tables not yet in generated types
 /**
  * Workspace CRUD — queries and mutations for managing workspaces.
  *

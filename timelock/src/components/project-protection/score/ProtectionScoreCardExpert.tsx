@@ -11,7 +11,7 @@ import { EvidenceTimelineModal } from "./EvidenceTimelineModal";
 import { FormalizeScopeChangeDialog } from "./FormalizeScopeChangeDialog";
 import { ReportViewerModal } from "@/components/ReportViewerModal";
 import { Id } from "@/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 

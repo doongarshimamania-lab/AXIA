@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, AlertTriangle, Clock } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { Id } from "@/convex/_generated/dataModel";
 
 interface WCVMVerificationDashboardProps {

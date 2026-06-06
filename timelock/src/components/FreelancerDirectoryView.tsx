@@ -3,12 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Star, Clock, Search } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { useState } from "react";
 
 export function FreelancerDirectoryView() {
   const [searchQuery, setSearchQuery] = useState("");
-  const freelancers = useQuery("clients/freelancerDirectory:getVerifiedFreelancers" as any);
+  const freelancers = useQuery("clients/freelancerDirectory:getVerifiedFreelancers" as any, {});
 
   if (!freelancers) {
     return <div className="text-muted-foreground">Loading freelancer directory...</div>;

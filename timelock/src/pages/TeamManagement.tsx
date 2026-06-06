@@ -75,7 +75,6 @@ export default function TeamManagement() {
         workspaceId: activeWorkspaceId,
         email: inviteEmail.trim(),
         role: inviteRole,
-        message: inviteMessage.trim() || undefined,
       });
       toast.success(`Invitation sent to ${inviteEmail}`);
       setInviteEmail("");
@@ -93,7 +92,7 @@ export default function TeamManagement() {
     try {
       await removeMember({
         workspaceId: activeWorkspaceId,
-        memberUserId: memberToRemove.userId,
+        memberId: memberToRemove.userId,
       });
       toast.success(`${memberToRemove.name} removed from workspace`);
       setMemberToRemove(null);
@@ -107,8 +106,8 @@ export default function TeamManagement() {
     try {
       await updateMemberRole({
         workspaceId: activeWorkspaceId,
-        memberUserId: memberToChangeRole.userId,
-        newRole,
+        memberId: memberToChangeRole.userId,
+        role: newRole,
       });
       toast.success(`Role updated to ${newRole}`);
       setMemberToChangeRole(null);
@@ -119,7 +118,7 @@ export default function TeamManagement() {
 
   const handleCancelInvitation = async (member: any) => {
     try {
-      await cancelInvitation({ workspaceId: activeWorkspaceId, invitationId: member._id });
+      await cancelInvitation({ invitationId: member._id });
       toast.success(`Invitation to ${member.name} cancelled`);
     } catch (e: any) {
       toast.error(e.message || "Failed to cancel invitation");

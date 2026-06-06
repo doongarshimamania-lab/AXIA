@@ -32,9 +32,9 @@ import {
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { ConvexReactClient, useQuery } from "@/lib/safe-convex-react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
-import { ConvexProvider } from "@/lib/safe-convex-react";
+import { ConvexReactClient, ConvexProvider } from "convex/react";
 
 // Mock data constants
 const MOCK_DATA = {
@@ -888,8 +888,8 @@ function WaitlistEntriesSection({ client, title, envLabel }: { client: ConvexRea
 
 // Waitlist Entries Display Component - Using hooks (must be wrapped in ConvexProvider)
 function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: string }) {
-  const entries = useQuery(api.waitlist.getAllWaitlistEntries);
-  const count = useQuery(api.waitlist.getWaitlistCount);
+  const entries = useQuery(api.waitlist.getAllWaitlistEntries, {});
+  const count = useQuery(api.waitlist.getWaitlistCount, {});
 
   useEffect(() => {
     console.log(`[WAITLIST DASHBOARD ${envLabel}] Entries loaded:`, entries);

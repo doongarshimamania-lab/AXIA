@@ -1,6 +1,6 @@
 import { useCallback, useMemo, createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -343,9 +343,12 @@ const MOCK_STATS = {
 };
 
 export function useWorkspaceMembers(workspaceId: string | null) {
+  // @ts-ignore — workspaces API may not be deployed yet; safe-convex-react returns undefined
+  const workspacesApi = (api as any).workspaces;
+
   const convexMembers = useQuery(
-    api.workspaces.members.getMembers,
-    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
+    workspacesApi?.members?.getMembers,
+    workspaceId ? { workspaceId: workspaceId as string } : "skip"
   ) as any[] | undefined;
 
   // If Convex returns data, map it. Otherwise fall back to mock.
@@ -371,9 +374,12 @@ export function useWorkspaceMembers(workspaceId: string | null) {
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
+  // @ts-ignore — workspaces API may not be deployed yet
+  const workspacesApi = (api as any).workspaces;
+
   const convexStats = useQuery(
-    api.workspaces.crud.getWorkspaceStats,
-    workspaceId ? { workspaceId: workspaceId as Id<"workspaces"> } : "skip"
+    workspacesApi?.crud?.getWorkspaceStats,
+    workspaceId ? { workspaceId: workspaceId as string } : "skip"
   ) as any | undefined;
 
   if (convexStats) {
@@ -392,11 +398,13 @@ export function useWorkspaceStats(workspaceId: string | null) {
 }
 
 export function useInviteMember() {
-  const inviteMutation = useMutation(api.workspaces.invitations.createInvitation);
+  // @ts-ignore — workspaces API may not be deployed yet
+  const workspacesApi = (api as any).workspaces;
+  const inviteMutation = useMutation(workspacesApi?.invitations?.createInvitation);
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
     try {
       await inviteMutation({
-        workspaceId: args.workspaceId as Id<"workspaces">,
+        workspaceId: args.workspaceId as string,
         email: args.email,
         role: args.role as "manager" | "member",
       });
@@ -408,11 +416,13 @@ export function useInviteMember() {
 }
 
 export function useRemoveMember() {
-  const removeMutation = useMutation(api.workspaces.members.removeMember);
+  // @ts-ignore — workspaces API may not be deployed yet
+  const workspacesApi = (api as any).workspaces;
+  const removeMutation = useMutation(workspacesApi?.members?.removeMember);
   return async (args: { workspaceId: string; memberId: string }) => {
     try {
       await removeMutation({
-        memberId: args.memberId as Id<"workspaceMembers">,
+        memberId: args.memberId as string,
       });
       return { success: true };
     } catch (err: any) {
@@ -422,11 +432,13 @@ export function useRemoveMember() {
 }
 
 export function useUpdateMemberRole() {
-  const updateRoleMutation = useMutation(api.workspaces.members.updateMemberRole);
+  // @ts-ignore — workspaces API may not be deployed yet
+  const workspacesApi = (api as any).workspaces;
+  const updateRoleMutation = useMutation(workspacesApi?.members?.updateMemberRole);
   return async (args: { workspaceId: string; memberId: string; role: WorkspaceRole }) => {
     try {
       await updateRoleMutation({
-        memberId: args.memberId as Id<"workspaceMembers">,
+        memberId: args.memberId as string,
         role: args.role as "owner" | "manager" | "member",
       });
       return { success: true };
@@ -437,11 +449,13 @@ export function useUpdateMemberRole() {
 }
 
 export function useCancelInvitation() {
-  const cancelMutation = useMutation(api.workspaces.invitations.cancelInvitation);
+  // @ts-ignore — workspaces API may not be deployed yet
+  const workspacesApi = (api as any).workspaces;
+  const cancelMutation = useMutation(workspacesApi?.invitations?.cancelInvitation);
   return async (args: { invitationId: string }) => {
     try {
       await cancelMutation({
-        invitationId: args.invitationId as Id<"workspaceInvitations">,
+        invitationId: args.invitationId as string,
       });
       return { success: true };
     } catch (err: any) {

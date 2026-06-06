@@ -2,15 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, TrendingUp, DollarSign, AlertTriangle, Award, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 export function ProtectionValueDashboard() {
   // Theme is managed globally by ThemeProvider
 
   // Real backend data integration
-  const metrics = useQuery(api.protection.protectionValue.getProtectionValueMetrics);
-  const history = useQuery(api.protection.protectionValue.getValueHistory);
+  const metrics = useQuery(api.protection.protectionValue.getProtectionValueMetrics, {});
+  const history = useQuery(api.protection.protectionValue.getValueHistory, {});
 
   if (!metrics) {
     return (

@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Send } from "lucide-react";
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Id } from "@/convex/_generated/dataModel";

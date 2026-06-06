@@ -101,10 +101,10 @@ if (typeof window !== 'undefined' && convexUrl) {
       }
       return new OrigWebSocket(urlStr, protocols);
     } as any;
-    window.WebSocket.CONNECTING = OrigWebSocket.CONNECTING;
-    window.WebSocket.OPEN = OrigWebSocket.OPEN;
-    window.WebSocket.CLOSING = OrigWebSocket.CLOSING;
-    window.WebSocket.CLOSED = OrigWebSocket.CLOSED;
+    Object.defineProperty(window.WebSocket, 'CONNECTING', { value: OrigWebSocket.CONNECTING, configurable: true });
+    Object.defineProperty(window.WebSocket, 'OPEN', { value: OrigWebSocket.OPEN, configurable: true });
+    Object.defineProperty(window.WebSocket, 'CLOSING', { value: OrigWebSocket.CLOSING, configurable: true });
+    Object.defineProperty(window.WebSocket, 'CLOSED', { value: OrigWebSocket.CLOSED, configurable: true });
     window.WebSocket.prototype = OrigWebSocket.prototype;
   }
 }

@@ -50,10 +50,7 @@ import {
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
-import { FeatureConnector } from "@/components/connectors/FeatureConnector";
-import { WorkflowActions, getInvoiceActions } from "@/components/connectors/WorkflowActions";
-import { ActivityTimeline, buildProjectTimeline } from "@/components/connectors/ActivityTimeline";
-import type { Connection } from "@/components/connectors/FeatureConnector";
+
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -930,30 +927,6 @@ export default function Invoices() {
         </div>
       </div>
 
-      {/* ── Inter-Feature Connectors ─────────────────────────────────────── */}
-      {safeInvoices.length > 0 && (
-        <div className="mt-8 space-y-6">
-          {/* Workflow Actions for first visible invoice */}
-          <WorkflowActions
-            feature="invoice"
-            itemId={safeInvoices[0]._id}
-            actions={getInvoiceActions(safeInvoices[0]._id)}
-          />
-
-          {/* Activity Timeline */}
-          <ActivityTimeline
-            steps={getDefaultTimeline("invoice", safeInvoices[0]._id)}
-          />
-
-          {/* Feature Connector */}
-          <FeatureConnector
-            currentFeature="invoice"
-            currentItemId={safeInvoices[0]._id}
-            connections={getInvoiceConnections(safeInvoices)}
-          />
-        </div>
-      )}
-
       {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
         <DialogContent className="sm:max-w-md">
@@ -978,54 +951,4 @@ export default function Invoices() {
       </Dialog>
     </motion.div>
   );
-}
-
-// ─── Invoice Connections Helper ──────────────────────────────────────────────────
-
-function getInvoiceConnections(invoices: Invoice[]): Connection[] {
-  const firstInvoice = invoices[0];
-  if (!firstInvoice) return [];
-
-  return [
-    {
-      feature: "project",
-      label: "Related Project",
-      status: "available",
-      url: "/projects",
-      description: "View the project associated with this invoice",
-    },
-    {
-      feature: "time",
-      label: "Time Entries",
-      status: "available",
-      url: "/time-tracking",
-      description: "View tracked time for this project",
-    },
-    {
-      feature: "evidence",
-      label: "Attach Evidence",
-      status: (firstInvoice.proofCount ?? 0) > 0 ? "connected" : "create_new",
-      itemId: firstInvoice._id,
-      url: `/evidence-library?invoice=${firstInvoice._id}`,
-      description: (firstInvoice.proofCount ?? 0) > 0
-        ? `${firstInvoice.proofCount} evidence items attached`
-        : "Attach evidence to support this invoice",
-    },
-    {
-      feature: "payment",
-      label: "Payment Reminders",
-      status: firstInvoice.status === "paid" ? "connected" : "available",
-      url: `/payment-patterns?invoice=${firstInvoice._id}`,
-      description: firstInvoice.status === "paid"
-        ? "Payment received"
-        : "Set up payment reminders for this invoice",
-    },
-    {
-      feature: "scope",
-      label: "Scope Definition",
-      status: "available",
-      url: "/scope",
-      description: "View scope definition for this project",
-    },
-  ];
 }

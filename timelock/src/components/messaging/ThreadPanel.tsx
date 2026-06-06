@@ -7,7 +7,7 @@ import { X, Send, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import type { Message } from "./MessageList";
 
-interface ThreadReply {
+export interface ThreadReply {
   id: string;
   authorId: string;
   authorName: string;

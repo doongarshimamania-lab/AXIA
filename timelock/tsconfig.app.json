@@ -24,9 +24,7 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "original-convex-react": ["./node_modules/convex/react"],
-      "convex/react": ["./src/lib/safe-convex-react.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "vly-toolbar-readonly.tsx"]

@@ -8,7 +8,7 @@
  * Falls back gracefully when the user is not authenticated (returns empty data).
  */
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { Proposal, ProposalStatus, RichClient, RichMember, RichDeal } from "./use-app-data";
 import type { Id } from "../convex/_generated/dataModel";
@@ -18,7 +18,7 @@ import type { Id } from "../convex/_generated/dataModel";
 interface EnrichedProposalRow {
   _id: Id<"proposals">;
   userId: Id<"users">;
-  workspaceId?: Id<"workspaces">;
+  workspaceId?: string;
   clientId?: Id<"clients">;
   title: string;
   status: "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -35,7 +35,7 @@ interface EnrichedProposalRow {
   templateId?: Id<"proposalTemplates">;
   clientName?: string;
   clientEmail?: string;
-  assignedMemberId?: Id<"workspaceMembers">;
+  assignedMemberId?: string;
   dealId?: Id<"deals">;
   sentAt?: number;
   viewedAt?: number;
@@ -53,7 +53,7 @@ interface EnrichedProposalRow {
     contactName: string | null;
   } | null;
   assignedMember: {
-    id: Id<"workspaceMembers">;
+    id: string;
     name: string;
     email: string;
     image: string | null;
@@ -227,14 +227,14 @@ export function useConvexProposals(): ConvexProposalsData {
       title: args.title,
       sections: args.sections,
       totalValue: args.totalValue,
-      workspaceId: args.workspaceId as Id<"workspaces"> | undefined,
+      workspaceId: args.workspaceId as string | undefined,
       clientId: args.clientId as Id<"clients"> | undefined,
       clientName: args.clientName,
       clientEmail: args.clientEmail,
       dealId: args.dealId as Id<"deals"> | undefined,
       validUntil: args.validUntil,
       notes: args.notes,
-      assignedMemberId: args.assignedMemberId as Id<"workspaceMembers"> | undefined,
+      assignedMemberId: args.assignedMemberId as string | undefined,
     });
     return result ? String(result) : null;
   };

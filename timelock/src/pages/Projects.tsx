@@ -10,9 +10,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { FeatureConnector, type Connection } from "@/components/connectors/FeatureConnector";
-import { WorkflowActions, getProjectActions } from "@/components/connectors/WorkflowActions";
-import { ActivityTimeline, buildProjectTimeline } from "@/components/connectors/ActivityTimeline";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
@@ -91,7 +88,7 @@ export default function Projects() {
     setIsSeeding(true);
     try {
       const result = await seedTestProjectsMutation({});
-      if (result.success) {
+      if (result?.success) {
         toast.success("Test projects created successfully");
       } else {
         toast.error("Failed to create test projects");
@@ -103,56 +100,6 @@ export default function Projects() {
       toast.error("Failed to create test projects");
     }
   };
-
-  // Build connections for selected project
-  const selectedProject = safeProjects.find((p: any) => p._id === selectedProjectId);
-  const projectConnections: Connection[] = selectedProjectId ? [
-    {
-      feature: "proposal",
-      label: selectedProject ? `Proposal: ${selectedProject.projectName || "Project"}` : "Related Proposal",
-      status: "available",
-      url: "/proposals",
-      description: "View the original proposal for this project",
-    },
-    {
-      feature: "time",
-      label: "Time Entries",
-      status: "create_new",
-      url: `/time-tracking?project=${selectedProjectId}`,
-      description: "Start tracking time for this project",
-    },
-    {
-      feature: "invoice",
-      label: "Create Invoice",
-      status: "create_new",
-      url: `/invoices/new?projectId=${selectedProjectId}`,
-      description: "Generate an invoice for work completed",
-    },
-    {
-      feature: "evidence",
-      label: "Evidence Library",
-      status: "available",
-      url: `/evidence-library?project=${selectedProjectId}`,
-      description: "Collect and manage evidence for protection",
-    },
-    {
-      feature: "scope",
-      label: "Scope Definition",
-      status: "available",
-      url: `/scope?projectId=${selectedProjectId}`,
-      description: "Define and manage project scope",
-    },
-  ] : [];
-
-  // Build timeline for selected project
-  const projectTimeline = buildProjectTimeline({
-    hasProject: !!selectedProjectId,
-    projectCreatedAt: selectedProject?.createdAt,
-    hasTimeEntries: (selectedProject?.totalHours ?? 0) > 0,
-    hasEvidence: false,
-    hasInvoice: false,
-    hasPayment: false,
-  });
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
@@ -205,28 +152,6 @@ export default function Projects() {
                 subscriptionTier={tier}
                 onUpgrade={() => navigate("/subscription")}
               />
-
-                {/* Inter-Feature Connectors */}
-                {selectedProjectId && (
-                  <div className="space-y-6 mt-6">
-                    {/* Workflow Actions */}
-                    <WorkflowActions
-                      actions={getProjectActions(selectedProjectId, selectedProject?.projectName)}
-                    />
-
-                    {/* Activity Timeline */}
-                    <ActivityTimeline
-                      steps={projectTimeline}
-                    />
-
-                    {/* Feature Connector */}
-                    <FeatureConnector
-                      currentFeature="project"
-                      currentItemId={selectedProjectId}
-                      connections={projectConnections}
-                    />
-                  </div>
-                )}
               </>
             )}
           </div>

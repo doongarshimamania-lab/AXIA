@@ -8,7 +8,7 @@
  * Falls back gracefully when the user is not authenticated (returns empty data).
  */
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { PipelineDeal, DealStage, RichClient, RichMember, RichProposal } from "./use-app-data";
 import type { Id } from "../convex/_generated/dataModel";
@@ -34,7 +34,7 @@ function stageNameToDealStage(name: string): DealStage {
 interface ConvexStage {
   _id: Id<"pipelineStages">;
   userId: Id<"users">;
-  workspaceId?: Id<"workspaces">;
+  workspaceId?: string;
   name: string;
   color: string;
   order: number;
@@ -44,7 +44,7 @@ interface ConvexStage {
 interface EnrichedDealRow {
   _id: Id<"deals">;
   userId: Id<"users">;
-  workspaceId?: Id<"workspaces">;
+  workspaceId?: string;
   stageId: Id<"pipelineStages">;
   clientId?: Id<"clients">;
   title: string;
@@ -57,7 +57,7 @@ interface EnrichedDealRow {
   contactName?: string;
   expectedCloseDate?: number;
   notes?: string;
-  assignedMemberId?: Id<"workspaceMembers">;
+  assignedMemberId?: string;
   proposalId?: Id<"proposals">;
   order: number;
   createdAt: number;
@@ -71,7 +71,7 @@ interface EnrichedDealRow {
     contactName: string | null;
   } | null;
   assignedMember: {
-    id: Id<"workspaceMembers">;
+    id: string;
     name: string;
     email: string;
     image: string | null;
@@ -143,14 +143,14 @@ export interface ConvexPipelineData {
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useConvexPipeline(): ConvexPipelineData {
-  const stages = useQuery(api.pipeline.crud.getStages) as ConvexStage[] | undefined;
-  const rawDeals = useQuery(api.pipeline.crud.getDealsEnriched, {}) as EnrichedDealRow[] | undefined;
+  const stages = useQuery(api.pipeline.crud.getStages, {}) as ConvexStage[] | undefined;
+  const rawDeals = useQuery((api as any).pipeline.deals.getDealsEnriched, {}) as EnrichedDealRow[] | undefined;
 
   const createDealMutation = useMutation(api.pipeline.crud.createDeal);
   const updateDealMutation = useMutation(api.pipeline.crud.updateDeal);
   const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
   const deleteDealMutation = useMutation(api.pipeline.crud.deleteDeal);
-  const linkDealToProposalMutation = useMutation(api.pipeline.crud.linkDealToProposal);
+  const linkDealToProposalMutation = useMutation((api as any).pipeline.deals.linkDealToProposal);
   const createDefaultStagesMutation = useMutation(api.pipeline.crud.createDefaultStages);
 
   const isLoading = stages === undefined || rawDeals === undefined;
@@ -243,8 +243,8 @@ export function useConvexPipeline(): ConvexPipelineData {
       notes: args.notes,
       description: args.description,
       clientId: args.clientId as Id<"clients"> | undefined,
-      assignedMemberId: args.assignedMemberId as Id<"workspaceMembers"> | undefined,
-      workspaceId: args.workspaceId as Id<"workspaces"> | undefined,
+      assignedMemberId: args.assignedMemberId as string | undefined,
+      workspaceId: args.workspaceId as string | undefined,
     });
   };
 
@@ -277,7 +277,7 @@ export function useConvexPipeline(): ConvexPipelineData {
     if (args.notes !== undefined) patch.notes = args.notes;
     if (args.description !== undefined) patch.description = args.description;
     if (args.clientId !== undefined) patch.clientId = args.clientId as Id<"clients">;
-    if (args.assignedMemberId !== undefined) patch.assignedMemberId = args.assignedMemberId as Id<"workspaceMembers">;
+    if (args.assignedMemberId !== undefined) patch.assignedMemberId = args.assignedMemberId as string;
     await updateDealMutation(patch);
   };
 

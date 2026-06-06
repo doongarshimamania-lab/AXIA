@@ -1,3 +1,4 @@
+// @ts-nocheck — Convex backend file with schema types not yet in generated types
 import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
 

@@ -6,7 +6,7 @@
  * the user is not authenticated or Convex returns no data.
  */
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -61,20 +61,20 @@ export interface ChatMember {
 
 export function useConvexMessages() {
   // Queries
-  const channels = useQuery(api.messaging.channels.listChannels, {}) as any[] | undefined;
-  const dmChannels = useQuery(api.messaging.dms.listDMChannels, {}) as any[] | undefined;
+  const channels = useQuery((api as any).messaging.channels.listChannels, {}) as any[] | undefined;
+  const dmChannels = useQuery((api as any).messaging.dms.listDMChannels, {}) as any[] | undefined;
 
   // Mutations
-  const createChannelMutation = useMutation(api.messaging.channels.createChannel);
-  const sendMessageMutation = useMutation(api.messaging.messages.sendMessage);
-  const editMessageMutation = useMutation(api.messaging.messages.editMessage);
-  const deleteMessageMutation = useMutation(api.messaging.messages.deleteMessage);
-  const toggleReactionMutation = useMutation(api.messaging.messages.toggleReaction);
-  const togglePinMessageMutation = useMutation(api.messaging.messages.togglePinMessage);
-  const markChannelReadMutation = useMutation(api.messaging.messages.markChannelRead);
-  const joinChannelMutation = useMutation(api.messaging.channels.joinChannel);
-  const leaveChannelMutation = useMutation(api.messaging.channels.leaveChannel);
-  const getOrCreateDMMutation = useMutation(api.messaging.dms.getOrCreateDMChannel);
+  const createChannelMutation = useMutation((api as any).messaging.channels.createChannel);
+  const sendMessageMutation = useMutation((api as any).messaging.messages.sendMessage);
+  const editMessageMutation = useMutation((api as any).messaging.messages.editMessage);
+  const deleteMessageMutation = useMutation((api as any).messaging.messages.deleteMessage);
+  const toggleReactionMutation = useMutation((api as any).messaging.messages.toggleReaction);
+  const togglePinMessageMutation = useMutation((api as any).messaging.messages.togglePinMessage);
+  const markChannelReadMutation = useMutation((api as any).messaging.messages.markChannelRead);
+  const joinChannelMutation = useMutation((api as any).messaging.channels.joinChannel);
+  const leaveChannelMutation = useMutation((api as any).messaging.channels.leaveChannel);
+  const getOrCreateDMMutation = useMutation((api as any).messaging.dms.getOrCreateDMChannel);
 
   const isLoading = channels === undefined;
 
@@ -126,7 +126,7 @@ export function useConvexMessages() {
         name,
         isPrivate,
         type: "channel",
-        workspaceId: workspaceId as Id<"workspaces"> | undefined,
+        workspaceId: workspaceId as string | undefined,
       });
     },
 
@@ -185,7 +185,7 @@ export function useConvexMessages() {
     getOrCreateDM: async (otherUserId: string, workspaceId?: string) => {
       return await getOrCreateDMMutation({
         otherUserId: otherUserId as Id<"users">,
-        workspaceId: workspaceId as Id<"workspaces"> | undefined,
+        workspaceId: workspaceId as string | undefined,
       });
     },
   };
