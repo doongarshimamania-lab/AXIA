@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 
 export default function ClientSignup() {
   const navigate = useNavigate();

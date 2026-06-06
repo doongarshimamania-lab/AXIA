@@ -41,16 +41,26 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 
 // Error Boundary to catch Convex errors and prevent app crash
-class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
+class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  state = { hasError: false, error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.warn("[ConvexErrorBoundary] Caught error (rendering continues):", error.message);
+    console.warn("[ConvexErrorBoundary] Caught error:", error.message, errorInfo.componentStack);
   }
   render() {
-    // ALWAYS render children - never show a blank screen
+    if (this.state.hasError) {
+      // Show a subtle error banner instead of crashing the whole page
+      return (
+        <div>
+          <div style={{ padding: '12px 16px', background: '#fef2f2', borderBottom: '1px solid #fecaca', color: '#991b1b', fontSize: '14px' }}>
+            Something went wrong on this page. <button onClick={() => this.setState({ hasError: false, error: null })} style={{ textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', color: '#991b1b', font: 'inherit' }}>Try again</button>
+          </div>
+          {this.props.children}
+        </div>
+      );
+    }
     return this.props.children;
   }
 }

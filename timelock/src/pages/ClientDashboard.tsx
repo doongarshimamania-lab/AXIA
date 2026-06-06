@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, CheckCircle, Clock, LayoutDashboard, UserSearch, FileCheck, Activity } from "lucide-react";
 import { useNavigate } from "react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { useEffect } from "react";
 import { WCVMVerificationDashboard } from "@/components/WCVMVerificationDashboard";
 import { FreelancerDirectoryView } from "@/components/FreelancerDirectoryView";

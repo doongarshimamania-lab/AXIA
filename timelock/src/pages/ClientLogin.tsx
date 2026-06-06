@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Shield, Building2 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 export default function ClientLogin() {

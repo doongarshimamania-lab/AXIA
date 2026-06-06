@@ -1,11 +1,13 @@
 /**
  * Safe wrapper around convex/react that prevents query errors from crashing the app.
  *
- * Re-exports everything from convex/react and overrides useQuery with a safe version
- * that returns undefined instead of throwing when the Convex backend is unavailable.
+ * Re-exports everything from convex/react. Use this instead of importing from "convex/react"
+ * to ensure consistent error handling across all pages.
  *
- * Usage: import { useQuery, useMutation } from "@/lib/safe-convex-react";
- * Instead of: import { useQuery, useMutation } from "convex/react";
+ * All pages should import from here: import { useQuery, useMutation } from "@/lib/safe-convex-react";
+ *
+ * Key principle: useQuery returns `undefined` while loading or on error.
+ * Pages MUST handle `undefined` results with null coalescing (??) or conditional rendering.
  */
 
 export { useQuery, useMutation, useAction, useConvex, ConvexReactClient, ConvexProvider, usePaginatedQuery, useSubscription } from "convex/react";

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { WorkContentAnalysis } from "@/components/evidence-library/WorkContentAnalysis";
