@@ -22,122 +22,168 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Sun, Moon } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Sun, Moon, Mail, Loader2, ArrowRight, Eye, EyeOff, Github } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { Mail, Loader2, ArrowRight } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface AuthProps {
   redirectAfterAuth?: string;
 }
 
+type AuthStep = "signIn" | "signUp" | { email: string }; // OTP step
+
 function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const { isLoading: authLoading, isAuthenticated, signIn } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState<"signIn" | { email: string }>("signIn");
+  const [searchParams] = useSearchParams();
+
+  // Get redirect from URL params or props
+  const redirectParam = searchParams.get("redirect");
+  const redirect = redirectParam || redirectAfterAuth || "/dashboard";
+
+  const [step, setStep] = useState<AuthStep>("signIn");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Use global theme from ThemeProvider
-  const { theme, toggleTheme } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
-  const [showCustomPlatformModal, setShowCustomPlatformModal] = useState(false);
 
+  // Form fields
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+
+  const { theme, toggleTheme } = useTheme();
+
+  // Redirect if already authenticated
   useEffect(() => {
-    // Only redirect if authenticated AND on the initial sign-in page
-    // Don't redirect during OTP verification (step is an object) or after OTP submission
     if (!authLoading && isAuthenticated && step === "signIn") {
-      const redirect = redirectAfterAuth || "/";
       navigate(redirect);
     }
-  }, [authLoading, isAuthenticated, navigate, redirectAfterAuth, step]);
+  }, [authLoading, isAuthenticated, navigate, redirect, step]);
 
-  const handleEmailSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Password sign in
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError(null);
     try {
-      const formData = new FormData(event.currentTarget);
-      await signIn("email-otp", formData);
-      setStep({ email: formData.get("email") as string });
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Email sign-in error:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to send verification code. Please try again.",
-      );
+      const formData = new FormData();
+      formData.set("email", email);
+      formData.set("password", password);
+      formData.set("flow", "signIn");
+      await signIn("password", formData);
+      toast.success("Signed in successfully!");
+      navigate(redirect);
+    } catch (err: any) {
+      console.error("Sign-in error:", err);
+      setError(err?.message || "Invalid email or password. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Add: platform connection modal state
-  const [showPlatformConnectModal, setShowPlatformConnectModal] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState<"google" | "upwork" | "fiverr" | "toptal">("upwork");
+  // Password sign up
+  const handlePasswordSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  // Add: provider click handler
-  const handleProviderClick = (provider: "google" | "upwork" | "fiverr" | "toptal") => {
-    setSelectedPlatform(provider);
-    setShowPlatformConnectModal(true);
-  };
-
-  const handlePlatformConnect = async () => {
-    const labels: Record<typeof selectedPlatform, string> = {
-      google: "Google",
-      upwork: "Upwork",
-      fiverr: "Fiverr",
-      toptal: "Toptal",
-    } as const;
-    
-    setShowPlatformConnectModal(false);
-    
-    // For Google, just show toast (not a freelance platform)
-    if (selectedPlatform === "google") {
-      toast(`Connecting to ${labels[selectedPlatform]}...`, {
-        description: "This feature will be enabled after platform approval.",
-      });
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setIsLoading(false);
       return;
     }
-    
-    // Store the platform to connect after authentication
-    localStorage.setItem("axia_pending_platform", selectedPlatform);
-    
-    toast.success(`${labels[selectedPlatform]} connection will be set up after sign-in`, {
-      description: "Your data will be imported automatically.",
-    });
-  };
 
-  const handleOtpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError(null);
     try {
-      const formData = new FormData(event.currentTarget);
-      await signIn("email-otp", formData);
-
-      console.log("signed in");
-
-      const redirect = redirectAfterAuth || "/";
+      const formData = new FormData();
+      formData.set("email", email);
+      formData.set("password", password);
+      formData.set("name", name);
+      formData.set("flow", "signUp");
+      await signIn("password", formData);
+      toast.success("Account created successfully!");
       navigate(redirect);
-    } catch (error) {
-      console.error("OTP verification error:", error);
-
-      setError("The verification code you entered is incorrect.");
+    } catch (err: any) {
+      console.error("Sign-up error:", err);
+      setError(err?.message || "Failed to create account. Please try again.");
+    } finally {
       setIsLoading(false);
-
-      setOtp("");
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        {/* Dark mode toggle per spec (top-right) */}
+  // Email OTP sign in
+  const handleEmailOtpSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set("email", email);
+      await signIn("email-otp", formData);
+      setStep({ email });
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error("Email OTP error:", err);
+      setError(err?.message || "Failed to send verification code. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  // OTP verification
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set("email", (step as { email: string }).email);
+      formData.set("code", otp);
+      await signIn("email-otp", formData);
+      toast.success("Signed in successfully!");
+      navigate(redirect);
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setError("The verification code you entered is incorrect.");
+      setOtp("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Anonymous sign in (dev/testing only)
+  const handleAnonymousSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn("anonymous");
+      toast.success("Signed in as guest");
+      navigate(redirect);
+    } catch (err: any) {
+      console.error("Anonymous sign-in error:", err);
+      setError(err?.message || "Failed to sign in anonymously.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // OAuth sign-in placeholders
+  const handleGoogleSignIn = async () => {
+    toast.info("Google OAuth will be available after platform approval.");
+  };
+
+  const handleGitHubSignIn = async () => {
+    toast.info("GitHub OAuth will be available after configuration.");
+  };
+
+  // OTP verification step
+  if (typeof step === "object" && "email" in step) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="absolute top-6 right-6">
           <button
             aria-label="Toggle theme"
@@ -158,379 +204,400 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           </button>
         </div>
 
-        {/* Auth Content */}
-        <div className="flex-1 flex items-center justify-center px-4">
-          <div className="flex items-center justify-center h-full flex-col">
-            <Card className="w-[480px] max-w-full pb-0 border border-border shadow-none rounded-2xl bg-card">
-              {step === "signIn" ? (
-                <>
-                  {/* Branded Header */}
-                  <CardHeader className="text-center">
-                    <div className="flex justify-center">
-                      <img
-                        src="./logo.svg"
-                        alt="Axia Logo"
-                        width={64}
-                        height={64}
-                        className="rounded-lg mb-4 mt-2 cursor-pointer"
-                        onClick={() => navigate("/")}
-                      />
-                    </div>
-                    <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
-                      Protect Your Freelance Income
-                    </CardTitle>
-                    <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
-                      Axia prevents payment denials by validating your work meets ALL requirements — with dispute‑proof evidence.
-                    </CardDescription>
-                  </CardHeader>
-
-                  {/* Platform-first Connect Buttons */}
-                  <CardContent>
-                    <div className="mt-4 mb-2 text-left">
-                      <div className="text-[16px] font-semibold text-foreground">
-                        Connect your freelance accounts
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2 mb-4">
-                      <Button
-                        type="button"
-                        className="w-full h-14 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
-                        onClick={() => handleProviderClick("upwork")}
-                      >
-                        Connect with Upwork
-                      </Button>
-                      <Button
-                        type="button"
-                        className="w-full h-14 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
-                        onClick={() => handleProviderClick("fiverr")}
-                      >
-                        Connect with Fiverr
-                      </Button>
-                      <Button
-                        type="button"
-                        className="w-full h-14 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
-                        onClick={() => handleProviderClick("toptal")}
-                      >
-                        Connect with Toptal
-                      </Button>
-                    </div>
-
-                    {/* Divider: Or connect with */}
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-[40%] border-t" />
-                        <span className="w-[20%]" />
-                        <span className="w-[40%] border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-sm uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">
-                          Or connect with
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Google Button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full h-14 bg-background text-foreground border-border"
-                      onClick={() => handleProviderClick("google")}
-                      disabled={isLoading}
-                    >
-                      Continue with Google
-                    </Button>
-
-                    {/* More options (Email + Password UI; uses OTP flow) */}
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        className="text-[14px] font-semibold text-primary hover:underline"
-                        onClick={() => setShowMoreOptions((s) => !s)}
-                      >
-                        {showMoreOptions ? "Hide options" : "More options"}
-                      </button>
-
-                      {showMoreOptions && (
-                        <form onSubmit={handleEmailSubmit} className="mt-3">
-                          <div className="grid gap-3">
-                            <div className="relative">
-                              <Label htmlFor="email" className="text-muted-foreground text-sm">
-                                Email address
-                              </Label>
-                              <div className="relative mt-1">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  id="email"
-                                  name="email"
-                                  placeholder="name@example.com"
-                                  type="email"
-                                  className="pl-9 h-11 bg-background border-border"
-                                  disabled={isLoading}
-                                  required
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor="password" className="text-muted-foreground text-sm">
-                                Create password
-                              </Label>
-                              <Input
-                                id="password"
-                                type="password"
-                                placeholder="••••••••"
-                                className="mt-1 h-11 bg-background border-border"
-                                // Note: Password not used in Convex OTP flow; UI only per spec
-                              />
-                            </div>
-                            <div className="flex justify-end">
-                              <Button
-                                type="submit"
-                                className="w-full h-14 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
-                                disabled={isLoading}
-                              >
-                                {isLoading ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Sending code...
-                                  </>
-                                ) : (
-                                  "Create Account"
-                                )}
-                              </Button>
-                            </div>
-                            {error && (
-                              <p className="text-sm text-destructive">{error}</p>
-                            )}
-                          </div>
-                        </form>
-                      )}
-                    </div>
-
-                    {/* Custom Platform Setup */}
-                    <div className="mt-6">
-                      <div className="text-[16px] font-semibold text-foreground">
-                        Using a different platform?
-                      </div>
-                      <p className="text-[14px] text-muted-foreground">
-                        Axia can work with any platform that has time tracking
-                      </p>
-                      <button
-                        type="button"
-                        className="mt-2 text-[14px] font-semibold text-primary hover:underline"
-                        onClick={() => setShowCustomPlatformModal(true)}
-                      >
-                        Set up custom platform
-                      </button>
-                    </div>
-                  </CardContent>
-                </>
-              ) : (
-                <>
-                  <CardHeader className="text-center mt-4">
-                    <CardTitle>Check your email</CardTitle>
-                    <CardDescription>
-                      We've sent a code to {step.email}
-                    </CardDescription>
-                  </CardHeader>
-                  <form onSubmit={handleOtpSubmit}>
-                    <CardContent className="pb-4">
-                      <input type="hidden" name="email" value={step.email} />
-                      <input type="hidden" name="code" value={otp} />
-
-                      <div className="flex justify-center">
-                        <InputOTP
-                          value={otp}
-                          onChange={setOtp}
-                          maxLength={6}
-                          disabled={isLoading}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && otp.length === 6 && !isLoading) {
-                              // Find the closest form and submit it
-                              const form = (e.target as HTMLElement).closest("form");
-                              if (form) {
-                                form.requestSubmit();
-                              }
-                            }
-                          }}
-                        >
-                          <InputOTPGroup>
-                            {Array.from({ length: 6 }).map((_, index) => (
-                              <InputOTPSlot key={index} index={index} />
-                            ))}
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </div>
-                      {error && (
-                        <p className="mt-2 text-sm text-red-500 text-center">
-                          {error}
-                        </p>
-                      )}
-                      <p className="text-sm text-muted-foreground text-center mt-4">
-                        Didn't receive a code?{" "}
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto"
-                          onClick={() => setStep("signIn")}
-                        >
-                          Try again
-                        </Button>
-                      </p>
-                    </CardContent>
-                    <CardFooter className="flex-col gap-2">
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isLoading || otp.length !== 6}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Verifying...
-                          </>
-                        ) : (
-                          <>
-                            Verify code
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setStep("signIn")}
-                        disabled={isLoading}
-                        className="w-full"
-                      >
-                        Use different email
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </>
-              )}
-
-              {/* Footer branding */}
-              <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
-                Secured by{" "}
-                <a
-                  href="https://vly.ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-primary transition-colors"
+        <Card className="w-full max-w-md border border-border shadow-none rounded-2xl bg-card">
+          <CardHeader className="text-center mt-4">
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We've sent a code to {step.email}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleOtpVerify}>
+            <CardContent className="pb-4">
+              <div className="flex justify-center">
+                <InputOTP
+                  value={otp}
+                  onChange={setOtp}
+                  maxLength={6}
+                  disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && otp.length === 6 && !isLoading) {
+                      const form = (e.target as HTMLElement).closest("form");
+                      if (form) form.requestSubmit();
+                    }
+                  }}
                 >
-                  vly.ai
-                </a>
+                  <InputOTPGroup>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <InputOTPSlot key={index} index={index} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
-            </Card>
+              {error && (
+                <p className="mt-2 text-sm text-red-500 text-center">{error}</p>
+              )}
+              <p className="text-sm text-muted-foreground text-center mt-4">
+                Didn't receive a code?{" "}
+                <Button variant="link" className="p-0 h-auto" onClick={() => setStep("signIn")}>
+                  Try again
+                </Button>
+              </p>
+            </CardContent>
+            <CardFooter className="flex-col gap-2">
+              <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Verify code
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStep("signIn")}
+                disabled={isLoading}
+                className="w-full"
+              >
+                Use different email
+              </Button>
+            </CardFooter>
+          </form>
+
+          <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
+            Secured by{" "}
+            <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+              vly.ai
+            </a>
           </div>
-        </div>
+        </Card>
+      </div>
+    );
+  }
 
-        {/* Platform Connection Modal */}
-        <Dialog open={showPlatformConnectModal} onOpenChange={setShowPlatformConnectModal}>
-          <DialogContent className="max-w-md rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-[24px] font-bold text-foreground" style={{ fontFamily: "Space Grotesk" }}>
-                Axia needs access to:
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-2">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-2 w-2 rounded-full bg-muted-foreground/40 flex-shrink-0" />
-                <p className="text-[16px] text-foreground">
-                  View your work activity (to validate protection)
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-2 w-2 rounded-full bg-muted-foreground/40 flex-shrink-0" />
-                <p className="text-[16px] text-foreground">
-                  Manage time entries (to sync with Axia protection)
-                </p>
-              </div>
-            </div>
+  // Main sign-in / sign-up form
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Theme toggle */}
+      <div className="absolute top-6 right-6">
+        <button
+          aria-label="Toggle theme"
+          className="w-[52px] h-[28px] rounded-full bg-muted p-1 flex items-center transition-colors"
+          onClick={toggleTheme}
+        >
+          <span
+            className={`w-5 h-5 rounded-full bg-background shadow flex items-center justify-center transform transition-transform ${
+              theme === "dark" ? "translate-x-[24px]" : "translate-x-0"
+            }`}
+          >
+            {theme === "dark" ? (
+              <Moon className="w-3.5 h-3.5 text-primary" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 text-primary" />
+            )}
+          </span>
+        </button>
+      </div>
 
-            <p className="text-[14px] text-muted-foreground italic py-2">
-              This is how Axia verifies your work meets ALL payment protection requirements
-            </p>
+      <Card className="w-full max-w-md border border-border shadow-none rounded-2xl bg-card">
+        {/* Branded Header */}
+        <CardHeader className="text-center">
+          <div className="flex justify-center">
+            <img
+              src="./logo.svg"
+              alt="Axia Logo"
+              width={64}
+              height={64}
+              className="rounded-lg mb-4 mt-2 cursor-pointer"
+              onClick={() => navigate("/")}
+            />
+          </div>
+          <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
+            {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
+          </CardTitle>
+          <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
+            {step === "signUp"
+              ? "Sign up to start protecting your freelance work with dispute-proof evidence."
+              : "Axia prevents payment denials by validating your work meets ALL requirements — with dispute-proof evidence."}
+          </CardDescription>
+        </CardHeader>
 
-            <DialogFooter className="flex-row gap-3 sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 h-12 text-[16px] bg-muted hover:bg-muted/80 text-foreground border-border"
-                onClick={() => setShowPlatformConnectModal(false)}
-              >
-                Not now
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 h-12 text-[16px] bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
-                onClick={handlePlatformConnect}
-              >
-                Connect {selectedPlatform === "google" ? "Google" : selectedPlatform === "upwork" ? "upwork" : selectedPlatform === "fiverr" ? "fiverr" : "toptal"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Custom Platform Modal */}
-        <Dialog open={showCustomPlatformModal} onOpenChange={setShowCustomPlatformModal}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Custom Platform Setup</DialogTitle>
-              <DialogDescription>
-                Add a new platform to protect with Axia
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const data = new FormData(e.currentTarget as HTMLFormElement);
-                const platform = data.get("platform_name") as string;
-                setShowCustomPlatformModal(false);
-                // Notify user and keep it UI-only for now
-                // eslint-disable-next-line no-undef
-                toast.success(`Added "${platform || "Custom Platform"}" (Basic Protection)`);
-              }}
+        <CardContent>
+          {/* OAuth Buttons */}
+          <div className="grid grid-cols-1 gap-2 mb-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 bg-background text-foreground border-border"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
             >
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-sm">Platform name</Label>
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Continue with Google
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 bg-background text-foreground border-border"
+              onClick={handleGitHubSignIn}
+              disabled={isLoading}
+            >
+              <Github className="mr-2 h-4 w-4" />
+              Continue with GitHub
+            </Button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+            </div>
+          </div>
+
+          {/* Sign In / Sign Up Form */}
+          {step === "signUp" ? (
+            <form onSubmit={handlePasswordSignUp} className="space-y-3">
+              <div>
+                <Label htmlFor="name" className="text-muted-foreground text-sm">Full name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  className="mt-1 h-11 bg-background border-border"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="signup-email" className="text-muted-foreground text-sm">Email address</Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    name="platform_name"
-                    placeholder="e.g., Platform XYZ"
-                    className="mt-1"
+                    id="signup-email"
+                    type="email"
+                    placeholder="name@example.com"
+                    className="pl-9 h-11 bg-background border-border"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
                     required
                   />
                 </div>
-                <div>
-                  <Label className="text-sm">Policy documentation URL</Label>
+              </div>
+              <div>
+                <Label htmlFor="signup-password" className="text-muted-foreground text-sm">Password (min 8 characters)</Label>
+                <div className="relative mt-1">
                   <Input
-                    name="policy_url"
-                    placeholder="https://example.com/policy"
-                    className="mt-1"
+                    id="signup-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a strong password"
+                    className="h-11 bg-background border-border pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    minLength={8}
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div>
-                  <Label className="text-sm">Compliance requirements</Label>
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button
+                type="submit"
+                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handlePasswordSignIn} className="space-y-3">
+              <div>
+                <Label htmlFor="email" className="text-muted-foreground text-sm">Email address</Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    name="compliance_rules"
-                    placeholder="e.g., Screenshots every 10 minutes"
-                    className="mt-1"
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    className="pl-9 h-11 bg-background border-border"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
                   />
                 </div>
               </div>
-              <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setShowCustomPlatformModal(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-[#5C6AC4] hover:bg-[#4A56B0] text-white">
-                  Add Platform
-                </Button>
-              </DialogFooter>
+              <div>
+                <Label htmlFor="password" className="text-muted-foreground text-sm">Password</Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="h-11 bg-background border-border pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button
+                type="submit"
+                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </form>
-          </DialogContent>
-        </Dialog>
+          )}
+
+          {/* Toggle sign-in / sign-up */}
+          <div className="mt-4 text-center text-sm">
+            {step === "signUp" ? (
+              <span className="text-muted-foreground">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  className="text-primary hover:underline font-semibold"
+                  onClick={() => { setStep("signIn"); setError(null); }}
+                >
+                  Sign in
+                </button>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  className="text-primary hover:underline font-semibold"
+                  onClick={() => { setStep("signUp"); setError(null); }}
+                >
+                  Sign up
+                </button>
+              </span>
+            )}
+          </div>
+
+          {/* More options: Email OTP + Anonymous */}
+          <div className="mt-4">
+            <button
+              type="button"
+              className="text-[14px] font-semibold text-primary hover:underline"
+              onClick={() => setShowMoreOptions((s) => !s)}
+            >
+              {showMoreOptions ? "Hide options" : "More sign-in options"}
+            </button>
+
+            {showMoreOptions && (
+              <div className="mt-3 space-y-2">
+                {/* Email OTP option */}
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Email for OTP code"
+                    className="h-11 bg-background border-border"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 whitespace-nowrap"
+                    onClick={handleEmailOtpSend}
+                    disabled={isLoading || !email}
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
+                  </Button>
+                </div>
+
+                <Separator className="my-2" />
+
+                {/* Anonymous sign-in (dev/testing) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={handleAnonymousSignIn}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Continue as Guest (testing only)
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+
+        {/* Footer branding */}
+        <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
+          Secured by{" "}
+          <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            vly.ai
+          </a>
+        </div>
       </Card>
     </div>
   );

@@ -41,6 +41,7 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import Scope from "./pages/Scope.tsx";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Error Boundary to catch Convex errors and prevent app crash
 class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -67,7 +68,7 @@ class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { has
   }
 }
 
-const FALLBACK_CONVEX_URL = "https://artful-civet-344.convex.cloud";
+const FALLBACK_CONVEX_URL = "https://veracious-zebra-519.convex.cloud";
 const convexUrlRaw = (import.meta.env.VITE_CONVEX_URL as string | undefined) || FALLBACK_CONVEX_URL;
 // Resolve the Convex URL: if it contains __ORIGIN__, replace with the current origin
 const convexUrl = convexUrlRaw
@@ -181,8 +182,8 @@ root.render(
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
 
-                  {/* Dashboard Routes (With Sidebar) */}
-                  <Route element={<DashboardLayout />}>
+                  {/* Dashboard Routes (With Sidebar + Auth Guard) */}
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/clients" element={<Clients />} />
                     <Route path="/projects" element={<Projects />} />

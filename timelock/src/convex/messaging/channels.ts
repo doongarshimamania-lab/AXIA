@@ -106,7 +106,7 @@ export const getChannelMembers = query({
           ...m,
           name: user.name || "Unknown",
           email: user.email,
-          isOnline: m.lastActiveAt ? (Date.now() - m.lastActiveAt) < 5 * 60 * 1000 : false,
+          isOnline: m.lastReadAt ? (Date.now() - m.lastReadAt) < 5 * 60 * 1000 : false,
         });
       }
     }

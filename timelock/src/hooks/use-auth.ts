@@ -1,7 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery_experimental } from "convex/react";
+import { useConvexAuth, useQuery_experimental, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export function useAuth() {
   const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth();
@@ -20,11 +20,25 @@ export function useAuth() {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  // Auto-seed user profile on first authentication
+  const hasSeeded = useRef(false);
+  const seedProfile = useMutation(api.seed.seedDevProfile);
+
   useEffect(() => {
     if (!isAuthLoading) {
       setIsLoading(false);
     }
   }, [isAuthLoading]);
+
+  // When user authenticates for the first time, auto-seed their profile
+  useEffect(() => {
+    if (isAuthenticated && user && !user.onboardingComplete && !hasSeeded.current) {
+      hasSeeded.current = true;
+      seedProfile({}).catch((err) => {
+        console.warn("Auto-seed failed:", err);
+      });
+    }
+  }, [isAuthenticated, user, seedProfile]);
 
   return {
     isLoading,

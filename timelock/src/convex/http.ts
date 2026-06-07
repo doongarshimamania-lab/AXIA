@@ -7,7 +7,9 @@ import { v } from "convex/values";
 export const configureCORS = (response: Response): Response => {
   // SECURITY: Restrict CORS to known origins instead of wildcard
   const allowedOrigins = [
+    "https://preview-81.space-z.ai",
     "https://preview-1936221977589032.space.chatglm.site",
+    "https://veracious-zebra-519.convex.cloud",
     "https://artful-civet-344.convex.cloud",
     "http://localhost:5173",
     "http://localhost:3000",

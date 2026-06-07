@@ -24,9 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { useAuth } from "@/hooks/use-auth";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -47,6 +48,7 @@ const platformColors: Record<Platform, string> = {
 export function CollapsibleSidebar() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { signOut, user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -495,6 +497,18 @@ export function CollapsibleSidebar() {
                   window.dispatchEvent(event);
                 }} className="w-full text-left">
                   <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
+                </button>
+                {/* Sign Out */}
+                <button onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await signOut();
+                    navigate("/auth");
+                  } catch {
+                    toast.error("Failed to sign out");
+                  }
+                }} className="w-full text-left">
+                  <NavItem icon={LogOut} label="Sign Out" isExpanded={true} />
                 </button>
               </motion.div>
             )}
