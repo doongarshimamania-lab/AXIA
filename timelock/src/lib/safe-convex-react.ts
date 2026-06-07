@@ -23,9 +23,15 @@ import {
   useConvexAuth,
   useQuery_experimental,
 } from "convex/react";
+import { anyApi } from "convex/server";
 
 // Re-export non-hook utilities directly from the real convex/react (safe, no error-throwing)
 export { ConvexReactClient, ConvexProvider, useConvexAuth, useQuery_experimental };
+
+// A stable dummy query reference used when we want to skip a query.
+// anyApi is a Proxy from convex/server that provides valid-looking references
+// for any path. Convex's useQuery won't crash with these refs + "skip" args.
+const DUMMY_QUERY = (anyApi as any)._skip_placeholder;
 
 /**
  * Safe useQuery — returns `undefined` when the query throws (e.g. function not found on backend)
@@ -37,24 +43,13 @@ export { ConvexReactClient, ConvexProvider, useConvexAuth, useQuery_experimental
 export function useQuery(query: any, args: any): any {
   const loggedRef = useRef(false);
 
-  // Normalize: if query is "skip", null, or undefined, use a dummy query reference
+  // Normalize: if query or args is "skip", null, or undefined, use a dummy query reference
   // and pass "skip" as args so Convex doesn't actually subscribe.
   // This ensures _useQuery is ALWAYS called (maintaining React hooks order)
   // but no server request is made when we want to skip.
-  let effectiveQuery = query;
-  let effectiveArgs = args;
-
-  if (query === "skip" || query === null || query === undefined) {
-    // Use the same query reference but with "skip" args
-    // We need a valid query reference to avoid Convex throwing.
-    // anyApi() Proxy objects work for this purpose.
-    effectiveQuery = query || args; // if query is null, we'll rely on args="skip"
-    effectiveArgs = "skip";
-  }
-
-  if (args === "skip") {
-    effectiveArgs = "skip";
-  }
+  const shouldSkip = query === "skip" || query === null || query === undefined || args === "skip";
+  const effectiveQuery = shouldSkip ? DUMMY_QUERY : query;
+  const effectiveArgs = shouldSkip ? "skip" : args;
 
   try {
     // @ts-ignore - dynamic query reference
@@ -89,27 +84,16 @@ export function useQuery(query: any, args: any): any {
  * Passing `null` as the mutation reference returns a no-op function.
  */
 export function useMutation(mutation: any): any {
-  // If the mutation reference is null/undefined, we still need to call
-  // _useMutation to maintain React hooks order. Use a dummy reference
-  // and wrap the result to be a no-op.
+  // If the mutation reference is null/undefined, return a no-op function.
+  // We do NOT call _useMutation with null — that would crash Convex internals.
+  // Since mutation refs are typically static (not changing between renders),
+  // this does not violate React hooks ordering rules in practice.
   if (mutation === null || mutation === undefined) {
-    // We must call _useMutation to maintain hooks order, but we can't pass
-    // null/undefined to it. Use anyApi() to get a valid-looking reference.
-    // The resulting mutation will always fail, but our wrapper catches that.
-    try {
-      // @ts-ignore - we need a valid reference to keep hooks order
-      const dummyMutation = _useMutation(mutation);
-      return useCallback(async (_args: any) => {
-        console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
-        return undefined;
-      }, []);
-    } catch {
-      // If _useMutation itself throws (e.g. no ConvexProvider), return a no-op
-      return useCallback(async (_args: any) => {
-        console.warn("[safe-convex-react] mutation not available (init error, no-op)");
-        return undefined;
-      }, []);
-    }
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useCallback(async (_args: any) => {
+      console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
+      return undefined;
+    }, []);
   }
 
   try {
