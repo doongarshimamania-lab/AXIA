@@ -43,6 +43,7 @@ import {
   GripVertical,
   Clock,
   FileText,
+  User,
   Loader2,
   LayoutTemplate,
   Sparkles,
@@ -53,7 +54,7 @@ import { TemplateImportDialog } from "@/components/proposals/TemplateImportDialo
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type SectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+type SectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider" | "client_info" | "sender_info" | "summary" | "scope_of_work";
 
 interface PricingItem {
   name: string;
@@ -96,6 +97,10 @@ const sectionTypeConfig: Record<
   terms: { label: "Terms", icon: FileCheck, description: "Terms and conditions" },
   milestone: { label: "Milestone", icon: Milestone, description: "Project milestones" },
   divider: { label: "Divider", icon: Minus, description: "Visual separator" },
+  client_info: { label: "Client Info", icon: User, description: "Client contact details" },
+  sender_info: { label: "Sender Info", icon: User, description: "Your contact details" },
+  summary: { label: "Summary", icon: FileText, description: "Executive summary" },
+  scope_of_work: { label: "Scope", icon: FileCheck, description: "Scope of work" },
 };
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
@@ -117,6 +122,18 @@ function createEmptySection(type: SectionType): ProposalSection {
   if (type === "milestone") {
     section.content = "Project Milestones";
     section.metadata = { milestones: [{ name: "", weeks: 1 }] };
+  }
+  if (type === "heading") {
+    section.content = "New Section";
+  }
+  if (type === "text" || type === "summary" || type === "scope_of_work") {
+    section.content = "";
+  }
+  if (type === "terms") {
+    section.content = "Payment terms and conditions...";
+  }
+  if (type === "client_info" || type === "sender_info") {
+    section.content = "Contact details";
   }
   return section;
 }
