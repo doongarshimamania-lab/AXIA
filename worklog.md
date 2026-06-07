@@ -84,3 +84,26 @@ Stage Summary:
 - Team page: Added defensive guards for workspace API calls
 - safe-convex-react: Improved error handling for null/undefined/skip references
 - Code pushed to GitHub: doongarshimamania-lab/AXIA.git main branch
+
+---
+Task ID: 1
+Agent: Main
+Task: Start preview with new code from GitHub, ensure Convex connected
+
+Work Log:
+- Committed all uncommitted local changes (68 files) and pushed to GitHub (doongarshimamania-lab/AXIA.git)
+- Fixed critical bug in safe-convex-react.ts: useMutation(null) was passing null to Convex's _useMutation, causing crashes; now returns a no-op function early
+- Fixed useQuery("skip") handling: replaced broken `query || args` logic with proper anyApi dummy reference from convex/server
+- Verified TypeScript compiles cleanly (tsc -b --noEmit)
+- Built production bundle with `npm run build` (success, 3004 modules)
+- Copied dist/ to public/ for the C preview server
+- Started C preview_server on port 3000 (serves dist/ with built-in Convex proxy)
+- Caddy on port 81 successfully proxies to preview_server on port 3000
+- Verified Convex endpoint (artful-civet-344.convex.cloud) returns HTTP 200
+- Committed and pushed fix to GitHub
+
+Stage Summary:
+- Preview is live at http://localhost:81/ (proxied through Caddy → preview_server on 3000)
+- Convex is connected (artful-civet-344.convex.cloud)
+- GitHub is up to date (latest commit: fix safe-convex-react crash)
+- Key fix: safe-convex-react no longer crashes when API functions are null/undefined
