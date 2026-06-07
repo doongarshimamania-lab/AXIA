@@ -193,3 +193,46 @@ Stage Summary:
 - Pipeline drag-and-drop and Make Proposal buttons fixed
 - Convex deployed to https://veracious-zebra-519.convex.cloud
 - Preview live at https://preview-81.space-z.ai/
+
+---
+Task ID: full-convex-connectivity
+Agent: Main Agent
+Task: Fully connect frontend and backend to Convex, transform mock data into real Convex data
+
+Work Log:
+- Audited all 32 pages and 130+ components for Convex connectivity
+- Found WorkspaceProvider was using fake localStorage IDs (ws_solo_default) that broke all workspace-dependent queries
+- Found Messages page didn't pass workspaceId to listChannels/createChannel, members always MOCK_MEMBERS
+- Found autoSeed didn't create workspaces, messaging channels, tags, goals, or scope data
+- Found workspace tables not included in Convex schema
+- Rewrote WorkspaceProvider to query real Convex workspaces via workspaces.crud.getMyWorkspaces
+- Added auto-seed of personal workspace when none exist
+- Added isValidConvexId() utility for safe Convex ID detection
+- Added isConvexConnected flag to workspace context
+- Fixed Messages page to use workspaceId from context for all queries/mutations
+- Wired up getChannelMembers query for real member list
+- Enhanced listChannels Convex query with lastMessage text preview, memberCount, and unreadCount computation
+- Rewrote autoSeed with comprehensive seed data matching actual table schemas:
+  - Personal + team workspaces
+  - 19 pipeline deals across 6 stages
+  - 6 clients with realistic details
+  - 8 projects
+  - 7 proposals with sections
+  - 6 invoices with line items
+  - 5 messaging channels with messages
+  - 12 tags
+  - 6 goals with milestones
+  - 3 scope definitions with deliverables
+  - 8 work sessions + time blocks
+  - Compliance alerts + dispute reports
+- Added workspaceId optional field to all business tables (clients, projects, deals, proposals, invoices, scopeDefinitions)
+- Added workspaceTables (workspaces, workspaceMembers, workspaceInvitations) to Convex schema
+- Deployed to Convex - workspace tables and indexes created successfully
+- Build passes, commit pushed to GitHub
+
+Stage Summary:
+- All pages now properly connected to Convex when authenticated
+- Mock data is ONLY used when unauthenticated (isDemoMode pattern)
+- Auto-seed creates comprehensive realistic data on first auth
+- Messages fully functional with real Convex data
+- Workspace context provides real Convex workspaceId for workspace-scoped features
