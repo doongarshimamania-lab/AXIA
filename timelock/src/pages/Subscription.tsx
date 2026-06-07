@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -46,8 +47,11 @@ import {
   HelpCircle,
   Sparkles,
   Lock,
+  AlertCircle,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
 
 // ─── Tier Definitions ────────────────────────────────────────────────────────
 
@@ -266,61 +270,75 @@ const FAQ_DATA: FAQItem[] = [
   },
 ];
 
-// ─── Mock Billing History ────────────────────────────────────────────────────
+// ─── Invoice / Billing Types ─────────────────────────────────────────────────
 
-interface BillingRecord {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  status: "paid" | "pending" | "failed" | "refunded";
-  invoiceUrl: string;
+/** Shape returned by api.billing.crud.getInvoices */
+interface ConvexInvoice {
+  _id: string;
+  _creationTime: number;
+  userId: string;
+  invoiceNumber: string;
+  publicToken: string;
+  status: "draft" | "sent" | "viewed" | "paid" | "partial" | "overdue" | "cancelled";
+  issueDate: number;
+  dueDate: number;
+  paidDate?: number;
+  clientName?: string;
+  clientEmail?: string;
+  lineItems: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    rate: number;
+    amount: number;
+    hasProof?: boolean;
+  }>;
+  subtotal: number;
+  taxRate?: number;
+  taxAmount?: number;
+  total: number;
+  currency?: string;
+  notes?: string;
+  proofCount?: number;
+  hasValidatedBilling?: boolean;
+  sentAt?: number;
+  viewedAt?: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
-const MOCK_BILLING_HISTORY: BillingRecord[] = [
-  {
-    id: "INV-2025-001",
-    date: "2025-02-28",
-    description: "Pro Plan - Monthly",
-    amount: 29.0,
-    status: "paid",
-    invoiceUrl: "#",
-  },
-  {
-    id: "INV-2025-002",
-    date: "2025-01-31",
-    description: "Pro Plan - Monthly",
-    amount: 29.0,
-    status: "paid",
-    invoiceUrl: "#",
-  },
-  {
-    id: "INV-2025-003",
-    date: "2024-12-31",
-    description: "Starter Plan - Monthly",
-    amount: 9.0,
-    status: "paid",
-    invoiceUrl: "#",
-  },
-  {
-    id: "INV-2025-004",
-    date: "2024-11-30",
-    description: "Starter Plan - Monthly",
-    amount: 9.0,
-    status: "paid",
-    invoiceUrl: "#",
-  },
-  {
-    id: "INV-2025-005",
-    date: "2024-10-31",
-    description: "Starter Plan - Monthly",
-    amount: 9.0,
-    status: "refunded",
-    invoiceUrl: "#",
-  },
-];
+/** Shape used in the billing history table – maps from ConvexInvoice */
+interface BillingRecord {
+  id: string;
+  date: string;            // ISO date string
+  description: string;
+  amount: number;
+  status: ConvexInvoice["status"];
+  invoice: ConvexInvoice;  // keep full invoice for receipt download
+}
 
-// ─── Usage Stats (mock) ──────────────────────────────────────────────────────
+function invoiceToBillingRecord(inv: ConvexInvoice): BillingRecord {
+  // Build description from line items or default to client name
+  const firstItem = inv.lineItems?.[0];
+  const desc = firstItem
+    ? inv.lineItems.length > 1
+      ? `${firstItem.description} + ${inv.lineItems.length - 1} more`
+      : firstItem.description
+    : inv.clientName
+    ? `Invoice for ${inv.clientName}`
+    : "Invoice";
+
+  return {
+    id: inv.invoiceNumber,
+    date: new Date(inv.issueDate).toISOString(),
+    description: desc,
+    amount: inv.total,
+    status: inv.status,
+    invoice: inv,
+  };
+}
+
+// ─── Usage Stats ─────────────────────────────────────────────────────────────
 
 interface UsageStat {
   label: string;
@@ -330,7 +348,7 @@ interface UsageStat {
   icon: React.ReactNode;
 }
 
-function getUsageForTier(tier: TierKey): UsageStat[] {
+function getUsageForTier(tier: TierKey, invoiceStats?: { total: number; paid: number; pending: number; overdue: number } | null): UsageStat[] {
   const limits: Record<TierKey, { reports: number; platforms: number; evidence: number }> = {
     free: { reports: 1, platforms: 1, evidence: 50 },
     starter: { reports: 5, platforms: 2, evidence: 500 },
@@ -338,8 +356,9 @@ function getUsageForTier(tier: TierKey): UsageStat[] {
     expert: { reports: -1, platforms: -1, evidence: -1 },
   };
   const usage = limits[tier];
-  // Simulate some usage
-  const reportsUsed = tier === "free" ? 1 : tier === "starter" ? 3 : tier === "pro" ? 12 : 27;
+
+  // Use real invoice stats for reports usage if available
+  const reportsUsed = invoiceStats ? invoiceStats.total : (tier === "free" ? 1 : tier === "starter" ? 3 : tier === "pro" ? 12 : 27);
   const platformsUsed = tier === "free" ? 1 : tier === "starter" ? 2 : tier === "pro" ? 3 : 5;
   const evidenceUsed = tier === "free" ? 38 : tier === "starter" ? 245 : tier === "pro" ? 1240 : 3890;
 
@@ -420,8 +439,18 @@ function downloadReceipt(record: BillingRecord) {
 
   addRow("Description", record.description);
   addRow("Date", new Date(record.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
-  addRow("Status", record.status.charAt(0).toUpperCase() + record.status.slice(1));
-  addRow("Amount", `$${record.amount.toFixed(2)}`);
+
+  // Map invoice status to a display-friendly label
+  const statusLabel = record.status.charAt(0).toUpperCase() + record.status.slice(1);
+  addRow("Status", statusLabel);
+
+  const currency = record.invoice?.currency || "USD";
+  addRow("Amount", `${currency} $${record.amount.toFixed(2)}`);
+
+  // Add client info if available
+  if (record.invoice?.clientName) {
+    addRow("Client", record.invoice.clientName);
+  }
 
   // Footer
   doc.setFont("helvetica", "normal");
@@ -433,14 +462,20 @@ function downloadReceipt(record: BillingRecord) {
   toast.success("Receipt downloaded");
 }
 
-function StatusBadge({ status }: { status: BillingRecord["status"] }) {
-  const config = {
+function InvoiceStatusBadge({ status }: { status: ConvexInvoice["status"] }) {
+  const config: Record<string, { label: string; className: string }> = {
     paid: { label: "Paid", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" },
+    sent: { label: "Sent", className: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" },
+    viewed: { label: "Viewed", className: "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400" },
     pending: { label: "Pending", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400" },
+    draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
+    partial: { label: "Partial", className: "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" },
+    overdue: { label: "Overdue", className: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
+    cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
     failed: { label: "Failed", className: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
     refunded: { label: "Refunded", className: "bg-muted text-muted-foreground" },
   };
-  const c = config[status];
+  const c = config[status] ?? config.draft;
   return (
     <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${c.className}`}>
       {c.label}
@@ -577,19 +612,33 @@ function ChangePlanDialog({
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function Subscription() {
-  const { tier, setTier, isLoading } = useSubscriptionTier();
+  const { tier, setTier, isLoading: isTierLoading } = useSubscriptionTier();
+  const { isAuthenticated } = useConvexAuth();
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     target: TierKey;
   }>({ open: false, target: "free" });
 
-  const currentTierInfo = TIERS.find((t) => t.key === tier) ?? TIERS[0];
-  const usageStats = getUsageForTier(tier as TierKey);
+  // ── Real data from Convex ────────────────────────────────────────────────
+  const rawInvoices = useQuery(
+    isAuthenticated ? api.billing.crud.getInvoices : "skip",
+    {}
+  );
 
-  // Billing history is filtered to only show paid records for paid tiers
-  const billingHistory =
-    tier === "free" ? [] : MOCK_BILLING_HISTORY.filter((_, i) => i < (tier === "starter" ? 3 : 5));
+  const invoiceStats = useQuery(
+    isAuthenticated ? api.billing.crud.getInvoiceStats : "skip",
+    {}
+  );
+
+  // Build billing records from Convex invoices
+  const billingHistory: BillingRecord[] = (() => {
+    if (!rawInvoices || !Array.isArray(rawInvoices)) return [];
+    return (rawInvoices as ConvexInvoice[]).map(invoiceToBillingRecord);
+  })();
+
+  const currentTierInfo = TIERS.find((t) => t.key === tier) ?? TIERS[0];
+  const usageStats = getUsageForTier(tier as TierKey, invoiceStats ?? null);
 
   const handlePlanChange = (targetTier: TierKey) => {
     if (targetTier === tier) return;
@@ -622,13 +671,17 @@ export default function Subscription() {
     return `$${price}`;
   };
 
-  if (isLoading) {
+  // ── Loading state ────────────────────────────────────────────────────────
+  if (isTierLoading) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
+
+  // ── Determine if Convex data is still loading ────────────────────────────
+  const isInvoicesLoading = isAuthenticated && rawInvoices === undefined;
 
   return (
     <motion.div
@@ -713,6 +766,51 @@ export default function Subscription() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* ── Invoice Stats (from Convex) ─────────────────────── */}
+        {isAuthenticated && invoiceStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.07 }}
+            className="mb-8"
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-foreground font-[Space_Grotesk]">
+                    {invoiceStats.totalRevenue > 0 ? `$${invoiceStats.totalRevenue.toLocaleString()}` : "$0"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Revenue</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-[Space_Grotesk]">
+                    {invoiceStats.paid ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Paid</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 font-[Space_Grotesk]">
+                    {invoiceStats.pending ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Pending</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 font-[Space_Grotesk]">
+                    {invoiceStats.overdue ?? 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Overdue</p>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        )}
 
         {/* ── Usage Stats ────────────────────────────────────── */}
         <motion.div
@@ -988,16 +1086,41 @@ export default function Subscription() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground">Billing History</h2>
-            {tier !== "free" && (
+            {isAuthenticated && tier !== "free" && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <CreditCard className="h-3.5 w-3.5" />
-                <span>Visa •••• 4242</span>
+                <span>{billingHistory.length} invoice{billingHistory.length !== 1 ? "s" : ""}</span>
               </div>
             )}
           </div>
           <Card>
             <CardContent className="p-0">
-              {tier === "free" ? (
+              {/* Not authenticated → demo mode */}
+              {!isAuthenticated ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Lock className="h-10 w-10 mb-3 opacity-40" />
+                  <p className="text-sm">Sign in to view your billing history</p>
+                  <p className="text-xs mt-1">Your invoices will appear here once you're logged in</p>
+                </div>
+              ) : isInvoicesLoading ? (
+                /* Loading skeleton for billing table */
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-5 w-16 rounded-md" />
+                        <Skeleton className="h-7 w-7 rounded-md" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : tier === "free" && billingHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <CreditCard className="h-10 w-10 mb-3 opacity-40" />
                   <p className="text-sm">No billing history on the Free plan</p>
@@ -1007,6 +1130,7 @@ export default function Subscription() {
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <FileText className="h-10 w-10 mb-3 opacity-40" />
                   <p className="text-sm">No invoices yet</p>
+                  <p className="text-xs mt-1">Create invoices to see them here</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1052,15 +1176,23 @@ export default function Subscription() {
                               })}
                             </div>
                           </td>
-                          <td className="p-3 text-sm text-foreground">{record.description}</td>
+                          <td className="p-3 text-sm text-foreground max-w-[200px] truncate">
+                            {record.description}
+                          </td>
                           <td className="p-3 text-sm font-medium text-foreground text-right">
-                            ${record.amount.toFixed(2)}
+                            ${(record.amount ?? 0).toFixed(2)}
                           </td>
                           <td className="p-3 text-center">
-                            <StatusBadge status={record.status} />
+                            <InvoiceStatusBadge status={record.status} />
                           </td>
                           <td className="p-3 text-center">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => downloadReceipt(record)} title="Download receipt PDF">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => downloadReceipt(record)}
+                              title="Download receipt PDF"
+                            >
                               <Download className="h-3.5 w-3.5" />
                             </Button>
                           </td>
@@ -1079,43 +1211,40 @@ export default function Subscription() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="mb-12"
+          className="mb-8"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <HelpCircle className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-foreground">
-              Frequently Asked Questions
-            </h2>
-          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">
+            Frequently Asked Questions
+          </h2>
           <FAQAccordion items={FAQ_DATA} />
         </motion.div>
 
-        {/* ── Bottom CTA ──────────────────────────────────────── */}
-        {tier === "free" && (
+        {/* ── Upgrade CTA (for free/starter) ──────────────────── */}
+        {(tier === "free" || tier === "starter") && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mb-12"
+            className="mb-8"
           >
-            <Card className="border-2 border-primary/20 bg-primary/5">
-              <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Ready to protect your income?</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Upgrade to Pro and recover up to 83% of disputed payments.
-                    </p>
-                  </div>
+            <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+              <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Unlock Full Protection
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upgrade to Pro for AI-powered dispute prediction, cross-platform verification, and unlimited reports.
+                  </p>
                 </div>
                 <Button
                   className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
                   onClick={() => handlePlanChange("pro")}
                 >
-                  <Zap className="mr-1.5 h-4 w-4" />
+                  <ArrowUpRight className="mr-1 h-4 w-4" />
                   Upgrade to Pro
                 </Button>
               </CardContent>
@@ -1124,7 +1253,7 @@ export default function Subscription() {
         )}
       </div>
 
-      {/* ── Confirm Change Dialog ────────────────────────────── */}
+      {/* ── Change Plan Dialog ────────────────────────────────── */}
       <ChangePlanDialog
         isOpen={confirmDialog.open}
         onClose={() => setConfirmDialog({ open: false, target: "free" })}

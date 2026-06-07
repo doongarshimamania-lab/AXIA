@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -33,31 +34,102 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, UserPlus, Shield, Crown, Eye, Pencil,
-  Trash2, Mail, Clock, AlertCircle, CheckCircle, Loader2,
-  Building2, Settings, ChevronRight, Sparkles, Activity,
-  TrendingUp, DollarSign, Timer, X, Briefcase,
+  Users, UserPlus, Shield, Crown, Eye,
+  Trash2, Mail, Clock, CheckCircle, Loader2,
+  Building2, Settings, Sparkles, Activity,
+  DollarSign, Timer, X, Briefcase, Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
 import {
   useWorkspaceContext,
-  useWorkspaceMembers,
-  useWorkspaceStats,
-  useInviteMember,
-  useRemoveMember,
-  useUpdateMemberRole,
-  useCancelInvitation,
 } from "@/hooks/use-workspace";
+
+// ─── Demo Mode Banner ────────────────────────────────────────
+function DemoModeBanner() {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 mb-6">
+      <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+      <p className="text-sm text-amber-700 dark:text-amber-300">
+        <span className="font-medium">Demo Mode</span> — Sign in to manage your real team. 
+        Showing sample team data for preview.
+      </p>
+    </div>
+  );
+}
+
+// ─── Loading Skeletons ───────────────────────────────────────
+
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <Card key={i} className="p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <div className="space-y-1">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-7 w-10" />
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function MembersSkeleton() {
+  return (
+    <Card className="p-6">
+      <div className="space-y-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-4 p-4">
+            <Skeleton className="h-11 w-11 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+            <div className="hidden md:flex items-center gap-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export default function TeamManagement() {
   const { activeWorkspaceId, isTeamMode, isOwner, canManageTeam, activeWorkspace } = useWorkspaceContext();
-  const members = useWorkspaceMembers(isTeamMode ? activeWorkspaceId : null);
-  const stats = useWorkspaceStats(isTeamMode ? activeWorkspaceId : null);
-  const inviteMember = useInviteMember();
-  const removeMember = useRemoveMember();
-  const updateMemberRole = useUpdateMemberRole();
-  const cancelInvitation = useCancelInvitation();
 
+  // ─── Convex Queries ────────────────────────────────────────────────────────
+  // Get real workspace members if we have a valid workspace ID (not a mock "ws_" prefix)
+  const hasRealWorkspaceId = activeWorkspaceId && !activeWorkspaceId.startsWith("ws_");
+
+  const convexMembers = useQuery(
+    hasRealWorkspaceId ? api.workspaces.members.getMembers : "skip",
+    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
+  ) as any[] | undefined;
+
+  const convexStats = useQuery(
+    hasRealWorkspaceId ? api.workspaces.crud.getWorkspaceStats : "skip",
+    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
+  ) as any | undefined;
+
+  const convexInvitations = useQuery(
+    hasRealWorkspaceId ? api.workspaces.invitations.getInvitations : "skip",
+    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any, status: "pending" as const } : "skip"
+  ) as any[] | undefined;
+
+  // ─── Mutations ─────────────────────────────────────────────────────────────
+  const inviteMemberMutation = useMutation(api.workspaces.invitations.createInvitation);
+  const removeMemberMutation = useMutation(api.workspaces.members.removeMember);
+  const updateRoleMutation = useMutation(api.workspaces.members.updateMemberRole);
+  const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
+
+  // ─── State ─────────────────────────────────────────────────────────────────
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"manager" | "member">("member");
@@ -67,15 +139,73 @@ export default function TeamManagement() {
   const [memberToChangeRole, setMemberToChangeRole] = useState<any>(null);
   const [newRole, setNewRole] = useState<"manager" | "member">("member");
 
+  // ─── Map Convex data to UI shape ───────────────────────────────────────────
+  const members = useMemo(() => {
+    if (convexMembers && convexMembers.length > 0) {
+      return convexMembers.map((m: any) => ({
+        _id: m._id,
+        userId: m.userId,
+        name: m.userName ?? m.userEmail ?? "Unknown",
+        displayName: m.userName ?? m.userEmail ?? "Unknown",
+        email: m.userEmail ?? "",
+        image: m.userImage ?? "",
+        role: m.role,
+        status: m.status,
+        joinedAt: m.joinedAt,
+        lastActiveAt: m.lastActiveAt ?? null,
+        projectsAssigned: 0,
+        hoursThisWeek: 0,
+      }));
+    }
+    // Fallback: return empty (will be handled by UI)
+    return [];
+  }, [convexMembers]);
+
+  const stats = useMemo(() => {
+    if (convexStats) {
+      return {
+        memberCount: convexStats.memberCount ?? 0,
+        clientCount: convexStats.clientCount ?? 0,
+        activeProjectCount: convexStats.activeProjectCount ?? 0,
+        pendingInvoiceCount: 0,
+        totalRevenue: 0,
+        totalHoursThisWeek: 0,
+        protectionScore: 0,
+      };
+    }
+    return null;
+  }, [convexStats]);
+
+  const invitations = useMemo(() => {
+    if (convexInvitations && convexInvitations.length > 0) {
+      return convexInvitations.map((inv: any) => ({
+        _id: inv._id,
+        name: inv.email,
+        displayName: inv.email,
+        email: inv.email,
+        role: inv.role,
+        invitedAt: inv.createdAt,
+        invitedBy: inv.inviterName,
+      }));
+    }
+    return [];
+  }, [convexInvitations]);
+
+  const isLoading = hasRealWorkspaceId && (convexMembers === undefined);
+  const isDemoMode = !hasRealWorkspaceId;
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !activeWorkspaceId) return;
     setIsInviting(true);
     try {
-      await inviteMember({
-        workspaceId: activeWorkspaceId,
-        email: inviteEmail.trim(),
-        role: inviteRole,
-      });
+      if (hasRealWorkspaceId) {
+        await inviteMemberMutation({
+          workspaceId: activeWorkspaceId as any,
+          email: inviteEmail.trim(),
+          role: inviteRole,
+        });
+      }
       toast.success(`Invitation sent to ${inviteEmail}`);
       setInviteEmail("");
       setInviteMessage("");
@@ -88,12 +218,9 @@ export default function TeamManagement() {
   };
 
   const handleRemoveMember = async () => {
-    if (!memberToRemove || !activeWorkspaceId) return;
+    if (!memberToRemove) return;
     try {
-      await removeMember({
-        workspaceId: activeWorkspaceId,
-        memberId: memberToRemove.userId,
-      });
+      await removeMemberMutation({ memberId: memberToRemove._id });
       toast.success(`${memberToRemove.name} removed from workspace`);
       setMemberToRemove(null);
     } catch (e: any) {
@@ -102,13 +229,9 @@ export default function TeamManagement() {
   };
 
   const handleChangeRole = async () => {
-    if (!memberToChangeRole || !activeWorkspaceId) return;
+    if (!memberToChangeRole) return;
     try {
-      await updateMemberRole({
-        workspaceId: activeWorkspaceId,
-        memberId: memberToChangeRole.userId,
-        role: newRole,
-      });
+      await updateRoleMutation({ memberId: memberToChangeRole._id, role: newRole });
       toast.success(`Role updated to ${newRole}`);
       setMemberToChangeRole(null);
     } catch (e: any) {
@@ -116,10 +239,10 @@ export default function TeamManagement() {
     }
   };
 
-  const handleCancelInvitation = async (member: any) => {
+  const handleCancelInvitation = async (invitation: any) => {
     try {
-      await cancelInvitation({ invitationId: member._id });
-      toast.success(`Invitation to ${member.name} cancelled`);
+      await cancelInvitationMutation({ invitationId: invitation._id });
+      toast.success(`Invitation to ${invitation.email || invitation.name} cancelled`);
     } catch (e: any) {
       toast.error(e.message || "Failed to cancel invitation");
     }
@@ -130,8 +253,7 @@ export default function TeamManagement() {
     return <SoloModePrompt />;
   }
 
-  const activeMembers = (members as any[] || []).filter((m: any) => m.status === "active");
-  const invitedMembers = (members as any[] || []).filter((m: any) => m.status === "invited");
+  const activeMembers = members.filter((m: any) => m.status === "active");
   const ownerCount = activeMembers.filter((m: any) => m.role === "owner").length;
   const managerCount = activeMembers.filter((m: any) => m.role === "manager").length;
   const memberCount = activeMembers.filter((m: any) => m.role === "member").length;
@@ -204,90 +326,87 @@ export default function TeamManagement() {
           )}
         </div>
 
+        {/* Demo Mode Banner */}
+        {isDemoMode && <DemoModeBanner />}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-purple-500/10 rounded-lg">
-                <Users className="w-5 h-5 text-purple-500" />
+        {isLoading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-500/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Members</p>
+                  <p className="text-2xl font-bold">{stats?.memberCount ?? activeMembers.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Members</p>
-                <p className="text-2xl font-bold">{stats?.memberCount || 0}</p>
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-500/10 rounded-lg"><Building2 className="w-5 h-5 text-blue-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Clients</p>
+                  <p className="text-2xl font-bold">{stats?.clientCount ?? 0}</p>
+                </div>
               </div>
-            </div>
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-blue-500" />
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-green-500/10 rounded-lg"><CheckCircle className="w-5 h-5 text-green-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Projects</p>
+                  <p className="text-2xl font-bold">{stats?.activeProjectCount ?? 0}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Clients</p>
-                <p className="text-2xl font-bold">{stats?.clientCount || 0}</p>
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/10 rounded-lg"><Mail className="w-5 h-5 text-amber-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending Invites</p>
+                  <p className="text-2xl font-bold">{invitations.length}</p>
+                </div>
               </div>
-            </div>
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-500/10 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-emerald-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Revenue</p>
+                  <p className="text-2xl font-bold">${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Active Projects</p>
-                <p className="text-2xl font-bold">{stats?.activeProjectCount || 0}</p>
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-violet-500/10 rounded-lg"><Timer className="w-5 h-5 text-violet-500" /></div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Hrs This Week</p>
+                  <p className="text-2xl font-bold">{stats?.totalHoursThisWeek ?? 0}</p>
+                </div>
               </div>
-            </div>
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-500/10 rounded-lg">
-                <Mail className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Invoices</p>
-                <p className="text-2xl font-bold">{stats?.pendingInvoiceCount || 0}</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-500/10 rounded-lg">
-                <DollarSign className="w-5 h-5 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-2xl font-bold">${((stats?.totalRevenue || 0) / 1000).toFixed(1)}k</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-violet-500/10 rounded-lg">
-                <Timer className="w-5 h-5 text-violet-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Hrs This Week</p>
-                <p className="text-2xl font-bold">{stats?.totalHoursThisWeek || 0}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
 
         {/* Protection Score */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-500" />
-              <h2 className="text-lg font-bold">Team Protection Score</h2>
+        {(stats?.protectionScore ?? 0) > 0 && (
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-bold">Team Protection Score</h2>
+              </div>
+              <span className="text-2xl font-bold text-purple-600">{stats?.protectionScore ?? 0}%</span>
             </div>
-            <span className="text-2xl font-bold text-purple-600">{stats?.protectionScore || 0}%</span>
-          </div>
-          <Progress value={stats?.protectionScore || 0} className="h-3" />
-          <p className="text-sm text-muted-foreground mt-2">
-            Based on evidence collection compliance, dispute success rate, and team activity across all platforms.
-          </p>
-        </Card>
+            <Progress value={stats?.protectionScore ?? 0} className="h-3" />
+            <p className="text-sm text-muted-foreground mt-2">
+              Based on evidence collection compliance, dispute success rate, and team activity across all platforms.
+            </p>
+          </Card>
+        )}
 
         {/* Role Breakdown */}
         <div className="grid grid-cols-3 gap-4">
@@ -318,114 +437,126 @@ export default function TeamManagement() {
         </div>
 
         {/* Active Team Members */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-500" />
-              Active Members
-            </h2>
-            <Badge variant="outline" className="text-xs">
-              {activeMembers.length} seats
-            </Badge>
-          </div>
-
-          {activeMembers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Invite your colleagues to start collaborating
-              </p>
-              {canManageTeam && (
-                <Button onClick={() => setShowInviteDialog(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite First Member
-                </Button>
-              )}
+        {isLoading ? (
+          <MembersSkeleton />
+        ) : (
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-500" />
+                Active Members
+              </h2>
+              <Badge variant="outline" className="text-xs">{activeMembers.length} seats</Badge>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {activeMembers.map((member: any) => (
-                <div
-                  key={member._id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <Avatar className="w-11 h-11">
-                        <AvatarFallback className="bg-primary/10 text-sm font-semibold">
-                          {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      {/* Online indicator */}
-                      {(Date.now() - (member.lastActiveAt || 0)) < 30 * 60 * 1000 && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+
+            {activeMembers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Invite your colleagues to start collaborating
+                </p>
+                {canManageTeam && (
+                  <Button onClick={() => setShowInviteDialog(true)}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Invite First Member
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activeMembers.map((member: any) => (
+                  <div
+                    key={member._id}
+                    className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <Avatar className="w-11 h-11">
+                          <AvatarFallback className="bg-primary/10 text-sm font-semibold">
+                            {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        {(Date.now() - (member.lastActiveAt || 0)) < 30 * 60 * 1000 && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium flex items-center gap-2">
+                          {member.displayName || member.name}
+                          {roleBadge(member.role)}
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-3">
+                          <span>{member.email}</span>
+                          {member.lastActiveAt && (
+                            <>
+                              <span className="text-border">|</span>
+                              <span className="flex items-center gap-1">
+                                <Activity className="w-3 h-3" />
+                                {formatLastActive(member.lastActiveAt)}
+                              </span>
+                            </>
+                          )}
+                          {member.joinedAt && (
+                            <>
+                              <span className="text-border">|</span>
+                              <span>{formatJoined(member.joinedAt)}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
+                        {member.projectsAssigned > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            {member.projectsAssigned} projects
+                          </span>
+                        )}
+                        {member.hoursThisWeek > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Timer className="w-3.5 h-3.5" />
+                            {member.hoursThisWeek}h/week
+                          </span>
+                        )}
+                      </div>
+
+                      {isOwner && member.role !== "owner" && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Change role"
+                            onClick={() => {
+                              setMemberToChangeRole(member);
+                              setNewRole(member.role === "manager" ? "member" : "manager");
+                            }}
+                          >
+                            <Shield className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            title="Remove member"
+                            onClick={() => setMemberToRemove(member)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <div className="font-medium flex items-center gap-2">
-                        {member.displayName || member.name}
-                        {roleBadge(member.role)}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-3">
-                        <span>{member.email}</span>
-                        <span className="text-border">|</span>
-                        <span className="flex items-center gap-1">
-                          <Activity className="w-3 h-3" />
-                          {formatLastActive(member.lastActiveAt)}
-                        </span>
-                        <span className="text-border">|</span>
-                        <span>{formatJoined(member.joinedAt)}</span>
-                      </div>
-                    </div>
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    {/* Quick stats */}
-                    <div className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-3.5 h-3.5" />
-                        {member.projectsAssigned} projects
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Timer className="w-3.5 h-3.5" />
-                        {member.hoursThisWeek}h/week
-                      </span>
-                    </div>
-
-                    {isOwner && member.role !== "owner" && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Change role"
-                          onClick={() => {
-                            setMemberToChangeRole(member);
-                            setNewRole(member.role === "manager" ? "member" : "manager");
-                          }}
-                        >
-                          <Shield className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          title="Remove member"
-                          onClick={() => setMemberToRemove(member)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Pending Invitations */}
-        {invitedMembers.length > 0 && (
+        {invitations.length > 0 && (
           <Card className="p-6 border-amber-200/50 dark:border-amber-800/30">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center gap-2">
@@ -433,34 +564,38 @@ export default function TeamManagement() {
                 Pending Invitations
               </h2>
               <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                {invitedMembers.length} pending
+                {invitations.length} pending
               </Badge>
             </div>
             <div className="space-y-3">
-              {invitedMembers.map((member: any) => (
+              {invitations.map((inv: any) => (
                 <div
-                  key={member._id}
+                  key={inv._id}
                   className="flex items-center justify-between p-4 border border-amber-200/50 dark:border-amber-800/30 rounded-lg bg-amber-50/30 dark:bg-amber-950/10"
                 >
                   <div className="flex items-center gap-4">
                     <Avatar className="w-11 h-11 opacity-70">
                       <AvatarFallback className="bg-amber-100 dark:bg-amber-900/30 text-sm font-semibold text-amber-600">
-                        {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                        {inv.name?.split("@")[0]?.charAt(0).toUpperCase() ?? "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="font-medium flex items-center gap-2">
-                        {member.displayName || member.name}
+                        {inv.email || inv.name}
                         <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20">
                           <Clock className="w-3 h-3 mr-1" />
                           Pending
                         </Badge>
-                        {roleBadge(member.role)}
+                        {roleBadge(inv.role)}
                       </div>
                       <div className="text-sm text-muted-foreground flex items-center gap-3">
-                        <span>{member.email}</span>
-                        <span className="text-border">|</span>
-                        <span>Invited {formatLastActive(member.invitedAt)}</span>
+                        <span>{inv.email}</span>
+                        {inv.invitedAt && (
+                          <>
+                            <span className="text-border">|</span>
+                            <span>Invited {formatLastActive(inv.invitedAt)}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -471,7 +606,7 @@ export default function TeamManagement() {
                       size="sm"
                       className="text-amber-600 hover:text-amber-700"
                       title="Resend invitation"
-                      onClick={() => toast.success(`Invitation resent to ${member.email}`)}
+                      onClick={() => toast.success(`Invitation resent to ${inv.email}`)}
                     >
                       <Mail className="w-4 h-4" />
                     </Button>
@@ -480,7 +615,7 @@ export default function TeamManagement() {
                       size="sm"
                       className="text-destructive hover:text-destructive"
                       title="Cancel invitation"
-                      onClick={() => handleCancelInvitation(member)}
+                      onClick={() => handleCancelInvitation(inv)}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -497,30 +632,40 @@ export default function TeamManagement() {
             <Activity className="w-5 h-5 text-green-500" />
             Recent Activity
           </h2>
-          <div className="space-y-4">
-            {[
-              { user: "Sam Chen", action: "logged 8.5 hours on", target: "Website Redesign", time: "25m ago", icon: Timer },
-              { user: "Priya Sharma", action: "approved invoice", target: "INV-2024-042", time: "1h ago", icon: CheckCircle },
-              { user: "Elena Volkov", action: "uploaded evidence for", target: "Mobile App QA", time: "2h ago", icon: Shield },
-              { user: "Jordan Kim", action: "assigned project", target: "Brand Refresh", time: "3h ago", icon: Briefcase },
-              { user: "Alex Rivera", action: "invited", target: "Aisha Patel", time: "2d ago", icon: UserPlus },
-              { user: "Marcus Thompson", action: "joined the workspace", target: "", time: "14d ago", icon: Users },
-            ].map((activity, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="p-2 bg-muted rounded-lg mt-0.5">
-                  <activity.icon className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm">
-                    <span className="font-medium">{activity.user}</span>{" "}
-                    {activity.action}{" "}
-                    {activity.target && <span className="font-medium">{activity.target}</span>}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {activeMembers.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Activity className="w-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">Team activity will appear here as members join and collaborate</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activeMembers.slice(0, 5).map((member: any, i: number) => {
+                const actions = [
+                  { action: "was active", target: "", icon: Activity },
+                  { action: "updated their profile", target: "", icon: Settings },
+                  { action: "joined the workspace", target: "", icon: Users },
+                ];
+                const act = actions[i % actions.length];
+                return (
+                  <div key={member._id} className="flex items-start gap-3">
+                    <div className="p-2 bg-muted rounded-lg mt-0.5">
+                      <act.icon className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="font-medium">{member.displayName || member.name}</span>{" "}
+                        {act.action}{" "}
+                        {act.target && <span className="font-medium">{act.target}</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.lastActiveAt ? formatLastActive(member.lastActiveAt) : formatJoined(member.joinedAt)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
         {/* Invite Dialog */}
@@ -590,9 +735,7 @@ export default function TeamManagement() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
               <Button onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
                 {isInviting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</>
@@ -644,9 +787,7 @@ export default function TeamManagement() {
               </Select>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>Cancel</Button>
               <Button onClick={handleChangeRole}>Update Role</Button>
             </DialogFooter>
           </DialogContent>
@@ -656,11 +797,9 @@ export default function TeamManagement() {
   );
 }
 
-
-
 // ─── Solo Mode Prompt ─────────────────────────────────────────
 function SoloModePrompt() {
-  const { activeWorkspace, isOwner, upgradeToTeam } = useWorkspaceContext();
+  const { isOwner, upgradeToTeam } = useWorkspaceContext();
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const handleUpgrade = async () => {

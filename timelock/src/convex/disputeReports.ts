@@ -2,17 +2,99 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
 
-export const generateDisputeReport = mutation({
+// ─── Queries ─────────────────────────────────────────────────────────────────
+
+export const getUserDisputeReports = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    const reports = await ctx.db
+      .query("disputeReports")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .collect();
+
+    return reports;
+  },
+});
+
+export const getRecentReports = query({
   args: {
-    sessionId: v.id("workSessions"),
-    rejectedHours: v.number(),
-    lostIncome: v.number(),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    if (!user) return [];
+
+    const reports = await ctx.db
+      .query("disputeReports")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(args.limit || 3);
+
+    return reports.map(report => ({
+      _id: report._id,
+      caseId: report.caseId,
+      generatedAt: report.generatedAt,
+      rejectedHours: report.rejectedHours,
+      lostIncome: report.lostIncome,
+      status: report.status,
+    }));
+  },
+});
+
+export const getMonthlyUsage = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return { used: 0, limit: 1, monthlyLoss: 0, monthlySavings: 0 };
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+    const monthlyReports = await ctx.db
+      .query("disputeReports")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) =>
+        q.and(
+          q.gte(q.field("generatedAt"), startOfMonth),
+          q.lte(q.field("generatedAt"), endOfMonth)
+        )
+      )
+      .collect();
+
+    const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0);
+    const monthlySavings = Math.round((monthlyLoss * 0.83) * 100) / 100;
+
+    return {
+      used: monthlyReports.length,
+      limit: user.subscriptionTier === "pro" ? -1 : 1,
+      monthlyLoss: Math.round(monthlyLoss * 100) / 100,
+      monthlySavings,
+      startOfMonth,
+      endOfMonth,
+    };
+  },
+});
+
+// ─── Mutations ───────────────────────────────────────────────────────────────
+
+/** Create a new dispute report (from dialog or session-based) */
+export const createDisputeReport = mutation({
+  args: {
+    clientName: v.string(),
+    projectName: v.string(),
+    disputedHours: v.number(),
+    hourlyRate: v.optional(v.number()),
+    description: v.optional(v.string()),
+    sessionId: v.optional(v.id("workSessions")),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("User not authenticated");
 
     // Check tier and monthly usage for free users
     if (user.subscriptionTier === "free") {
@@ -23,7 +105,7 @@ export const generateDisputeReport = mutation({
       const monthlyReports = await ctx.db
         .query("disputeReports")
         .withIndex("by_user", (q) => q.eq("userId", user._id))
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.gte(q.field("generatedAt"), startOfMonth),
             q.lte(q.field("generatedAt"), endOfMonth)
@@ -32,14 +114,90 @@ export const generateDisputeReport = mutation({
         .collect();
 
       if (monthlyReports.length >= 1) {
-        // Calculate monthly loss and savings for limit modal
+        const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0) + (args.disputedHours * (args.hourlyRate ?? 75));
+        const monthlySavings = Math.round((monthlyLoss * 0.83) * 100) / 100;
+
+        return {
+          limited: true,
+          monthlyLoss: Math.round(monthlyLoss * 100) / 100,
+          monthlySavings,
+        };
+      }
+    }
+
+    const rate = args.hourlyRate ?? user.hourlyRate ?? 75;
+    const lostIncome = args.disputedHours * rate;
+    const now = Date.now();
+
+    // Generate case ID
+    const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+    const randomSuffix = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+    const caseId = `CASE-${dateStr}-${randomSuffix}`;
+
+    // Generate evidence count based on hours
+    const evidenceCount = Math.floor(args.disputedHours * 4);
+    const evidenceSummary = `${evidenceCount} screenshots, ${Math.floor(args.disputedHours * 12)} activity events, and ${Math.floor(args.disputedHours * 0.6)} work memos collected during the disputed period.`;
+
+    const reportId = await ctx.db.insert("disputeReports", {
+      userId: user._id,
+      sessionId: args.sessionId,
+      caseId,
+      generatedAt: now,
+      rejectedHours: args.disputedHours,
+      lostIncome,
+      reportContent: args.description ?? `Dispute report for ${args.disputedHours} hours on ${args.projectName} for ${args.clientName}.`,
+      status: "generated",
+      title: `Dispute: ${args.projectName}`,
+      description: args.description ?? `Client disputed ${args.disputedHours} hours of work on ${args.projectName}.`,
+      type: "payment_dispute",
+      evidenceCount,
+      evidenceSummary,
+      clientName: args.clientName,
+      projectName: args.projectName,
+      hourlyRate: rate,
+      updatedAt: now,
+    });
+
+    return { reportId, caseId, limited: false };
+  },
+});
+
+/** Generate a dispute report from an existing session (legacy) */
+export const generateDisputeReport = mutation({
+  args: {
+    sessionId: v.id("workSessions"),
+    rejectedHours: v.number(),
+    lostIncome: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("User not authenticated");
+
+    // Check tier and monthly usage for free users
+    if (user.subscriptionTier === "free") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+      const monthlyReports = await ctx.db
+        .query("disputeReports")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .filter((q) =>
+          q.and(
+            q.gte(q.field("generatedAt"), startOfMonth),
+            q.lte(q.field("generatedAt"), endOfMonth)
+          )
+        )
+        .collect();
+
+      if (monthlyReports.length >= 1) {
         const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0) + args.lostIncome;
         const monthlySavings = Math.round((monthlyLoss * 0.83) * 100) / 100;
-        
-        return { 
-          limited: true, 
-          monthlyLoss: Math.round(monthlyLoss * 100) / 100, 
-          monthlySavings 
+
+        return {
+          limited: true,
+          monthlyLoss: Math.round(monthlyLoss * 100) / 100,
+          monthlySavings,
         };
       }
     }
@@ -63,150 +221,108 @@ export const generateDisputeReport = mutation({
     // Generate report content
     const reportContent = generateReportContent(session, rejectedBlocks, args.rejectedHours, args.lostIncome);
 
+    const now = Date.now();
     const reportId = await ctx.db.insert("disputeReports", {
       userId: user._id,
       sessionId: args.sessionId,
       caseId,
-      generatedAt: Date.now(),
+      generatedAt: now,
       rejectedHours: args.rejectedHours,
       lostIncome: args.lostIncome,
       reportContent,
       status: "generated",
+      title: `Dispute: ${session.projectName}`,
+      description: `Session-based dispute for ${args.rejectedHours} hours on ${session.projectName}.`,
+      type: "payment_dispute",
+      evidenceCount: rejectedBlocks.length,
+      evidenceSummary: `${rejectedBlocks.length} rejected time blocks found during the disputed period.`,
+      clientName: session.clientName,
+      projectName: session.projectName,
+      hourlyRate: session.hourlyRate,
+      updatedAt: now,
     });
 
     return { reportId, caseId, reportContent, limited: false };
   },
 });
 
-export const getUserDisputeReports = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      return [];
-    }
-
-    const reports = await ctx.db
-      .query("disputeReports")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
-
-    return reports;
-  },
-});
-
-export const getRecentReports = query({
-  args: {
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      return [];
-    }
-
-    const reports = await ctx.db
-      .query("disputeReports")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .take(args.limit || 3);
-
-    return reports.map(report => ({
-      _id: report._id,
-      caseId: report.caseId,
-      generatedAt: report.generatedAt,
-      rejectedHours: report.rejectedHours,
-      lostIncome: report.lostIncome,
-      status: report.status,
-    }));
-  },
-});
-
+/** Update the status of a dispute report */
 export const updateReportStatus = mutation({
   args: {
     reportId: v.id("disputeReports"),
-    status: v.union(v.literal("generated"), v.literal("sent"), v.literal("resolved")),
+    status: v.union(v.literal("generated"), v.literal("sent"), v.literal("viewed"), v.literal("resolved"), v.literal("appealed")),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    if (!user) throw new Error("User not authenticated");
 
     const report = await ctx.db.get(args.reportId);
     if (!report || report.userId !== user._id) {
       throw new Error("Report not found or unauthorized");
     }
 
-    await ctx.db.patch(args.reportId, {
+    const now = Date.now();
+    const patch: any = {
       status: args.status,
-    });
+      updatedAt: now,
+    };
+
+    // Set timestamp fields based on status
+    if (args.status === "sent") {
+      patch.sentAt = now;
+    } else if (args.status === "viewed") {
+      patch.viewedAt = now;
+    } else if (args.status === "resolved") {
+      patch.resolvedAt = now;
+    }
+
+    await ctx.db.patch(args.reportId, patch);
 
     return report;
   },
 });
 
-export const getMonthlyUsage = query({
-  args: {},
-  handler: async (ctx) => {
+/** Delete a dispute report */
+export const deleteDisputeReport = mutation({
+  args: {
+    reportId: v.id("disputeReports"),
+  },
+  handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) {
-      return { used: 0, limit: 1, monthlyLoss: 0, monthlySavings: 0 };
+    if (!user) throw new Error("User not authenticated");
+
+    const report = await ctx.db.get(args.reportId);
+    if (!report || report.userId !== user._id) {
+      throw new Error("Report not found or unauthorized");
     }
 
-    // Get current month boundaries
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-
-    // Count reports generated this month
-    const monthlyReports = await ctx.db
-      .query("disputeReports")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .filter((q) => 
-        q.and(
-          q.gte(q.field("generatedAt"), startOfMonth),
-          q.lte(q.field("generatedAt"), endOfMonth)
-        )
-      )
-      .collect();
-
-    // Calculate monthly loss from reports or estimate from rejected hours
-    const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0);
-    const monthlySavings = Math.round((monthlyLoss * 0.83) * 100) / 100;
-
-    return {
-      used: monthlyReports.length,
-      limit: user.subscriptionTier === "pro" ? -1 : 1, // -1 = unlimited
-      monthlyLoss: Math.round(monthlyLoss * 100) / 100,
-      monthlySavings,
-      startOfMonth,
-      endOfMonth
-    };
+    await ctx.db.delete(args.reportId);
+    return true;
   },
 });
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function generateReportContent(session: any, rejectedBlocks: any[], rejectedHours: number, lostIncome: number): string {
   const date = new Date().toLocaleDateString();
 
-  // Infer dominant platform from rejected blocks; fallback to "upwork"
   const dominantPlatform: "upwork" | "fiverr" | "toptal" | "client" =
-    (rejectedBlocks[0]?.platform as any) || "upwork";
+    (rejectedBlocks[0]?.activity?.toLowerCase().includes("fiverr") ? "fiverr" :
+     rejectedBlocks[0]?.activity?.toLowerCase().includes("toptal") ? "toptal" : "upwork") as any;
 
   const platformNames: Record<string, string> = {
     upwork: "Upwork",
     fiverr: "Fiverr",
     toptal: "Toptal",
     client: "Client",
-  } as const;
+  };
 
   const successRateByPlatform: Record<string, number> = {
     upwork: 0.92,
     fiverr: 0.86,
     toptal: 0.88,
     client: 0.9,
-  } as const;
+  };
 
   const platformLabel = platformNames[dominantPlatform] ?? "Upwork";
   const predicted = Math.round((successRateByPlatform[dominantPlatform] ?? 0.9) * 100);
@@ -219,32 +335,24 @@ function generateReportContent(session: any, rejectedBlocks: any[], rejectedHour
 - **Client:** ${session.clientName}
 - **Project:** ${session.projectName}
 - **Hourly Rate:** $${session.hourlyRate}
-- **Session Duration:** ${Math.floor((session.endTime - session.startTime) / (1000 * 60))} minutes
+- **Session Duration:** ${session.totalMinutes ? Math.floor(session.totalMinutes) + ' minutes' : 'In progress'}
 - **Rejected Hours:** ${rejectedHours}
 - **Lost Income:** $${lostIncome}
 
 ## Work Activity Timeline
 
-${rejectedBlocks.map(block => {
+${rejectedBlocks.length > 0 ? rejectedBlocks.map(block => {
   const startTime = new Date(block.startTime).toLocaleTimeString();
   const endTime = new Date(block.endTime).toLocaleTimeString();
-  
+
   return `### ${startTime}-${endTime}: ${block.activity}
-**Site:** ${block.website} | **Platform:** ${platformNames[block.platform] ?? "Unknown"} | **Status:** ${block.complianceStatus}
-**Proof:** ${block.screenshotCount} screenshots (mouse activity: ${block.mouseActivity ? "yes" : "no"}, keyboard: ${block.keyboardActivity ? "yes" : "no"})
-
-> Policy Reference:
-> Work-related, platform-adjacent activity counts when directly tied to the contracted deliverables.`;
-}).join('\n\n')}
-
-## Compliance Evidence
-- Total screenshots captured: ${rejectedBlocks.reduce((sum, b) => sum + b.screenshotCount, 0)}
-- Mouse activity detected: ${rejectedBlocks.filter(b => b.mouseActivity).length}/${rejectedBlocks.length} blocks
-- Keyboard activity detected: ${rejectedBlocks.filter(b => b.keyboardActivity).length}/${rejectedBlocks.length} blocks
+**Site:** ${block.website} | **Status:** ${block.complianceStatus}
+**Proof:** ${block.screenshotCount} screenshots (mouse: ${block.mouseActivity ? "yes" : "no"}, keyboard: ${block.keyboardActivity ? "yes" : "no"})`;
+}).join('\n\n') : 'No rejected time blocks found.'}
 
 ## Success Rate Prediction
 Based on similar ${platformLabel} cases, this dispute has an estimated **${predicted}% success rate**.
 
 ---
-*Generated by TimeStop v1.0 - Cross-Platform Payment Protection System*`;
+*Generated by Axia - Cross-Platform Payment Protection System*`;
 }
