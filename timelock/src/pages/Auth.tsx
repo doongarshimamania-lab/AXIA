@@ -155,29 +155,35 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     }
   };
 
-  // Anonymous sign in (dev/testing only)
-  const handleAnonymousSignIn = async () => {
+  // OAuth sign-in
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await signIn("anonymous");
-      toast.success("Signed in as guest");
+      await signIn("google");
+      toast.success("Signed in with Google!");
       navigate(redirect);
     } catch (err: any) {
-      console.error("Anonymous sign-in error:", err);
-      setError(err?.message || "Failed to sign in anonymously.");
+      console.error("Google sign-in error:", err);
+      setError(err?.message || "Failed to sign in with Google. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // OAuth sign-in placeholders
-  const handleGoogleSignIn = async () => {
-    toast.info("Google OAuth will be available after platform approval.");
-  };
-
   const handleGitHubSignIn = async () => {
-    toast.info("GitHub OAuth will be available after configuration.");
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn("github");
+      toast.success("Signed in with GitHub!");
+      navigate(redirect);
+    } catch (err: any) {
+      console.error("GitHub sign-in error:", err);
+      setError(err?.message || "Failed to sign in with GitHub. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // OTP verification step
@@ -570,22 +576,6 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
                   </Button>
                 </div>
-
-                <Separator className="my-2" />
-
-                {/* Anonymous sign-in (dev/testing) */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-muted-foreground"
-                  onClick={handleAnonymousSignIn}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Continue as Guest (testing only)
-                </Button>
               </div>
             )}
           </div>

@@ -72,8 +72,8 @@ export function CollapsibleSidebar() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  // Mock data replacing Convex queries
-  const profile = { name: "Freelancer User", subscriptionTier: "pro" as const }; // Mock profile
+  // Use real user data from auth
+  const profile = { name: user?.name || user?.email || "User", subscriptionTier: (user?.subscriptionTier || "free") as "free" | "starter" | "pro" | "expert" | "client", image: user?.image };
   const protectionMetrics = { 
     protectionScore: 92, 
     activeSession: { startTime: Date.now() - 30 * 60000 }, // 30 min session
