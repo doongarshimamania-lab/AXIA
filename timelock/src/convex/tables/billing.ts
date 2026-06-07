@@ -111,4 +111,34 @@ export const billingTables = {
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"]),
+
+  // ─── INVOICE TEMPLATES ──────────────────────────────────────────────────
+  invoiceTemplates: defineTable({
+    userId: v.optional(v.id("users")), // null = system template
+    name: v.string(),
+    industry: v.optional(v.string()),
+    description: v.optional(v.string()),
+    sections: v.array(
+      v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal("heading"),
+          v.literal("text"),
+          v.literal("line_items"),
+          v.literal("subtotal"),
+          v.literal("tax"),
+          v.literal("terms"),
+          v.literal("bank_details"),
+          v.literal("divider")
+        ),
+        content: v.string(),
+        metadata: v.optional(v.any()),
+      })
+    ),
+    isSystem: v.optional(v.boolean()),
+    usageCount: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_system", ["isSystem"]),
 };

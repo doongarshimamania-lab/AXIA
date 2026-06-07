@@ -136,3 +136,26 @@ Stage Summary:
 - Feature 2 (Template Import): Complete - PDF/DOCX/TXT upload with rules-based structure extraction, editable preview, save as template
 - Preview live at http://localhost:81/ with new code
 - GitHub pushed (commit 5381eb2)
+
+---
+Task ID: invoice-template-import
+Agent: Main
+Task: Build invoice template import feature — same as proposals but for invoices
+
+Work Log:
+- Added `invoiceTemplates` table to `src/convex/tables/billing.ts` with invoice-specific section types (heading, text, line_items, subtotal, tax, terms, bank_details, divider)
+- Extended `src/lib/template-parser.ts` with `InvoiceSection` type and `parseUploadedInvoiceTemplate()` function that reclassifies proposal sections into invoice-specific types
+- Added invoice-specific heuristic detection: bank details (account number, routing, SWIFT, IBAN, etc.), subtotal/tax line detection, line item extraction with qty/rate/amount
+- Added Convex mutations in `src/convex/billing/crud.ts`: `getInvoiceTemplates`, `saveUploadedInvoiceTemplate`, `seedInvoiceTemplates` (with 3 default templates)
+- Created `src/components/billing/InvoiceTemplateImportDialog.tsx` — full dialog with drag & drop upload, section preview with type editing, save as template, apply to invoice
+- Wired import dialog into `src/pages/InvoiceBuilder.tsx`: added Import button, `handleApplyTemplate` function that populates line items, tax rate, notes (terms + bank details)
+- Deployed Convex schema and built production bundle successfully
+
+Stage Summary:
+- Invoice template import feature fully functional
+- Supports PDF, DOCX, DOC, TXT file uploads
+- Automatically detects: line items, tax rates, bank/payment details, terms & conditions
+- Imported data auto-populates: line items table, tax rate, notes section
+- Templates can be saved for reuse
+- 3 built-in invoice templates seeded (Standard Service, Hourly Consulting, Creative Services)
+- Preview running at https://preview-81.space-z.ai/

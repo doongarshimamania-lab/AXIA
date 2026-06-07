@@ -58,7 +58,10 @@ import {
   ExternalLink,
   Receipt,
   DollarSign,
+  Upload,
 } from "lucide-react";
+import { InvoiceTemplateImportDialog } from "@/components/billing/InvoiceTemplateImportDialog";
+import type { InvoiceSection } from "@/lib/template-parser";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -232,6 +235,9 @@ export default function InvoiceBuilder() {
 
   // Work proof panel
   const [showProofPanel, setShowProofPanel] = useState(false);
+
+  // Template import dialog
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // ── Load existing invoice for editing ──────────────────────────────────
   useEffect(() => {
@@ -490,6 +496,53 @@ export default function InvoiceBuilder() {
     }
   };
 
+  // ── Apply Imported Template ────────────────────────────────────────────
+  const handleApplyTemplate = (sections: InvoiceSection[]) => {
+    // Extract line items from the parsed sections
+    const lineItemSections = sections.filter(s => s.type === "line_items");
+    const taxSections = sections.filter(s => s.type === "tax");
+    const termsSections = sections.filter(s => s.type === "terms");
+    const bankSections = sections.filter(s => s.type === "bank_details");
+
+    // Populate line items from the first line_items section
+    if (lineItemSections.length > 0 && lineItemSections[0].metadata?.items) {
+      const importedItems = lineItemSections[0].metadata.items.map(
+        (item: { description: string; quantity: number; rate: number; amount: number }) => ({
+          id: generateId(),
+          description: item.description || "",
+          quantity: item.quantity || 1,
+          rate: item.rate || 0,
+          amount: item.amount || 0,
+          hasProof: false,
+        })
+      );
+      if (importedItems.length > 0) {
+        setLineItems(importedItems);
+      }
+    }
+
+    // Set tax rate if detected
+    if (taxSections.length > 0 && taxSections[0].metadata?.rate) {
+      setTaxRate(taxSections[0].metadata.rate);
+    }
+
+    // Combine notes from terms and bank details
+    const notesParts: string[] = [];
+    if (termsSections.length > 0) {
+      notesParts.push(termsSections[0].content);
+    }
+    if (bankSections.length > 0) {
+      notesParts.push("\n--- Payment Details ---\n" + bankSections[0].content);
+    }
+    if (notesParts.length > 0) {
+      setNotes(notesParts.join("\n"));
+    }
+
+    toast.success("Invoice template applied!", {
+      description: `Imported ${lineItemSections[0]?.metadata?.items?.length || 0} line items`,
+    });
+  };
+
   // ── Loading ────────────────────────────────────────────────────────────
   if (editId && existingInvoice === undefined) {
     return (
@@ -582,6 +635,15 @@ export default function InvoiceBuilder() {
                   {allWorkProofs.length}
                 </span>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+              onClick={() => setImportDialogOpen(true)}
+            >
+              <Upload className="h-4 w-4" />
+              Import
             </Button>
             <Button
               variant="outline"
@@ -1344,6 +1406,13 @@ export default function InvoiceBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Invoice Template Import Dialog ──────────────────────────────────── */}
+      <InvoiceTemplateImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onApply={handleApplyTemplate}
+      />
     </motion.div>
   );
 }

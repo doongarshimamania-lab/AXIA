@@ -475,3 +475,131 @@ export const seedMockInvoices = mutation({
     return { seeded: true, count: mockInvoices.length };
   },
 });
+
+// ─── INVOICE TEMPLATES ─────────────────────────────────────────────────────
+
+export const getInvoiceTemplates = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    const systemTemplates = await ctx.db
+      .query("invoiceTemplates")
+      .withIndex("by_system", (q) => q.eq("isSystem", true))
+      .collect();
+
+    const userTemplates = userId
+      ? await ctx.db
+          .query("invoiceTemplates")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .collect()
+      : [];
+
+    return [...systemTemplates, ...userTemplates];
+  },
+});
+
+export const saveUploadedInvoiceTemplate = mutation({
+  args: {
+    name: v.string(),
+    sections: v.array(v.object({
+      id: v.string(),
+      type: v.union(
+        v.literal("heading"),
+        v.literal("text"),
+        v.literal("line_items"),
+        v.literal("subtotal"),
+        v.literal("tax"),
+        v.literal("terms"),
+        v.literal("bank_details"),
+        v.literal("divider")
+      ),
+      content: v.string(),
+      metadata: v.optional(v.any()),
+    })),
+    industry: v.optional(v.string()),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, { name, sections, industry, description }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    return await ctx.db.insert("invoiceTemplates", {
+      userId,
+      name,
+      sections,
+      industry,
+      description,
+      usageCount: 0,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const seedInvoiceTemplates = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query("invoiceTemplates")
+      .withIndex("by_system", (q) => q.eq("isSystem", true))
+      .collect();
+
+    if (existing.length > 0) return;
+
+    const templates = [
+      {
+        name: "Standard Service Invoice",
+        industry: "Technology",
+        description: "Standard invoice template for service-based businesses",
+        sections: [
+          { id: "1", type: "heading" as const, content: "Invoice" },
+          { id: "2", type: "text" as const, content: "Invoice Number: {{invoice_number}}\nDate: {{issue_date}}\nDue Date: {{due_date}}" },
+          { id: "3", type: "text" as const, content: "Bill To:\n{{client_name}}\n{{client_email}}" },
+          { id: "4", type: "line_items" as const, content: "Line Items" },
+          { id: "5", type: "subtotal" as const, content: "Subtotal" },
+          { id: "6", type: "tax" as const, content: "Tax" },
+          { id: "7", type: "terms" as const, content: "Payment is due within 30 days of the invoice date. Late payments may be subject to a 1.5% monthly interest charge." },
+          { id: "8", type: "bank_details" as const, content: "Bank Details:\nBank Name: {{bank_name}}\nAccount Name: {{account_name}}\nAccount Number: {{account_number}}\nRouting Number: {{routing_number}}" },
+        ],
+      },
+      {
+        name: "Hourly Consulting Invoice",
+        industry: "Consulting",
+        description: "Invoice template for hourly consulting work with time tracking",
+        sections: [
+          { id: "1", type: "heading" as const, content: "Consulting Invoice" },
+          { id: "2", type: "text" as const, content: "Invoice #: {{invoice_number}}\nDate: {{issue_date}}\nDue: {{due_date}}" },
+          { id: "3", type: "line_items" as const, content: "Time Entries" },
+          { id: "4", type: "subtotal" as const, content: "Subtotal" },
+          { id: "5", type: "tax" as const, content: "Tax" },
+          { id: "6", type: "terms" as const, content: "Payment Terms: Net 15. Please reference invoice number in your payment." },
+          { id: "7", type: "bank_details" as const, content: "Payment via bank transfer:\n{{bank_name}}\n{{account_number}}" },
+        ],
+      },
+      {
+        name: "Creative Services Invoice",
+        industry: "Design",
+        description: "Invoice template for design and creative agencies",
+        sections: [
+          { id: "1", type: "heading" as const, content: "Invoice" },
+          { id: "2", type: "text" as const, content: "Project: {{project_name}}\nClient: {{client_name}}\nInvoice Date: {{issue_date}}" },
+          { id: "3", type: "line_items" as const, content: "Services" },
+          { id: "4", type: "subtotal" as const, content: "Subtotal" },
+          { id: "5", type: "tax" as const, content: "Tax" },
+          { id: "6", type: "terms" as const, content: "Payment due within 14 days. All deliverables remain the property of the designer until full payment is received." },
+        ],
+      },
+    ];
+
+    for (const t of templates) {
+      await ctx.db.insert("invoiceTemplates", {
+        name: t.name,
+        industry: t.industry,
+        description: t.description,
+        sections: t.sections,
+        isSystem: true,
+        usageCount: 0,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});

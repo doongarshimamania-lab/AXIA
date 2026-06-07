@@ -1,8 +1,8 @@
 /**
  * Template Parser — Rules-based document structure extraction
  *
- * Parses PDF, DOCX, and TXT files into ProposalSection objects using
- * purely heuristic approaches (NO AI).
+ * Parses PDF, DOCX, and TXT files into ProposalSection or InvoiceSection
+ * objects using purely heuristic approaches (NO AI).
  *
  * Supports:
  *  - DOCX: mammoth → HTML → structure extraction
@@ -12,11 +12,19 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+type ProposalSectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+type InvoiceSectionType = "heading" | "text" | "line_items" | "subtotal" | "tax" | "terms" | "bank_details" | "divider";
 
 export interface ProposalSection {
   id: string;
-  type: SectionType;
+  type: ProposalSectionType;
+  content: string;
+  metadata?: any;
+}
+
+export interface InvoiceSection {
+  id: string;
+  type: InvoiceSectionType;
   content: string;
   metadata?: any;
 }
@@ -501,4 +509,163 @@ export async function parseUploadedTemplate(file: File): Promise<ProposalSection
   }
 
   throw new Error(`Unsupported file type: ${name.split(".").pop()}. Supported types: .pdf, .docx, .doc, .txt`);
+}
+
+// ─── Invoice-specific helpers ─────────────────────────────────────────────────
+
+/** Check if text looks like an invoice header (invoice number, date, etc.) */
+function looksLikeInvoiceHeader(text: string): boolean {
+  const invKeywords = ["invoice", "bill", "receipt", "tax invoice", "commercial invoice"];
+  const lower = text.toLowerCase();
+  return invKeywords.some(kw => lower.includes(kw));
+}
+
+/** Check if text looks like bank/payment details */
+function looksLikeBankDetails(text: string): boolean {
+  const bankKeywords = [
+    "bank name", "account number", "routing number", "swift", "iban",
+    "sort code", "ifsc", "branch", "account name", "beneficiary",
+    "wire transfer", "ach", "upi", "paypal", "venmo",
+  ];
+  const lower = text.toLowerCase();
+  return bankKeywords.some(kw => lower.includes(kw));
+}
+
+/** Check if text looks like a subtotal/tax line */
+function looksLikeSubtotalOrTax(text: string): "subtotal" | "tax" | null {
+  const lower = text.toLowerCase().trim();
+  if (/^subtotal|^sub[- ]?total|^total\s*(before|before\s*tax)/i.test(lower)) return "subtotal";
+  if (/^tax|^vat|^gst|^sales\s*tax|^hst|^pst/i.test(lower)) return "tax";
+  return null;
+}
+
+/** Parse invoice line items from text content */
+function parseInvoiceLineItems(text: string): { description: string; quantity: number; rate: number; amount: number }[] {
+  const lines = text.split("\n");
+  const items: { description: string; quantity: number; rate: number; amount: number }[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Skip header-like rows
+    if (/^(item|description|qty|quantity|rate|price|amount|total)/i.test(trimmed)) continue;
+    // Skip subtotal/total rows
+    if (/^(subtotal|total|tax|vat|gst)/i.test(trimmed)) continue;
+
+    // Try to detect tab/space-separated columns: description  qty  rate  amount
+    const cols = trimmed.split(/\t|  {2,}/).map(c => c.trim()).filter(Boolean);
+    if (cols.length >= 3) {
+      const description = cols[0];
+      const lastCol = cols[cols.length - 1];
+      const secondLast = cols[cols.length - 2];
+      const amountMatch = lastCol.match(/[$€£¥]?\s*([\d,]+(?:\.\d{2})?)/);
+      const rateMatch = secondLast.match(/[$€£¥]?\s*([\d,]+(?:\.\d{2})?)/);
+
+      if (amountMatch) {
+        const amount = parseFloat(amountMatch[1].replace(/,/g, ""));
+        const rate = rateMatch ? parseFloat(rateMatch[1].replace(/,/g, "")) : 0;
+        const quantity = rate > 0 ? Math.round((amount / rate) * 100) / 100 : 1;
+        items.push({ description, quantity, rate, amount });
+      }
+    }
+  }
+
+  return items;
+}
+
+/** Convert ProposalSection[] to InvoiceSection[] with invoice-specific reclassification */
+function reclassifyAsInvoiceSections(sections: ProposalSection[]): InvoiceSection[] {
+  const invoiceSections: InvoiceSection[] = [];
+
+  for (const section of sections) {
+    // Check for bank details
+    if (section.type === "text" && looksLikeBankDetails(section.content)) {
+      invoiceSections.push({
+        id: section.id,
+        type: "bank_details",
+        content: section.content,
+        metadata: section.metadata,
+      });
+      continue;
+    }
+
+    // Check for subtotal/tax
+    if (section.type === "text") {
+      const subTax = looksLikeSubtotalOrTax(section.content.split("\n")[0]);
+      if (subTax === "subtotal") {
+        // Try to extract subtotal amount
+        const amountMatch = section.content.match(/[$€£¥]?\s*([\d,]+(?:\.\d{2})?)/);
+        invoiceSections.push({
+          id: section.id,
+          type: "subtotal",
+          content: section.content,
+          metadata: amountMatch ? { amount: parseFloat(amountMatch[1].replace(/,/g, "")) } : undefined,
+        });
+        continue;
+      }
+      if (subTax === "tax") {
+        const amountMatch = section.content.match(/[$€£¥]?\s*([\d,]+(?:\.\d{2})?)/);
+        const rateMatch = section.content.match(/(\d+(?:\.\d+)?)\s*%/);
+        invoiceSections.push({
+          id: section.id,
+          type: "tax",
+          content: section.content,
+          metadata: {
+            ...(amountMatch ? { amount: parseFloat(amountMatch[1].replace(/,/g, "")) } : {}),
+            ...(rateMatch ? { rate: parseFloat(rateMatch[1]) } : {}),
+          },
+        });
+        continue;
+      }
+    }
+
+    // Convert pricing to line_items
+    if (section.type === "pricing") {
+      const pricingItems = section.metadata?.items || [];
+      const lineItems = pricingItems.map((item: { name: string; price: number }) => ({
+        description: item.name,
+        quantity: 1,
+        rate: item.price,
+        amount: item.price,
+      }));
+      invoiceSections.push({
+        id: section.id,
+        type: "line_items",
+        content: section.content === "Pricing" ? "Line Items" : section.content,
+        metadata: { items: lineItems.length > 0 ? lineItems : parseInvoiceLineItems(section.content) },
+      });
+      continue;
+    }
+
+    // Direct mapping for types that are the same
+    if (section.type === "heading" || section.type === "text" || section.type === "terms" || section.type === "divider") {
+      invoiceSections.push({
+        id: section.id,
+        type: section.type as any,
+        content: section.content,
+        metadata: section.metadata,
+      });
+      continue;
+    }
+
+    // milestone → text (not relevant for invoices)
+    invoiceSections.push({
+      id: section.id,
+      type: "text",
+      content: section.content,
+      metadata: section.metadata,
+    });
+  }
+
+  return invoiceSections;
+}
+
+// ─── Invoice Parsing Entry Point ──────────────────────────────────────────────
+
+export async function parseUploadedInvoiceTemplate(file: File): Promise<InvoiceSection[]> {
+  // First parse as proposal sections (reuses all the PDF/DOCX/TXT parsing)
+  const proposalSections = await parseUploadedTemplate(file);
+  // Then reclassify sections with invoice-specific types
+  return reclassifyAsInvoiceSections(proposalSections);
 }
