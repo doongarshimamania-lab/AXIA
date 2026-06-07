@@ -107,3 +107,32 @@ Stage Summary:
 - Convex is connected (artful-civet-344.convex.cloud)
 - GitHub is up to date (latest commit: fix safe-convex-react crash)
 - Key fix: safe-convex-react no longer crashes when API functions are null/undefined
+
+---
+Task ID: 2
+Agent: Main
+Task: Build Pipeline→Proposal auto-flow + Template Import (PDF/DOCX)
+
+Work Log:
+- Added proposalId field to deals table schema, dealId to proposals table (bidirectional link)
+- Created createProposalFromDeal mutation that auto-populates proposal from deal data
+- Created linkDealToProposal mutation for bidirectional linking
+- Added getDeal query for ProposalBuilder ?fromDeal= support
+- Added "Create Proposal" button on Pipeline deal cards (hover-revealed, with loading state)
+- ProposalBuilder now accepts ?fromDeal= and ?dealId= URL params, pre-populates all fields
+- Built template-parser.ts with rules-based PDF/DOCX/TXT parsing (no AI):
+  - PDF: pdfjs-dist extracts text with position/font info, detects headings by font size, tables by grid alignment, placeholders by regex
+  - DOCX: mammoth converts to HTML, parses heading/paragraph/table/list structure, detects terms keywords, finds placeholder patterns
+  - TXT: line-by-line parsing with markdown heading support, ALL CAPS detection, divider patterns
+- Created TemplateImportDialog component with drag-drop upload, section preview, type editing, apply/save functionality
+- Added saveUploadedTemplate mutation for saving imported templates as reusable templates
+- Added "Import Template" button next to "Choose Template" in ProposalBuilder
+- Installed mammoth and pdfjs-dist dependencies
+- TypeScript compiles cleanly, production build succeeds
+- Committed and pushed to GitHub
+
+Stage Summary:
+- Feature 1 (Pipeline→Proposal): Complete - deals can create proposals with one click, data flows automatically
+- Feature 2 (Template Import): Complete - PDF/DOCX/TXT upload with rules-based structure extraction, editable preview, save as template
+- Preview live at http://localhost:81/ with new code
+- GitHub pushed (commit 5381eb2)
