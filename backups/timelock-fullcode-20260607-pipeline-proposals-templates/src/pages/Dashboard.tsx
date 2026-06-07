@@ -1,447 +1,296 @@
-import { ComplianceStatusWidget } from "@/components/ComplianceStatusWidget";
-import { LostIncomeCalculator } from "@/components/LostIncomeCalculator";
-import { PremiumValueSection } from "@/components/PremiumValueSection";
-import { PricingModal } from "@/components/PricingModal";
-import { WorkDiarySimulator } from "@/components/WorkDiarySimulator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/use-auth";
-import { motion } from "framer-motion";
-import { Clock, FileText, Settings, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
-import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Shield, LogOut } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { useTheme } from "@/components/ThemeProvider";
-import { ReportLimitModal } from "@/components/ReportLimitModal";
-import { ReportViewerModal } from "@/components/ReportViewerModal";
-import { trackConversion } from "@/instrumentation";
-import { useEvidenceCollector } from "@/components/EvidenceCollector";
-import { ExtensionTokenSection } from "@/components/ExtensionTokenSection";
-import { AIDisputePrediction } from "@/components/AIDisputePrediction";
-import { CustomPolicyAnalyzer } from "@/components/CustomPolicyAnalyzer";
-import { PremiumNetwork } from "@/components/PremiumNetwork";
-import { EvidenceMonitor } from "@/components/EvidenceMonitor";
-import { TimelinePopup } from "@/components/TimelinePopup";
-import { WCVMVerificationBadge } from "@/components/WCVMVerificationBadge";
-import { CrossPlatformVerification } from "@/components/CrossPlatformVerification";
-import { RealTimeProtectionAdvisor } from "@/components/RealTimeProtectionAdvisor";
-import { PersonalizedProtectionPlan } from "@/components/PersonalizedProtectionPlan";
-import { Teams } from "@/components/Teams";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { TruthLayerWidget } from "@/components/truth-layer/TruthLayerWidget";
+import { motion } from "framer-motion";
+import {
+  Users,
+  TrendingUp,
+  FileText,
+  Receipt,
+  Ruler,
+  LayoutList,
+  Plus,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Send,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
+import { useNavigate } from "react-router";
+import { useMemo } from "react";
+import { PricingModal } from "@/components/PricingModal";
+import { useState } from "react";
 
-export default function Dashboard() {
-  const { user, isLoading, signOut } = useAuth();
-  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
-  const [showPricingModal, setShowPricingModal] = useState(false);
-  const [complianceStatus, setComplianceStatus] = useState<"active" | "at_risk" | "rejected">("active");
-  const [countdown, setCountdown] = useState(0);
-  const [selectedPlatform, setSelectedPlatform] = useState<"all" | "upwork" | "fiverr" | "toptal">("all");
-  const [showReportLimitModal, setShowReportLimitModal] = useState(false);
-  const [limitMonthlyLoss, setLimitMonthlyLoss] = useState(0);
-  const [limitMonthlySavings, setLimitMonthlySavings] = useState(0);
-  const [pricingHighlightSavings, setPricingHighlightSavings] = useState<number | undefined>(undefined);
-  const [showReportViewer, setShowReportViewer] = useState(false);
-  const [reportViewerContent, setReportViewerContent] = useState<string>("");
-  const [reportViewerCaseId, setReportViewerCaseId] = useState<string>("");
+// ─── Loading skeleton for a stat card ────────────────────────────────────
+function StatCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-4 rounded" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-20 mb-1" />
+        <Skeleton className="h-3 w-32" />
+      </CardContent>
+    </Card>
+  );
+}
 
-  const [showTimelinePopup, setShowTimelinePopup] = useState(false);
+// ─── Loading skeleton for the activity feed ──────────────────────────────
+function ActivitySkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <div className="flex-1 space-y-1">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  const profile: any = undefined;
-  const updateProfile = async (_args: any) => {
-    return;
-  };
-  const protectionMetrics: any = undefined;
+// ─── Empty state CTA ─────────────────────────────────────────────────────
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground mb-4 max-w-[240px]">{description}</p>
+      <Button size="sm" onClick={onAction}>
+        <Plus className="mr-1 h-3 w-3" />
+        {actionLabel}
+      </Button>
+    </div>
+  );
+}
 
-  const [profileName, setProfileName] = useState<string>("");
-  const [profileImage, setProfileImage] = useState<string>("");
-  const [profileHourlyRate, setProfileHourlyRate] = useState<string>("");
-  const [profileTier, setProfileTier] = useState<"free" | "starter" | "pro" | "expert" | "client">("free");
-  const [profileBio, setProfileBio] = useState<string>("");
-  const [isEditingBio, setIsEditingBio] = useState<boolean>(false);
+// ─── Get Started state when no data at all ───────────────────────────────
+function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddClient: () => void }) {
+  return (
+    <Card className="border-dashed border-2">
+      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <Sparkles className="h-8 w-8 text-primary" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          Welcome to Axia!
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6 max-w-[360px]">
+          Your dashboard is empty. Seed demo data to see how everything works, or start adding clients, deals, and proposals.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={onSeed}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Seed Demo Data
+          </Button>
+          <Button variant="outline" onClick={onAddClient}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Client
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-  // Use global theme from ThemeProvider
-  const { theme, setTheme } = useTheme();
+// ─── Activity item type ──────────────────────────────────────────────────
+interface ActivityItem {
+  id: string;
+  type: "deal" | "proposal" | "invoice";
+  title: string;
+  subtitle: string;
+  status: string;
+  timestamp: number;
+  href: string;
+}
 
-  // Removed duplicate early evidenceCollector init; initialized below after currentSession is defined
+// ─── Status badge colors ─────────────────────────────────────────────────
+function statusColor(status: string): "default" | "secondary" | "destructive" | "outline" {
+  if (["won", "signed", "paid", "completed"].includes(status)) return "default";
+  if (["lost", "declined", "overdue", "expired", "rejected"].includes(status)) return "destructive";
+  return "secondary";
+}
 
-  // Add universal report generation
-  const generateUniversalReport = async (_args: any) => ({
-    caseId: `CASE-${Date.now()}`,
-    reportContent: "This is a demo universal report.",
-    limited: false,
-  });
-
-  const handleGenerateUniversalReport = async () => {
-    if (!currentSession) {
-      toast.error("No active session found");
-      return;
-    }
-
-    try {
-      const result: any = await generateUniversalReport({
-        sessionId: currentSession._id,
-      });
-
-      if (result?.limited) {
-        setLimitMonthlyLoss(Number(result.monthlyLoss || 0));
-        setLimitMonthlySavings(Number(result.monthlySavings || 0));
-        setPricingHighlightSavings(Number(result.monthlySavings || 0));
-        setShowReportLimitModal(true);
-        trackConversion("report_udrs_limited", {
-          source: "universal_dispute_report",
-          monthlyLoss: Number(result.monthlyLoss || 0),
-          monthlySavings: Number(result.monthlySavings || 0),
-        });
-        return;
-      }
-
-      toast.success("Universal dispute report generated!", {
-        description: `Case ID: ${result.caseId}`,
-      });
-      // Open viewer with the freshly generated report
-      setReportViewerCaseId(result.caseId);
-      setReportViewerContent(result.reportContent || "");
-      setShowReportViewer(true);
-
-      trackConversion("report_udrs_generated", {
-        source: "universal_dispute_report",
-        caseId: result.caseId,
-      });
-    } catch (error) {
-      toast.error("Failed to generate universal report");
-      console.error(error);
-    }
-  };
-
-  // Theme is now managed globally by ThemeProvider
-
-  useEffect(() => {
-    if (profile) {
-      setProfileName((profile as any)?.name ?? "");
-      setProfileImage((profile as any)?.image ?? "");
-      setProfileHourlyRate(((profile as any)?.hourlyRate ?? 25).toString());
-      // Sync subscription tier with profile tier if different
-      const profileSubscriptionTier = ((profile as any)?.subscriptionTier ?? subscriptionTier) as "free" | "starter" | "pro" | "expert" | "client";
-      if (profileSubscriptionTier !== subscriptionTier) {
-        setSubscriptionTier(profileSubscriptionTier);
-      }
-      // Also sync profileTier state for the profile modal badge
-      setProfileTier(subscriptionTier);
-      setProfileBio(((profile as any)?.professionalBio ?? "") as string);
-    }
-  }, [profile, subscriptionTier, setSubscriptionTier]);
-
-  // Add mutations for platform connection
-  const initiatePlatformConnection = async (_args: any) => ({
-    alreadyConnected: false,
-    connectionId: `mock_${Date.now()}`,
-  });
-  const completePlatformConnection = async (_args: any) => {
-    return;
-  };
-  const disconnectPlatform = async (_args: any) => {
-    return;
-  };
-  const userPlatformConnections: any[] = [];
-
-  // Handle pending platform connection from Auth page
-  useEffect(() => {
-    const pendingPlatform = localStorage.getItem("axia_pending_platform");
-    if (pendingPlatform && profile && !isLoading && userPlatformConnections) {
-      // Check if already connected
-      const alreadyConnected = userPlatformConnections?.some(
-        (conn: any) => conn.platform === pendingPlatform && conn.status === "connected"
-      ) ?? false;
-      
-      if (alreadyConnected) {
-        localStorage.removeItem("axia_pending_platform");
-        return;
-      }
-      
-      // Clear the pending platform
-      localStorage.removeItem("axia_pending_platform");
-      
-      // Initiate and complete connection
-      (async () => {
-        try {
-          toast.info(`Connecting to ${pendingPlatform}...`, {
-            description: "Setting up your platform connection",
-          });
-          
-          const result = await initiatePlatformConnection({
-            platform: pendingPlatform as "upwork" | "fiverr" | "toptal" | "freelancer",
-          });
-          
-          if (result.alreadyConnected) {
-            toast.success(`${pendingPlatform} is already connected`);
-            return;
-          }
-          
-          // Complete the connection with mock data
-          await completePlatformConnection({
-            connectionId: result.connectionId,
-            platformUserId: `${pendingPlatform}_user_${Date.now()}`,
-            platformEmail: (profile as any)?.email || "user@example.com",
-            accessToken: `mock_token_${Date.now()}`,
-            refreshToken: `mock_refresh_${Date.now()}`,
-            tokenExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
-          });
-          
-          toast.success(`${pendingPlatform} connected successfully!`, {
-            description: "Your platform data has been imported",
-          });
-        } catch (error) {
-          console.error("Platform connection error:", error);
-          toast.error(`Failed to connect ${pendingPlatform}`);
-        }
-      })();
-    }
-  }, [profile, isLoading, userPlatformConnections, initiatePlatformConnection, completePlatformConnection]);
-
-  // Convex queries
-  const currentSession: any = {
-    _id: "mock_session_1" as any,
-    userId: "mock_user_1" as any,
-    startTime: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
-    clientName: "Acme Corp",
-    projectName: "Website Redesign",
-    hourlyRate: 25,
-    complianceStatus: "active" as const,
-  };
-  const rejectedStats: any = { rejectedHours: 0, lostIncome: 0 };
-  const activeAlerts: any[] = [];
-  const disputeReports: any[] = [];
-  const monthlyUsage: any = undefined;
-
-  // WCVM: Context analysis for current session
-  const wcvmAnalysis: any = undefined; // In production: useQuery(api.wcvm.contextScanner.analyzeSessionContext, currentSession?._id ? { sessionId: currentSession._id } : "skip");
-  const wcvmVerification: any = undefined; // In production: useQuery(api.wcvm.contextScanner.getSessionVerification, currentSession?._id ? { sessionId: currentSession._id } : "skip");
-
-  // Mock WCVM data for demo
-  const mockWCVMAnalysis = currentSession ? {
-    contextRelevanceScore: 87,
-    workSites: 12,
-    nonWorkSites: 3,
-    activityDensity: 3.2,
-    requirementMatches: [
-      {
-        requirementId: "req_1",
-        description: "Continuous work activity with regular mouse/keyboard input",
-        relevanceScore: 92,
-        matchedEvidence: ["156 mouse events", "89 keyboard events"],
-      },
-      {
-        requirementId: "req_2",
-        description: "Work-related websites and tools",
-        relevanceScore: 80,
-        matchedEvidence: ["12 work-related sites"],
-      },
-      {
-        requirementId: "req_3",
-        description: "Regular screenshots showing work progress",
-        relevanceScore: 85,
-        matchedEvidence: ["8 screenshots"],
-      },
-      {
-        requirementId: "req_4",
-        description: "Work memos documenting progress",
-        relevanceScore: 90,
-        matchedEvidence: ["3 work memos"],
-      },
-    ],
-    contextGaps: [
-      {
-        gap: "Low work-related site ratio",
-        impact: "Work context may not be clear",
-        fix: "Focus on work-related tools and platforms",
-      },
-    ],
-    verificationSignature: "WCVM-" + Date.now().toString(36).toUpperCase(),
-  } : null;
-
-  // Add: evidence collection (moved below currentSession declaration)
-  const evidenceCollector = useEvidenceCollector({
-    sessionId: currentSession?._id || null,
-    platform: selectedPlatform === "all" ? "upwork" : (selectedPlatform as any),
-    isActive: !!currentSession && !isLoading,
-  });
-
-  // Convex mutations
-  const generateReport = async (_args: any) => ({
-    caseId: `CASE-${Date.now()}`,
-    reportContent: "This is a demo dispute report.",
-    limited: false,
-  });
-  const createAlert = async (_args: any) => {
-    return;
-  };
-
-  // Mock time blocks for demonstration
-  const mockTimeBlocks = [
-    {
-      id: "1",
-      startTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 2 * 60 * 60 * 1000 + 5 * 60 * 1000),
-      activity: "Code Review",
-      website: "github.com",
-      complianceStatus: "compliant" as const,
-      screenshotCount: 12,
-      mouseActivity: true,
-      keyboardActivity: true,
-      platform: "upwork" as const,
-    },
-    {
-      id: "2",
-      startTime: new Date(Date.now() - 1 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 1 * 60 * 60 * 1000 + 5 * 60 * 1000),
-      activity: "Client Communication",
-      website: "fiverr.com",
-      complianceStatus: "at_risk" as const,
-      screenshotCount: 8,
-      mouseActivity: true,
-      keyboardActivity: false,
-      platform: "fiverr" as const,
-    },
-    {
-      id: "3",
-      startTime: new Date(Date.now() - 30 * 60 * 1000),
-      endTime: new Date(Date.now() - 25 * 60 * 1000),
-      activity: "Research",
-      website: "toptal.com",
-      complianceStatus: "rejected" as const,
-      screenshotCount: 2,
-      mouseActivity: false,
-      keyboardActivity: false,
-      platform: "toptal" as const,
-    },
-    {
-      id: "4",
-      startTime: new Date(Date.now() - 90 * 60 * 1000),
-      endTime: new Date(Date.now() - 85 * 60 * 1000),
-      activity: "Spec Writing",
-      website: "notion.so",
-      complianceStatus: "compliant" as const,
-      screenshotCount: 5,
-      mouseActivity: true,
-      keyboardActivity: true,
-      platform: "client" as const,
-    },
-  ];
-
-  // Add: helper to format active session duration based on currentSession times
-  function formatDuration(ms: number) {
-    const totalMinutes = Math.max(0, Math.floor(ms / (1000 * 60)));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+function statusIcon(type: string, status: string) {
+  if (type === "deal") {
+    if (status === "won") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+    if (status === "lost") return <AlertCircle className="h-4 w-4 text-red-500" />;
+    return <TrendingUp className="h-4 w-4 text-blue-500" />;
   }
+  if (type === "proposal") {
+    if (status === "signed") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+    if (status === "sent" || status === "viewed") return <Send className="h-4 w-4 text-blue-500" />;
+    return <FileText className="h-4 w-4 text-muted-foreground" />;
+  }
+  // invoice
+  if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+  if (status === "overdue") return <AlertCircle className="h-4 w-4 text-red-500" />;
+  return <DollarSign className="h-4 w-4 text-amber-500" />;
+}
 
-  useEffect(() => {
-    // Simulate compliance status changes
-    const interval = setInterval(() => {
-      const statuses: Array<"active" | "at_risk" | "rejected"> = ["active", "at_risk", "rejected"];
-      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-      setComplianceStatus(randomStatus);
-      
-      if (randomStatus === "at_risk") {
-        setCountdown(300); // 5 minutes
-      }
-    }, 10000); // Change every 10 seconds for demo
+// ─── Format currency ─────────────────────────────────────────────────────
+function fmtCurrency(n: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+}
 
-    return () => clearInterval(interval);
-  }, []);
+function fmtRelative(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString();
+}
 
-  // Get real connection status from backend
-  const connectedPlatforms: Record<"upwork" | "fiverr" | "toptal", boolean> = {
-    upwork: userPlatformConnections?.some((c: any) => c.platform === "upwork" && c.status === "connected") ?? false,
-    fiverr: userPlatformConnections?.some((c: any) => c.platform === "fiverr" && c.status === "connected") ?? false,
-    toptal: userPlatformConnections?.some((c: any) => c.platform === "toptal" && c.status === "connected") ?? false,
-  };
+// ═════════════════════════════════════════════════════════════════════════
+// MAIN DASHBOARD COMPONENT
+// ═════════════════════════════════════════════════════════════════════════
+export default function Dashboard() {
+  const { isLoading: authLoading } = useAuth();
+  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
+  const navigate = useNavigate();
 
-  // Add: universal loss breakdown (mock for demo)
-  const platformLosses = {
-    upwork: 48,
-    fiverr: 12,
-    toptal: 4,
-  };
-  const totalWeeklyLoss = platformLosses.upwork + platformLosses.fiverr + platformLosses.toptal;
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [pricingHighlightSavings] = useState<number | undefined>(undefined);
 
-  const getStatusMessage = () => {
-    switch (complianceStatus) {
-      case "active":
-        return selectedPlatform === "upwork"
-          ? "Timer running - 100% compliant (Upwork)"
-          : selectedPlatform === "fiverr"
-          ? "Timer running - 100% compliant (Fiverr)"
-          : selectedPlatform === "toptal"
-          ? "Timer running - 100% compliant (Toptal)"
-          : "Timer running - 100% compliant";
-      case "at_risk":
-        return selectedPlatform === "upwork"
-          ? "Fiverr tab open - timer paused"
-          : selectedPlatform === "fiverr"
-          ? "Upwork tab open - timer inactive"
-          : selectedPlatform === "toptal"
-          ? "Client email - low activity score"
-          : "Cross-platform work detected";
-      case "rejected":
-        return "2.5 hrs rejected - GENERATE REPORT";
-    }
-  };
+  // ─── Convex queries ─────────────────────────────────────────────────────
+  const clientsEnriched = useQuery(api.clients.crud.getClientsEnriched, {});
+  const pipelineStats = useQuery(api.pipeline.crud.getPipelineStats, {});
+  const proposalStats = useQuery(api.proposals.crud.getProposalStats, {});
+  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, {});
+  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {});
 
-  const handleGenerateReport = async () => {
-    if (!currentSession) {
-      toast.error("No active session found");
-      return;
-    }
+  // Also fetch recent items for the activity feed
+  const deals = useQuery(api.pipeline.crud.getDeals, {});
+  const proposals = useQuery(api.proposals.crud.getProposals, {});
+  const invoices = useQuery(api.billing.crud.getInvoices, {});
 
-    try {
-      const result: any = await generateReport({
-        sessionId: currentSession._id,
-        rejectedHours: rejectedStats?.rejectedHours || 2.5,
-        lostIncome: rejectedStats?.lostIncome || 37.5,
-      });
+  // Seed mutation — uses autoSeed which seeds all business data (pipeline, clients, proposals, invoices)
+  const seedAll = useMutation(api.autoSeed.autoSeed);
 
-      if (result?.limited) {
-        // Show limit modal and prep pricing highlight
-        setLimitMonthlyLoss(Number(result.monthlyLoss || 0));
-        setLimitMonthlySavings(Number(result.monthlySavings || 0));
-        setPricingHighlightSavings(Number(result.monthlySavings || 0));
-        setShowReportLimitModal(true);
-        trackConversion("report_limit_shown", {
-          source: "dispute_report",
-          monthlyLoss: Number(result.monthlyLoss || 0),
-          monthlySavings: Number(result.monthlySavings || 0),
+  // ─── Derived data ───────────────────────────────────────────────────────
+  const isLoading =
+    clientsEnriched === undefined ||
+    pipelineStats === undefined ||
+    proposalStats === undefined ||
+    invoiceStats === undefined ||
+    scopeDefinitions === undefined;
+
+  const totalClients = clientsEnriched?.length ?? 0;
+  const totalDeals = pipelineStats?.totalDeals ?? 0;
+  const pipelineValue = pipelineStats?.totalValue ?? 0;
+  const weightedValue = pipelineStats?.weightedValue ?? 0;
+  const proposalTotal = proposalStats?.total ?? 0;
+  const proposalSigned = proposalStats?.signed ?? 0;
+  const proposalSignatureRate = proposalStats?.signatureRate ?? 0;
+  const proposalTotalValue = proposalStats?.totalValue ?? 0;
+  const invoiceTotal = invoiceStats?.total ?? 0;
+  const invoicePaid = invoiceStats?.paid ?? 0;
+  const invoiceOverdue = invoiceStats?.overdue ?? 0;
+  const invoiceRevenue = invoiceStats?.totalRevenue ?? 0;
+  const invoiceOutstanding = invoiceStats?.totalOutstanding ?? 0;
+  const scopeCount = (scopeDefinitions as any[])?.length ?? 0;
+
+  const hasAnyData = totalClients > 0 || totalDeals > 0 || proposalTotal > 0 || invoiceTotal > 0;
+
+  // ─── Build activity feed ────────────────────────────────────────────────
+  const activityItems: ActivityItem[] = useMemo(() => {
+    const items: ActivityItem[] = [];
+
+    if (deals && Array.isArray(deals)) {
+      for (const d of deals.slice(0, 10)) {
+        // Determine a readable "stage name" for status
+        const stageName = (d as any).stageName || "Pipeline";
+        items.push({
+          id: `deal-${(d as any)._id}`,
+          type: "deal",
+          title: d.title ?? "Untitled Deal",
+          subtitle: `${fmtCurrency(d.value ?? 0)} · ${stageName}`,
+          status: stageName.toLowerCase(),
+          timestamp: d.updatedAt ?? d.createdAt ?? Date.now(),
+          href: "/pipeline",
         });
-        return;
       }
+    }
 
-      toast.success("Dispute report generated successfully!", {
-        description: `Case ID: ${result.caseId}`,
-        action: {
-          label: "View Report",
-          onClick: () => console.log("View report:", result.reportContent),
-        },
+    if (proposals && Array.isArray(proposals)) {
+      for (const p of proposals.slice(0, 10)) {
+        items.push({
+          id: `proposal-${(p as any)._id}`,
+          type: "proposal",
+          title: p.title ?? "Untitled Proposal",
+          subtitle: `${fmtCurrency(p.totalValue ?? 0)} · ${p.clientName ?? "No client"}`,
+          status: p.status ?? "draft",
+          timestamp: p.updatedAt ?? p.createdAt ?? Date.now(),
+          href: "/proposals",
+        });
+      }
+    }
+
+    if (invoices && Array.isArray(invoices)) {
+      for (const inv of invoices.slice(0, 10)) {
+        items.push({
+          id: `invoice-${(inv as any)._id}`,
+          type: "invoice",
+          title: `${(inv as any).invoiceNumber ?? "Invoice"} — ${inv.clientName ?? "No client"}`,
+          subtitle: fmtCurrency(inv.total ?? 0),
+          status: inv.status ?? "draft",
+          timestamp: (inv as any).updatedAt ?? (inv as any).createdAt ?? Date.now(),
+          href: "/invoices",
+        });
+      }
+    }
+
+    // Sort by most recent first, cap at 15
+    items.sort((a, b) => b.timestamp - a.timestamp);
+    return items.slice(0, 15);
+  }, [deals, proposals, invoices]);
+
+  // ─── Handlers ───────────────────────────────────────────────────────────
+  const handleSeed = async () => {
+    try {
+      toast.info("Seeding demo data...", { description: "This may take a few seconds" });
+      const result = await seedAll({});
+      toast.success("Demo data seeded!", {
+        description: "Your dashboard is now populated with sample data",
       });
-      trackConversion("dispute_report_generated", {
-        source: "dispute_report",
-        lostIncome: rejectedStats?.lostIncome || 37.5,
+    } catch (err: any) {
+      console.error("Seed error:", err);
+      toast.error("Failed to seed demo data", {
+        description: err?.message ?? "Please try again",
       });
-    } catch (error) {
-      toast.error("Failed to generate dispute report");
-      console.error(error);
     }
   };
 
@@ -449,54 +298,18 @@ export default function Dashboard() {
     toast.success(`Upgrading to ${tier}...`, {
       description: "You'll be redirected to Stripe checkout",
     });
-    // Update the persistent subscription tier
     setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
     setShowPricingModal(false);
   };
 
-  const handleSaveProfile = async () => {
-    const rate = Number(profileHourlyRate);
-    if (Number.isNaN(rate) || rate < 0) {
-      toast.error("Please enter a valid hourly rate");
-      return;
-    }
-    try {
-      await updateProfile({
-        name: profileName || undefined,
-        image: profileImage || undefined,
-        hourlyRate: rate,
-        subscriptionTier: subscriptionTier,
-        professionalBio: profileBio || "",
-      });
-      toast.success("Profile updated");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to update profile");
-    }
-  };
-
-  // Profile modal is now global via ProfileModal component in main.tsx
-
-  // Listen for timeline popup event from sidebar
-  useEffect(() => {
-    const handleOpenTimeline = () => {
-      setShowTimelinePopup(true);
-    };
-    window.addEventListener('openTimelinePopup', handleOpenTimeline);
-    return () => window.removeEventListener('openTimelinePopup', handleOpenTimeline);
-  }, []);
-
-  // Remove loading blocker - allow dashboard to render with mock data
-  // if (isLoading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
-  //     </div>
-  //   );
-  // }
-
-  // subscriptionTier is now managed by useSubscriptionTier hook
-  const hourlyRate = Number(profileHourlyRate) || 25;
+  // ─── Auth loading gate ──────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -505,431 +318,377 @@ export default function Dashboard() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-        {/* Compliance Status Widget with universal loss counter on the right */}
-        <ComplianceStatusWidget
-          status={complianceStatus}
-          message={getStatusMessage()}
-          countdown={countdown}
-          onActionClick={complianceStatus === "rejected" ? handleGenerateReport : undefined}
-          rightContent={
-            <span className="font-[Space_Grotesk]">
-              You're losing ${totalWeeklyLoss} this week
-              <span className="ml-1">
-                (Upwk ${platformLosses.upwork} · Fivr ${platformLosses.fiverr} · Toptl ${platformLosses.toptal})
-              </span>
-            </span>
-          }
-          atRiskAmount={(rejectedStats?.lostIncome || totalWeeklyLoss) as number}
-          subscriptionTier={subscriptionTier}
-        />
-
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex gap-6">
-            {/* Main Content */}
-            <div className="flex-1">
-              {/* Top: Platform Selector Tabs */}
-              <div className="mb-4">
-                <div className="flex gap-4">
-                  {[
-                    { key: "all", label: "All Platforms", badge: "Cross-Platform View" },
-                    { key: "upwork", label: "Upwork", badge: "Work Diary" },
-                    { key: "fiverr", label: "Fiverr", badge: "Time Tracking" },
-                    { key: "toptal", label: "Toptal", badge: "Activity Score" },
-                  ].map((tab) => {
-                    const active = selectedPlatform === (tab.key as any);
-                    const isPlatform = tab.key !== "all";
-                    const isConnected =
-                      isPlatform && connectedPlatforms[tab.key as "upwork" | "fiverr" | "toptal"];
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => setSelectedPlatform(tab.key as any)}
-                        className={`pb-2 text-sm rounded-md px-2 transition-colors ${
-                          active
-                            // Increase contrast in dark mode and ensure active state is clearly visible
-                            ? "font-semibold text-foreground bg-primary/10 ring-1 ring-primary/30"
-                            // Slightly lighter hover background for better visibility on dark
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-1">
-                            {tab.label}
-                            {isPlatform && (
-                              <span
-                                className={`inline-block h-2 w-2 rounded-full ${
-                                  isConnected ? "bg-emerald-500" : "bg-red-500"
-                                }`}
-                                title={isConnected ? "Connected" : "Not connected"}
-                              />
-                            )}
-                          </span>
-                          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded">
-                            {tab.badge}
-                          </span>
-                        </div>
-                        <div className={`h-[2px] mt-2 ${active ? "bg-primary" : "bg-transparent"}`} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Header */}
-              <div className="mb-6">
-                <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
-                  Axia Dashboard
-                </h1>
-                <p className="text-[16px] text-muted-foreground">
-                  Protect your payments with real-time cross-platform compliance monitoring
-                </p>
-              </div>
-
-              {/* Truth Layer Widget */}
-              <div className="mb-6">
-                <TruthLayerWidget />
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-[14px] font-medium text-muted-foreground">Active Session</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      {evidenceCollector.isCollecting && (
-                        <div className="flex items-center gap-1">
-                          <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                          <span className="text-xs text-emerald-600">
-                            Evidence: {evidenceCollector.eventCount}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-[24px] font-bold text-foreground">
-                      {currentSession?.startTime
-                        ? formatDuration(
-                            (currentSession.endTime ?? Date.now()) - currentSession.startTime
-                          )
-                        : "No session"}
-                    </div>
-                    <p className="text-[12px] text-muted-foreground">
-                      {currentSession ? `Client: ${currentSession.clientName ?? "Unknown"}` : "Start tracking time"}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-[14px] font-medium text-muted-foreground">
-                      Rejected Hours
-                    </CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-[24px] font-bold text-[#DC2626]">
-                      {rejectedStats?.rejectedHours?.toFixed(1) || "0.0"}h
-                    </div>
-                    <p className="text-[12px] text-muted-foreground">
-                      This month
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-[14px] font-medium text-muted-foreground">
-                      Dispute Reports
-                    </CardTitle>
-                    <div className="text-xs">
-                      {subscriptionTier === "pro" ? (
-                        <span className="text-emerald-500">Unlimited reports</span>
-                      ) : (
-                        <span className="text-destructive">
-                          {monthlyUsage?.used ?? 0}/{monthlyUsage?.limit ?? 1} reports used this month
-                        </span>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-[24px] font-bold text-foreground">
-                      {disputeReports?.length || 0}
-                    </div>
-                    <p className="text-[12px] text-muted-foreground">
-                      Generated this month
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Active Compliance Alerts */}
-              {activeAlerts?.length > 0 && (
-                <Card className="bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold text-foreground">
-                      Active Compliance Alerts
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {activeAlerts?.map((alert: any) => (
-                        <div
-                          key={alert._id}
-                          className={`p-3 rounded-lg border ${
-                            alert.alertType === "at_risk"
-                              ? "bg-yellow-500/10 border-yellow-500/20"
-                              : "bg-red-500/10 border-red-500/20"
-                          }`}
-                        >
-                          <p className="text-sm text-foreground">{alert.message}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Work Diary Simulator - Add click to open timeline */}
-              <div onClick={() => setShowTimelinePopup(true)} className="cursor-pointer">
-                <WorkDiarySimulator
-                  timeBlocks={mockTimeBlocks}
-                  selectedPlatform={selectedPlatform}
-                  onBlockHover={(block) => {
-                    if (block && block.complianceStatus === "rejected") {
-                      // Optional: add feedback
-                    }
-                  }}
-                />
-              </div>
-
-              {/* My Reports */}
-              <div className="mt-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-[16px] flex items-center justify-between">
-                      <span>My Reports</span>
-                      <span className="text-xs text-muted-foreground">
-                        {disputeReports?.length ?? 0} total
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(!disputeReports || disputeReports.length === 0) ? (
-                      <div className="text-sm text-muted-foreground">
-                        No reports yet. Generate one from Quick Actions.
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {(disputeReports as any[]).slice(0, 5).map((r) => (
-                          <div key={r._id} className="flex items-center justify-between border border-border rounded-md p-3">
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="text-xs">
-                                {r.status || "generated"}
-                              </Badge>
-                              <div className="text-sm text-foreground">
-                                {r.caseId}
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  {r.generatedAt ? new Date(r.generatedAt).toLocaleString() : ""}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-xs text-muted-foreground">
-                                ${r.lostIncome?.toFixed?.(2) ?? r.lostIncome}
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setReportViewerCaseId(r.caseId);
-                                  setReportViewerContent(r.reportContent || "");
-                                  setShowReportViewer(true);
-                                }}
-                              >
-                                View
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mt-6 flex gap-4">
-                <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Start Timer
-                </Button>
-
-                {/* Automated Universal Report - PRO+ Only */}
-                {currentSession && (subscriptionTier === "pro" || subscriptionTier === "expert") && (
-                  <Button
-                    variant="outline"
-                    className="border-[#5C6AC4] text-[#5C6AC4] hover:bg-[#5C6AC4] hover:text-white"
-                    onClick={handleGenerateUniversalReport}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Automated Dispute Report
-                  </Button>
-                )}
-
-                {subscriptionTier === "free" && (
-                  <Button
-                    variant="outline"
-                    className="border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white"
-                    onClick={() => {
-                      setPricingHighlightSavings(
-                        Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                      );
-                      trackConversion("upgrade_cta", { source: "quick_actions" });
-                      setShowPricingModal(true);
-                    }}
-                  >
-                    Upgrade to Pro
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Right Sidebar */}
-            <div className="w-[400px] border-l border-border bg-background overflow-y-auto scrollbar-hide p-8 space-y-4">
-              <EvidenceMonitor sessionId={currentSession?._id || null} />
-              
-              {/* WCVM Verification Badge */}
-              {mockWCVMAnalysis && (
-                <WCVMVerificationBadge
-                  contextRelevanceScore={mockWCVMAnalysis.contextRelevanceScore}
-                  requirementMatches={mockWCVMAnalysis.requirementMatches}
-                  contextGaps={mockWCVMAnalysis.contextGaps}
-                  verificationSignature={mockWCVMAnalysis.verificationSignature}
-                />
-              )}
-
-              {/* Premium PRO+ Features - Always show with tier gating */}
-              <RealTimeProtectionAdvisor 
-                subscriptionTier={subscriptionTier}
-                onUpgrade={() => {
-                  setPricingHighlightSavings(
-                    Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                  );
-                  trackConversion("upgrade_cta", { source: "real_time_advisor" });
-                  setShowPricingModal(true);
-                }}
-              />
-              <CrossPlatformVerification 
-                subscriptionTier={subscriptionTier}
-                onUpgrade={() => {
-                  setPricingHighlightSavings(
-                    Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                  );
-                  trackConversion("upgrade_cta", { source: "cross_platform_verification" });
-                  setShowPricingModal(true);
-                }}
-              />
-
-              <AIDisputePrediction
-                subscriptionTier={subscriptionTier}
-                onAnalyze={async () => {
-                  toast.success("Analyzing work patterns...", {
-                    description: "AI analysis will complete in a few seconds",
-                  });
-                }}
-                onApplyRecommendation={(recommendationId) => {
-                  toast.success("Applying recommendation...", {
-                    description: "Your work patterns will be updated automatically",
-                  });
-                }}
-                onUpgrade={() => {
-                  setPricingHighlightSavings(
-                    Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                  );
-                  trackConversion("upgrade_cta", { source: "ai_dispute_prediction" });
-                  setShowPricingModal(true);
-                }}
-              />
-              <CustomPolicyAnalyzer 
-                subscriptionTier={subscriptionTier}
-                onUpgrade={() => {
-                  setPricingHighlightSavings(
-                    Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                  );
-                  trackConversion("upgrade_cta", { source: "custom_policy_analyzer" });
-                  setShowPricingModal(true);
-                }}
-              />
-
-              {(subscriptionTier === "pro" || subscriptionTier === "expert") ? (
-                <PremiumValueSection
-                  protectedAmount={(profile as any)?.protectedValue || 0}
-                  atRiskAmount={(rejectedStats?.lostIncome || totalWeeklyLoss) as number}
-                />
-              ) : (
-                <LostIncomeCalculator
-                  platformLosses={platformLosses}
-                  subscriptionTier={subscriptionTier}
-                  atRiskAmount={(rejectedStats?.lostIncome || totalWeeklyLoss) as number}
-                  onUpgradeClick={() => {
-                    setPricingHighlightSavings(
-                      Math.max(Math.round(((rejectedStats?.lostIncome || totalWeeklyLoss) * 0.83) * 100) / 100, 0)
-                    );
-                    trackConversion("upgrade_cta", {
-                      source: "premium_value_calculator",
-                      atRiskAmount: rejectedStats?.lostIncome || totalWeeklyLoss,
-                    });
-                    setShowPricingModal(true);
-                  }}
-                />
-              )}
-            </div>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            Dashboard
+          </h1>
+          <p className="text-[16px] text-muted-foreground">
+            Your business at a glance — clients, deals, proposals, and invoices
+          </p>
         </div>
 
-        {/* Pricing Modal */}
-        <PricingModal
-          isOpen={showPricingModal}
-          onClose={() => setShowPricingModal(false)}
-          onUpgrade={handleUpgrade}
-          currentTier={subscriptionTier}
-          currentLoss={rejectedStats?.lostIncome || 0}
-          potentialSavings={(rejectedStats?.lostIncome || 0) - 8}
-          highlightSavings={pricingHighlightSavings}
-          vulnerabilityScore={0}
-        />
+        {/* ─── Stats Cards ──────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {isLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              {/* Total Clients */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Clients</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">{totalClients}</div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {totalClients === 0 ? "Add your first client" : `${totalClients} client${totalClients !== 1 ? "s" : ""} in your roster`}
+                  </p>
+                </CardContent>
+              </Card>
 
-        <ReportLimitModal
-          isOpen={showReportLimitModal}
-          onClose={() => setShowReportLimitModal(false)}
-          onUpgrade={() => {
-            trackConversion("upgrade_cta", {
-              source: "report_limit_modal",
-              monthlySavings: limitMonthlySavings,
-            });
-            setShowReportLimitModal(false);
-            setShowPricingModal(true);
-          }}
-          monthlyLoss={limitMonthlyLoss}
-          monthlySavings={limitMonthlySavings}
-        />
+              {/* Active Deals */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Active Deals</CardTitle>
+                  <LayoutList className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">{totalDeals}</div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {totalDeals === 0 ? "No deals yet" : `Total value: ${fmtCurrency(pipelineValue)}`}
+                  </p>
+                </CardContent>
+              </Card>
 
-        <ReportViewerModal
-          isOpen={showReportViewer}
-          onClose={() => setShowReportViewer(false)}
-          caseId={reportViewerCaseId}
-          reportContent={reportViewerContent}
-        />
+              {/* Pipeline Value */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Pipeline Value</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">{fmtCurrency(weightedValue)}</div>
+                  <p className="text-[12px] text-muted-foreground">
+                    Weighted · {fmtCurrency(pipelineValue)} total
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Add Timeline Popup */}
-        <TimelinePopup
-          isOpen={showTimelinePopup}
-          onClose={() => setShowTimelinePopup(false)}
-        />
+              {/* Proposals */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Proposals</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">{proposalTotal}</div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {proposalTotal === 0
+                      ? "Create your first proposal"
+                      : `${proposalSigned} signed · ${proposalSignatureRate}% close rate`}
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Profile modal is now global via ProfileModal component in main.tsx */}
-      </motion.div>
+              {/* Invoices */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Invoices</CardTitle>
+                  <Receipt className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">{invoiceTotal}</div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {invoiceTotal === 0
+                      ? "Create your first invoice"
+                      : `${invoicePaid} paid · ${invoiceOverdue > 0 ? `${invoiceOverdue} overdue` : "none overdue"}`}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Revenue & Scope */}
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/scope")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-[14px] font-medium text-muted-foreground">
+                    {invoiceOutstanding > 0 ? "Outstanding" : "Revenue"}
+                  </CardTitle>
+                  <Ruler className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[24px] font-bold text-foreground">
+                    {fmtCurrency(invoiceOutstanding > 0 ? invoiceOutstanding : invoiceRevenue)}
+                  </div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {invoiceOutstanding > 0
+                      ? `${fmtCurrency(invoiceRevenue)} collected`
+                      : `${scopeCount} scope definition${scopeCount !== 1 ? "s" : ""}`}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
+        {/* ─── Get Started / Seed Data (shown when no data exists) ───────── */}
+        {!isLoading && !hasAnyData && (
+          <div className="mb-6">
+            <GetStartedState onSeed={handleSeed} onAddClient={() => navigate("/clients")} />
+          </div>
+        )}
+
+        {/* ─── Recent Activity + Quick Actions ──────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Activity Feed — takes 2 cols */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-[16px] font-semibold">Recent Activity</CardTitle>
+                {activityItems.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground"
+                    onClick={() => navigate("/pipeline")}
+                  >
+                    View all <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <ActivitySkeleton />
+                ) : activityItems.length === 0 ? (
+                  <EmptyState
+                    icon={Clock}
+                    title="No activity yet"
+                    description="Activity will appear here as you create deals, proposals, and invoices."
+                    actionLabel="Add Deal"
+                    onAction={() => navigate("/pipeline")}
+                  />
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {activityItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => navigate(item.href)}
+                      >
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          {statusIcon(item.type, item.status)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant={statusColor(item.status)} className="text-[10px] capitalize">
+                            {item.status}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            {fmtRelative(item.timestamp)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions — takes 1 col */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[16px] font-semibold">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/pipeline")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Deal
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/proposals/new")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Proposal
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/invoices/new")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Invoice
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/clients")}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Client
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => navigate("/scope")}
+                >
+                  <Ruler className="mr-2 h-4 w-4" />
+                  Define Scope
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pipeline Breakdown */}
+            {!isLoading && pipelineStats?.byStage && pipelineStats.byStage.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[14px] font-semibold">Pipeline Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(pipelineStats.byStage as any[]).map((stage: any) => (
+                      <div key={stage.stageId} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: stage.color ?? "#888" }}
+                          />
+                          <span className="text-sm text-foreground">{stage.stageName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {stage.dealCount} deal{stage.dealCount !== 1 ? "s" : ""}
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {fmtCurrency(stage.totalValue)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Proposal Stats Summary */}
+            {!isLoading && proposalTotal > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[14px] font-semibold">Proposal Stats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{proposalSigned}</p>
+                      <p className="text-xs text-muted-foreground">Signed</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{proposalSignatureRate}%</p>
+                      <p className="text-xs text-muted-foreground">Close Rate</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(proposalTotalValue)}</p>
+                      <p className="text-xs text-muted-foreground">Signed Value</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Invoice Stats Summary */}
+            {!isLoading && invoiceTotal > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[14px] font-semibold">Invoice Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(invoiceRevenue)}</p>
+                      <p className="text-xs text-muted-foreground">Collected</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{fmtCurrency(invoiceOutstanding)}</p>
+                      <p className="text-xs text-muted-foreground">Outstanding</p>
+                    </div>
+                    {invoiceOverdue > 0 && (
+                      <div className="col-span-2 bg-red-500/10 rounded-md p-2">
+                        <p className="text-sm font-medium text-red-600">
+                          {invoiceOverdue} invoice{invoiceOverdue !== 1 ? "s" : ""} overdue
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Scope Definitions */}
+            {!isLoading && scopeCount > 0 && (
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate("/scope")}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[14px] font-semibold">Scope Definitions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <p className="text-lg font-bold text-foreground">{scopeCount}</p>
+                    <Badge variant="outline" className="text-xs">Active</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Protect against scope creep
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Seed Data button (only if some data exists but not much) */}
+            {!isLoading && hasAnyData && totalClients < 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground"
+                onClick={handleSeed}
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                Load more demo data
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing Modal */}
+      <PricingModal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+        onUpgrade={handleUpgrade}
+        currentTier={subscriptionTier}
+        currentLoss={0}
+        potentialSavings={0}
+        highlightSavings={pricingHighlightSavings}
+        vulnerabilityScore={0}
+      />
+    </motion.div>
   );
 }

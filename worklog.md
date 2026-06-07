@@ -159,3 +159,37 @@ Stage Summary:
 - Templates can be saved for reuse
 - 3 built-in invoice templates seeded (Standard Service, Hourly Consulting, Creative Services)
 - Preview running at https://preview-81.space-z.ai/
+---
+Task ID: 1-8
+Agent: main
+Task: Connect all Axia pages and components to Convex backend
+
+Work Log:
+- Audited all 32 pages — identified 13 pages with zero/minimal Convex connections
+- Fixed Pipeline Kanban drag-and-drop (mock data handling with local state overrides)
+- Fixed "Make Proposal" button (mock data detection, added button to detail dialog)
+- Fixed ProposalBuilder SectionType mismatch (added client_info, sender_info, summary, scope_of_work)
+- Connected Clients page to api.clients.crud (getClients, createClient, deleteClient)
+- Connected Scope page to api.scope.crud (getScopeDefinitions, createScopeDefinition, recordRevision, approveChangeOrder, deleteScopeDefinition)
+- Connected Dashboard to 8 Convex queries (clients, pipeline, proposals, billing, scope)
+- Connected TimeTracking page — created src/convex/tracking/crud.ts with 9 functions (startSession, stopSession, pauseSession, resumeSession, createManualEntry, deleteSession, getCurrentSession, getSessions, getTimeBlocks)
+- Connected Reports page to disputeReports queries/mutations
+- Connected PlatformIntegrations to api.platforms.platformConnections
+- Connected Subscription to api.billing.crud with real invoice data
+- Added tags table + src/convex/tags/crud.ts — connected Tags.tsx page
+- Added goals table + src/convex/goals/crud.ts — connected Goals.tsx page
+- Connected PaymentPatterns to real invoice/client data with computed trends
+- Connected EvidenceExport to evidence library + clients + scopes
+- Connected TeamManagement to workspaces.members/invitations/crud
+- Deployed Convex functions (2 deployments — first for tracking, second for tags+goals)
+- Build passes with zero TypeScript errors
+- Fullcode backup pushed to GitHub branch fullcode-backup-20260607
+- Main branch pushed: 6919a91
+
+Stage Summary:
+- All 13 disconnected pages now connected to Convex
+- 3 new Convex CRUD modules created (tracking, tags, goals)
+- 2 new tables added to schema (tags, goals with indexes)
+- Pipeline drag-and-drop and Make Proposal buttons fixed
+- Convex deployed to https://veracious-zebra-519.convex.cloud
+- Preview live at https://preview-81.space-z.ai/

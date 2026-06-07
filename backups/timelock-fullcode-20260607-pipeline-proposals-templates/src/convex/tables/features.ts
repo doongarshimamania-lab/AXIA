@@ -141,13 +141,29 @@ export const featureTables = {
 
   disputeReports: defineTable({
     userId: v.id("users"),
-    sessionId: v.id("workSessions"),
+    sessionId: v.optional(v.id("workSessions")),
     caseId: v.string(),
     generatedAt: v.number(),
     rejectedHours: v.number(),
     lostIncome: v.number(),
-    reportContent: v.string(),
-    status: v.union(v.literal("generated"), v.literal("sent"), v.literal("resolved")),
+    reportContent: v.optional(v.string()),
+    status: v.union(v.literal("generated"), v.literal("sent"), v.literal("viewed"), v.literal("resolved"), v.literal("appealed")),
+    // Additional fields for richer report management
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    type: v.optional(v.string()),
+    evidenceCount: v.optional(v.number()),
+    evidenceSummary: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    viewedAt: v.optional(v.number()),
+    resolvedAt: v.optional(v.number()),
+    appealDeadline: v.optional(v.number()),
+    publicToken: v.optional(v.string()),
+    clientId: v.optional(v.string()),
+    clientName: v.optional(v.string()),
+    projectName: v.optional(v.string()),
+    hourlyRate: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]).index("by_case_id", ["caseId"]),
 
   automatedDisputeReports: defineTable({

@@ -11,6 +11,8 @@ import { proposalTables } from "./tables/proposals";
 import { billingTables } from "./tables/billing";
 import { scopeTables } from "./tables/scope";
 import { messagingTables } from "./tables/messaging";
+import { tagTables } from "./tables/tags";
+import { goalTables } from "./tables/goals";
 
 export default defineSchema({
   ...authTables,
@@ -25,4 +27,6 @@ export default defineSchema({
   ...billingTables,
   ...scopeTables,
   ...messagingTables,
+  ...tagTables,
+  ...goalTables,
 });

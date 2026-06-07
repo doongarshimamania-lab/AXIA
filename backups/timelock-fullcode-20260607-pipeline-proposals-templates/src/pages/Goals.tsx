@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -13,8 +13,10 @@ import {
   Calendar,
   Flag,
   BarChart3,
+  Info,
+  Loader2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -38,180 +41,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type GoalStatus = "active" | "completed" | "paused" | "overdue";
-
-interface Milestone {
-  id: string;
-  title: string;
-  completed: boolean;
-}
-
-interface GoalItem {
-  id: string;
-  title: string;
-  description: string;
-  status: GoalStatus;
-  progress: number;
-  targetDate: string;
-  metric: string;
-  tags: string[];
-  linkedProjects: string[];
-  milestones: Milestone[];
-  streak: number;
-  createdAt: string;
-}
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-
-const TAG_OPTIONS = [
-  "Urgent",
-  "Design",
-  "Development",
-  "Client Communication",
-  "Bug Fix",
-  "Documentation",
-  "Revision",
-  "Research",
-  "Testing",
-  "Payment",
-];
-
-const PROJECT_OPTIONS = [
-  "E-Commerce Redesign",
-  "Mobile Banking App",
-  "SaaS Dashboard",
-  "Portfolio Website",
-  "API Integration",
-];
-
-const INITIAL_GOALS: GoalItem[] = [
-  {
-    id: "1",
-    title: "Reach $10K monthly revenue",
-    description:
-      "Scale freelance income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
-    status: "active",
-    progress: 72,
-    targetDate: "2025-09-30",
-    metric: "Revenue ($)",
-    tags: ["Development", "Client Communication"],
-    linkedProjects: ["E-Commerce Redesign", "SaaS Dashboard"],
-    milestones: [
-      { id: "m1", title: "Reach $5K/mo", completed: true },
-      { id: "m2", title: "Reach $7.5K/mo", completed: true },
-      { id: "m3", title: "Reach $10K/mo", completed: false },
-    ],
-    streak: 14,
-    createdAt: "2025-01-15",
-  },
-  {
-    id: "2",
-    title: "Achieve 95% on-time delivery",
-    description:
-      "Maintain a 95% on-time project delivery rate to strengthen client trust and improve dispute protection standing.",
-    status: "active",
-    progress: 88,
-    targetDate: "2025-08-15",
-    metric: "On-time %",
-    tags: ["Urgent", "Documentation"],
-    linkedProjects: ["Mobile Banking App", "API Integration"],
-    milestones: [
-      { id: "m4", title: "Track first 10 projects", completed: true },
-      { id: "m5", title: "Hit 90% on-time", completed: true },
-      { id: "m6", title: "Hit 95% on-time", completed: false },
-    ],
-    streak: 21,
-    createdAt: "2025-02-01",
-  },
-  {
-    id: "3",
-    title: "Complete 50 evidence-backed sessions",
-    description:
-      "Accumulate 50 fully evidence-backed work sessions with automated screenshots and activity logs for maximum protection.",
-    status: "active",
-    progress: 56,
-    targetDate: "2025-12-31",
-    metric: "Sessions (#)",
-    tags: ["Development", "Testing"],
-    linkedProjects: ["E-Commerce Redesign"],
-    milestones: [
-      { id: "m7", title: "Complete 10 sessions", completed: true },
-      { id: "m8", title: "Complete 25 sessions", completed: true },
-      { id: "m9", title: "Complete 50 sessions", completed: false },
-    ],
-    streak: 7,
-    createdAt: "2025-03-10",
-  },
-  {
-    id: "4",
-    title: "Zero unpaid invoices this quarter",
-    description:
-      "Ensure all invoices are paid within the agreed terms by using automated follow-ups and milestone-based payment protection.",
-    status: "completed",
-    progress: 100,
-    targetDate: "2025-06-30",
-    metric: "Unpaid Invoices (#)",
-    tags: ["Payment", "Client Communication"],
-    linkedProjects: ["SaaS Dashboard", "Portfolio Website"],
-    milestones: [
-      { id: "m10", title: "Set up payment tracking", completed: true },
-      { id: "m11", title: "Automate reminders", completed: true },
-      { id: "m12", title: "Zero unpaid for 30 days", completed: true },
-    ],
-    streak: 30,
-    createdAt: "2025-04-01",
-  },
-  {
-    id: "5",
-    title: "Launch 3 new client projects",
-    description:
-      "Onboard and launch 3 new client projects with full protection from day one, including scope definition and milestone contracts.",
-    status: "paused",
-    progress: 33,
-    targetDate: "2025-10-15",
-    metric: "Projects Launched (#)",
-    tags: ["Design", "Development"],
-    linkedProjects: ["API Integration"],
-    milestones: [
-      { id: "m13", title: "Launch first project", completed: true },
-      { id: "m14", title: "Launch second project", completed: false },
-      { id: "m15", title: "Launch third project", completed: false },
-    ],
-    streak: 0,
-    createdAt: "2025-05-01",
-  },
-  {
-    id: "6",
-    title: "Maintain 4.9+ client satisfaction",
-    description:
-      "Keep average client satisfaction rating at 4.9 or above through proactive communication and quality deliverables.",
-    status: "overdue",
-    progress: 45,
-    targetDate: "2025-05-31",
-    metric: "Avg. Rating",
-    tags: ["Client Communication", "Revision"],
-    linkedProjects: ["Mobile Banking App", "Portfolio Website", "SaaS Dashboard"],
-    milestones: [
-      { id: "m16", title: "Collect 10 reviews", completed: true },
-      { id: "m17", title: "Hit 4.8 avg", completed: false },
-      { id: "m18", title: "Hit 4.9+ avg", completed: false },
-    ],
-    streak: 0,
-    createdAt: "2025-02-20",
-  },
-];
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+type GoalStatus = "not_started" | "in_progress" | "completed" | "abandoned";
 
 const STATUS_CONFIG: Record<
   GoalStatus,
   { label: string; color: string; bgColor: string; icon: React.ReactNode }
 > = {
-  active: {
-    label: "Active",
+  not_started: {
+    label: "Not Started",
+    color: "text-gray-700 dark:text-gray-400",
+    bgColor: "bg-gray-100 dark:bg-gray-900/30",
+    icon: <Clock className="h-3 w-3" />,
+  },
+  in_progress: {
+    label: "In Progress",
     color: "text-emerald-700 dark:text-emerald-400",
     bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
     icon: <TrendingUp className="h-3 w-3" />,
@@ -222,22 +71,32 @@ const STATUS_CONFIG: Record<
     bgColor: "bg-primary/10",
     icon: <CheckCircle2 className="h-3 w-3" />,
   },
-  paused: {
-    label: "Paused",
-    color: "text-yellow-700 dark:text-yellow-400",
-    bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
-    icon: <Clock className="h-3 w-3" />,
-  },
-  overdue: {
-    label: "Overdue",
+  abandoned: {
+    label: "Abandoned",
     color: "text-red-700 dark:text-red-400",
     bgColor: "bg-red-100 dark:bg-red-900/30",
     icon: <Flag className="h-3 w-3" />,
   },
 };
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
+const GOAL_TYPES = [
+  { value: "revenue", label: "Revenue" },
+  { value: "hours", label: "Hours" },
+  { value: "clients", label: "Clients" },
+  { value: "protection", label: "Protection" },
+  { value: "custom", label: "Custom" },
+];
+
+const UNIT_OPTIONS = [
+  { value: "USD", label: "USD ($)" },
+  { value: "hours", label: "Hours" },
+  { value: "clients", label: "Clients" },
+  { value: "score", label: "Score" },
+  { value: "%", label: "Percentage (%)" },
+];
+
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp);
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -245,178 +104,403 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-const daysUntil = (dateStr: string) => {
+const daysUntil = (timestamp: number) => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
+  const target = new Date(timestamp);
   target.setHours(0, 0, 0, 0);
   const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   return diff;
 };
 
+// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
+
+const MOCK_GOALS = [
+  {
+    _id: "goal_1" as any,
+    title: "Reach $10K monthly revenue",
+    description: "Scale freelance income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
+    type: "revenue",
+    target: 10000,
+    current: 7200,
+    unit: "USD",
+    deadline: new Date("2025-09-30").getTime(),
+    status: "in_progress",
+    milestones: [
+      { id: "m1", title: "Reach $5K/mo", completed: true, completedAt: undefined as number | undefined },
+      { id: "m2", title: "Reach $7.5K/mo", completed: true, completedAt: undefined as number | undefined },
+      { id: "m3", title: "Reach $10K/mo", completed: false, completedAt: undefined as number | undefined },
+    ],
+    streak: 14,
+    lastCheckIn: Date.now() - 86400000,
+    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 86400000,
+  },
+  {
+    _id: "goal_2" as any,
+    title: "Achieve 95% on-time delivery",
+    description: "Maintain a 95% on-time project delivery rate to strengthen client trust and improve dispute protection standing.",
+    type: "protection",
+    target: 100,
+    current: 88,
+    unit: "%",
+    deadline: new Date("2025-08-15").getTime(),
+    status: "in_progress",
+    milestones: [
+      { id: "m4", title: "Track first 10 projects", completed: true, completedAt: undefined as number | undefined },
+      { id: "m5", title: "Hit 90% on-time", completed: true, completedAt: undefined as number | undefined },
+      { id: "m6", title: "Hit 95% on-time", completed: false, completedAt: undefined as number | undefined },
+    ],
+    streak: 21,
+    lastCheckIn: Date.now() - 172800000,
+    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 172800000,
+  },
+  {
+    _id: "goal_3" as any,
+    title: "Complete 50 evidence-backed sessions",
+    description: "Accumulate 50 fully evidence-backed work sessions with automated screenshots and activity logs for maximum protection.",
+    type: "hours",
+    target: 50,
+    current: 28,
+    unit: "hours",
+    deadline: new Date("2025-12-31").getTime(),
+    status: "in_progress",
+    milestones: [
+      { id: "m7", title: "Complete 10 sessions", completed: true, completedAt: undefined as number | undefined },
+      { id: "m8", title: "Complete 25 sessions", completed: true, completedAt: undefined as number | undefined },
+      { id: "m9", title: "Complete 50 sessions", completed: false, completedAt: undefined as number | undefined },
+    ],
+    streak: 7,
+    lastCheckIn: Date.now() - 259200000,
+    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 259200000,
+  },
+  {
+    _id: "goal_4" as any,
+    title: "Zero unpaid invoices this quarter",
+    description: "Ensure all invoices are paid within the agreed terms by using automated follow-ups and milestone-based payment protection.",
+    type: "revenue",
+    target: 0,
+    current: 0,
+    unit: "USD",
+    deadline: new Date("2025-06-30").getTime(),
+    status: "completed",
+    milestones: [
+      { id: "m10", title: "Set up payment tracking", completed: true, completedAt: undefined as number | undefined },
+      { id: "m11", title: "Automate reminders", completed: true, completedAt: undefined as number | undefined },
+      { id: "m12", title: "Zero unpaid for 30 days", completed: true, completedAt: undefined as number | undefined },
+    ],
+    streak: 30,
+    lastCheckIn: Date.now() - 432000000,
+    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 432000000,
+  },
+  {
+    _id: "goal_5" as any,
+    title: "Launch 3 new client projects",
+    description: "Onboard and launch 3 new client projects with full protection from day one, including scope definition and milestone contracts.",
+    type: "clients",
+    target: 3,
+    current: 1,
+    unit: "clients",
+    deadline: new Date("2025-10-15").getTime(),
+    status: "not_started",
+    milestones: [
+      { id: "m13", title: "Launch first project", completed: true, completedAt: undefined as number | undefined },
+      { id: "m14", title: "Launch second project", completed: false, completedAt: undefined as number | undefined },
+      { id: "m15", title: "Launch third project", completed: false, completedAt: undefined as number | undefined },
+    ],
+    streak: 0,
+    lastCheckIn: undefined as number | undefined,
+    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "goal_6" as any,
+    title: "Maintain 4.9+ client satisfaction",
+    description: "Keep average client satisfaction rating at 4.9 or above through proactive communication and quality deliverables.",
+    type: "protection",
+    target: 100,
+    current: 45,
+    unit: "score",
+    deadline: new Date("2025-05-31").getTime(),
+    status: "abandoned",
+    milestones: [
+      { id: "m16", title: "Collect 10 reviews", completed: true, completedAt: undefined as number | undefined },
+      { id: "m17", title: "Hit 4.8 avg", completed: false, completedAt: undefined as number | undefined },
+      { id: "m18", title: "Hit 4.9+ avg", completed: false, completedAt: undefined as number | undefined },
+    ],
+    streak: 0,
+    lastCheckIn: undefined as number | undefined,
+    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+  },
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Goals() {
-  const [goals, setGoals] = useState<GoalItem[]>(INITIAL_GOALS);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // ─── Convex queries & mutations ──────────────────────────────────────────
+  const goalsData = useQuery(api.goals.crud.getGoals, {});
+  const createGoalMutation = useMutation(api.goals.crud.createGoal);
+  const updateGoalMutation = useMutation(api.goals.crud.updateGoal);
+  const deleteGoalMutation = useMutation(api.goals.crud.deleteGoal);
+  const markGoalCompleteMutation = useMutation(api.goals.crud.markGoalComplete);
+  const updateMilestoneMutation = useMutation(api.goals.crud.updateMilestone);
+
+  // ─── Local state ────────────────────────────────────────────────────────
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingGoal, setDeletingGoal] = useState<GoalItem | null>(null);
+  const [deletingGoal, setDeletingGoal] = useState<any>(null);
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formTargetDate, setFormTargetDate] = useState("");
-  const [formMetric, setFormMetric] = useState("");
-  const [formTags, setFormTags] = useState<string[]>([]);
+  const [formType, setFormType] = useState("custom");
+  const [formTarget, setFormTarget] = useState("");
+  const [formCurrent, setFormCurrent] = useState("0");
+  const [formUnit, setFormUnit] = useState("%");
+  const [formDeadline, setFormDeadline] = useState("");
+  const [formStatus, setFormStatus] = useState("not_started");
+
+  // Mutation loading state
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState<string | null>(null);
+
+  // ─── Loading timeout pattern ────────────────────────────────────────────
+  const [queryTimeout, setQueryTimeout] = useState(false);
+
+  useEffect(() => {
+    if (goalsData === undefined) {
+      const timer = setTimeout(() => setQueryTimeout(true), 2000);
+      return () => clearTimeout(timer);
+    } else {
+      setQueryTimeout(false);
+    }
+  }, [goalsData]);
+
+  const isLoading = !authLoading && goalsData === undefined && !queryTimeout;
+
+  // ─── Demo mode ──────────────────────────────────────────────────────────
+  const isDemoMode = !authLoading && !isAuthenticated;
+
+  // ─── Data resolution ────────────────────────────────────────────────────
+  const goals = isDemoMode ? MOCK_GOALS : (goalsData ?? []);
 
   // ── Computed Stats ──
-  const activeGoals = goals.filter((g) => g.status === "active").length;
-  const completedGoals = goals.filter((g) => g.status === "completed").length;
+  const activeGoals = goals.filter((g: any) => g.status === "in_progress").length;
+  const completedGoals = goals.filter((g: any) => g.status === "completed").length;
   const completionRate =
     goals.length > 0 ? Math.round((completedGoals / goals.length) * 100) : 0;
-  const longestStreak = goals.reduce((max, g) => Math.max(max, g.streak), 0);
+  const longestStreak = goals.reduce((max: number, g: any) => Math.max(max, g.streak ?? 0), 0);
 
   // ── Filtering ──
   const filteredGoals =
     statusFilter === "all"
       ? goals
-      : goals.filter((g) => g.status === statusFilter);
+      : goals.filter((g: any) => g.status === statusFilter);
 
   // ── Helpers ──
   const resetForm = () => {
     setFormTitle("");
     setFormDescription("");
-    setFormTargetDate("");
-    setFormMetric("");
-    setFormTags([]);
+    setFormType("custom");
+    setFormTarget("");
+    setFormCurrent("0");
+    setFormUnit("%");
+    setFormDeadline("");
+    setFormStatus("not_started");
   };
 
-  const toggleTag = (tag: string) => {
-    setFormTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const getProgress = (goal: any) => {
+    if (goal.target === 0) return goal.status === "completed" ? 100 : 0;
+    return Math.min(Math.round((goal.current / goal.target) * 100), 100);
   };
 
   // ── Create ──
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!formTitle.trim()) {
       toast.error("Goal title is required");
       return;
     }
-    if (!formTargetDate) {
-      toast.error("Target date is required");
+    if (!formTarget) {
+      toast.error("Target value is required");
       return;
     }
-    const newGoal: GoalItem = {
-      id: Date.now().toString(),
-      title: formTitle.trim(),
-      description: formDescription.trim(),
-      status: "active",
-      progress: 0,
-      targetDate: formTargetDate,
-      metric: formMetric.trim() || "Progress %",
-      tags: formTags,
-      linkedProjects: [],
-      milestones: [],
-      streak: 0,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setGoals((prev) => [newGoal, ...prev]);
-    resetForm();
-    setCreateOpen(false);
-    toast.success(`Goal "${newGoal.title}" created`);
+
+    const target = Number(formTarget);
+    const current = Number(formCurrent) || 0;
+    const deadline = formDeadline ? new Date(formDeadline).getTime() : undefined;
+
+    if (isDemoMode) {
+      toast.success(`Goal "${formTitle.trim()}" created! (Demo mode)`);
+      resetForm();
+      setCreateOpen(false);
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await createGoalMutation({
+        title: formTitle.trim(),
+        description: formDescription.trim() || undefined,
+        type: formType,
+        target,
+        current,
+        unit: formUnit,
+        deadline,
+        status: formStatus,
+      });
+      resetForm();
+      setCreateOpen(false);
+      toast.success(`Goal "${formTitle.trim()}" created`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create goal");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   // ── Edit ──
-  const openEdit = (goal: GoalItem) => {
+  const openEdit = (goal: any) => {
     setEditingGoal(goal);
     setFormTitle(goal.title);
-    setFormDescription(goal.description);
-    setFormTargetDate(goal.targetDate);
-    setFormMetric(goal.metric);
-    setFormTags([...goal.tags]);
+    setFormDescription(goal.description ?? "");
+    setFormType(goal.type);
+    setFormTarget(String(goal.target));
+    setFormCurrent(String(goal.current));
+    setFormUnit(goal.unit);
+    setFormDeadline(goal.deadline ? new Date(goal.deadline).toISOString().split("T")[0] : "");
+    setFormStatus(goal.status);
     setEditOpen(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editingGoal) return;
     if (!formTitle.trim()) {
       toast.error("Goal title is required");
       return;
     }
-    setGoals((prev) =>
-      prev.map((g) =>
-        g.id === editingGoal.id
-          ? {
-              ...g,
-              title: formTitle.trim(),
-              description: formDescription.trim(),
-              targetDate: formTargetDate || g.targetDate,
-              metric: formMetric.trim() || g.metric,
-              tags: formTags,
-            }
-          : g
-      )
-    );
-    resetForm();
-    setEditOpen(false);
-    setEditingGoal(null);
-    toast.success(`Goal "${formTitle.trim()}" updated`);
+
+    const target = Number(formTarget);
+    const deadline = formDeadline ? new Date(formDeadline).getTime() : undefined;
+
+    if (isDemoMode) {
+      toast.success(`Goal "${formTitle.trim()}" updated! (Demo mode)`);
+      resetForm();
+      setEditOpen(false);
+      setEditingGoal(null);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await updateGoalMutation({
+        goalId: editingGoal._id,
+        title: formTitle.trim(),
+        description: formDescription.trim() || undefined,
+        type: formType,
+        target,
+        current: Number(formCurrent) || 0,
+        unit: formUnit,
+        deadline,
+        status: formStatus,
+      });
+      resetForm();
+      setEditOpen(false);
+      setEditingGoal(null);
+      toast.success(`Goal "${formTitle.trim()}" updated`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update goal");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // ── Delete ──
-  const openDelete = (goal: GoalItem) => {
+  const openDelete = (goal: any) => {
     setDeletingGoal(goal);
     setDeleteOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deletingGoal) return;
-    setGoals((prev) => prev.filter((g) => g.id !== deletingGoal.id));
-    setDeleteOpen(false);
-    setDeletingGoal(null);
-    toast.success(`Goal "${deletingGoal.title}" deleted`);
+
+    if (isDemoMode) {
+      toast.success(`Goal "${deletingGoal.title}" deleted! (Demo mode)`);
+      setDeleteOpen(false);
+      setDeletingGoal(null);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteGoalMutation({ goalId: deletingGoal._id });
+      setDeleteOpen(false);
+      setDeletingGoal(null);
+      toast.success(`Goal "${deletingGoal.title}" deleted`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete goal");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // ── Mark Complete ──
-  const handleMarkComplete = (goalId: string) => {
-    setGoals((prev) =>
-      prev.map((g) =>
-        g.id === goalId
-          ? {
-              ...g,
-              status: "completed" as GoalStatus,
-              progress: 100,
-              milestones: g.milestones.map((m) => ({ ...m, completed: true })),
-            }
-          : g
-      )
-    );
-    const goal = goals.find((g) => g.id === goalId);
-    toast.success(`Goal "${goal?.title}" marked as complete!`);
+  const handleMarkComplete = async (goalId: any) => {
+    const goal = goals.find((g: any) => g._id === goalId);
+    if (!goal) return;
+
+    if (isDemoMode) {
+      toast.success(`Goal "${goal.title}" marked as complete! (Demo mode)`);
+      return;
+    }
+
+    setIsCompleting(goalId);
+    try {
+      await markGoalCompleteMutation({ goalId });
+      toast.success(`Goal "${goal.title}" marked as complete!`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to mark goal complete");
+    } finally {
+      setIsCompleting(null);
+    }
   };
 
-  // ── Tag selector shared component ──
-  const TagSelector = () => (
-    <div className="space-y-2">
-      <Label>Tags</Label>
-      <div className="flex flex-wrap gap-2">
-        {TAG_OPTIONS.map((tag) => (
-          <button key={tag} type="button" onClick={() => toggleTag(tag)}>
-            <Badge
-              variant={formTags.includes(tag) ? "default" : "outline"}
-              className="cursor-pointer transition-colors"
-            >
-              {tag}
-            </Badge>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  // ── Toggle milestone ──
+  const handleToggleMilestone = async (goalId: any, milestoneId: string, currentCompleted: boolean) => {
+    if (isDemoMode) {
+      toast.success(currentCompleted ? "Milestone unmarked! (Demo mode)" : "Milestone completed! (Demo mode)");
+      return;
+    }
+
+    try {
+      await updateMilestoneMutation({
+        goalId,
+        milestoneId,
+        completed: !currentCompleted,
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update milestone");
+    }
+  };
+
+  // ── Map status filter labels ──
+  const FILTER_OPTIONS = [
+    { value: "all", label: "All" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "not_started", label: "Not Started" },
+    { value: "completed", label: "Completed" },
+    { value: "abandoned", label: "Abandoned" },
+  ];
 
   // ── Render ──
   return (
@@ -479,25 +563,67 @@ export default function Goals() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="goal-date">Target Date</Label>
+                    <Label>Type</Label>
+                    <Select value={formType} onValueChange={setFormType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GOAL_TYPES.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Unit</Label>
+                    <Select value={formUnit} onValueChange={setFormUnit}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNIT_OPTIONS.map((u) => (
+                          <SelectItem key={u.value} value={u.value}>
+                            {u.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="goal-target">Target</Label>
                     <Input
-                      id="goal-date"
-                      type="date"
-                      value={formTargetDate}
-                      onChange={(e) => setFormTargetDate(e.target.value)}
+                      id="goal-target"
+                      type="number"
+                      placeholder="e.g. 10000"
+                      value={formTarget}
+                      onChange={(e) => setFormTarget(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="goal-metric">Metric</Label>
+                    <Label htmlFor="goal-current">Current</Label>
                     <Input
-                      id="goal-metric"
-                      placeholder="e.g. Revenue ($), Sessions (#)"
-                      value={formMetric}
-                      onChange={(e) => setFormMetric(e.target.value)}
+                      id="goal-current"
+                      type="number"
+                      placeholder="0"
+                      value={formCurrent}
+                      onChange={(e) => setFormCurrent(e.target.value)}
                     />
                   </div>
                 </div>
-                <TagSelector />
+                <div className="space-y-2">
+                  <Label htmlFor="goal-date">Target Date</Label>
+                  <Input
+                    id="goal-date"
+                    type="date"
+                    value={formDeadline}
+                    onChange={(e) => setFormDeadline(e.target.value)}
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -506,255 +632,308 @@ export default function Goals() {
                     setCreateOpen(false);
                     resetForm();
                   }}
+                  disabled={isCreating}
                 >
                   Cancel
                 </Button>
-                <Button className="bg-primary hover:bg-primary/90" onClick={handleCreate}>
-                  Create Goal
+                <Button className="bg-primary hover:bg-primary/90" onClick={handleCreate} disabled={isCreating}>
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Goal"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* ── Stats Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
-                  <Target className="h-5 w-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Goals</p>
-                  <p className="text-2xl font-bold">{activeGoals}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Completion Rate</p>
-                  <p className="text-2xl font-bold">{completionRate}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500/10">
-                  <Flame className="h-5 w-5 text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Best Streak</p>
-                  <p className="text-2xl font-bold">
-                    {longestStreak} {longestStreak === 1 ? "day" : "days"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── Status Filter ── */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground shrink-0">Filter:</span>
-          {[
-            { value: "all", label: "All" },
-            { value: "active", label: "Active" },
-            { value: "completed", label: "Completed" },
-            { value: "paused", label: "Paused" },
-            { value: "overdue", label: "Overdue" },
-          ].map((filter) => (
-            <Button
-              key={filter.value}
-              variant={statusFilter === filter.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(filter.value)}
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
-
-        <Separator />
-
-        {/* ── Goals List ── */}
-        {filteredGoals.length === 0 ? (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No goals found</p>
-                <p className="text-sm">
-                  {statusFilter !== "all"
-                    ? "Try a different filter or create a new goal"
-                    : "Create your first goal to start tracking your progress"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredGoals.map((goal, index) => {
-              const statusCfg = STATUS_CONFIG[goal.status];
-              const days = daysUntil(goal.targetDate);
-              const completedMilestones = goal.milestones.filter((m) => m.completed).length;
-              const totalMilestones = goal.milestones.length;
-
-              return (
-                <motion.div
-                  key={goal.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.3 }}
-                >
-                  <Card className="group hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                        {/* Left: Main content */}
-                        <div className="flex-1 min-w-0 space-y-3">
-                          {/* Title row */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium shrink-0 ${statusCfg.bgColor} ${statusCfg.color}`}
-                              >
-                                {statusCfg.icon}
-                                {statusCfg.label}
-                              </div>
-                              <h3 className="text-lg font-semibold truncate">
-                                {goal.title}
-                              </h3>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              {goal.status !== "completed" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
-                                  onClick={() => handleMarkComplete(goal.id)}
-                                  title="Mark complete"
-                                >
-                                  <CheckCircle2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => openEdit(goal)}
-                                title="Edit goal"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => openDelete(goal)}
-                                title="Delete goal"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {goal.description}
-                          </p>
-
-                          {/* Progress bar */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">{goal.metric}</span>
-                              <span className="font-semibold">{goal.progress}%</span>
-                            </div>
-                            <Progress value={goal.progress} className="h-2" />
-                          </div>
-
-                          {/* Milestones */}
-                          {totalMilestones > 0 && (
-                            <div className="space-y-1.5">
-                              <p className="text-xs text-muted-foreground font-medium">
-                                Milestones ({completedMilestones}/{totalMilestones})
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {goal.milestones.map((ms) => (
-                                  <div
-                                    key={ms.id}
-                                    className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ${
-                                      ms.completed
-                                        ? "bg-primary/10 text-primary"
-                                        : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    {ms.completed ? (
-                                      <CheckCircle2 className="h-3 w-3" />
-                                    ) : (
-                                      <Clock className="h-3 w-3" />
-                                    )}
-                                    {ms.title}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Bottom meta row */}
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {goal.status === "completed"
-                                ? `Completed`
-                                : days < 0
-                                  ? `${Math.abs(days)} days overdue`
-                                  : days === 0
-                                    ? "Due today"
-                                    : `${days} days left`}
-                            </span>
-                            {goal.streak > 0 && (
-                              <span className="inline-flex items-center gap-1 text-orange-500">
-                                <Flame className="h-3.5 w-3.5" />
-                                {goal.streak} day streak
-                              </span>
-                            )}
-                            {goal.linkedProjects.length > 0 && (
-                              <span className="inline-flex items-center gap-1">
-                                Linked: {goal.linkedProjects.join(", ")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Right: Tags + deadline */}
-                        <div className="flex flex-row lg:flex-col items-start gap-2 shrink-0 lg:border-l lg:pl-4 lg:border-border">
-                          <div className="flex flex-wrap gap-1.5">
-                            {goal.tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="text-xs text-muted-foreground whitespace-nowrap">
-                            <span className="font-medium">Due:</span>{" "}
-                            {formatDate(goal.targetDate)}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+        {/* ── Demo mode banner ── */}
+        {isDemoMode && (
+          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                Sign in
+              </a>{" "}
+              to manage your real goals.
+            </div>
           </div>
+        )}
+
+        {/* ── Loading state ── */}
+        {isLoading ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Skeleton className="h-[76px] rounded-xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
+            </div>
+            <Skeleton className="h-10 rounded-lg" />
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[200px] rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* ── Stats Cards ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
+                      <Target className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active Goals</p>
+                      <p className="text-2xl font-bold">{activeGoals}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completion Rate</p>
+                      <p className="text-2xl font-bold">{completionRate}%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500/10">
+                      <Flame className="h-5 w-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Best Streak</p>
+                      <p className="text-2xl font-bold">
+                        {longestStreak} {longestStreak === 1 ? "day" : "days"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ── Status Filter ── */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground shrink-0">Filter:</span>
+              {FILTER_OPTIONS.map((filter) => (
+                <Button
+                  key={filter.value}
+                  variant={statusFilter === filter.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter(filter.value)}
+                >
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* ── Goals List ── */}
+            {filteredGoals.length === 0 ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">
+                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No goals found</p>
+                    <p className="text-sm">
+                      {statusFilter !== "all"
+                        ? "Try a different filter or create a new goal"
+                        : "Create your first goal to start tracking your progress"}
+                    </p>
+                    {statusFilter === "all" && (
+                      <Button
+                        className="mt-4 bg-primary hover:bg-primary/90"
+                        onClick={() => setCreateOpen(true)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Your First Goal
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredGoals.map((goal: any, index: number) => {
+                  const statusKey = (goal.status as GoalStatus) || "not_started";
+                  const statusCfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.not_started;
+                  const progress = getProgress(goal);
+                  const days = goal.deadline ? daysUntil(goal.deadline) : null;
+                  const completedMilestones = (goal.milestones ?? []).filter((m: any) => m.completed).length;
+                  const totalMilestones = (goal.milestones ?? []).length;
+
+                  return (
+                    <motion.div
+                      key={goal._id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.06, duration: 0.3 }}
+                    >
+                      <Card className="group hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                            {/* Left: Main content */}
+                            <div className="flex-1 min-w-0 space-y-3">
+                              {/* Title row */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium shrink-0 ${statusCfg.bgColor} ${statusCfg.color}`}
+                                  >
+                                    {statusCfg.icon}
+                                    {statusCfg.label}
+                                  </div>
+                                  <h3 className="text-lg font-semibold truncate">
+                                    {goal.title}
+                                  </h3>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                  {goal.status !== "completed" && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
+                                      onClick={() => handleMarkComplete(goal._id)}
+                                      disabled={isCompleting === goal._id}
+                                      title="Mark complete"
+                                    >
+                                      {isCompleting === goal._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <CheckCircle2 className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => openEdit(goal)}
+                                    title="Edit goal"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    onClick={() => openDelete(goal)}
+                                    title="Delete goal"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              {goal.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {goal.description}
+                                </p>
+                              )}
+
+                              {/* Progress bar */}
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {goal.current ?? 0} / {goal.target ?? 0} {goal.unit}
+                                  </span>
+                                  <span className="font-semibold">{progress}%</span>
+                                </div>
+                                <Progress value={progress} className="h-2" />
+                              </div>
+
+                              {/* Milestones */}
+                              {totalMilestones > 0 && (
+                                <div className="space-y-1.5">
+                                  <p className="text-xs text-muted-foreground font-medium">
+                                    Milestones ({completedMilestones}/{totalMilestones})
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {(goal.milestones ?? []).map((ms: any) => (
+                                      <button
+                                        key={ms.id}
+                                        type="button"
+                                        onClick={() => handleToggleMilestone(goal._id, ms.id, ms.completed)}
+                                        className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                                          ms.completed
+                                            ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        }`}
+                                      >
+                                        {ms.completed ? (
+                                          <CheckCircle2 className="h-3 w-3" />
+                                        ) : (
+                                          <Clock className="h-3 w-3" />
+                                        )}
+                                        {ms.title}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Bottom meta row */}
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                                {goal.deadline && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {goal.status === "completed"
+                                      ? `Completed`
+                                      : days !== null && days < 0
+                                        ? `${Math.abs(days)} days overdue`
+                                        : days === 0
+                                          ? "Due today"
+                                          : `${days} days left`}
+                                  </span>
+                                )}
+                                {(goal.streak ?? 0) > 0 && (
+                                  <span className="inline-flex items-center gap-1 text-orange-500">
+                                    <Flame className="h-3.5 w-3.5" />
+                                    {goal.streak} day streak
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 capitalize">
+                                  {goal.type} goal
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Right: Type + deadline */}
+                            <div className="flex flex-row lg:flex-col items-start gap-2 shrink-0 lg:border-l lg:pl-4 lg:border-border">
+                              <Badge variant="secondary" className="text-xs capitalize">
+                                {goal.type}
+                              </Badge>
+                              {goal.deadline && (
+                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                  <span className="font-medium">Due:</span>{" "}
+                                  {formatDate(goal.deadline)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -794,24 +973,81 @@ export default function Goals() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={formType} onValueChange={setFormType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GOAL_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Select value={formUnit} onValueChange={setFormUnit}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-goal-target">Target</Label>
+                <Input
+                  id="edit-goal-target"
+                  type="number"
+                  value={formTarget}
+                  onChange={(e) => setFormTarget(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-goal-current">Current</Label>
+                <Input
+                  id="edit-goal-current"
+                  type="number"
+                  value={formCurrent}
+                  onChange={(e) => setFormCurrent(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="edit-goal-date">Target Date</Label>
                 <Input
                   id="edit-goal-date"
                   type="date"
-                  value={formTargetDate}
-                  onChange={(e) => setFormTargetDate(e.target.value)}
+                  value={formDeadline}
+                  onChange={(e) => setFormDeadline(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-goal-metric">Metric</Label>
-                <Input
-                  id="edit-goal-metric"
-                  value={formMetric}
-                  onChange={(e) => setFormMetric(e.target.value)}
-                />
+                <Label>Status</Label>
+                <Select value={formStatus} onValueChange={setFormStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_started">Not Started</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="abandoned">Abandoned</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <TagSelector />
           </div>
           <DialogFooter>
             <Button
@@ -821,11 +1057,19 @@ export default function Goals() {
                 resetForm();
                 setEditingGoal(null);
               }}
+              disabled={isUpdating}
             >
               Cancel
             </Button>
-            <Button className="bg-primary hover:bg-primary/90" onClick={handleEdit}>
-              Save Changes
+            <Button className="bg-primary hover:bg-primary/90" onClick={handleEdit} disabled={isUpdating}>
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -855,11 +1099,19 @@ export default function Goals() {
                 setDeleteOpen(false);
                 setDeletingGoal(null);
               }}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete Goal
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Goal"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
