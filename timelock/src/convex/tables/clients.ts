@@ -1,8 +1,11 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { sharingEntry } from "../sharedValidators";
 
 export const clientPolicies = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -28,10 +31,15 @@ export const clientPolicies = defineTable({
   createdAt: v.number(),
   lastUpdated: v.number(),
 })
-  .index("by_user", ["userId"]);
+  .index("by_user", ["userId"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const clients = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
+  teamId: v.optional(v.id("teams")),
+  sharing: v.optional(v.array(sharingEntry)),
   clientName: v.string(),
   platform: v.union(
     v.literal("upwork"),
@@ -43,13 +51,17 @@ export const clients = defineTable({
   hourlyRate: v.number(),
   contractType: v.union(v.literal("hourly"), v.literal("fixed")),
   riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  customFields: v.optional(v.any()), // { [key: string]: string | number | boolean }
   addedAt: v.number(),
   lastActivityAt: v.number(),
 })
   .index("by_user", ["userId"])
-  .index("by_user_and_name", ["userId", "clientName"]);
+  .index("by_user_and_name", ["userId", "clientName"])
+  .index("by_workspace", ["workspaceId"])
+  .index("by_team", ["teamId"]);
 
 export const clientCompanies = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
   email: v.string(),
   companyName: v.string(),
   contactName: v.string(),
@@ -61,9 +73,12 @@ export const clientCompanies = defineTable({
   lastLoginAt: v.number(),
   subscriptionTier: v.string(),
 })
-  .index("by_email", ["email"]);
+  .index("by_email", ["email"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const verificationRequests = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   clientId: v.id("clientCompanies"),
   freelancerUserId: v.id("users"),
   projectName: v.string(),
@@ -82,9 +97,11 @@ export const verificationRequests = defineTable({
 })
   .index("by_client", ["clientId"])
   .index("by_freelancer", ["freelancerUserId"])
-  .index("by_status", ["status"]);
+  .index("by_status", ["status"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const clientVerificationResults = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
   verificationRequestId: v.id("verificationRequests"),
   clientId: v.id("clientCompanies"),
   freelancerUserId: v.id("users"),
@@ -102,9 +119,11 @@ export const clientVerificationResults = defineTable({
 })
   .index("by_client", ["clientId"])
   .index("by_request", ["verificationRequestId"])
-  .index("by_freelancer", ["freelancerUserId"]);
+  .index("by_freelancer", ["freelancerUserId"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const clientActivityLog = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
   clientId: v.id("clientCompanies"),
   action: v.string(),
   targetFreelancerId: v.optional(v.id("users")),
@@ -112,4 +131,5 @@ export const clientActivityLog = defineTable({
   timestamp: v.number(),
 })
   .index("by_client", ["clientId"])
-  .index("by_timestamp", ["timestamp"]);
+  .index("by_timestamp", ["timestamp"])
+  .index("by_workspace", ["workspaceId"]);

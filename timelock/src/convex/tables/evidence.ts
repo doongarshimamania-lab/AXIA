@@ -1,9 +1,14 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { sharingEntry } from "../sharedValidators";
 
 export const evidenceTables = {
   evidenceSessions: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    teamId: v.optional(v.id("teams")),
+    sharing: v.optional(v.array(sharingEntry)),
     sessionId: v.id("workSessions"),
     platform: v.union(
       v.literal("upwork"),
@@ -17,9 +22,12 @@ export const evidenceTables = {
     status: v.union(v.literal("active"), v.literal("finalized")),
   })
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_session", ["sessionId"]),
+    .index("by_session", ["sessionId"])
+    .index("by_workspace", ["workspaceId"])
+    .index("by_team", ["teamId"]),
 
   evidenceEvents: defineTable({
+    workspaceId: v.optional(v.id("workspaces")),
     evidenceSessionId: v.id("evidenceSessions"),
     t: v.number(), // timestamp in ms
     kind: v.union(
@@ -33,10 +41,13 @@ export const evidenceTables = {
     data: v.any(),
     url: v.optional(v.string()),
   })
-    .index("by_session_and_time", ["evidenceSessionId", "t"]),
+    .index("by_session_and_time", ["evidenceSessionId", "t"])
+    .index("by_workspace", ["workspaceId"]),
 
   wcvmVerifications: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     sessionId: v.id("workSessions"),
     evidenceSessionId: v.id("evidenceSessions"),
     contextRelevanceScore: v.number(), // 0-100
@@ -52,11 +63,14 @@ export const evidenceTables = {
   })
     .index("by_user", ["userId"])
     .index("by_session", ["sessionId"])
-    .index("by_evidence_session", ["evidenceSessionId"]),
+    .index("by_evidence_session", ["evidenceSessionId"])
+    .index("by_workspace", ["workspaceId"]),
 
   evidenceMetadata: defineTable({
     evidenceId: v.string(),
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     sessionId: v.id("workSessions"),
     contextScore: v.number(), // 0-100
     complianceStatus: v.union(
@@ -70,5 +84,6 @@ export const evidenceTables = {
   })
     .index("by_user", ["userId"])
     .index("by_session", ["sessionId"])
-    .index("by_timestamp", ["timestamp"]),
+    .index("by_timestamp", ["timestamp"])
+    .index("by_workspace", ["workspaceId"]),
 };

@@ -16,6 +16,8 @@ export const businessTables = {
   // ─────────────────────────────────────────────
   clients: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     name: v.string(),
     email: v.optional(v.string()),
     company: v.optional(v.string()),
@@ -45,13 +47,16 @@ export const businessTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_user_and_name", ["userId", "name"]),
+    .index("by_user_and_name", ["userId", "name"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // CRM: PIPELINE STAGES
   // ─────────────────────────────────────────────
   pipelineStages: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     name: v.string(),
     order: v.number(), // display order
     color: v.optional(v.string()), // hex color
@@ -59,13 +64,16 @@ export const businessTables = {
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_and_order", ["userId", "order"]),
+    .index("by_user_and_order", ["userId", "order"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // CRM: DEALS
   // ─────────────────────────────────────────────
   deals: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     clientId: v.optional(v.id("clients")),
     pipelineStageId: v.id("pipelineStages"),
     title: v.string(),
@@ -81,13 +89,16 @@ export const businessTables = {
   })
     .index("by_user", ["userId"])
     .index("by_user_and_stage", ["userId", "pipelineStageId"])
-    .index("by_client", ["clientId"]),
+    .index("by_client", ["clientId"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // SMART PROPOSALS
   // ─────────────────────────────────────────────
   proposals: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     clientId: v.id("clients"),
     dealId: v.optional(v.id("deals")),
     title: v.string(),
@@ -134,13 +145,16 @@ export const businessTables = {
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
     .index("by_client", ["clientId"])
-    .index("by_public_token", ["publicToken"]),
+    .index("by_public_token", ["publicToken"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // PROPOSAL TEMPLATES
   // ─────────────────────────────────────────────
   proposalTemplates: defineTable({
     userId: v.optional(v.id("users")), // null = system template
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     name: v.string(),
     industry: v.optional(v.string()),
     category: v.optional(v.string()), // "web_design", "consulting", "marketing", etc.
@@ -161,7 +175,8 @@ export const businessTables = {
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_industry", ["industry"]),
+    .index("by_industry", ["industry"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // PROPOSAL FOLLOW-UPS (Smart Day 3/7/14)
@@ -169,6 +184,8 @@ export const businessTables = {
   proposalFollowUps: defineTable({
     proposalId: v.id("proposals"),
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     dayNumber: v.number(), // 3, 7, or 14
     tone: v.union(v.literal("friendly"), v.literal("professional"), v.literal("firm")),
     status: v.union(
@@ -186,13 +203,16 @@ export const businessTables = {
   })
     .index("by_proposal", ["proposalId"])
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_scheduled", ["scheduledFor"]),
+    .index("by_scheduled", ["scheduledFor"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // INVOICES (Validated Billing)
   // ─────────────────────────────────────────────
   invoices: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     clientId: v.id("clients"),
     projectId: v.optional(v.id("projects")),
     proposalId: v.optional(v.id("proposals")),
@@ -246,7 +266,8 @@ export const businessTables = {
     .index("by_user_and_status", ["userId", "status"])
     .index("by_client", ["clientId"])
     .index("by_public_token", ["publicToken"])
-    .index("by_user_and_number", ["userId", "invoiceNumber"]),
+    .index("by_user_and_number", ["userId", "invoiceNumber"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // INVOICE WORK LINKS (Validated Billing Proof)
@@ -254,6 +275,8 @@ export const businessTables = {
   invoiceWorkLinks: defineTable({
     invoiceId: v.id("invoices"),
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     lineItemIndex: v.number(), // which line item this proof belongs to
     // Link to various proof sources
     workSessionId: v.optional(v.id("workSessions")),
@@ -272,7 +295,8 @@ export const businessTables = {
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
-    .index("by_session", ["workSessionId"]),
+    .index("by_session", ["workSessionId"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // PAYMENT REMINDERS
@@ -280,6 +304,8 @@ export const businessTables = {
   paymentReminders: defineTable({
     invoiceId: v.id("invoices"),
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     sequenceDay: v.number(), // 3, 7, 14
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
     tone: v.union(v.literal("friendly"), v.literal("professional"), v.literal("firm")),
@@ -297,13 +323,16 @@ export const businessTables = {
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_scheduled", ["scheduledFor"]),
+    .index("by_scheduled", ["scheduledFor"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // SCOPE DEFINITIONS
   // ─────────────────────────────────────────────
   scopeDefinitions: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     projectId: v.optional(v.id("projects")),
     proposalId: v.optional(v.id("proposals")),
     clientId: v.optional(v.id("clients")),
@@ -330,13 +359,16 @@ export const businessTables = {
     .index("by_user", ["userId"])
     .index("by_project", ["projectId"])
     .index("by_client", ["clientId"])
-    .index("by_approval_token", ["clientApprovalToken"]),
+    .index("by_approval_token", ["clientApprovalToken"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // SCOPE CHANGE ORDERS
   // ─────────────────────────────────────────────
   scopeChangeOrders: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
     scopeDefinitionId: v.id("scopeDefinitions"),
     clientId: v.optional(v.id("clients")),
     deliverableId: v.optional(v.string()), // which deliverable triggered this
@@ -367,5 +399,6 @@ export const businessTables = {
     .index("by_scope", ["scopeDefinitionId"])
     .index("by_client", ["clientId"])
     .index("by_approval_token", ["clientApprovalToken"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_workspace", ["workspaceId"]),
 };

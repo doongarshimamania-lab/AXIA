@@ -5,10 +5,20 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getStages = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
+
+    // If workspaceId provided, filter by workspace; otherwise fall back to userId
+    if (workspaceId) {
+      return await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .order("asc")
+        .collect();
+    }
+
     return await ctx.db
       .query("pipelineStages")
       .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
@@ -18,10 +28,19 @@ export const getStages = query({
 });
 
 export const getDeals = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
+
+    // If workspaceId provided, filter by workspace; otherwise fall back to userId
+    if (workspaceId) {
+      return await ctx.db
+        .query("deals")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    }
+
     return await ctx.db
       .query("deals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -43,20 +62,31 @@ export const getDealsByStage = query({
 });
 
 export const getPipelineStats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return { totalDeals: 0, totalValue: 0, weightedValue: 0, byStage: [] };
 
-    const deals = await ctx.db
-      .query("deals")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    const stages = await ctx.db
-      .query("pipelineStages")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    let deals, stages;
+    if (workspaceId) {
+      deals = await ctx.db
+        .query("deals")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+      stages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    } else {
+      deals = await ctx.db
+        .query("deals")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      stages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
     const weightedValue = deals.reduce((sum, d) => sum + (d.value * d.probability / 100), 0);
@@ -79,15 +109,24 @@ export const getPipelineStats = query({
 // ─── MUTATIONS ────────────────────────────────────────────────────────────
 
 export const createDefaultStages = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const existing = await ctx.db
-      .query("pipelineStages")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    // Check existing stages
+    let existing;
+    if (workspaceId) {
+      existing = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    } else {
+      existing = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     if (existing.length > 0) return existing;
 
@@ -104,6 +143,8 @@ export const createDefaultStages = mutation({
     for (let i = 0; i < defaults.length; i++) {
       const id = await ctx.db.insert("pipelineStages", {
         userId,
+        workspaceId: workspaceId ?? undefined,
+        createdBy: userId,
         name: defaults[i].name,
         color: defaults[i].color,
         order: i,
@@ -116,20 +157,34 @@ export const createDefaultStages = mutation({
 });
 
 export const addStage = mutation({
-  args: { name: v.string(), color: v.string() },
-  handler: async (ctx, { name, color }) => {
+  args: {
+    name: v.string(),
+    color: v.string(),
+    workspaceId: v.optional(v.id("workspaces")),
+  },
+  handler: async (ctx, { name, color, workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const stages = await ctx.db
-      .query("pipelineStages")
-      .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
-      .collect();
+    let stages;
+    if (workspaceId) {
+      stages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    } else {
+      stages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     const maxOrder = stages.length > 0 ? Math.max(...stages.map(s => s.order)) : -1;
 
     return await ctx.db.insert("pipelineStages", {
       userId,
+      workspaceId: workspaceId ?? undefined,
+      createdBy: userId,
       name,
       color,
       order: maxOrder + 1,
@@ -146,7 +201,7 @@ export const updateStage = mutation({
     const stage = await ctx.db.get(stageId);
     if (!stage || stage.userId !== userId) throw new Error("Not authorized");
 
-    const updates: any = {};
+    const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name;
     if (color !== undefined) updates.color = color;
     if (order !== undefined) updates.order = order;
@@ -199,10 +254,15 @@ export const createDeal = mutation({
     contactName: v.optional(v.string()),
     expectedCloseDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    workspaceId: v.optional(v.id("workspaces")),
+    teamId: v.optional(v.id("teams")),
+    customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    const { workspaceId, teamId, customFields, ...rest } = args;
 
     const dealsInStage = await ctx.db
       .query("deals")
@@ -213,7 +273,11 @@ export const createDeal = mutation({
 
     return await ctx.db.insert("deals", {
       userId,
-      ...args,
+      workspaceId: workspaceId ?? undefined,
+      createdBy: userId,
+      teamId: teamId ?? undefined,
+      ...rest,
+      customFields: customFields ?? undefined,
       probability: args.probability ?? 20,
       currency: "USD",
       order: maxOrder + 1,
@@ -236,6 +300,7 @@ export const updateDeal = mutation({
     contactName: v.optional(v.string()),
     expectedCloseDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    customFields: v.optional(v.any()),
   },
   handler: async (ctx, { dealId, ...updates }) => {
     const userId = await getAuthUserId(ctx);
@@ -244,7 +309,7 @@ export const updateDeal = mutation({
     const deal = await ctx.db.get(dealId);
     if (!deal || deal.userId !== userId) throw new Error("Not authorized");
 
-    const patch: any = { ...updates, updatedAt: Date.now() };
+    const patch: Record<string, any> = { ...updates, updatedAt: Date.now() };
     await ctx.db.patch(dealId, patch);
   },
 });

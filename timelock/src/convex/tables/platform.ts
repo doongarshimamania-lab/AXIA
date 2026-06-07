@@ -3,6 +3,8 @@ import { v } from "convex/values";
 
 export const networkConnections = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   targetUserId: v.id("users"),
   status: v.union(
     v.literal("pending"),
@@ -12,9 +14,11 @@ export const networkConnections = defineTable({
   createdAt: v.number(),
 })
   .index("by_user", ["userId"])
-  .index("by_user_and_target", ["userId", "targetUserId"]);
+  .index("by_user_and_target", ["userId", "targetUserId"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const platformComplianceChecks = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
   platform: v.string(),
   complianceScore: v.number(),
   complianceStatus: v.any(),
@@ -22,10 +26,13 @@ export const platformComplianceChecks = defineTable({
   termsLastUpdated: v.string(),
 })
   .index("by_platform", ["platform"])
-  .index("by_last_checked", ["lastChecked"]);
+  .index("by_last_checked", ["lastChecked"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const platformConnections = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   platform: v.union(
     v.literal("upwork"),
     v.literal("fiverr"),
@@ -49,10 +56,13 @@ export const platformConnections = defineTable({
 })
   .index("by_user", ["userId"])
   .index("by_user_and_platform", ["userId", "platform"])
-  .index("by_status", ["status"]);
+  .index("by_status", ["status"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const platformImportedData = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   platform: v.union(
     v.literal("upwork"),
     v.literal("fiverr"),
@@ -72,10 +82,13 @@ export const platformImportedData = defineTable({
 })
   .index("by_user", ["userId"])
   .index("by_user_and_platform", ["userId", "platform"])
-  .index("by_user_and_type", ["userId", "dataType"]);
+  .index("by_user_and_type", ["userId", "dataType"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const crossPlatformVerifications = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   platforms: v.array(v.string()),
   verificationStatus: v.union(
     v.literal("verified"),
@@ -93,4 +106,5 @@ export const crossPlatformVerifications = defineTable({
   nextVerification: v.number(),
 })
   .index("by_user", ["userId"])
-  .index("by_status", ["verificationStatus"]);
+  .index("by_status", ["verificationStatus"])
+  .index("by_workspace", ["workspaceId"]);

@@ -3,6 +3,8 @@ import { v } from "convex/values";
 
 export const auditTrail = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   user_id_hash: v.string(),
   operation: v.string(),
   source_platform: v.string(),
@@ -11,10 +13,13 @@ export const auditTrail = defineTable({
 })
   .index("by_user_hash", ["user_id_hash"])
   .index("by_timestamp", ["timestamp"])
-  .index("by_user_and_timestamp", ["userId", "timestamp"]);
+  .index("by_user_and_timestamp", ["userId", "timestamp"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const consentManagement = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   user_id_hash: v.string(),
   consent_type: v.union(v.literal("PII"), v.literal("health"), v.literal("financial")),
   status: v.union(v.literal("granted"), v.literal("revoked")),
@@ -25,10 +30,13 @@ export const consentManagement = defineTable({
 })
   .index("by_user_hash", ["user_id_hash"])
   .index("by_user_and_type", ["userId", "consent_type"])
-  .index("by_expiration", ["expires_at"]);
+  .index("by_expiration", ["expires_at"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const complianceCertificates = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   user_id_hash: v.string(),
   certificate_type: v.union(v.literal("deletion"), v.literal("export"), v.literal("audit")),
   certificate_hash: v.string(),
@@ -37,9 +45,11 @@ export const complianceCertificates = defineTable({
 })
   .index("by_user_hash", ["user_id_hash"])
   .index("by_type", ["certificate_type"])
-  .index("by_user_and_type", ["userId", "certificate_type"]);
+  .index("by_user_and_type", ["userId", "certificate_type"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const dataLineage = defineTable({
+  workspaceId: v.optional(v.id("workspaces")),
   record_id: v.string(),
   user_id_hash: v.string(),
   source_platform: v.string(),
@@ -49,10 +59,13 @@ export const dataLineage = defineTable({
 })
   .index("by_user_hash", ["user_id_hash"])
   .index("by_record_id", ["record_id"])
-  .index("by_platform", ["source_platform"]);
+  .index("by_platform", ["source_platform"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const consentAudits = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   platform: v.string(),
   action: v.union(
     v.literal("consent_granted"),
@@ -66,14 +79,18 @@ export const consentAudits = defineTable({
 })
   .index("by_user", ["userId"])
   .index("by_user_and_platform", ["userId", "platform"])
-  .index("by_timestamp", ["timestamp"]);
+  .index("by_timestamp", ["timestamp"])
+  .index("by_workspace", ["workspaceId"]);
 
 export const extensionTokens = defineTable({
   userId: v.id("users"),
+  workspaceId: v.optional(v.id("workspaces")),
+  createdBy: v.optional(v.id("users")),
   token: v.string(),
   createdAt: v.number(),
   expiresAt: v.number(),
   lastUsed: v.optional(v.number()),
 })
   .index("by_user", ["userId"])
-  .index("by_token", ["token"]);
+  .index("by_token", ["token"])
+  .index("by_workspace", ["workspaceId"]);
