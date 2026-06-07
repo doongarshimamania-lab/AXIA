@@ -579,10 +579,17 @@ export default function Pipeline() {
           description: "Redirecting to proposal builder...",
         });
         navigate(`/proposals/new?edit=${proposalId}`);
+      } else {
+        // Mutation returned undefined — likely not deployed or auth issue
+        toast.error("Could not create proposal", {
+          description: "Please make sure you're signed in and try again.",
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create proposal from deal:", err);
-      toast.error("Failed to create proposal from deal");
+      toast.error("Failed to create proposal from deal", {
+        description: err?.message || "An unexpected error occurred",
+      });
     } finally {
       setIsCreatingProposal(null);
     }
@@ -761,7 +768,6 @@ export default function Pipeline() {
 
                   {/* ── Deal Cards ── */}
                   <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-360px)] overflow-y-auto scrollbar-thin">
-                    <AnimatePresence mode="popLayout">
                       {stageDeals.map((deal) => (
                         <DealCard
                           key={deal._id}
@@ -777,7 +783,6 @@ export default function Pipeline() {
                           onCreateProposal={() => handleCreateProposalFromDeal(deal)}
                         />
                       ))}
-                    </AnimatePresence>
 
                     {stageDeals.length === 0 && !isDragOver && (
                       <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/60">
@@ -1458,18 +1463,9 @@ function DealCard({
   const sourceInfo = getSourceInfo(deal.source);
   const daysLeft = daysUntilClose(deal.expectedCloseDate);
   return (
-    <motion.div
-      layout
-      layoutId={deal._id}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{
-        opacity: isDragging ? 0.5 : 1,
-        scale: isDragging ? 1.02 : 1,
-      }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.2 }}
+    <div
       draggable
-      onDragStart={(e) => onDragStart(e as unknown as React.DragEvent, deal)}
+      onDragStart={(e) => onDragStart(e, deal)}
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={`
@@ -1477,7 +1473,7 @@ function DealCard({
         transition-all duration-150 select-none
         ${
           isDragging
-            ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5 shadow-lg z-50"
+            ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5 shadow-lg z-50 opacity-50 scale-[1.02]"
             : "border-border bg-card hover:border-[#8B5CF6]/25 hover:shadow-sm"
         }
       `}
@@ -1576,7 +1572,7 @@ function DealCard({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 

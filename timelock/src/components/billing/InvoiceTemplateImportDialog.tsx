@@ -41,17 +41,24 @@ import {
   Receipt,
   Landmark,
   Percent,
+  User,
+  Building2,
+  Tag,
+  StickyNote,
+  AlertTriangle,
 } from "lucide-react";
 import {
   parseUploadedInvoiceTemplate,
+  parseUploadedInvoiceTemplateWithMeta,
   type InvoiceSection,
+  type Confidence,
 } from "@/lib/template-parser";
 import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type InvoiceSectionType = "heading" | "text" | "line_items" | "subtotal" | "tax" | "terms" | "bank_details" | "divider";
+type InvoiceSectionType = "heading" | "text" | "line_items" | "subtotal" | "tax" | "discount" | "terms" | "bank_details" | "divider" | "client_info" | "sender_info" | "invoice_meta" | "total" | "notes";
 
 interface InvoiceTemplateImportDialogProps {
   open: boolean;
@@ -70,9 +77,15 @@ const sectionTypeConfig: Record<
   line_items: { label: "Line Items", icon: Receipt, color: "#22c55e" },
   subtotal: { label: "Subtotal", icon: DollarSign, color: "#f59e0b" },
   tax: { label: "Tax", icon: Percent, color: "#ef4444" },
+  discount: { label: "Discount", icon: Tag, color: "#8b5cf6" },
   terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
   bank_details: { label: "Bank Details", icon: Landmark, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
+  client_info: { label: "Client Info", icon: User, color: "#ec4899" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  invoice_meta: { label: "Invoice Meta", icon: FileText, color: "#06b6d4" },
+  total: { label: "Total", icon: DollarSign, color: "#22c55e" },
+  notes: { label: "Notes", icon: StickyNote, color: "#a855f7" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -459,7 +472,7 @@ function InvoiceSectionPreviewItem({
   onTypeChange: (id: string, type: InvoiceSectionType) => void;
   onRemove: (id: string) => void;
 }) {
-  const cfg = sectionTypeConfig[section.type];
+  const cfg = sectionTypeConfig[section.type] || sectionTypeConfig.text;
   const Icon = cfg.icon;
   const [isCollapsed, setIsCollapsed] = useState(true);
 

@@ -120,7 +120,7 @@ export const createProposal = mutation({
     title: v.string(),
     sections: v.array(v.object({
       id: v.string(),
-      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
+      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
       content: v.string(),
       metadata: v.optional(v.any()),
     })),
@@ -154,7 +154,7 @@ export const updateProposal = mutation({
     title: v.optional(v.string()),
     sections: v.optional(v.array(v.object({
       id: v.string(),
-      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
+      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
       content: v.string(),
       metadata: v.optional(v.any()),
     }))),
@@ -424,7 +424,7 @@ export const saveUploadedTemplate = mutation({
     name: v.string(),
     sections: v.array(v.object({
       id: v.string(),
-      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
+      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
       content: v.string(),
       metadata: v.optional(v.any()),
     })),

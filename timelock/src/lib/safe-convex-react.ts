@@ -79,9 +79,14 @@ export function useQuery(query: any, args: any): any {
 }
 
 /**
- * Safe useMutation — returns a wrapped mutation function that catches errors
- * instead of letting them propagate as uncaught promise rejections.
- * Passing `null` as the mutation reference returns a no-op function.
+ * Safe useMutation — returns a wrapped mutation function.
+ *
+ * - If the mutation reference is null/undefined, returns a no-op that logs a warning.
+ * - If the mutation reference is valid, wraps it so that:
+ *   - Initialization errors (bad reference) are caught and a no-op is returned
+ *   - Execution errors are RE-THROWN so callers' try/catch blocks work properly.
+ *     The wrapper logs the error first, then re-throws — this gives us console
+ *     visibility while still letting pages show proper toast.error() feedback.
  */
 export function useMutation(mutation: any): any {
   // If the mutation reference is null/undefined, return a no-op function.
@@ -105,8 +110,9 @@ export function useMutation(mutation: any): any {
         try {
           return await originalMutation(args);
         } catch (err: any) {
+          // Log for debugging, then RE-THROW so callers can handle it
           console.warn("[safe-convex-react] useMutation error:", err?.message || err);
-          return undefined;
+          throw err;
         }
       },
       [originalMutation]
@@ -124,6 +130,7 @@ export function useMutation(mutation: any): any {
 
 /**
  * Safe useAction — same pattern as useMutation for Convex actions.
+ * Execution errors are re-thrown so callers can handle them.
  */
 export function useAction(action: any): any {
   try {
@@ -136,7 +143,7 @@ export function useAction(action: any): any {
           return await originalAction(args);
         } catch (err: any) {
           console.warn("[safe-convex-react] useAction error:", err?.message || err);
-          return undefined;
+          throw err;
         }
       },
       [originalAction]

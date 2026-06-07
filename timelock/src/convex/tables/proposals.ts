@@ -1,6 +1,27 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Shared section type union — used by both proposals and proposalTemplates
+const sectionTypeUnion = v.union(
+  v.literal("heading"),
+  v.literal("text"),
+  v.literal("pricing"),
+  v.literal("terms"),
+  v.literal("milestone"),
+  v.literal("divider"),
+  v.literal("client_info"),
+  v.literal("sender_info"),
+  v.literal("summary"),
+  v.literal("scope_of_work"),
+);
+
+const sectionSchema = v.object({
+  id: v.string(),
+  type: sectionTypeUnion,
+  content: v.string(),
+  metadata: v.optional(v.any()),
+});
+
 export const proposalTables = {
   proposals: defineTable({
     userId: v.id("users"),
@@ -16,21 +37,7 @@ export const proposalTables = {
       v.literal("expired")
     ),
     publicToken: v.string(), // for client-facing view
-    sections: v.array(
-      v.object({
-        id: v.string(),
-        type: v.union(
-          v.literal("heading"),
-          v.literal("text"),
-          v.literal("pricing"),
-          v.literal("terms"),
-          v.literal("milestone"),
-          v.literal("divider")
-        ),
-        content: v.string(),
-        metadata: v.optional(v.any()),
-      })
-    ),
+    sections: v.array(sectionSchema),
     totalValue: v.number(),
     currency: v.optional(v.string()),
     validUntil: v.optional(v.number()),
@@ -55,21 +62,7 @@ export const proposalTables = {
     name: v.string(),
     industry: v.optional(v.string()),
     description: v.optional(v.string()),
-    sections: v.array(
-      v.object({
-        id: v.string(),
-        type: v.union(
-          v.literal("heading"),
-          v.literal("text"),
-          v.literal("pricing"),
-          v.literal("terms"),
-          v.literal("milestone"),
-          v.literal("divider")
-        ),
-        content: v.string(),
-        metadata: v.optional(v.any()),
-      })
-    ),
+    sections: v.array(sectionSchema),
     isSystem: v.optional(v.boolean()),
     usageCount: v.optional(v.number()),
     createdAt: v.number(),

@@ -509,9 +509,15 @@ export const saveUploadedInvoiceTemplate = mutation({
         v.literal("line_items"),
         v.literal("subtotal"),
         v.literal("tax"),
+        v.literal("discount"),
         v.literal("terms"),
         v.literal("bank_details"),
-        v.literal("divider")
+        v.literal("divider"),
+        v.literal("client_info"),
+        v.literal("sender_info"),
+        v.literal("invoice_meta"),
+        v.literal("total"),
+        v.literal("notes")
       ),
       content: v.string(),
       metadata: v.optional(v.any()),

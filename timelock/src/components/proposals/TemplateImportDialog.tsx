@@ -39,17 +39,23 @@ import {
   Minus,
   Trash2,
   Save,
+  User,
+  Building2,
+  ClipboardList,
+  AlertTriangle,
 } from "lucide-react";
 import {
   parseUploadedTemplate,
+  parseUploadedTemplateWithMeta,
   type ProposalSection,
+  type Confidence,
 } from "@/lib/template-parser";
 import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+type SectionType = "heading" | "text" | "pricing" | "terms" | "milestone" | "divider" | "client_info" | "sender_info" | "summary" | "scope_of_work";
 
 interface TemplateImportDialogProps {
   open: boolean;
@@ -69,6 +75,10 @@ const sectionTypeConfig: Record<
   terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
   milestone: { label: "Milestone", icon: Milestone, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
+  client_info: { label: "Client Info", icon: User, color: "#ec4899" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  summary: { label: "Summary", icon: ClipboardList, color: "#f97316" },
+  scope_of_work: { label: "Scope", icon: FileText, color: "#06b6d4" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -310,7 +320,7 @@ export function TemplateImportDialog({
 
                     <div className="space-y-1.5 max-h-[350px] overflow-y-auto pr-1">
                       {parsedSections.map((section, idx) => {
-                        const cfg = sectionTypeConfig[section.type];
+                        const cfg = sectionTypeConfig[section.type] || sectionTypeConfig.text;
                         const Icon = cfg.icon;
 
                         return (
@@ -437,7 +447,7 @@ function SectionPreviewItem({
   onTypeChange: (id: string, type: SectionType) => void;
   onRemove: (id: string) => void;
 }) {
-  const cfg = sectionTypeConfig[section.type];
+  const cfg = sectionTypeConfig[section.type] || sectionTypeConfig.text;
   const Icon = cfg.icon;
   const [isCollapsed, setIsCollapsed] = useState(true);
 
