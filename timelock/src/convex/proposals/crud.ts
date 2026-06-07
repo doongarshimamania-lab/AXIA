@@ -377,3 +377,72 @@ export const seedTemplates = mutation({
     }
   },
 });
+
+export const createProposalFromDeal = mutation({
+  args: { dealId: v.id("deals") },
+  handler: async (ctx, { dealId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const deal = await ctx.db.get(dealId);
+    if (!deal || deal.userId !== userId) throw new Error("Not authorized");
+
+    // Generate auto-populated sections from deal data
+    const sections = [
+      { id: "deal_heading", type: "heading" as const, content: deal.title },
+      { id: "deal_desc", type: "text" as const, content: deal.description || `Proposal for ${deal.title}` },
+      { id: "deal_pricing", type: "pricing" as const, content: "Project Pricing", metadata: { items: [{ name: deal.title, price: deal.value }] } },
+      { id: "deal_terms", type: "terms" as const, content: "Payment Terms: 30% upfront, 40% at midpoint, 30% on delivery. Project scope changes will be billed at an agreed hourly rate." },
+    ];
+
+    const proposalId = await ctx.db.insert("proposals", {
+      userId,
+      dealId,
+      clientId: deal.clientId,
+      title: `Proposal: ${deal.title}`,
+      status: "draft",
+      publicToken: generateToken(),
+      sections,
+      totalValue: deal.value,
+      currency: deal.currency || "USD",
+      clientName: deal.contactName,
+      clientEmail: deal.contactEmail,
+      notes: deal.notes,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Link deal to proposal
+    await ctx.db.patch(dealId, { proposalId, updatedAt: Date.now() });
+
+    return proposalId;
+  },
+});
+
+export const saveUploadedTemplate = mutation({
+  args: {
+    name: v.string(),
+    sections: v.array(v.object({
+      id: v.string(),
+      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider")),
+      content: v.string(),
+      metadata: v.optional(v.any()),
+    })),
+    industry: v.optional(v.string()),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, { name, sections, industry, description }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    return await ctx.db.insert("proposalTemplates", {
+      userId,
+      name,
+      sections,
+      industry,
+      description,
+      usageCount: 0,
+      createdAt: Date.now(),
+    });
+  },
+});

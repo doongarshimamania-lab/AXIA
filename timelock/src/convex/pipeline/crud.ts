@@ -274,3 +274,31 @@ export const deleteDeal = mutation({
     await ctx.db.delete(dealId);
   },
 });
+
+export const linkDealToProposal = mutation({
+  args: { dealId: v.id("deals"), proposalId: v.id("proposals") },
+  handler: async (ctx, { dealId, proposalId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const deal = await ctx.db.get(dealId);
+    if (!deal || deal.userId !== userId) throw new Error("Not authorized");
+
+    const proposal = await ctx.db.get(proposalId);
+    if (!proposal || proposal.userId !== userId) throw new Error("Not authorized");
+
+    await ctx.db.patch(dealId, { proposalId, updatedAt: Date.now() });
+    await ctx.db.patch(proposalId, { dealId, updatedAt: Date.now() });
+  },
+});
+
+export const getDeal = query({
+  args: { dealId: v.id("deals") },
+  handler: async (ctx, { dealId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const deal = await ctx.db.get(dealId);
+    if (!deal || deal.userId !== userId) return null;
+    return deal;
+  },
+});

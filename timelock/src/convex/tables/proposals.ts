@@ -5,6 +5,7 @@ export const proposalTables = {
   proposals: defineTable({
     userId: v.id("users"),
     clientId: v.optional(v.id("clients")),
+    dealId: v.optional(v.id("deals")),
     title: v.string(),
     status: v.union(
       v.literal("draft"),

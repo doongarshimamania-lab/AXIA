@@ -47,7 +47,9 @@ import {
   LayoutTemplate,
   Sparkles,
   X,
+  Upload,
 } from "lucide-react";
+import { TemplateImportDialog } from "@/components/proposals/TemplateImportDialog";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -138,6 +140,11 @@ export default function ProposalBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
+  const fromDealId = searchParams.get("fromDeal");
+  const dealIdParam = searchParams.get("dealId");
+
+  // Use fromDeal or dealId param (fromDeal takes priority)
+  const activeDealId = fromDealId || dealIdParam;
 
   const isEditing = !!editId;
 
@@ -145,6 +152,11 @@ export default function ProposalBuilder() {
   const existingProposal = useQuery(
     api.proposals.crud.getProposal,
     editId ? { proposalId: editId as any } : "skip"
+  ) as any;
+
+  const dealData = useQuery(
+    api.pipeline.crud.getDeal,
+    activeDealId ? { dealId: activeDealId as any } : "skip"
   ) as any;
 
   const templates = useQuery(api.proposals.crud.getTemplates, {}) as Template[] | undefined;
@@ -169,7 +181,9 @@ export default function ProposalBuilder() {
   const [isSending, setIsSending] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showSectionTypeDropdown, setShowSectionTypeDropdown] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [createdProposalId, setCreatedProposalId] = useState<string | null>(null);
+  const [dealLoaded, setDealLoaded] = useState(false);
 
   // Load existing proposal for editing
   useEffect(() => {
@@ -191,6 +205,25 @@ export default function ProposalBuilder() {
       setCreatedProposalId(existingProposal._id);
     }
   }, [existingProposal, isEditing]);
+
+  // Load deal data when coming from pipeline (fromDeal param)
+  useEffect(() => {
+    if (dealData && activeDealId && !dealLoaded && !isEditing) {
+      setTitle(`Proposal: ${dealData.title || ""}`);
+      setClientName(dealData.contactName || "");
+      setClientEmail(dealData.contactEmail || "");
+      // Pre-populate sections from deal data
+      const dealSections: ProposalSection[] = [
+        { id: generateId(), type: "heading", content: dealData.title || "" },
+        { id: generateId(), type: "text", content: dealData.description || `Proposal for ${dealData.title || "Project"}` },
+        { id: generateId(), type: "pricing", content: "Project Pricing", metadata: { items: [{ name: dealData.title || "Service", price: dealData.value || 0 }] } },
+        { id: generateId(), type: "terms", content: "Payment Terms: 30% upfront, 40% at midpoint, 30% on delivery. Project scope changes will be billed at an agreed hourly rate." },
+      ];
+      setSections(dealSections);
+      if (dealData.notes) setNotes(dealData.notes);
+      setDealLoaded(true);
+    }
+  }, [dealData, activeDealId, dealLoaded, isEditing]);
 
   // Auto-calculate total value
   const totalValue = useMemo(() => calculateTotal(sections), [sections]);
@@ -301,6 +334,12 @@ export default function ProposalBuilder() {
     setSections(template.sections.map((s) => ({ ...s, id: generateId() })));
     setShowTemplateDialog(false);
     toast.success(`Template "${template.name}" applied`);
+  }, []);
+
+  // Apply imported sections
+  const applyImportedSections = useCallback((importedSections: ProposalSection[]) => {
+    setSections(importedSections.map(s => ({ ...s, id: generateId() })));
+    toast.success(`Imported ${importedSections.length} sections`);
   }, []);
 
   // ─── Save / Send ───────────────────────────────────────────────────────
@@ -551,15 +590,26 @@ export default function ProposalBuilder() {
               <CardHeader className="pb-3 px-5 pt-5">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[15px] font-semibold">Template</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-[12px]"
-                    onClick={() => setShowTemplateDialog(true)}
-                  >
-                    <LayoutTemplate className="h-3.5 w-3.5" />
-                    Choose Template
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-[12px]"
+                      onClick={() => setShowImportDialog(true)}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      Import Template
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-[12px]"
+                      onClick={() => setShowTemplateDialog(true)}
+                    >
+                      <LayoutTemplate className="h-3.5 w-3.5" />
+                      Choose Template
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="px-5 pb-5">
@@ -779,6 +829,13 @@ export default function ProposalBuilder() {
           onClick={() => setShowSectionTypeDropdown(false)}
         />
       )}
+
+      {/* Template Import Dialog */}
+      <TemplateImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onApply={applyImportedSections}
+      />
     </motion.div>
   );
 }

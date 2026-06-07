@@ -4,6 +4,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 import {
   Card,
   CardContent,
@@ -235,12 +236,14 @@ export default function Pipeline() {
     | PipelineStats
     | undefined;
 
+  const navigate = useNavigate();
   const createDefaultStages = useMutation(api.pipeline.crud.createDefaultStages);
   const createDealMutation = useMutation(api.pipeline.crud.createDeal);
   const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
   const updateDealMutation = useMutation(api.pipeline.crud.updateDeal);
   const deleteDealMutation = useMutation(api.pipeline.crud.deleteDeal);
   const seedMockPipeline = useMutation(api.seedNew.seedMockPipeline);
+  const createProposalFromDeal = useMutation(api.proposals.crud.createProposalFromDeal);
 
   // ── Local State ──
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -251,6 +254,7 @@ export default function Pipeline() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [dragOverStageId, setDragOverStageId] = useState<Id<"pipelineStages"> | null>(null);
+  const [isCreatingProposal, setIsCreatingProposal] = useState<string | null>(null); // dealId being processed
 
   // ── Create Deal Form State ──
   const [formTitle, setFormTitle] = useState("");
@@ -566,6 +570,24 @@ export default function Pipeline() {
     }
   }, [detailDeal, deleteDealMutation]);
 
+  const handleCreateProposalFromDeal = useCallback(async (deal: Deal) => {
+    setIsCreatingProposal(deal._id);
+    try {
+      const proposalId = await createProposalFromDeal({ dealId: deal._id as any });
+      if (proposalId) {
+        toast.success("Draft proposal created from deal!", {
+          description: "Redirecting to proposal builder...",
+        });
+        navigate(`/proposals/new?edit=${proposalId}`);
+      }
+    } catch (err) {
+      console.error("Failed to create proposal from deal:", err);
+      toast.error("Failed to create proposal from deal");
+    } finally {
+      setIsCreatingProposal(null);
+    }
+  }, [createProposalFromDeal, navigate]);
+
   // ─── RENDER ────────────────────────────────────────────────────────────
 
   return (
@@ -748,9 +770,11 @@ export default function Pipeline() {
                           isDragging={
                             draggedDeal?._id === deal._id
                           }
+                          isCreatingProposal={isCreatingProposal === deal._id}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           onClick={() => openDealDetail(deal)}
+                          onCreateProposal={() => handleCreateProposalFromDeal(deal)}
                         />
                       ))}
                     </AnimatePresence>
@@ -1416,16 +1440,20 @@ function DealCard({
   deal,
   stage,
   isDragging,
+  isCreatingProposal,
   onDragStart,
   onDragEnd,
   onClick,
+  onCreateProposal,
 }: {
   deal: Deal;
   stage: Stage;
   isDragging: boolean;
+  isCreatingProposal: boolean;
   onDragStart: (e: React.DragEvent, deal: Deal) => void;
   onDragEnd: () => void;
   onClick: () => void;
+  onCreateProposal: () => void;
 }) {
   const sourceInfo = getSourceInfo(deal.source);
   const daysLeft = daysUntilClose(deal.expectedCloseDate);
@@ -1454,9 +1482,29 @@ function DealCard({
         }
       `}
     >
-      {/* Drag handle indicator */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-50 transition-opacity">
-        <GripVertical className="h-3.5 w-3.5" />
+      {/* Drag handle + Create Proposal buttons */}
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreateProposal();
+          }}
+          disabled={isCreatingProposal}
+          title="Create Proposal from this deal"
+        >
+          {isCreatingProposal ? (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+            >
+              <Zap className="h-3 w-3" />
+            </motion.div>
+          ) : (
+            <FileText className="h-3 w-3" />
+          )}
+        </button>
+        <GripVertical className="h-3.5 w-3.5 opacity-50" />
       </div>
 
       {/* Title & Value */}

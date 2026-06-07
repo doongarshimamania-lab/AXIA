@@ -16,6 +16,7 @@ export const pipelineTables = {
     userId: v.id("users"),
     stageId: v.id("pipelineStages"),
     clientId: v.optional(v.id("clients")),
+    proposalId: v.optional(v.id("proposals")),
     title: v.string(),
     description: v.optional(v.string()),
     value: v.number(),
