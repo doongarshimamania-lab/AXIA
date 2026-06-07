@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -9,8 +9,9 @@ import { MessageList, type Message } from "@/components/messaging/MessageList";
 import { MessageInput } from "@/components/messaging/MessageInput";
 import { ThreadPanel, type ThreadReply } from "@/components/messaging/ThreadPanel";
 import { MemberList, type Member } from "@/components/messaging/MemberList";
+import { useWorkspaceContext, isValidConvexId } from "@/hooks/use-workspace";
 
-// ── Mock Data (fallback when Convex returns empty) ─────────────────────────────
+// ── Fallback Mock Data (used when not authenticated / no Convex data) ──
 
 const CURRENT_USER_ID = "u-me";
 
@@ -58,7 +59,7 @@ const INITIAL_MESSAGES: Record<string, Message[]> = {
   ],
 };
 
-const MOCK_MEMBERS: Member[] = [
+const FALLBACK_MEMBERS: Member[] = [
   { id: "u-1", name: "Sarah Chen", role: "admin", isOnline: true },
   { id: "u-2", name: "Alex Rivera", role: "member", isOnline: true },
   { id: "u-3", name: "Jordan Kim", role: "member", isOnline: true },
@@ -85,18 +86,24 @@ const INITIAL_THREAD_REPLIES: Record<string, ThreadReply[]> = {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export default function Messages() {
-  // ── Convex Queries & Mutations ──
-  // Guard: only call useQuery/useMutation when the API reference actually exists.
-  // When the API is not deployed, pass "skip" to useQuery and null to useMutation
-  // so that safe-convex-react returns undefined/no-op without throwing.
-  // @ts-ignore — messaging API may not be deployed yet
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+
+  // ── Convex API references ──
   const messagingApi = (api as any).messaging;
   const hasMessagingApi = !!(messagingApi?.channels?.listChannels);
+  const hasMessagesApi = !!(messagingApi?.messages?.listMessages);
+  const hasMembersApi = !!(messagingApi?.channels?.getChannelMembers);
 
+  // Only use Convex when workspace is connected with a valid ID
+  const canUseConvex = hasMessagingApi && isConvexConnected && isValidConvexId(activeWorkspaceId);
+
+  // ── Convex Queries ──
   const convexChannels = useQuery(
-    hasMessagingApi ? messagingApi.channels.listChannels : "skip",
-    hasMessagingApi ? {} : "skip"
+    canUseConvex ? messagingApi.channels.listChannels : "skip",
+    canUseConvex ? { workspaceId: activeWorkspaceId as Id<"workspaces"> } : "skip"
   ) as any[] | undefined;
+
+  // ── Convex Mutations ──
   const markChannelReadMutation = useMutation(
     hasMessagingApi ? messagingApi.messages?.markChannelRead : null
   );
@@ -104,22 +111,22 @@ export default function Messages() {
     hasMessagingApi ? messagingApi.channels?.createChannel : null
   );
   const sendMessageMutation = useMutation(
-    hasMessagingApi ? messagingApi.messages?.sendMessage : null
+    hasMessagesApi ? messagingApi.messages?.sendMessage : null
   );
   const editMessageMutation = useMutation(
-    hasMessagingApi ? messagingApi.messages?.editMessage : null
+    hasMessagesApi ? messagingApi.messages?.editMessage : null
   );
   const deleteMessageMutation = useMutation(
-    hasMessagingApi ? messagingApi.messages?.deleteMessage : null
+    hasMessagesApi ? messagingApi.messages?.deleteMessage : null
   );
   const toggleReactionMutation = useMutation(
-    hasMessagingApi ? messagingApi.messages?.toggleReaction : null
+    hasMessagesApi ? messagingApi.messages?.toggleReaction : null
   );
   const togglePinMutation = useMutation(
-    hasMessagingApi ? messagingApi.messages?.togglePinMessage : null
+    hasMessagesApi ? messagingApi.messages?.togglePinMessage : null
   );
 
-  // ── Local State (used when Convex has no data or for mock fallback) ──
+  // ── Local State (fallback when Convex has no data) ──
   const [channels, setChannels] = useState<Channel[]>(INITIAL_CHANNELS);
   const [activeChannelId, setActiveChannelId] = useState<string | null>("ch-1");
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(INITIAL_MESSAGES);
@@ -131,37 +138,48 @@ export default function Messages() {
   const isConvexAvailable = convexChannels !== undefined && convexChannels.length > 0;
 
   // Use Convex channels when available, otherwise use local mock
-  const activeChannels = isConvexAvailable
-    ? convexChannels.map((ch: any) => ({
+  const activeChannels: Channel[] = useMemo(() => {
+    if (isConvexAvailable) {
+      return convexChannels.map((ch: any) => ({
         id: ch._id,
         name: ch.name ?? "",
         type: (ch.type ?? "channel") as "channel" | "dm",
         isPrivate: ch.isPrivate ?? false,
-        unreadCount: 0,
+        unreadCount: ch.unreadCount ?? 0,
         lastMessage: ch.lastMessage ?? undefined,
         lastMessageTime: ch.lastMessageAt ?? undefined,
         members: ch.memberCount ?? 0,
-      }))
-    : channels;
+      }));
+    }
+    return channels;
+  }, [isConvexAvailable, convexChannels, channels]);
+
+  // ── Detect if active channel is a Convex channel ──
+  const isConvexChannel = isConvexAvailable && !!activeChannelId && isValidConvexId(activeChannelId);
 
   // ── Convex messages for active channel ──
-  const isConvexChannel = isConvexAvailable && activeChannelId && activeChannelId.startsWith("k");
-  const hasMessagesApi = !!(messagingApi?.messages?.listMessages);
   const convexMessages = useQuery(
     hasMessagesApi && isConvexChannel ? messagingApi.messages.listMessages : "skip",
     isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
   ) as any[] | undefined;
 
+  // ── Convex thread replies ──
   const hasThreadApi = !!(messagingApi?.messages?.getThreadReplies);
   const convexThreadReplies = useQuery(
     hasThreadApi && activeThreadId && isConvexChannel ? messagingApi.messages.getThreadReplies : "skip",
     activeThreadId && isConvexChannel ? { parentMessageId: activeThreadId as Id<"messages"> } : "skip"
   ) as any[] | undefined;
 
+  // ── Convex channel members ──
+  const convexMembers = useQuery(
+    hasMembersApi && isConvexChannel ? messagingApi.channels.getChannelMembers : "skip",
+    isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
+  ) as any[] | undefined;
+
   const activeChannel = activeChannels.find((c) => c.id === activeChannelId);
 
   // Map Convex messages → frontend Message[] when available
-  const activeMessages: Message[] = (() => {
+  const activeMessages: Message[] = useMemo(() => {
     if (isConvexChannel && convexMessages && convexMessages.length > 0) {
       return convexMessages.map((m: any) => ({
         id: m._id,
@@ -177,13 +195,13 @@ export default function Messages() {
       }));
     }
     return activeChannelId ? messagesMap[activeChannelId] || [] : [];
-  })();
+  }, [isConvexChannel, convexMessages, activeChannelId, messagesMap]);
 
   const activeThreadParent = activeThreadId
     ? activeMessages.find((m) => m.id === activeThreadId) || null
     : null;
 
-  const activeThreadReplies: ThreadReply[] = (() => {
+  const activeThreadReplies: ThreadReply[] = useMemo(() => {
     if (isConvexChannel && convexThreadReplies && convexThreadReplies.length > 0) {
       return convexThreadReplies.map((r: any) => ({
         id: r._id,
@@ -194,7 +212,20 @@ export default function Messages() {
       }));
     }
     return activeThreadId ? threadRepliesMap[activeThreadId] || [] : [];
-  })();
+  }, [isConvexChannel, convexThreadReplies, activeThreadId, threadRepliesMap]);
+
+  // Map Convex members → Member[] when available
+  const activeMembers: Member[] = useMemo(() => {
+    if (isConvexChannel && convexMembers && convexMembers.length > 0) {
+      return convexMembers.map((m: any) => ({
+        id: m.userId ?? m._id,
+        name: m.name ?? "Unknown",
+        role: m.role === "admin" ? "admin" : "member",
+        isOnline: m.isOnline ?? false,
+      }));
+    }
+    return FALLBACK_MEMBERS;
+  }, [isConvexChannel, convexMembers]);
 
   // Mark messages as read when channel is selected
   const handleChannelSelect = useCallback((channelId: string) => {
@@ -202,7 +233,7 @@ export default function Messages() {
     setActiveThreadId(null);
 
     // Mark as read in Convex
-    if (isConvexAvailable && channelId.startsWith("k")) {
+    if (isConvexAvailable && isValidConvexId(channelId)) {
       markChannelReadMutation({ channelId: channelId as Id<"channels"> }).catch(() => {});
     }
 
@@ -245,9 +276,10 @@ export default function Messages() {
 
   const handleCreateChannel = useCallback((name: string, isPrivate: boolean) => {
     // Try Convex first
-    if (isConvexAvailable) {
+    if (canUseConvex && createChannelMutation) {
       createChannelMutation({
         name,
+        workspaceId: activeWorkspaceId as Id<"workspaces">,
         isPrivate,
         type: "channel" as const,
       }).catch(() => {});
@@ -269,7 +301,7 @@ export default function Messages() {
     setMessagesMap((prev) => ({ ...prev, [newChannel.id]: [] }));
     setActiveChannelId(newChannel.id);
     setActiveThreadId(null);
-  }, [isConvexAvailable, createChannelMutation]);
+  }, [canUseConvex, activeWorkspaceId, createChannelMutation]);
 
   const handleSendMessage = useCallback(
     (content: string) => {
@@ -501,7 +533,7 @@ export default function Messages() {
               />
             )}
 
-            {showMemberList && <MemberList members={MOCK_MEMBERS} />}
+            {showMemberList && <MemberList members={activeMembers} />}
           </div>
         </div>
       ) : (

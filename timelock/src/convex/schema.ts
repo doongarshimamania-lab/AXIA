@@ -13,10 +13,12 @@ import { scopeTables } from "./tables/scope";
 import { messagingTables } from "./tables/messaging";
 import { tagTables } from "./tables/tags";
 import { goalTables } from "./tables/goals";
+import { workspaceTables } from "./tables/workspaces";
 
 export default defineSchema({
   ...authTables,
   users,
+  ...workspaceTables,
   ...complianceTables,
   ...trackingTables,
   ...evidenceTables,

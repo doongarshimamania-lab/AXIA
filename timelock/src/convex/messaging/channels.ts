@@ -2,7 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser, getChannelMember } from "./helpers";
 
-// Get all channels for a workspace
+// Get all channels for a workspace (with lastMessage preview and unreadCount)
 export const listChannels = query({
   args: {
     workspaceId: v.id("workspaces"),
@@ -20,9 +20,59 @@ export const listChannels = query({
     for (const channel of channels) {
       const member = await getChannelMember(ctx, channel._id, userId);
       if (member) {
+        // Get the most recent message for preview
+        let lastMessage: string | undefined;
+        let memberCount = 0;
+        let unreadCount = 0;
+
+        // Get last message preview
+        const recentMessages = await ctx.db
+          .query("messages")
+          .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
+          .filter((q: any) => q.eq(q.field("isDeleted"), false))
+          .order("desc")
+          .take(1);
+
+        if (recentMessages.length > 0) {
+          lastMessage = recentMessages[0].content;
+        }
+
+        // Count channel members
+        const channelMembers = await ctx.db
+          .query("channelMembers")
+          .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
+          .collect();
+        memberCount = channelMembers.length;
+
+        // Compute unread count: messages newer than membership.lastReadAt
+        if (member.lastReadAt) {
+          const unreadMessages = await ctx.db
+            .query("messages")
+            .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
+            .filter((q: any) =>
+              q.and(
+                q.eq(q.field("isDeleted"), false),
+                q.gt(q.field("_creationTime"), member.lastReadAt!)
+              )
+            )
+            .collect();
+          unreadCount = unreadMessages.length;
+        } else {
+          // Never read — count all messages
+          const allMessages = await ctx.db
+            .query("messages")
+            .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
+            .filter((q: any) => q.eq(q.field("isDeleted"), false))
+            .collect();
+          unreadCount = allMessages.length;
+        }
+
         memberChannels.push({
           ...channel,
           membership: member,
+          lastMessage,
+          memberCount,
+          unreadCount,
         });
       }
     }
@@ -56,6 +106,7 @@ export const getChannelMembers = query({
           ...m,
           name: user.name || "Unknown",
           email: user.email,
+          isOnline: m.lastActiveAt ? (Date.now() - m.lastActiveAt) < 5 * 60 * 1000 : false,
         });
       }
     }

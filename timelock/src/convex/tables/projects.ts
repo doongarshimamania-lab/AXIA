@@ -33,6 +33,7 @@ export const projectTables = {
 
   clients: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientName: v.string(),
     platform: v.union(
       v.literal("upwork"),
@@ -52,6 +53,7 @@ export const projectTables = {
 
   projects: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.id("clients"),
     projectName: v.string(),
     hourlyRate: v.number(),

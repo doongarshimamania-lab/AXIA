@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const billingTables = {
   invoices: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.optional(v.id("clients")),
     invoiceNumber: v.string(), // INV-001 format
     publicToken: v.string(), // for client-facing view

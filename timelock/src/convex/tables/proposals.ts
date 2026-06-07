@@ -25,6 +25,7 @@ const sectionSchema = v.object({
 export const proposalTables = {
   proposals: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     clientId: v.optional(v.id("clients")),
     dealId: v.optional(v.id("deals")),
     title: v.string(),

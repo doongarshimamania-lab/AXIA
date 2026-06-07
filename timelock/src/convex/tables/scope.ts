@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export const scopeTables = {
   scopeDefinitions: defineTable({
     userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
     projectId: v.optional(v.id("projects")),
     proposalId: v.optional(v.id("proposals")),
     title: v.string(),
