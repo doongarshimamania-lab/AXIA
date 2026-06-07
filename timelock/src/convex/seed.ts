@@ -33,6 +33,78 @@ export const isDevUserSeeded = query({
 });
 
 /**
+ * Reset the dev user: Delete the orphaned user document (and related data)
+ * so you can do a proper sign-up through the auth flow.
+ *
+ * This is needed when a user document exists but has no auth account
+ * (causes "InvalidSecret" error on sign-in).
+ *
+ * Usage: npx convex run seed:resetDevUser
+ */
+export const resetDevUser = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Find the orphaned dev user document
+    const devUser = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", DEV_USER_EMAIL))
+      .first();
+
+    if (!devUser) {
+      return { success: true, message: "No dev user found to reset." };
+    }
+
+    const userId = devUser._id;
+    let deletedCount = 0;
+
+    // Delete all related data for this user
+    // 1. Pipeline stages
+    const stages = await ctx.db
+      .query("pipelineStages")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const s of stages) { await ctx.db.delete(s._id); deletedCount++; }
+
+    // 2. Deals
+    const deals = await ctx.db
+      .query("deals")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const d of deals) { await ctx.db.delete(d._id); deletedCount++; }
+
+    // 3. Clients
+    const clients = await ctx.db
+      .query("clients")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const c of clients) { await ctx.db.delete(c._id); deletedCount++; }
+
+    // 4. Projects
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const p of projects) { await ctx.db.delete(p._id); deletedCount++; }
+
+    // 5. Workspaces
+    const workspaces = await ctx.db
+      .query("workspaces")
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+      .collect();
+    for (const w of workspaces) { await ctx.db.delete(w._id); deletedCount++; }
+
+    // 6. Finally, delete the orphaned user document
+    await ctx.db.delete(userId);
+    deletedCount++;
+
+    return {
+      success: true,
+      message: `Reset complete. Deleted ${deletedCount} records (including user document). You can now sign up fresh.`,
+    };
+  },
+});
+
+/**
  * Create the dev user profile fields.
  * This should be called AFTER the user has signed up with the Password provider
  * using email: dev@axia.app
