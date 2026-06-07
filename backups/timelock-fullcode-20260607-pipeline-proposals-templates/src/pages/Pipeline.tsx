@@ -279,20 +279,55 @@ export default function Pipeline() {
   const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
 
   // ── Derived State (with mock data fallback when Convex returns empty) ──
+  const isMockData = useMemo(() => {
+    const s = stages ?? [];
+    const d = deals ?? [];
+    return s.length === 0 && d.length === 0;
+  }, [stages, deals]);
+
+  // Local override for mock deal stage moves (optimistic updates for demo data)
+  const [mockDealOverrides, setMockDealOverrides] = useState<Map<string, string>>(new Map());
+
   const safeStages = useMemo(() => {
     const s = stages ?? [];
     return s.length > 0 ? s : MOCK_STAGES;
   }, [stages]);
   const safeDeals = useMemo(() => {
     const d = deals ?? [];
-    return d.length > 0 ? d : MOCK_DEALS;
-  }, [deals]);
+    if (d.length > 0) return d;
+    // Apply mock deal overrides (stage moves) on top of MOCK_DEALS
+    if (mockDealOverrides.size === 0) return MOCK_DEALS;
+    return MOCK_DEALS.map((deal) => {
+      const overrideStageId = mockDealOverrides.get(deal._id);
+      if (overrideStageId) {
+        return { ...deal, stageId: overrideStageId as Id<"pipelineStages"> };
+      }
+      return deal;
+    });
+  }, [deals, mockDealOverrides]);
   const safeStats = useMemo(
     () => {
       if (stats && stats.totalDeals > 0) return stats;
-      return MOCK_PIPELINE_STATS;
+      // Recalculate mock stats from safeDeals (respects mock overrides)
+      const totalValue = safeDeals.reduce((s, d) => s + d.value, 0);
+      const weightedValue = safeDeals.reduce((s, d) => s + d.value * (d.probability / 100), 0);
+      return {
+        totalDeals: safeDeals.length,
+        totalValue,
+        weightedValue,
+        byStage: safeStages.map((stage) => {
+          const stageDeals = safeDeals.filter((d) => d.stageId === stage._id);
+          return {
+            stageId: stage._id,
+            stageName: stage.name,
+            color: stage.color,
+            dealCount: stageDeals.length,
+            totalValue: stageDeals.reduce((s, d) => s + d.value, 0),
+          };
+        }),
+      };
     },
-    [stats]
+    [stats, safeDeals, safeStages]
   );
   const isLoading = stages === undefined || deals === undefined;
 
@@ -459,21 +494,31 @@ export default function Pipeline() {
         setDraggedDeal(null);
         return;
       }
-      try {
-        await moveDealMutation({
-          dealId: draggedDeal._id,
-          stageId: targetStageId,
+      const targetStageName = safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage";
+
+      if (isMockData) {
+        // Mock data: do optimistic local update (no Convex mutation needed)
+        setMockDealOverrides((prev) => {
+          const next = new Map(prev);
+          next.set(draggedDeal._id, targetStageId);
+          return next;
         });
-        toast.success(
-          `Moved "${draggedDeal.title}" to ${safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage"}`
-        );
-      } catch (err) {
-        console.error("Failed to move deal:", err);
-        toast.error("Failed to move deal");
+        toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+      } else {
+        try {
+          await moveDealMutation({
+            dealId: draggedDeal._id,
+            stageId: targetStageId,
+          });
+          toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+        } catch (err) {
+          console.error("Failed to move deal:", err);
+          toast.error("Failed to move deal");
+        }
       }
       setDraggedDeal(null);
     },
-    [draggedDeal, moveDealMutation, safeStages]
+    [draggedDeal, moveDealMutation, safeStages, isMockData]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -543,18 +588,28 @@ export default function Pipeline() {
 
   const handleMoveDealToStage = useCallback(
     async (dealId: Id<"deals">, targetStageId: Id<"pipelineStages">) => {
-      try {
-        await moveDealMutation({ dealId, stageId: targetStageId });
-        const stageName =
-          safeStages.find((s) => s._id === targetStageId)?.name ?? "stage";
+      const stageName =
+        safeStages.find((s) => s._id === targetStageId)?.name ?? "stage";
+      if (isMockData) {
+        setMockDealOverrides((prev) => {
+          const next = new Map(prev);
+          next.set(dealId, targetStageId);
+          return next;
+        });
         toast.success(`Deal moved to ${stageName}`);
         setDetailDeal(null);
-      } catch (err) {
-        console.error("Failed to move deal:", err);
-        toast.error("Failed to move deal");
+      } else {
+        try {
+          await moveDealMutation({ dealId, stageId: targetStageId });
+          toast.success(`Deal moved to ${stageName}`);
+          setDetailDeal(null);
+        } catch (err) {
+          console.error("Failed to move deal:", err);
+          toast.error("Failed to move deal");
+        }
       }
     },
-    [moveDealMutation, safeStages]
+    [moveDealMutation, safeStages, isMockData]
   );
 
   const handleDeleteDeal = useCallback(async () => {
@@ -573,6 +628,14 @@ export default function Pipeline() {
   const handleCreateProposalFromDeal = useCallback(async (deal: Deal) => {
     setIsCreatingProposal(deal._id);
     try {
+      if (isMockData) {
+        // Mock data: show a helpful message since we can't create a real proposal
+        toast.info("Sign in to create proposals", {
+          description: `Proposal for "${deal.title}" can be created once you're signed in with real data. Click "Load Demo Data" to seed your pipeline.`,
+          duration: 5000,
+        });
+        return;
+      }
       const proposalId = await createProposalFromDeal({ dealId: deal._id as any });
       if (proposalId) {
         toast.success("Draft proposal created from deal!", {
@@ -593,7 +656,7 @@ export default function Pipeline() {
     } finally {
       setIsCreatingProposal(null);
     }
-  }, [createProposalFromDeal, navigate]);
+  }, [createProposalFromDeal, navigate, isMockData]);
 
   // ─── RENDER ────────────────────────────────────────────────────────────
 
@@ -1185,6 +1248,26 @@ export default function Pipeline() {
                       Delete
                     </Button>
                     <div className="flex-1" />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (detailDeal) handleCreateProposalFromDeal(detailDeal);
+                      }}
+                      disabled={isCreatingProposal === detailDeal?._id}
+                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                    >
+                      {isCreatingProposal === detailDeal?._id ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                        >
+                          <Zap className="h-3.5 w-3.5" />
+                        </motion.div>
+                      ) : (
+                        <FileText className="h-3.5 w-3.5" />
+                      )}
+                      Make Proposal
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
