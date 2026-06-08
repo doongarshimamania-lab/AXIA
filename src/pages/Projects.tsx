@@ -373,7 +373,7 @@ export default function Projects() {
   const clientsMap = useMemo(() => {
     const map = new Map<string, any>();
     for (const c of clientsData ?? []) {
-      map.put ? null : map.set((c as any)._id, c);
+      map.set((c as any)._id, c);
     }
     return map;
   }, [clientsData]);
@@ -1454,7 +1454,7 @@ export default function Projects() {
         onOpenChange={setShowShareDialog}
         recordId={sharingRecord?.id || ""}
         recordType={sharingRecord?.type || "project"}
-        currentSharing={sharingRecord?.sharing || []}
+        currentSharing={(sharingRecord?.sharing || []) as any}
         onShare={async (args) => {
           try {
             if (shareRecordMutation) {

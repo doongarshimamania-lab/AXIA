@@ -247,7 +247,6 @@ export default function ClientDashboard() {
   const [approvalLoading, setApprovalLoading] = useState<string | null>(null);
 
   // Fetch client profile
-  // @ts-expect-error - Convex type inference causes deep instantiation error
   const clientProfile = useQuery(
     "clientAuth:getClientProfile" as any,
     clientEmail ? { email: clientEmail } : "skip"
