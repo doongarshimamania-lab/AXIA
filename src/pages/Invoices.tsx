@@ -37,6 +37,16 @@ import {
   Receipt,
   ArrowUpRight,
   Hash,
+  Bell,
+  BellRing,
+  Play,
+  Square,
+  SkipForward,
+  CheckCircle2,
+  XCircle,
+  Mail,
+  Minus,
+  Settings2,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
@@ -44,6 +54,7 @@ import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
+import { Separator } from "@/components/ui/separator";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -149,6 +160,322 @@ function daysOverdue(dueDate: number): number {
   return Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
 }
 
+// ─── Reminder Manager Content Component ────────────────────────────────
+
+function getToneLabelForDay(day: number): string {
+  if (day <= 3) return "Friendly";
+  if (day <= 7) return "Firm";
+  return "Urgent";
+}
+
+function ReminderManagerContent({
+  invoiceId,
+  intervals,
+  showIntervalConfig,
+  onIntervalsChange,
+  onShowIntervalConfig,
+  onStartReminders,
+  onStopReminders,
+  onSkipReminder,
+  onClose,
+}: {
+  invoiceId: string | null;
+  intervals: number[];
+  showIntervalConfig: boolean;
+  onIntervalsChange: (vals: number[]) => void;
+  onShowIntervalConfig: (val: boolean) => void;
+  onStartReminders: any;
+  onStopReminders: any;
+  onSkipReminder: any;
+  onClose: () => void;
+}) {
+  const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [skippingId, setSkippingId] = useState<string | null>(null);
+
+  const reminders = useQuery(
+    api.invoices.getReminderHistory,
+    invoiceId ? { invoiceId: invoiceId as any } : "skip"
+  ) as any[] | undefined;
+
+  const scheduledReminders = useMemo(
+    () => (reminders ? reminders.filter((r: any) => r.status === "scheduled") : []),
+    [reminders]
+  );
+  const sentReminders = useMemo(
+    () => (reminders ? reminders.filter((r: any) => r.status === "sent") : []),
+    [reminders]
+  );
+  const skippedReminders = useMemo(
+    () => (reminders ? reminders.filter((r: any) => r.status === "skipped") : []),
+    [reminders]
+  );
+  const cancelledReminders = useMemo(
+    () => (reminders ? reminders.filter((r: any) => r.status === "cancelled") : []),
+    [reminders]
+  );
+
+  const hasScheduled = scheduledReminders.length > 0;
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      const result = await onStartReminders({
+        invoiceId: invoiceId as any,
+        intervals,
+      });
+      toast.success("Reminders started!", {
+        description: `${(result as any)?.scheduledCount ?? intervals.length} reminders scheduled`,
+      });
+      onShowIntervalConfig(false);
+    } catch (err: any) {
+      toast.error("Failed to start reminders", { description: err.message });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setStopping(true);
+    try {
+      const result = await onStopReminders({ invoiceId: invoiceId as any });
+      toast.success("Reminders stopped", {
+        description: `${(result as any)?.cancelledCount ?? 0} reminders cancelled`,
+      });
+    } catch (err: any) {
+      toast.error("Failed to stop reminders", { description: err.message });
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const handleSkip = async (reminderId: string) => {
+    setSkippingId(reminderId);
+    try {
+      await onSkipReminder({ reminderId: reminderId as any });
+      toast.success("Reminder skipped");
+    } catch (err: any) {
+      toast.error("Failed to skip reminder", { description: err.message });
+    } finally {
+      setSkippingId(null);
+    }
+  };
+
+  const handleAddInterval = () => {
+    const last = intervals[intervals.length - 1] ?? 0;
+    onIntervalsChange([...intervals, last + 7]);
+  };
+
+  const handleRemoveInterval = (idx: number) => {
+    if (intervals.length <= 1) return;
+    onIntervalsChange(intervals.filter((_, i) => i !== idx));
+  };
+
+  const handleChangeInterval = (idx: number, val: string) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1) return;
+    const next = [...intervals];
+    next[idx] = num;
+    next.sort((a, b) => a - b);
+    onIntervalsChange(next);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "scheduled":
+        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25"><Clock className="h-2.5 w-2.5 mr-0.5" />Scheduled</Badge>;
+      case "sent":
+        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-emerald-500/15 text-emerald-600 border-emerald-500/25"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />Sent</Badge>;
+      case "skipped":
+        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-slate-500/15 text-slate-600 border-slate-500/25"><SkipForward className="h-2.5 w-2.5 mr-0.5" />Skipped</Badge>;
+      case "cancelled":
+        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-slate-400/15 text-slate-500 border-slate-400/25"><XCircle className="h-2.5 w-2.5 mr-0.5" />Cancelled</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* ── Status Badge ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        <Badge className={`text-[11px] px-2.5 py-0.5 h-6 ${hasScheduled ? "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25" : "bg-slate-500/15 text-slate-600 border-slate-500/25"}`}>
+          {hasScheduled ? <><BellRing className="h-3 w-3 mr-1" />Active</> : <><Bell className="h-3 w-3 mr-1" />Inactive</>}
+        </Badge>
+        <span className="text-[11px] text-muted-foreground">
+          {hasScheduled ? `${scheduledReminders.length} reminder${scheduledReminders.length !== 1 ? "s" : ""} scheduled` : "No scheduled reminders"}
+        </span>
+      </div>
+
+      {/* ── Control Buttons ──────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        {!hasScheduled && (
+          <Button
+            size="sm"
+            className="h-8 px-3 gap-1.5 text-[12px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+            onClick={() => onShowIntervalConfig(!showIntervalConfig)}
+            disabled={starting}
+          >
+            {starting ? <><Minus className="h-3 w-3 animate-spin" />Starting...</> : <><Play className="h-3 w-3" />Start Reminders</>}
+          </Button>
+        )}
+        {hasScheduled && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 gap-1.5 text-[12px] border-red-500/30 text-red-600 hover:bg-red-500/10"
+            onClick={handleStop}
+            disabled={stopping}
+          >
+            {stopping ? <><Minus className="h-3 w-3 animate-spin" />Stopping...</> : <><Square className="h-3 w-3" />Stop Reminders</>}
+          </Button>
+        )}
+      </div>
+
+      {/* ── Interval Config ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {showIntervalConfig && !hasScheduled && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20">
+              <p className="text-[11px] font-semibold text-[#8B5CF6] mb-2">Configure Reminder Intervals (days after sending)</p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {intervals.map((day, idx) => (
+                  <div key={idx} className="flex items-center gap-1">
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={day}
+                        onChange={(e) => handleChangeInterval(idx, e.target.value)}
+                        className="h-7 w-16 text-[11px] text-center pr-6"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">d</span>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`text-[8px] px-1 py-0 h-4 ${
+                        day <= 3 ? "bg-amber-500/15 text-amber-600 border-amber-500/25"
+                          : day <= 7 ? "bg-orange-500/15 text-orange-600 border-orange-500/25"
+                            : "bg-red-500/15 text-red-600 border-red-500/25"
+                      }`}
+                    >
+                      {getToneLabelForDay(day)}
+                    </Badge>
+                    {intervals.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveInterval(idx)}
+                        className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={handleAddInterval}
+                  className="h-7 px-2 rounded-md border border-dashed border-[#8B5CF6]/30 flex items-center gap-1 text-[10px] text-[#8B5CF6] hover:bg-[#8B5CF6]/10 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add
+                </button>
+              </div>
+              <Button
+                size="sm"
+                className="h-7 px-3 text-[10px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+                onClick={handleStart}
+                disabled={starting}
+              >
+                {starting ? <><Minus className="h-2.5 w-2.5 animate-spin" />Scheduling...</> : <><Play className="h-2.5 w-2.5" />Start with these intervals</>}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Summary Stats ────────────────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="p-2 rounded-md bg-[#8B5CF6]/5 border border-[#8B5CF6]/10 text-center">
+          <p className="text-[14px] font-bold text-[#8B5CF6]">{scheduledReminders.length}</p>
+          <p className="text-[9px] text-muted-foreground">Scheduled</p>
+        </div>
+        <div className="p-2 rounded-md bg-emerald-500/5 border border-emerald-500/10 text-center">
+          <p className="text-[14px] font-bold text-emerald-600">{sentReminders.length}</p>
+          <p className="text-[9px] text-muted-foreground">Sent</p>
+        </div>
+        <div className="p-2 rounded-md bg-slate-500/5 border border-slate-500/10 text-center">
+          <p className="text-[14px] font-bold text-slate-600">{skippedReminders.length}</p>
+          <p className="text-[9px] text-muted-foreground">Skipped</p>
+        </div>
+        <div className="p-2 rounded-md bg-muted/30 border border-border/50 text-center">
+          <p className="text-[14px] font-bold text-muted-foreground">{cancelledReminders.length}</p>
+          <p className="text-[9px] text-muted-foreground">Cancelled</p>
+        </div>
+      </div>
+
+      {/* ── Reminder Timeline ────────────────────────────────────── */}
+      <div>
+        <h5 className="text-[11px] font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+          <Mail className="h-3 w-3" />
+          Reminder Timeline
+        </h5>
+        {!reminders || reminders.length === 0 ? (
+          <div className="text-center py-4">
+            <Bell className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+            <p className="text-[11px] text-muted-foreground">No reminders yet. Click &quot;Start Reminders&quot; to begin.</p>
+          </div>
+        ) : (
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            {reminders
+              .sort((a: any, b: any) => (a.dayNumber ?? 0) - (b.dayNumber ?? 0))
+              .map((reminder: any) => (
+                <div
+                  key={reminder._id}
+                  className="flex items-start gap-2.5 p-2 rounded-md bg-background border border-border/50"
+                >
+                  <div className="h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 bg-muted/50 text-[9px] font-bold text-muted-foreground">
+                    D{reminder.dayNumber}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-medium text-foreground">Day {reminder.dayNumber}</span>
+                      {getStatusBadge(reminder.status)}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{reminder.subject}</p>
+                    <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+                      {reminder.status === "sent" && reminder.sentAt
+                        ? `Sent ${new Date(reminder.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                        : reminder.status === "scheduled"
+                          ? `Scheduled for ${new Date(reminder.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                          : reminder.status === "skipped" ? "Skipped" : "Cancelled"}
+                    </p>
+                  </div>
+                  {reminder.status === "scheduled" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-orange-600 hover:bg-orange-500/10"
+                      onClick={() => handleSkip(reminder._id)}
+                      disabled={skippingId === reminder._id}
+                    >
+                      <SkipForward className="h-3 w-3 mr-0.5" />
+                      {skippingId === reminder._id ? "..." : "Skip"}
+                    </Button>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function Invoices() {
@@ -171,6 +498,10 @@ export default function Invoices() {
   const [shareInvoiceId, setShareInvoiceId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showReminderManager, setShowReminderManager] = useState(false);
+  const [reminderManagerInvoiceId, setReminderManagerInvoiceId] = useState<string | null>(null);
+  const [reminderIntervals, setReminderIntervals] = useState<number[]>([3, 7, 14]);
+  const [showIntervalConfig, setShowIntervalConfig] = useState(false);
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
@@ -194,6 +525,9 @@ export default function Invoices() {
   const markInvoicePaid = useMutation(api.billing.crud.markInvoicePaid);
   const deleteInvoice = useMutation(api.billing.crud.deleteInvoice);
   const seedMockInvoices = useMutation(api.billing.crud.seedMockInvoices);
+  const startReminders = useMutation(api.invoices.startReminders);
+  const stopReminders = useMutation(api.invoices.stopReminders);
+  const skipReminderMutation = useMutation(api.billing.reminders.skipReminder);
 
   // ── Computed ───────────────────────────────────────────────────────────
   const safeInvoices = invoices ?? [];
@@ -625,6 +959,22 @@ export default function Invoices() {
                                       {overdueDays}d overdue
                                     </span>
                                   )}
+                                  {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 cursor-pointer hover:bg-[#8B5CF6]/20"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setReminderManagerInvoiceId(invoice._id);
+                                        setShowReminderManager(true);
+                                        setShowIntervalConfig(false);
+                                        setReminderIntervals([3, 7, 14]);
+                                      }}
+                                    >
+                                      <Bell className="h-2.5 w-2.5 mr-0.5" />
+                                      Reminders
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-3 mt-1 text-[13px] text-muted-foreground">
                                   <span className="flex items-center gap-1">
@@ -672,6 +1022,22 @@ export default function Invoices() {
                                     }}
                                   >
                                     <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                  </Button>
+                                )}
+                                {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setReminderManagerInvoiceId(invoice._id);
+                                      setShowReminderManager(true);
+                                      setShowIntervalConfig(false);
+                                      setReminderIntervals([3, 7, 14]);
+                                    }}
+                                  >
+                                    <Bell className="h-3.5 w-3.5 text-[#8B5CF6]" />
                                   </Button>
                                 )}
                                 {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
@@ -1052,6 +1418,35 @@ export default function Invoices() {
           toast.success("Import complete");
         }}
       />
+
+      {/* ── Reminder Manager Dialog ──────────────────────────────────── */}
+      <Dialog open={showReminderManager} onOpenChange={setShowReminderManager}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-[#8B5CF6]" />
+              Manage Reminders
+              {reminderManagerInvoiceId && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25">
+                  {safeInvoices.find((inv) => inv._id === reminderManagerInvoiceId)?.invoiceNumber || ""}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <ReminderManagerContent
+            invoiceId={reminderManagerInvoiceId}
+            intervals={reminderIntervals}
+            showIntervalConfig={showIntervalConfig}
+            onIntervalsChange={setReminderIntervals}
+            onShowIntervalConfig={setShowIntervalConfig}
+            onStartReminders={startReminders}
+            onStopReminders={stopReminders}
+            onSkipReminder={skipReminderMutation}
+            onClose={() => setShowReminderManager(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

@@ -9,7 +9,7 @@ const crons = cronJobs();
 crons.interval(
   "process due proposal follow-ups",
   { hours: 1 },
-  internal.proposals.processDueFollowUps,
+  internal.proposals.crud.processDueFollowUps,
   {}
 );
 

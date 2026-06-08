@@ -1008,22 +1008,22 @@ export const processDueReminders = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Get all scheduled reminders where scheduledFor < now
+    // Get all scheduled reminders where scheduledAt < now
     const scheduledReminders = await ctx.db
       .query("paymentReminders")
-      .withIndex("by_scheduled", (q) => q.lt("scheduledFor", now))
+      .withIndex("by_status_and_date", (q) =>
+        q.eq("status", "scheduled").lt("scheduledAt", now)
+      )
       .collect();
 
     let processedCount = 0;
 
     for (const reminder of scheduledReminders) {
-      if (reminder.status === "scheduled") {
-        await ctx.db.patch(reminder._id, {
-          status: "sent",
-          sentAt: now,
-        });
-        processedCount++;
-      }
+      await ctx.db.patch(reminder._id, {
+        status: "sent",
+        sentAt: now,
+      });
+      processedCount++;
     }
 
     return { processedCount };
@@ -1058,7 +1058,136 @@ export const cancelReminders = mutation({
 });
 
 // ─────────────────────────────────────────────
-// 21. GET REMINDER HISTORY
+// 21. START REMINDERS (per-invoice, with custom intervals)
+// ─────────────────────────────────────────────
+export const startReminders = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    intervals: v.optional(v.array(v.number())),  // custom day intervals, defaults to [3, 7, 14]
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    // Check workspace access or direct ownership
+    if (invoice.workspaceId) {
+      await requireRecordAccess(ctx, invoice, "collaborate");
+    } else if (invoice.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    // Only allow for sent/viewed/overdue invoices
+    if (!["sent", "viewed", "overdue"].includes(invoice.status)) {
+      throw new ConvexError("Reminders can only be started for sent, viewed, or overdue invoices");
+    }
+
+    if (!invoice.sentAt) {
+      throw new ConvexError("Invoice has not been sent yet");
+    }
+
+    // Cancel existing scheduled reminders first
+    await cancelRemindersInternal(ctx, args.invoiceId);
+
+    // Determine intervals and create new reminders
+    const intervals = args.intervals ?? [3, 7, 14];
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const sentAt = invoice.sentAt;
+    let scheduledCount = 0;
+
+    for (const dayNum of intervals) {
+      const scheduledAt = sentAt + dayNum * dayMs;
+
+      // Determine tone based on day number
+      let tone: "friendly" | "firm" | "urgent";
+      if (dayNum <= 5) {
+        tone = "friendly";
+      } else if (dayNum <= 10) {
+        tone = "firm";
+      } else {
+        tone = "urgent";
+      }
+
+      // Only schedule if the scheduledAt time is still in the future
+      if (scheduledAt > now) {
+        await ctx.db.insert("paymentReminders", {
+          invoiceId: args.invoiceId,
+          userId,
+          workspaceId: invoice.workspaceId ?? undefined,
+          createdBy: userId,
+          dayNumber: dayNum,
+          channel: "email",
+          tone,
+          status: "scheduled",
+          subject: tone === "friendly"
+            ? `Friendly Reminder: Invoice ${invoice.invoiceNumber}`
+            : tone === "firm"
+            ? `Payment Reminder: Invoice ${invoice.invoiceNumber}`
+            : `URGENT: Overdue Invoice ${invoice.invoiceNumber}`,
+          body: tone === "friendly"
+            ? `Hi there,\n\nThis is a friendly reminder that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is approaching its due date. If you've already processed the payment, please disregard this message.\n\nThank you for your prompt attention!\n\nBest regards`
+            : tone === "firm"
+            ? `Dear Client,\n\nWe would like to remind you that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is now past due. We kindly request that you process this payment at your earliest convenience.\n\nIf you have any questions regarding this invoice, please do not hesitate to reach out.\n\nKind regards`
+            : `Dear Client,\n\nDespite our previous reminders, invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} remains unpaid and is now significantly overdue.\n\nWe must insist on immediate payment to avoid any further action. If payment has already been sent, please provide confirmation so we may update our records.\n\nSincerely`,
+          scheduledAt,
+          sentAt: undefined,
+          createdAt: now,
+        });
+        scheduledCount++;
+      }
+    }
+
+    return { success: true, scheduledCount };
+  },
+});
+
+// ─────────────────────────────────────────────
+// 22. STOP REMINDERS (cancel all scheduled for an invoice)
+// ─────────────────────────────────────────────
+export const stopReminders = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    // Check workspace access or direct ownership
+    if (invoice.workspaceId) {
+      await requireRecordAccess(ctx, invoice, "collaborate");
+    } else if (invoice.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    // Find all scheduled reminders for this invoice and cancel them
+    const reminders = await ctx.db
+      .query("paymentReminders")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
+      .collect();
+
+    let cancelledCount = 0;
+
+    for (const reminder of reminders) {
+      if (reminder.status === "scheduled") {
+        await ctx.db.patch(reminder._id, {
+          status: "cancelled",
+        });
+        cancelledCount++;
+      }
+    }
+
+    return { success: true, cancelledCount };
+  },
+});
+
+// ─────────────────────────────────────────────
+// 23. GET REMINDER HISTORY
 // ─────────────────────────────────────────────
 export const getReminderHistory = query({
   args: {
@@ -1140,43 +1269,42 @@ async function scheduleRemindersInternal(
     {
       day: 3,
       tone: "friendly" as const,
-      scheduledFor: sentAt + 3 * 24 * 60 * 60 * 1000,
+      scheduledAt: sentAt + 3 * 24 * 60 * 60 * 1000,
       subject: `Friendly Reminder: Invoice ${invoice.invoiceNumber}`,
       body: `Hi there,\n\nThis is a friendly reminder that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is approaching its due date. If you've already processed the payment, please disregard this message.\n\nThank you for your prompt attention!\n\nBest regards`,
     },
     {
       day: 7,
-      tone: "professional" as const,
-      scheduledFor: sentAt + 7 * 24 * 60 * 60 * 1000,
+      tone: "firm" as const,
+      scheduledAt: sentAt + 7 * 24 * 60 * 60 * 1000,
       subject: `Payment Reminder: Invoice ${invoice.invoiceNumber}`,
       body: `Dear Client,\n\nWe would like to remind you that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is now past due. We kindly request that you process this payment at your earliest convenience.\n\nIf you have any questions regarding this invoice, please do not hesitate to reach out.\n\nKind regards`,
     },
     {
       day: 14,
-      tone: "firm" as const,
-      scheduledFor: sentAt + 14 * 24 * 60 * 60 * 1000,
+      tone: "urgent" as const,
+      scheduledAt: sentAt + 14 * 24 * 60 * 60 * 1000,
       subject: `URGENT: Overdue Invoice ${invoice.invoiceNumber}`,
       body: `Dear Client,\n\nDespite our previous reminders, invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} remains unpaid and is now significantly overdue.\n\nWe must insist on immediate payment to avoid any further action. If payment has already been sent, please provide confirmation so we may update our records.\n\nSincerely`,
     },
   ];
 
   for (const config of reminderConfigs) {
-    // Only schedule if the scheduledFor time is still in the future
-    if (config.scheduledFor > now) {
+    // Only schedule if the scheduledAt time is still in the future
+    if (config.scheduledAt > now) {
       await ctx.db.insert("paymentReminders", {
         invoiceId,
         userId,
         workspaceId: invoice.workspaceId ?? undefined,
         createdBy: userId,
-        sequenceDay: config.day,
+        dayNumber: config.day,
         channel: "email",
         tone: config.tone,
         status: "scheduled",
         subject: config.subject,
         body: config.body,
-        scheduledFor: config.scheduledFor,
+        scheduledAt: config.scheduledAt,
         sentAt: undefined,
-        openedAt: undefined,
         createdAt: now,
       });
     }

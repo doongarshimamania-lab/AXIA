@@ -46,8 +46,19 @@ import {
   Briefcase,
   ShieldCheck,
   Share2,
+  Bell,
+  BellRing,
+  CalendarClock,
+  PlusCircle,
+  X,
+  SkipForward,
+  Play,
+  Square,
+  Settings2,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -185,6 +196,7 @@ export default function Proposals() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareProposalId, setShareProposalId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+  const [followUpDialogProposalId, setFollowUpDialogProposalId] = useState<string | null>(null);
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
@@ -206,6 +218,11 @@ export default function Proposals() {
   const duplicateProposal = useMutation(api.proposals.crud.duplicateProposal);
   const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
+
+  // Follow-up mutations
+  const startFollowUps = useMutation(api.proposals.crud.startFollowUps);
+  const stopFollowUps = useMutation(api.proposals.crud.stopFollowUps);
+  const skipFollowUp = useMutation(api.proposals.crud.skipFollowUp);
 
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : {}) as Proposal[] | undefined;
@@ -311,6 +328,40 @@ export default function Proposals() {
       toast.success("Proposal deleted");
     } catch (err: any) {
       toast.error("Failed to delete proposal", { description: err.message });
+    }
+  };
+
+  const handleStartFollowUps = async (proposalId: string, intervals?: number[]) => {
+    try {
+      const result = await startFollowUps({ proposalId: proposalId as any, intervals });
+      toast.success("Follow-ups started!", {
+        description: `${intervals?.length || 3} follow-up(s) scheduled.`,
+      });
+    } catch (err: any) {
+      toast.error("Failed to start follow-ups", { description: err.message });
+      throw err;
+    }
+  };
+
+  const handleStopFollowUps = async (proposalId: string) => {
+    try {
+      await stopFollowUps({ proposalId: proposalId as any });
+      toast.success("Follow-ups stopped", {
+        description: "All scheduled follow-ups have been cancelled.",
+      });
+    } catch (err: any) {
+      toast.error("Failed to stop follow-ups", { description: err.message });
+      throw err;
+    }
+  };
+
+  const handleSkipFollowUp = async (followUpId: string) => {
+    try {
+      await skipFollowUp({ followUpId: followUpId as any });
+      toast.success("Follow-up skipped");
+    } catch (err: any) {
+      toast.error("Failed to skip follow-up", { description: err.message });
+      throw err;
     }
   };
 
@@ -551,6 +602,7 @@ export default function Proposals() {
                       setShowShareDialog(true);
                     }
                   } : () => {}}
+                  onManageFollowUps={setFollowUpDialogProposalId}
                   canDelete={canDeleteRecords}
                   canShare={canShareRecords || (() => {
                     // Check per-proposal permission lazily
@@ -585,6 +637,22 @@ export default function Proposals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Follow-up Manager Dialog */}
+      {followUpDialogProposalId && (
+        <FollowUpManager
+          proposalId={followUpDialogProposalId}
+          isMock={isUsingMockData}
+          open={!!followUpDialogProposalId}
+          onOpenChange={(open) => {
+            if (!open) setFollowUpDialogProposalId(null);
+          }}
+          onStartFollowUps={handleStartFollowUps}
+          onStopFollowUps={handleStopFollowUps}
+          onSkipFollowUp={handleSkipFollowUp}
+          formatDate={formatDate}
+        />
+      )}
 
       {/* Share Dialog */}
       <ShareDialog
@@ -639,6 +707,7 @@ function ProposalCard({
   onDelete,
   onView,
   onShare,
+  onManageFollowUps,
   canDelete,
   canShare,
 }: {
@@ -652,6 +721,7 @@ function ProposalCard({
   onDelete: (id: string) => void;
   onView: () => void;
   onShare?: (id: string) => void;
+  onManageFollowUps?: (id: string) => void;
   canDelete?: boolean;
   canShare?: boolean;
 }) {
@@ -793,8 +863,37 @@ function ProposalCard({
             )}
           </div>
 
-          {/* Follow-up Badge */}
-          {scheduledFollowUps.length > 0 && (
+          {/* Follow-up Badge & Manage Button */}
+          {(proposal.status === "sent" || proposal.status === "viewed") && (
+            <div className="flex items-center gap-2 mt-0">
+              {scheduledFollowUps.length > 0 ? (
+                <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1">
+                  <BellRing className="h-3 w-3" />
+                  <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/50 rounded-md px-2 py-1">
+                  <Bell className="h-3 w-3" />
+                  <span>No follow-ups</span>
+                </div>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px] text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#8B5CF6]/10 gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageFollowUps?.(proposal._id);
+                }}
+              >
+                <Settings2 className="h-3 w-3" />
+                Manage
+              </Button>
+            </div>
+          )}
+
+          {/* Follow-up badge for non-sent/viewed statuses */}
+          {(proposal.status !== "sent" && proposal.status !== "viewed") && scheduledFollowUps.length > 0 && (
             <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
               <Clock className="h-3 w-3" />
               <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
@@ -855,5 +954,352 @@ function ProposalCard({
         </CardContent>
       </Card>
     </motion.div>
+  );
+}
+
+// ─── Follow-Up Manager Dialog ──────────────────────────────────────────────────
+
+function getIntervalLabel(days: number): string {
+  if (days <= 3) return "Friendly nudge";
+  if (days <= 7) return "Check-in";
+  if (days <= 14) return "Follow-up";
+  return "Final reminder";
+}
+
+function getIntervalLabelColor(days: number): string {
+  if (days <= 3) return "text-emerald-600 bg-emerald-500/10";
+  if (days <= 7) return "text-blue-600 bg-blue-500/10";
+  if (days <= 14) return "text-amber-600 bg-amber-500/10";
+  return "text-red-600 bg-red-500/10";
+}
+
+function FollowUpManager({
+  proposalId,
+  isMock,
+  open,
+  onOpenChange,
+  onStartFollowUps,
+  onStopFollowUps,
+  onSkipFollowUp,
+  formatDate,
+}: {
+  proposalId: string;
+  isMock: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onStartFollowUps: (proposalId: string, intervals?: number[]) => Promise<void>;
+  onStopFollowUps: (proposalId: string) => Promise<void>;
+  onSkipFollowUp: (followUpId: string) => Promise<void>;
+  formatDate: (t: number) => string;
+}) {
+  // Fetch proposal details
+  const proposal = useQuery(
+    api.proposals.crud.getProposal,
+    isMock ? "skip" : { proposalId: proposalId as any }
+  ) as Proposal | undefined;
+
+  // Fetch follow-ups for this proposal
+  const followUps = useQuery(
+    api.proposals.crud.getFollowUps,
+    isMock ? "skip" : { proposalId: proposalId as any }
+  ) as FollowUp[] | undefined;
+
+  // Mock follow-ups for demo
+  const mockFollowUps: FollowUp[] = useMemo(() => [
+    { _id: "fu_1", dayNumber: 3, subject: "Following up", status: "sent", scheduledAt: mockNow - 2 * mockDay },
+    { _id: "fu_2", dayNumber: 7, subject: "Checking in", status: "scheduled", scheduledAt: mockNow + 2 * mockDay },
+    { _id: "fu_3", dayNumber: 14, subject: "Final reminder", status: "scheduled", scheduledAt: mockNow + 9 * mockDay },
+  ], []);
+
+  const effectiveFollowUps = isMock ? mockFollowUps : (followUps || []);
+
+  const scheduledCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "scheduled").length, [effectiveFollowUps]);
+  const sentCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "sent").length, [effectiveFollowUps]);
+  const skippedCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "skipped").length, [effectiveFollowUps]);
+  const cancelledCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "cancelled").length, [effectiveFollowUps]);
+
+  const hasScheduled = scheduledCount > 0;
+  const followUpActive = hasScheduled;
+
+  // Interval configuration state
+  const [intervals, setIntervals] = useState<number[]>([3, 7, 14]);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [skippingId, setSkippingId] = useState<string | null>(null);
+
+  const addInterval = () => {
+    const maxDay = intervals.length > 0 ? Math.max(...intervals) : 0;
+    const nextDay = Math.min(maxDay + 7, 60);
+    setIntervals(prev => [...prev, nextDay].sort((a, b) => a - b));
+  };
+
+  const removeInterval = (index: number) => {
+    setIntervals(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateInterval = (index: number, value: number) => {
+    setIntervals(prev => {
+      const next = [...prev];
+      next[index] = Math.max(1, Math.min(90, value));
+      return next;
+    });
+  };
+
+  const handleStart = async () => {
+    setIsStarting(true);
+    try {
+      await onStartFollowUps(proposalId, intervals);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setIsStopping(true);
+    try {
+      await onStopFollowUps(proposalId);
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
+  const handleSkip = async (followUpId: string) => {
+    setSkippingId(followUpId);
+    try {
+      await onSkipFollowUp(followUpId);
+    } finally {
+      setSkippingId(null);
+    }
+  };
+
+  const proposalTitle = proposal?.title || "Proposal";
+
+  const statusBadgeConfig: Record<string, { className: string; label: string }> = {
+    scheduled: { className: "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25", label: "Scheduled" },
+    sent: { className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25", label: "Sent" },
+    skipped: { className: "bg-slate-500/15 text-slate-500 border-slate-500/25", label: "Skipped" },
+    cancelled: { className: "bg-muted text-muted-foreground border-muted", label: "Cancelled" },
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 gap-0">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-[#8B5CF6]/10 flex items-center justify-center">
+                <BellRing className="h-5 w-5 text-[#8B5CF6]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-base truncate">{proposalTitle}</DialogTitle>
+                <DialogDescription className="text-xs mt-0.5">
+                  Manage automated follow-ups for this proposal
+                </DialogDescription>
+              </div>
+              <Badge
+                variant="outline"
+                className={`text-[11px] px-2.5 py-0.5 h-6 font-medium ${
+                  followUpActive
+                    ? "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25"
+                    : "bg-muted text-muted-foreground border-muted"
+                }`}
+              >
+                {followUpActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <Separator />
+
+        <ScrollArea className="flex-1 max-h-[60vh]">
+          <div className="px-6 py-4 space-y-5">
+            {/* Control Buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-9 text-[13px]"
+                disabled={hasScheduled || isStarting || isMock}
+                onClick={handleStart}
+              >
+                {isStarting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5" />
+                )}
+                Start Follow-ups
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-9 text-[13px] border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                disabled={!hasScheduled || isStopping || isMock}
+                onClick={handleStop}
+              >
+                {isStopping ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Square className="h-3.5 w-3.5" />
+                )}
+                Stop Follow-ups
+              </Button>
+            </div>
+
+            {/* Interval Configuration */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[13px] font-semibold text-foreground">Follow-up Schedule</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[11px] text-[#8B5CF6] hover:text-[#7C3AED] gap-1"
+                  onClick={addInterval}
+                  disabled={hasScheduled || intervals.length >= 8}
+                >
+                  <PlusCircle className="h-3 w-3" />
+                  Add Follow-up
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {intervals.map((day, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: idx * 0.05 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="text-[12px] text-muted-foreground w-10 shrink-0">Day</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={day}
+                        onChange={(e) => updateInterval(idx, parseInt(e.target.value) || 1)}
+                        disabled={hasScheduled}
+                        className="h-8 w-20 text-[13px] text-center"
+                      />
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getIntervalLabelColor(day)}`}>
+                        {getIntervalLabel(day)}
+                      </span>
+                    </div>
+                    {!hasScheduled && intervals.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
+                        onClick={() => removeInterval(idx)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              {hasScheduled && (
+                <p className="text-[11px] text-muted-foreground italic">
+                  Stop current follow-ups to modify the schedule.
+                </p>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Follow-up Timeline */}
+            <div className="space-y-3">
+              <h4 className="text-[13px] font-semibold text-foreground">Follow-up Timeline</h4>
+              {effectiveFollowUps.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <CalendarClock className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-[13px] font-medium">No follow-ups yet</p>
+                  <p className="text-[11px]">Start follow-ups to create a schedule</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {effectiveFollowUps
+                    .sort((a, b) => a.dayNumber - b.dayNumber)
+                    .map((fu, idx) => {
+                      const statusConfig = statusBadgeConfig[fu.status] || statusBadgeConfig.scheduled;
+                      return (
+                        <motion.div
+                          key={fu._id}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2, delay: idx * 0.05 }}
+                          className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/30 transition-colors"
+                        >
+                          {/* Day indicator */}
+                          <div className="flex items-center justify-center h-8 w-8 rounded-md bg-[#8B5CF6]/10 text-[11px] font-bold text-[#8B5CF6] shrink-0">
+                            D{fu.dayNumber}
+                          </div>
+
+                          {/* Subject & date */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-medium text-foreground truncate">{fu.subject}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Scheduled: {formatDate(fu.scheduledAt)}
+                            </p>
+                          </div>
+
+                          {/* Status badge */}
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-2 py-0 h-5 font-medium shrink-0 ${statusConfig.className}`}
+                          >
+                            {statusConfig.label}
+                          </Badge>
+
+                          {/* Skip button */}
+                          {fu.status === "scheduled" && !isMock && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-[10px] text-muted-foreground hover:text-amber-600 gap-1 shrink-0"
+                              disabled={skippingId === fu._id}
+                              onClick={() => handleSkip(fu._id)}
+                            >
+                              {skippingId === fu._id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <SkipForward className="h-3 w-3" />
+                              )}
+                              Skip
+                            </Button>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: "Scheduled", value: scheduledCount, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
+                { label: "Sent", value: sentCount, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+                { label: "Skipped", value: skippedCount, color: "text-slate-500", bg: "bg-slate-500/10" },
+                { label: "Cancelled", value: cancelledCount, color: "text-muted-foreground", bg: "bg-muted" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center p-2 rounded-lg border border-border/50 bg-muted/10">
+                  <div className={`text-[18px] font-bold ${stat.color}`}>{stat.value}</div>
+                  <div className="text-[10px] text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ScrollArea>
+
+        {/* Footer */}
+        <Separator />
+        <div className="px-6 py-3 flex justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-[13px]">
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
