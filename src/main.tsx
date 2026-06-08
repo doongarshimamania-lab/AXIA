@@ -41,6 +41,9 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import Scope from "./pages/Scope.tsx";
+import ApiSettings from "./pages/ApiSettings.tsx";
+import ClientLogin from "./pages/ClientLogin.tsx";
+import ClientSignup from "./pages/ClientSignup.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Error Boundary to catch Convex errors and prevent app crash
@@ -179,6 +182,8 @@ root.render(
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
+                  <Route path="/client-login" element={<ClientLogin />} />
+                  <Route path="/client-signup" element={<ClientSignup />} />
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
 
@@ -207,6 +212,7 @@ root.render(
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
+                    <Route path="/api-settings" element={<ApiSettings />} />
                   </Route>
 
                   {/* Catch-all */}
