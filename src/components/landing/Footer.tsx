@@ -1,44 +1,51 @@
 import { useNavigate } from "react-router";
 
-const footerLinks = {
-  Product: ["Features", "Pricing", "How It Works", "Testimonials"],
-  Resources: ["Documentation", "Help Center", "Blog", "Case Studies"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy", "GDPR"],
-  Contact: ["Support", "Sales", "Partnerships", "Careers"],
-};
-
 export function Footer() {
   const navigate = useNavigate();
 
   return (
-    <footer className="bg-card text-muted-foreground py-16 px-10 border-t border-border">
+    <footer className="bg-card text-muted-foreground py-12 px-6 md:px-10 border-t border-border">
       <div className="max-w-[1200px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
-          {Object.entries(footerLinks).map(([heading, links]) => (
-            <div key={heading}>
-              <h3 className="text-lg font-semibold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
-                {heading}
-              </h3>
-              <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link}>
-                    <button
-                      onClick={() => {}}
-                      className="text-base text-muted-foreground hover:text-[#00246B] dark:hover:text-white transition-colors font-medium"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      {link}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          {/* Logo & Copyright */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="Axia" width={24} height={24} />
+            <span
+              className="text-lg font-bold tracking-tight text-foreground"
+              style={{ fontFamily: "Space Grotesk" }}
+            >
+              Axia
+            </span>
+          </div>
 
-        <div className="border-t border-border pt-6 text-center">
-          <p className="text-sm text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
-            © 2025 Axia. All rights reserved. Protecting freelancer income worldwide.
+          {/* Links */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => {}}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+              style={{ fontFamily: "Space Grotesk" }}
+            >
+              Privacy
+            </button>
+            <button
+              onClick={() => {}}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+              style={{ fontFamily: "Space Grotesk" }}
+            >
+              Terms
+            </button>
+            <button
+              onClick={() => {}}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+              style={{ fontFamily: "Space Grotesk" }}
+            >
+              Contact
+            </button>
+          </div>
+
+          {/* Copyright */}
+          <p className="text-sm text-muted-foreground/60" style={{ fontFamily: "Space Grotesk" }}>
+            © 2025 Axia. All rights reserved.
           </p>
         </div>
       </div>
