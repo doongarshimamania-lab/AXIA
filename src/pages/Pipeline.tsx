@@ -71,6 +71,8 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { CustomFieldManager } from "@/components/CustomFieldManager";
+import { CustomFieldValues } from "@/components/CustomFieldValues";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -98,6 +100,7 @@ interface Deal {
   contactName?: string;
   expectedCloseDate?: number;
   notes?: string;
+  customFields?: Record<string, any>;
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -342,6 +345,7 @@ export default function Pipeline() {
   const [editContactEmail, setEditContactEmail] = useState("");
   const [editCloseDate, setEditCloseDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
   const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
 
   // ── Import State ──
@@ -621,6 +625,7 @@ export default function Pipeline() {
         : ""
     );
     setEditNotes(deal.notes ?? "");
+    setEditCustomFields(deal.customFields || {});
     setEditStageId(deal.stageId);
   }, []);
 
@@ -639,6 +644,7 @@ export default function Pipeline() {
           ? new Date(editCloseDate).getTime()
           : undefined,
         notes: editNotes.trim() || undefined,
+        customFields: Object.keys(editCustomFields).length > 0 ? editCustomFields : undefined,
       };
       if (editStageId && editStageId !== detailDeal.stageId) {
         updates.stageId = editStageId;
@@ -661,6 +667,7 @@ export default function Pipeline() {
     editContactEmail,
     editCloseDate,
     editNotes,
+    editCustomFields,
     editStageId,
     updateDealMutation,
   ]);
@@ -1486,6 +1493,14 @@ export default function Pipeline() {
                           ))}
                       </div>
                     </div>
+
+                    {/* Custom Fields (View Mode) */}
+                    <CustomFieldValues
+                      workspaceId={workspaceId ?? null}
+                      tableName="deals"
+                      values={detailDeal.customFields}
+                      onChange={() => {}}
+                    />
                   </div>
 
                   <DialogFooter className="gap-2 sm:gap-0">
@@ -1677,6 +1692,14 @@ export default function Pipeline() {
                         onChange={(e) => setEditNotes(e.target.value)}
                       />
                     </div>
+
+                    {/* Custom Fields (Edit Mode) */}
+                    <CustomFieldValues
+                      workspaceId={workspaceId ?? null}
+                      tableName="deals"
+                      values={editCustomFields}
+                      onChange={setEditCustomFields}
+                    />
                   </div>
 
                   <DialogFooter>
@@ -1721,6 +1744,11 @@ export default function Pipeline() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Custom Field Manager ── */}
+      <div className="mt-6">
+        <CustomFieldManager workspaceId={workspaceId ?? null} tableName="deals" />
+      </div>
 
       {/* ── CSV Import Dialog ── */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
