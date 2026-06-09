@@ -6,48 +6,38 @@ import {
   Moon,
   ArrowRight,
   ShieldCheck,
+  FileCheck,
   DollarSign,
   FolderKanban,
+  BookOpen,
+  BrainCircuit,
   Users,
   CheckCircle2,
-  X,
-  Clock,
-  PenTool,
-  Code2,
-  Video,
-  GraduationCap,
-  BookOpen,
-  Palette,
-  Briefcase,
-  Headphones,
-  Camera,
-  Figma,
-  Megaphone,
-  Lightbulb,
-  UserCheck,
-  Newspaper,
-  Monitor,
-  FileText,
-  BrainCircuit,
-  Bell,
-  ShieldAlert,
-  MessageSquare,
-  Zap,
-  ChevronRight,
-  Timer,
-  Gift,
-  Crown,
   Star,
-  Sparkles,
+  Quote,
+  ChevronRight,
+  Lock,
+  Eye,
+  Target,
+  Clock,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 
 // Import existing modular components
 import { HeroSection } from "@/components/landing/HeroSection";
+import { ProblemCards } from "@/components/landing/ProblemCards";
+import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 
@@ -69,161 +59,86 @@ const staggerContainer = {
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
-const professions = [
-  { name: "Writers", icon: PenTool, color: "from-amber-500 to-orange-500" },
-  { name: "Developers", icon: Code2, color: "from-emerald-500 to-teal-500" },
-  { name: "Videographers", icon: Video, color: "from-rose-500 to-pink-500" },
-  { name: "Coaches", icon: GraduationCap, color: "from-violet-500 to-purple-500" },
-  { name: "Bookkeepers", icon: BookOpen, color: "from-sky-500 to-cyan-500" },
-  { name: "Designers", icon: Palette, color: "from-fuchsia-500 to-pink-500" },
-  { name: "Consultants", icon: Briefcase, color: "from-slate-500 to-gray-600" },
-  { name: "Assistants", icon: Headphones, color: "from-lime-500 to-green-500" },
-  { name: "Photographers", icon: Camera, color: "from-orange-500 to-red-500" },
-  { name: "UX/UI Designers", icon: Figma, color: "from-indigo-500 to-violet-500" },
-  { name: "Marketing Agencies", icon: Megaphone, color: "from-yellow-500 to-amber-500" },
-  { name: "Creative Agencies", icon: Lightbulb, color: "from-pink-500 to-rose-500" },
-  { name: "Staffing Agencies", icon: UserCheck, color: "from-teal-500 to-emerald-500" },
-  { name: "PR Agencies", icon: Newspaper, color: "from-cyan-500 to-sky-500" },
-  { name: "Digital Agencies", icon: Monitor, color: "from-purple-500 to-indigo-500" },
-];
-
 const features = [
   {
-    icon: FileText,
-    title: "Smart Proposals",
+    icon: ShieldCheck,
+    title: "Work Verification",
     description:
-      "Draft proposals in your brand voice with smart follow-ups that trigger on Day 3, 7, and 14",
-    color: "from-amber-500 to-orange-600",
-    bgAccent: "bg-amber-50 dark:bg-amber-950/30",
-  },
-  {
-    icon: DollarSign,
-    title: "Validated Billing",
-    description:
-      "Invoices that prove their own worth. Every line item links back to verified work logs",
+      "Real-time verification of your work against platform-specific requirements before submission. Never get denied for missing compliance again.",
     color: "from-emerald-500 to-teal-600",
     bgAccent: "bg-emerald-50 dark:bg-emerald-950/30",
   },
   {
-    icon: FolderKanban,
-    title: "CRM & Pipeline",
+    icon: DollarSign,
+    title: "Payment Protection",
     description:
-      "Visual pipeline board tracks every deal from first contact to close",
+      "Document every agreement, rate, and scope change with immutable timestamps. Get paid for every hour you work — no exceptions.",
+    color: "from-amber-500 to-orange-600",
+    bgAccent: "bg-amber-50 dark:bg-amber-950/30",
+  },
+  {
+    icon: Eye,
+    title: "Scope Tracking",
+    description:
+      "Automatic scope drift detection alerts you the moment a project creeps beyond its original terms. Formalize changes in one click.",
     color: "from-sky-500 to-cyan-600",
     bgAccent: "bg-sky-50 dark:bg-sky-950/30",
   },
   {
-    icon: Clock,
-    title: "Verified Workstreams",
+    icon: BookOpen,
+    title: "Evidence Library",
     description:
-      "Zero-friction time tracking that records automatically",
+      "Organize screenshots, contracts, messages, and work logs into a dispute-ready evidence timeline. Generate reports in under 2 minutes.",
     color: "from-violet-500 to-purple-600",
     bgAccent: "bg-violet-50 dark:bg-violet-950/30",
   },
   {
     icon: BrainCircuit,
-    title: "Truth Layer Verification",
+    title: "AI Dispute Prediction",
     description:
-      "A background engine that validates activity in real-time",
+      "Simulate potential disputes and see your win probability before you submit. Our AI identifies weak points and suggests fixes.",
     color: "from-rose-500 to-pink-600",
     bgAccent: "bg-rose-50 dark:bg-rose-950/30",
   },
   {
-    icon: Bell,
-    title: "Automated Payment Reminders",
+    icon: Users,
+    title: "Team Collaboration",
     description:
-      "Smart payment reminders that fire on schedule — Day 3, 7, and 14",
-    color: "from-amber-500 to-yellow-600",
-    bgAccent: "bg-amber-50 dark:bg-amber-950/30",
+      "Share protection dashboards with co-freelancers. Coordinate evidence collection, split disputes, and protect your team's income together.",
+    color: "from-indigo-500 to-blue-600",
+    bgAccent: "bg-indigo-50 dark:bg-indigo-950/30",
   },
+];
+
+const howItWorksSteps = [
   {
-    icon: ShieldAlert,
-    title: "Scope Creep Protection",
+    step: 1,
+    title: "Create Project",
     description:
-      "Catch scope creep as it happens with automatic detection and one-click change orders",
-    color: "from-red-500 to-orange-600",
-    bgAccent: "bg-red-50 dark:bg-red-950/30",
+      "Add your contract details, client requirements, and platform. Axia instantly maps protection criteria unique to your project.",
+    icon: FolderKanban,
   },
   {
-    icon: MessageSquare,
-    title: "Context Management & Communication",
+    step: 2,
+    title: "Track Work",
     description:
-      "Keep every project detail, client message, and decision in one place",
-    color: "from-teal-500 to-emerald-600",
-    bgAccent: "bg-teal-50 dark:bg-teal-950/30",
+      "Our browser extension captures work context alongside time tracking — screenshots, activity density, and deliverable progress.",
+    icon: Target,
   },
   {
-    icon: Zap,
-    title: "Instant Setup, Zero Config",
+    step: 3,
+    title: "Collect Evidence",
     description:
-      "No workflow builders. No automation rules to configure",
-    color: "from-lime-500 to-green-600",
-    bgAccent: "bg-lime-50 dark:bg-lime-950/30",
-  },
-];
-
-const comparisonTable = [
-  {
-    capability: "Proposal workflow",
-    others: "Manual or partial",
-    axia: "Auto-drafted + smart follow-ups",
+      "Axia auto-organizes your evidence into a timeline and flags gaps before submission. Everything is stored immutably.",
+    icon: FileCheck,
   },
   {
-    capability: "Work verification",
-    others: "Screenshots only",
-    axia: "Truth Layer — full audit trail",
+    step: 4,
+    title: "Get Protected",
+    description:
+      "Verify your work meets payment protection requirements. Submit with confidence — or dispute with rock-solid evidence.",
+    icon: Lock,
   },
-  {
-    capability: "Invoice proof",
-    others: "Static PDF",
-    axia: "Validated Billing — linked to work",
-  },
-  {
-    capability: "Scope creep protection",
-    others: "Manual tracking",
-    axia: "Auto-detected + change orders",
-  },
-  {
-    capability: "Setup time",
-    others: "3–7 days",
-    axia: "10 minutes",
-  },
-];
-
-const beforeTools = [
-  { name: "Google Docs", icon: FileText },
-  { name: "Trello", icon: FolderKanban },
-  { name: "Stripe", icon: DollarSign },
-  { name: "Loom", icon: Video },
-  { name: "Slack", icon: MessageSquare },
-];
-
-const afterTools = [
-  { name: "Contracts & Proposals", icon: FileText },
-  { name: "Verified Time Tracking", icon: Clock },
-  { name: "CRM & Pipeline", icon: FolderKanban },
-  { name: "Billing & Payments", icon: DollarSign },
-  { name: "Work Verification Engine", icon: ShieldCheck },
-];
-
-const otherToolsFeatures = [
-  { name: "Proposals & contracts", included: true },
-  { name: "Basic billing", included: true },
-  { name: "Payment collection", included: true },
-  { name: "Template library", included: true },
-  { name: "Verified work logs", included: false },
-  { name: "Automated context capture", included: false },
-  { name: "Dispute-proof billing", included: false },
-];
-
-const axiaFeatures = [
-  { name: "Proposals & contracts", included: true },
-  { name: "Basic billing", included: true },
-  { name: "Payment collection", included: true },
-  { name: "Template library", included: true },
-  { name: "Verified Workstreams", included: true },
-  { name: "Automated context capture", included: true },
-  { name: "Dispute-proof billing", included: true },
 ];
 
 const pricingTiers = [
@@ -297,30 +212,102 @@ const pricingTiers = [
   },
 ];
 
-const referralTiers = [
+const testimonials = [
   {
-    referrals: 1,
-    reward: "Priority early access",
-    icon: Zap,
-    color: "from-sky-500 to-cyan-500",
+    quote:
+      "Axia helped me identify context gaps in my Upwork submissions that I never knew existed. I've prevented $1,872 in potential payment denials over 6 months.",
+    author: "Sarah Jenkins",
+    role: "Senior UX Designer",
+    platform: "Upwork Top-Rated Plus",
+    rating: 5,
+    avatar: "SJ",
   },
   {
-    referrals: 3,
-    reward: "3 months free on Starter",
-    icon: Gift,
-    color: "from-emerald-500 to-teal-500",
+    quote:
+      "The dispute simulation saved me from a nightmare client. It flagged that my screenshots weren't frequent enough before I submitted the work.",
+    author: "Marcus Chen",
+    role: "Full-Stack Developer",
+    platform: "Toptal Network",
+    rating: 5,
+    avatar: "MC",
   },
   {
-    referrals: 5,
-    reward: "50% off any tier for one year",
-    icon: Star,
-    color: "from-amber-500 to-orange-500",
+    quote:
+      "Finally, a tool that protects ME. Platforms always side with the client, but Axia gives me the leverage I need to get paid for every minute.",
+    author: "Elena Rodriguez",
+    role: "Digital Marketer",
+    platform: "Fiverr Pro",
+    rating: 5,
+    avatar: "ER",
   },
   {
-    referrals: 10,
-    reward: "Expert tier free for 1 year",
-    icon: Crown,
-    color: "from-violet-500 to-purple-500",
+    quote:
+      "I used to spend hours each week documenting everything manually. Axia automated 90% of that and caught things I would have missed entirely.",
+    author: "David Kim",
+    role: "Software Engineer",
+    platform: "Upwork",
+    rating: 5,
+    avatar: "DK",
+  },
+  {
+    quote:
+      "The scope tracking alone has saved me from $3,000+ in scope creep this year. Every freelancer needs this — no question.",
+    author: "Priya Mehta",
+    role: "Graphic Designer",
+    platform: "Fiverr",
+    rating: 5,
+    avatar: "PM",
+  },
+  {
+    quote:
+      "As a team lead, the collaboration features let us coordinate protection across all our contracts. Disputes went from stressful to routine.",
+    author: "James O'Brien",
+    role: "Agency Owner",
+    platform: "Multi-platform",
+    rating: 5,
+    avatar: "JO",
+  },
+];
+
+const stats = [
+  { value: "12,500+", label: "Freelancers Protected", icon: Users },
+  { value: "28,000+", label: "Projects Secured", icon: FolderKanban },
+  { value: "83%", label: "Disputes Won", icon: Award },
+  { value: "145,000+", label: "Hours Tracked", icon: Clock },
+];
+
+const faqs = [
+  {
+    q: "How does Axia verify my work against platform requirements?",
+    a: "Axia's Work Context Verification Model (WCVM) analyzes your work context — screenshots, activity density, deliverable progress — against the specific requirements of your platform (Upwork, Fiverr, Toptal, etc.). It flags gaps before you submit, so you can fix them and get paid.",
+  },
+  {
+    q: "Is my data secure?",
+    a: "Absolutely. All evidence is stored with end-to-end encryption and immutable timestamps. Your data is never shared with clients or platforms. You own it, you control it.",
+  },
+  {
+    q: "Do I need to install anything?",
+    a: "Axia works as a browser extension that runs alongside your existing time tracker. Installation takes under 2 minutes and works with Chrome, Firefox, and Edge.",
+  },
+  {
+    q: "What platforms does Axia support?",
+    a: "We currently support Upwork, Fiverr, and Toptal with full compliance monitoring. We're adding Toptal Freelancer, Guru, and Freelancer.com support soon.",
+  },
+  {
+    q: "Can I try Axia for free?",
+    a: "Yes! Our Free tier gives you 1 project workspace with basic invoice verification and an evidence timeline. No credit card required. Upgrade anytime as your needs grow.",
+  },
+  {
+    q: "How does the dispute simulation work?",
+    a: "Our AI-powered dispute simulation models how a real dispute would play out based on your current evidence. It shows your win probability, identifies weak spots, and recommends specific evidence to collect before you submit.",
+  },
+  {
+    q: "What if I'm already in a dispute?",
+    a: "Axia can help mid-dispute too. Upload your existing evidence, and we'll generate a professional dispute report highlighting the strongest arguments and filling any remaining gaps.",
+  },
+  {
+    q: "Is there team or agency pricing?",
+    a: "Yes — our Expert tier includes unlimited projects and team collaboration tools. For larger teams, contact us for custom enterprise pricing with dedicated support.",
   },
 ];
 
@@ -331,6 +318,13 @@ export default function Landing() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const scrollToWaitlist = () => {
     const el = document.querySelector('[data-waitlist-section]');
     if (el) {
@@ -340,7 +334,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
-      {/* ─── Header / Nav ──────────────────────────────────────────────────── */}
+      {/* ─── Header ──────────────────────────────────────────────────────── */}
       <header>
         {/* Dark Mode Toggle */}
         <div
@@ -377,15 +371,43 @@ export default function Landing() {
               </span>
             </motion.div>
 
-            {/* Waitlist Counter - Center */}
-            <div className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <Users className="w-4 h-4 text-emerald-500" />
-              <span
-                className="text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                style={{ fontFamily: "Space Grotesk" }}
+            <div className="hidden md:flex items-center gap-6">
+              <button
+                onClick={() => scrollToSection("features")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                103 people waiting · Only 97 spots left
-              </span>
+                Features
+              </button>
+              <button
+                onClick={() => scrollToSection("how-it-works")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                How It Works
+              </button>
+              <button
+                onClick={() => scrollToSection("pricing")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Pricing
+              </button>
+              <button
+                onClick={() => scrollToSection("problems")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Problems We Solve
+              </button>
+              <button
+                onClick={() => scrollToSection("social-proof")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Reviews
+              </button>
+              <button
+                onClick={() => scrollToSection("faq")}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                FAQ
+              </button>
             </div>
 
             <div className="flex items-center gap-4">
@@ -403,73 +425,45 @@ export default function Landing() {
       </header>
 
       <main>
-        {/* ─── 1. Hero Section ──────────────────────────────────────────────── */}
+        {/* ─── Hero Section ──────────────────────────────────────────────── */}
         <HeroSection />
 
-        {/* ─── 2. Industries We Serve ───────────────────────────────────────── */}
-        <section className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
+        {/* ─── Stats Section ──────────────────────────────────────────────── */}
+        <section className="py-12 px-6 md:px-10 bg-white dark:bg-slate-900 border-b border-border/30">
           <div className="max-w-[1200px] mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-14"
-            >
-              <Badge
-                variant="secondary"
-                className="mb-4 text-xs font-semibold uppercase tracking-wider bg-[#00246B]/10 text-[#00246B] dark:bg-[#00246B]/20 dark:text-blue-400"
-              >
-                BUILT FOR YOU
-              </Badge>
-              <h2
-                className="text-3xl md:text-5xl font-bold text-foreground mb-4"
-                style={{ fontFamily: "Space Grotesk" }}
-              >
-                One platform.{" "}
-                <span className="bg-gradient-to-r from-[#00246B] to-emerald-500 bg-clip-text text-transparent">
-                  Every profession. Every agency.
-                </span>
-              </h2>
-              <p
-                className="text-lg text-muted-foreground max-w-[700px] mx-auto leading-relaxed"
-                style={{ fontFamily: "Space Grotesk" }}
-              >
-                Whether you're a solo freelancer or running a full-service agency, Axia adapts to your workflow — not the other way around.
-              </p>
-            </motion.div>
-
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-60px" }}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-8"
             >
-              {professions.map((prof, i) => (
-                <motion.div key={i} variants={fadeUp} custom={i}>
-                  <Card className="h-full group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60 cursor-pointer">
-                    <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                      <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${prof.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                      >
-                        <prof.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span
-                        className="text-sm font-semibold text-foreground"
-                        style={{ fontFamily: "Space Grotesk" }}
-                      >
-                        {prof.name}
-                      </span>
-                    </CardContent>
-                  </Card>
+              {stats.map((stat, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeUp}
+                  custom={i}
+                  className="text-center group"
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#00246B]/10 dark:bg-[#00246B]/20 mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <stat.icon className="w-6 h-6 text-[#00246B] dark:text-blue-400" />
+                  </div>
+                  <div
+                    className="text-3xl md:text-4xl font-bold text-[#00246B] dark:text-blue-400 mb-1"
+                    style={{ fontFamily: "Space Grotesk" }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">
+                    {stat.label}
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           </div>
         </section>
 
-        {/* ─── 3. Features Section ──────────────────────────────────────────── */}
+        {/* ─── Features Section ───────────────────────────────────────────── */}
         <section id="features" className="py-20 px-6 md:px-10 bg-slate-50 dark:bg-slate-950">
           <div className="max-w-[1200px] mx-auto">
             <motion.div
@@ -479,24 +473,33 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="text-center mb-14"
             >
+              <Badge variant="secondary" className="mb-4 text-xs font-semibold uppercase tracking-wider">
+                Powerful Features
+              </Badge>
               <h2
                 className="text-3xl md:text-5xl font-bold text-foreground mb-4"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                One workspace.{" "}
+                Everything You Need to{" "}
                 <span className="bg-gradient-to-r from-[#00246B] to-emerald-500 bg-clip-text text-transparent">
-                  Every tool you need.
+                  Get Paid
                 </span>
               </h2>
+              <p
+                className="text-lg text-muted-foreground max-w-[700px] mx-auto leading-relaxed"
+                style={{ fontFamily: "Space Grotesk" }}
+              >
+                Six core features designed to prevent payment denials before they
+                happen — and win disputes when they do.
+              </p>
             </motion.div>
 
-            {/* 9 Feature Cards */}
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {features.map((feature, i) => (
                 <motion.div key={i} variants={fadeUp} custom={i}>
@@ -527,168 +530,122 @@ export default function Landing() {
                 </motion.div>
               ))}
             </motion.div>
-
-            {/* Comparison Table */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <Card className="border-border/60 overflow-hidden shadow-lg">
-                <CardContent className="p-0">
-                  {/* Table Header */}
-                  <div className="grid grid-cols-3 bg-[#00246B] dark:bg-slate-800 text-white">
-                    <div className="p-4 md:p-5 font-bold text-sm md:text-base" style={{ fontFamily: "Space Grotesk" }}>
-                      Capability
-                    </div>
-                    <div className="p-4 md:p-5 font-bold text-sm md:text-base text-center" style={{ fontFamily: "Space Grotesk" }}>
-                      Others
-                    </div>
-                    <div className="p-4 md:p-5 font-bold text-sm md:text-base text-center" style={{ fontFamily: "Space Grotesk" }}>
-                      Axia
-                    </div>
-                  </div>
-                  {/* Table Rows */}
-                  {comparisonTable.map((row, i) => (
-                    <div
-                      key={i}
-                      className={`grid grid-cols-3 ${
-                        i % 2 === 0
-                          ? "bg-white dark:bg-slate-900"
-                          : "bg-slate-50 dark:bg-slate-950/50"
-                      } ${i < comparisonTable.length - 1 ? "border-b border-border/40" : ""}`}
-                    >
-                      <div className="p-4 md:p-5 font-semibold text-sm text-foreground" style={{ fontFamily: "Space Grotesk" }}>
-                        {row.capability}
-                      </div>
-                      <div className="p-4 md:p-5 text-sm text-muted-foreground text-center" style={{ fontFamily: "Space Grotesk" }}>
-                        {row.others}
-                      </div>
-                      <div className="p-4 md:p-5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 text-center" style={{ fontFamily: "Space Grotesk" }}>
-                        {row.axia}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
         </section>
 
-        {/* ─── 4. Before & After ────────────────────────────────────────────── */}
-        <section className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
+        {/* ─── How It Works Section ───────────────────────────────────────── */}
+        <section id="how-it-works" className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
           <div className="max-w-[1200px] mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="text-center mb-14"
+              className="text-center mb-16"
             >
+              <Badge variant="secondary" className="mb-4 text-xs font-semibold uppercase tracking-wider">
+                Simple Process
+              </Badge>
               <h2
                 className="text-3xl md:text-5xl font-bold text-foreground mb-4"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                You didn't start a business to{" "}
-                <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-                  manage a tech stack.
-                </span>
+                How It Works
               </h2>
               <p
-                className="text-lg text-muted-foreground max-w-[700px] mx-auto leading-relaxed"
+                className="text-lg text-muted-foreground max-w-[600px] mx-auto leading-relaxed"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                You've been duct-taping Google Docs, Trello, Stripe, Loom, and Slack together — hoping they somehow work as a system. They don't.
+                From project creation to payment protection in four simple steps.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* BEFORE */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="h-full border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/10">
-                  <CardHeader>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider w-fit mb-2">
-                      BEFORE
-                    </div>
-                    <CardTitle className="text-xl" style={{ fontFamily: "Space Grotesk" }}>
-                      Duct-taped together
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {beforeTools.map((tool, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-red-100 dark:border-red-900/20"
-                        >
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-100 dark:bg-red-900/30">
-                            <tool.icon className="w-5 h-5 text-red-500" />
-                          </div>
-                          <span
-                            className="flex-1 text-sm font-semibold text-foreground"
-                            style={{ fontFamily: "Space Grotesk" }}
-                          >
-                            {tool.name}
-                          </span>
-                          <X className="w-5 h-5 text-red-500" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+            {/* Desktop: Horizontal connector */}
+            <div className="hidden md:block relative max-w-[1000px] mx-auto pt-4">
+              {/* Connector line */}
+              <div className="absolute top-[52px] left-[10%] right-[10%] h-[3px] bg-gradient-to-r from-[#00246B] via-emerald-500 to-[#00246B] rounded-full" />
 
-              {/* AFTER */}
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="h-full border-emerald-200 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/10">
-                  <CardHeader>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider w-fit mb-2">
-                      AFTER
+              <div className="flex justify-between">
+                {howItWorksSteps.map((step, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.15 }}
+                    className="relative text-center w-1/4 px-3"
+                  >
+                    {/* Step number bubble */}
+                    <div className="flex justify-center mb-6">
+                      <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-[#00246B] to-[#003A8C] text-white flex items-center justify-center shadow-xl ring-4 ring-white dark:ring-slate-900">
+                        <step.icon className="w-7 h-7" />
+                      </div>
                     </div>
-                    <CardTitle className="text-xl" style={{ fontFamily: "Space Grotesk" }}>
-                      One tab. All of it.
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {afterTools.map((tool, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-100 dark:border-emerald-900/20"
-                        >
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30">
-                            <tool.icon className="w-5 h-5 text-emerald-500" />
-                          </div>
-                          <span
-                            className="flex-1 text-sm font-semibold text-foreground"
-                            style={{ fontFamily: "Space Grotesk" }}
-                          >
-                            {tool.name}
-                          </span>
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                        </div>
-                      ))}
+                    <div
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#00246B]/10 dark:bg-[#00246B]/30 text-[#00246B] dark:text-blue-400 text-xs font-bold mb-3"
+                      style={{ fontFamily: "Space Grotesk" }}
+                    >
+                      {step.step}
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                    <h3
+                      className="text-lg font-bold text-foreground mb-2"
+                      style={{ fontFamily: "Space Grotesk" }}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {step.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile: Vertical timeline */}
+            <div className="md:hidden space-y-6 relative pl-10">
+              <div className="absolute left-5 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#00246B] via-emerald-500 to-[#00246B] rounded-full" />
+              {howItWorksSteps.map((step, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="flex gap-4 items-start relative"
+                >
+                  <div className="absolute -left-10 top-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#00246B] to-[#003A8C] text-white flex items-center justify-center shadow-lg ring-4 ring-white dark:ring-slate-900 z-10">
+                    <step.icon className="w-4 h-4" />
+                  </div>
+                  <div className="pt-2">
+                    <div
+                      className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#00246B]/10 dark:bg-[#00246B]/30 text-[#00246B] dark:text-blue-400 text-[10px] font-bold mb-2 uppercase tracking-wider"
+                      style={{ fontFamily: "Space Grotesk" }}
+                    >
+                      Step {step.step}
+                    </div>
+                    <h3
+                      className="text-lg font-bold text-foreground mb-1"
+                      style={{ fontFamily: "Space Grotesk" }}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {step.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ─── 5. Truth Layer Verification ──────────────────────────────────── */}
-        <section className="py-20 px-6 md:px-10 bg-slate-50 dark:bg-slate-950">
+        {/* ─── Problem Cards ──────────────────────────────────────────────── */}
+        <div id="problems">
+          <ProblemCards />
+        </div>
+
+        {/* ─── Testimonials Section ───────────────────────────────────────── */}
+        <section id="testimonials" className="py-20 px-6 md:px-10 bg-slate-50 dark:bg-slate-950">
           <div className="max-w-[1200px] mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -697,128 +654,23 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="text-center mb-14"
             >
+              <Badge variant="secondary" className="mb-4 text-xs font-semibold uppercase tracking-wider">
+                Social Proof
+              </Badge>
               <h2
                 className="text-3xl md:text-5xl font-bold text-foreground mb-4"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                Other tools stop once the contract is signed.{" "}
+                Loved by{" "}
                 <span className="bg-gradient-to-r from-[#00246B] to-emerald-500 bg-clip-text text-transparent">
-                  Axia is just getting started.
-                </span>
-              </h2>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-              {/* Other Tools */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="h-full border-border/60">
-                  <CardHeader>
-                    <Badge variant="outline" className="w-fit text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Other Tools
-                    </Badge>
-                    <CardTitle className="text-lg mt-2" style={{ fontFamily: "Space Grotesk" }}>
-                      Stop at the contract
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {otherToolsFeatures.map((feat, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          {feat.included ? (
-                            <CheckCircle2 className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                          ) : (
-                            <X className="w-5 h-5 text-red-500 flex-shrink-0" />
-                          )}
-                          <span
-                            className={`text-sm ${feat.included ? "text-foreground" : "text-red-500 font-semibold"}`}
-                            style={{ fontFamily: "Space Grotesk" }}
-                          >
-                            {feat.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Axia */}
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="h-full border-2 border-[#00246B] dark:border-blue-500 shadow-xl">
-                  <CardHeader>
-                    <Badge className="w-fit text-xs font-semibold uppercase tracking-wider bg-[#00246B] text-white dark:bg-blue-600">
-                      Axia
-                    </Badge>
-                    <CardTitle className="text-lg mt-2" style={{ fontFamily: "Space Grotesk" }}>
-                      Verification engine built in
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {axiaFeatures.map((feat, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                          <span
-                            className="text-sm font-semibold text-foreground"
-                            style={{ fontFamily: "Space Grotesk" }}
-                          >
-                            {feat.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-center text-muted-foreground max-w-[700px] mx-auto leading-relaxed"
-              style={{ fontFamily: "Space Grotesk" }}
-            >
-              The Truth Layer runs silently in the background — verifying work as it happens, capturing context automatically, and building a dispute-proof record you never have to think about.
-            </motion.p>
-          </div>
-        </section>
-
-        {/* ─── 6. Time & Money Saved ────────────────────────────────────────── */}
-        <section className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
-          <div className="max-w-[1200px] mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-14"
-            >
-              <h2
-                className="text-3xl md:text-5xl font-bold text-foreground mb-4"
-                style={{ fontFamily: "Space Grotesk" }}
-              >
-                Disputes are rare.{" "}
-                <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">
-                  Justification is constant.
+                  Freelancers
                 </span>
               </h2>
               <p
-                className="text-lg text-muted-foreground max-w-[700px] mx-auto leading-relaxed"
+                className="text-lg text-muted-foreground max-w-[600px] mx-auto leading-relaxed"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                You're losing 3–5 hours every week justifying work you've already done. That's time you could spend on billable work — or just living your life.
+                Real stories from freelancers who protect their income with Axia every day.
               </p>
             </motion.div>
 
@@ -826,92 +678,62 @@ export default function Landing() {
               variants={staggerContainer}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              viewport={{ once: true, margin: "-60px" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {/* Stat 1 */}
-              <motion.div variants={fadeUp} custom={0}>
-                <Card className="text-center h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60">
-                  <CardContent className="p-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mb-5 shadow-lg">
-                      <Timer className="w-8 h-8 text-white" />
-                    </div>
-                    <div
-                      className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent mb-2"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      3–5 hrs
-                    </div>
-                    <p
-                      className="text-sm font-semibold text-foreground mb-1"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      Saved per week
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      No more manual justification of work you've already done
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Stat 2 */}
-              <motion.div variants={fadeUp} custom={1}>
-                <Card className="text-center h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60">
-                  <CardContent className="p-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-5 shadow-lg">
-                      <ShieldCheck className="w-8 h-8 text-white" />
-                    </div>
-                    <div
-                      className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent mb-2"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      Validated
-                    </div>
-                    <p
-                      className="text-sm font-semibold text-foreground mb-1"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      Invoices
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Every line item links back to verified work logs
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Stat 3 */}
-              <motion.div variants={fadeUp} custom={2}>
-                <Card className="text-center h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60">
-                  <CardContent className="p-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00246B] to-blue-600 mb-5 shadow-lg">
-                      <Zap className="w-8 h-8 text-white" />
-                    </div>
-                    <div
-                      className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#00246B] to-blue-600 bg-clip-text text-transparent mb-2"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      Zero
-                    </div>
-                    <p
-                      className="text-sm font-semibold text-foreground mb-1"
-                      style={{ fontFamily: "Space Grotesk" }}
-                    >
-                      Friction work streams
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Time tracking that records automatically — no manual entry
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+              {testimonials.map((t, i) => (
+                <motion.div key={i} variants={fadeUp} custom={i}>
+                  <Card className="h-full group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60">
+                    <CardContent className="p-6 relative">
+                      <Quote className="absolute top-4 right-4 w-10 h-10 text-[#00246B]/8 dark:text-blue-400/8" />
+                      {/* Stars */}
+                      <div className="flex gap-1 mb-4">
+                        {[...Array(t.rating)].map((_, s) => (
+                          <Star
+                            key={s}
+                            className="w-4 h-4 fill-amber-400 text-amber-400"
+                          />
+                        ))}
+                      </div>
+                      {/* Quote */}
+                      <p
+                        className="text-sm text-foreground leading-relaxed mb-5 italic"
+                        style={{ fontFamily: "Space Grotesk" }}
+                      >
+                        &ldquo;{t.quote}&rdquo;
+                      </p>
+                      {/* Author */}
+                      <div className="flex items-center gap-3 pt-4 border-t border-border/60">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00246B] to-[#003A8C] flex items-center justify-center text-white text-xs font-bold shadow-md">
+                          {t.avatar}
+                        </div>
+                        <div>
+                          <p
+                            className="text-sm font-bold text-foreground"
+                            style={{ fontFamily: "Space Grotesk" }}
+                          >
+                            {t.author}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t.role} &middot; {t.platform}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </motion.div>
           </div>
         </section>
 
-        {/* ─── 7. Pricing Plans ─────────────────────────────────────────────── */}
-        <section id="pricing" className="py-20 px-6 md:px-10 bg-slate-50 dark:bg-slate-950">
+        {/* ─── Social Proof Section (existing carousel) ───────────────────── */}
+        <div id="social-proof">
+          <SocialProofSection />
+        </div>
+
+        {/* ─── Pricing Section ────────────────────────────────────────────── */}
+        <section id="pricing" className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
           <div className="max-w-[1200px] mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1035,9 +857,9 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ─── 8. Referral Rewards ──────────────────────────────────────────── */}
-        <section className="py-20 px-6 md:px-10 bg-white dark:bg-slate-900">
-          <div className="max-w-[1200px] mx-auto">
+        {/* ─── FAQ Section ────────────────────────────────────────────────── */}
+        <section id="faq" className="py-20 px-6 md:px-10 bg-slate-50 dark:bg-slate-950">
+          <div className="max-w-[800px] mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1045,69 +867,80 @@ export default function Landing() {
               transition={{ duration: 0.5 }}
               className="text-center mb-14"
             >
+              <Badge variant="secondary" className="mb-4 text-xs font-semibold uppercase tracking-wider">
+                FAQ
+              </Badge>
               <h2
                 className="text-3xl md:text-5xl font-bold text-foreground mb-4"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                Share Axia.{" "}
-                <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                  Get rewarded.
-                </span>
+                Frequently Asked Questions
               </h2>
               <p
                 className="text-lg text-muted-foreground max-w-[600px] mx-auto leading-relaxed"
                 style={{ fontFamily: "Space Grotesk" }}
               >
-                Every referral unlocks bigger rewards. The more you share, the more you save.
+                Everything you need to know about Axia — and if it's right for you.
               </p>
             </motion.div>
 
             <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-60px" }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
             >
-              {referralTiers.map((tier, i) => (
-                <motion.div key={i} variants={fadeUp} custom={i}>
-                  <Card className="h-full text-center group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/60">
-                    <CardContent className="p-6">
-                      <div
-                        className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-gradient-to-br ${tier.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                      >
-                        <tier.icon className="w-8 h-8 text-white" />
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-foreground mb-1"
-                        style={{ fontFamily: "Space Grotesk" }}
-                      >
-                        {tier.referrals}
-                      </div>
-                      <p
-                        className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3"
-                        style={{ fontFamily: "Space Grotesk" }}
-                      >
-                        {tier.referrals === 1 ? "Referral" : "Referrals"}
-                      </p>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00246B]/10 dark:bg-[#00246B]/20">
-                        <Sparkles className="w-3.5 h-3.5 text-[#00246B] dark:text-blue-400" />
-                        <span
-                          className="text-sm font-bold text-[#00246B] dark:text-blue-400"
+              <Card className="border-border/60 shadow-sm">
+                <CardContent className="p-0">
+                  <Accordion type="single" collapsible className="w-full">
+                    {faqs.map((faq, i) => (
+                      <AccordionItem key={i} value={`item-${i}`} className="px-6">
+                        <AccordionTrigger
+                          className="text-left text-base font-semibold hover:no-underline"
                           style={{ fontFamily: "Space Grotesk" }}
                         >
-                          {tier.reward}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                          {faq.q}
+                        </AccordionTrigger>
+                        <AccordionContent
+                          className="text-muted-foreground leading-relaxed"
+                          style={{ fontFamily: "Space Grotesk" }}
+                        >
+                          {faq.a}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-center mt-10"
+            >
+              <p
+                className="text-sm text-muted-foreground mb-4"
+                style={{ fontFamily: "Space Grotesk" }}
+              >
+                Still have questions?
+              </p>
+              <Button
+                onClick={scrollToWaitlist}
+                variant="outline"
+                className="rounded-full px-6 border-[#00246B] dark:border-blue-500 text-[#00246B] dark:text-blue-400 hover:bg-[#00246B] hover:text-white"
+                style={{ fontFamily: "Space Grotesk" }}
+              >
+                Talk to Us
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </motion.div>
           </div>
         </section>
 
-        {/* ─── 9. Final CTA ──────────────────────────────────────────────────── */}
+        {/* ─── Final CTA ──────────────────────────────────────────────────── */}
         <FinalCTA />
       </main>
 
