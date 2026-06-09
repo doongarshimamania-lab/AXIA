@@ -24,3 +24,26 @@ Stage Summary:
 - ⚠️ Convex cloud NOT updated - needs manual deployment by user (npx convex deploy)
 - The cloud deployment is stale for proposals module - proposals/crud.ts was never deployed
 - User needs to run `npx convex deploy` from their authenticated environment
+
+---
+Task ID: 1-6
+Agent: main
+Task: Fix multiple UI bugs - pipeline, proposals, mock data
+
+Work Log:
+- Verified landing page is already committed and pushed to GitHub
+- Pipeline: Moved CustomFieldManager from separate section at bottom to a dialog opened by "Fields" button in toolbar
+- Pipeline: Added custom field type options (text, number, boolean, link) to CSV import column mapping
+- Pipeline: Auto-detect unknown CSV columns as custom:text fields instead of skipping them
+- Pipeline: Shrank kanban board columns from 280-300px to 220-240px, reduced padding, font sizes, and deal card sizes
+- Proposals: Fixed bug where old proposals disappeared when creating from deal - now merges Convex data with mock data instead of replacing
+- Projects: Added MOCK_PROJECTS array and isDemoMode detection for unauthenticated users
+- Invoices: Added MOCK_INVOICES array and isDemoMode detection for unauthenticated users
+- Built, committed, pushed to GitHub, deployed to Convex cloud
+- Restarted preview server on port 3000
+
+Stage Summary:
+- All changes pushed to GitHub (commit d9b7bb2)
+- Convex cloud deployed to veracious-zebra-519
+- Preview server running on port 3000
+- Key fixes: pipeline compact UI, custom fields in dialog, import field types, proposal merge fix, mock data for Projects/Invoices
