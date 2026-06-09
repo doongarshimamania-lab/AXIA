@@ -231,11 +231,20 @@ export default function Proposals() {
   const isUsingMockData = !convexProposals || convexProposals.length === 0;
 
   // Use Convex data when available, fall back to mock data
+  // Merge: if Convex has proposals, use those but also include mock data
+  // so that mock proposals don't disappear when real ones are created
   const proposals = useMemo(() => {
-    if (convexProposals && convexProposals.length > 0) return convexProposals;
-    // Filter mock data by activeFilter
-    if (activeFilter === "all") return MOCK_PROPOSALS;
-    return MOCK_PROPOSALS.filter(p => p.status === activeFilter);
+    const hasConvexData = convexProposals && convexProposals.length > 0;
+    const mockFiltered = activeFilter === "all" ? MOCK_PROPOSALS : MOCK_PROPOSALS.filter(p => p.status === activeFilter);
+
+    if (hasConvexData) {
+      // Merge Convex proposals with mock data (avoiding duplicates by ID)
+      const convexIds = new Set(convexProposals.map(p => p._id));
+      const merged = [...convexProposals, ...mockFiltered.filter(p => !convexIds.has(p._id))];
+      if (activeFilter === "all") return merged;
+      return merged.filter(p => p.status === activeFilter);
+    }
+    return mockFiltered;
   }, [convexProposals, activeFilter]);
 
   const stats = useMemo(() => {
@@ -244,7 +253,12 @@ export default function Proposals() {
   }, [convexStats]);
 
   const allProposals = useMemo(() => {
-    if (convexAllProposals && convexAllProposals.length > 0) return convexAllProposals;
+    const hasConvexData = convexAllProposals && convexAllProposals.length > 0;
+    if (hasConvexData) {
+      // Merge Convex proposals with mock data
+      const convexIds = new Set(convexAllProposals.map(p => p._id));
+      return [...convexAllProposals, ...MOCK_PROPOSALS.filter(p => !convexIds.has(p._id))];
+    }
     return MOCK_PROPOSALS;
   }, [convexAllProposals]);
 

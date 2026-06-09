@@ -47,9 +47,11 @@ import {
   Mail,
   Minus,
   Settings2,
+  Info,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
+import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
 import { ShareDialog } from "@/components/ShareDialog";
@@ -135,6 +137,200 @@ const FILTER_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
   { key: "viewed", label: "Viewed" },
   { key: "paid", label: "Paid" },
   { key: "overdue", label: "Overdue" },
+];
+
+// ─── Mock data for demo mode (unauthenticated) ──────────────────────────────
+
+const MOCK_INVOICES: Invoice[] = [
+  {
+    _id: "inv_1",
+    invoiceNumber: "INV-2025-001",
+    clientName: "TechCorp Solutions",
+    clientEmail: "billing@techcorp.io",
+    status: "paid",
+    issueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
+    paidDate: Date.now() - 28 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li1", description: "Frontend Development - Sprint 4", quantity: 40, rate: 95, amount: 3800, hasProof: true },
+      { id: "li2", description: "API Integration & Testing", quantity: 20, rate: 95, amount: 1900, hasProof: true },
+    ],
+    subtotal: 5700,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 5700,
+    currency: "USD",
+    notes: "Payment received on time. Thank you!",
+    proofCount: 3,
+    hasValidatedBilling: true,
+    sentAt: Date.now() - 58 * 24 * 60 * 60 * 1000,
+    viewedAt: Date.now() - 55 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 62 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 28 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_2",
+    invoiceNumber: "INV-2025-002",
+    clientName: "StartupHub Inc",
+    clientEmail: "accounts@startuphub.com",
+    status: "paid",
+    issueDate: Date.now() - 90 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+    paidDate: Date.now() - 55 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li3", description: "Mobile App Development - Phase 1", quantity: 80, rate: 120, amount: 9600, hasProof: true },
+    ],
+    subtotal: 9600,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 9600,
+    currency: "USD",
+    proofCount: 5,
+    hasValidatedBilling: true,
+    sentAt: Date.now() - 88 * 24 * 60 * 60 * 1000,
+    viewedAt: Date.now() - 85 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 92 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 55 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_3",
+    invoiceNumber: "INV-2025-003",
+    clientName: "Global Enterprises",
+    clientEmail: "finance@globalent.com",
+    status: "overdue",
+    issueDate: Date.now() - 45 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li4", description: "Dashboard Analytics Module", quantity: 60, rate: 110, amount: 6600, hasProof: true },
+      { id: "li5", description: "Data Visualization Components", quantity: 25, rate: 110, amount: 2750, hasProof: false },
+    ],
+    subtotal: 9350,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 9350,
+    currency: "USD",
+    notes: "Payment is 15 days overdue. Follow up required.",
+    proofCount: 2,
+    hasValidatedBilling: false,
+    sentAt: Date.now() - 43 * 24 * 60 * 60 * 1000,
+    viewedAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 47 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_4",
+    invoiceNumber: "INV-2025-004",
+    clientName: "Digital Marketing Co",
+    clientEmail: "pay@digimarket.co",
+    status: "overdue",
+    issueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li6", description: "Landing Page Redesign", quantity: 35, rate: 85, amount: 2975, hasProof: false },
+    ],
+    subtotal: 2975,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 2975,
+    currency: "USD",
+    notes: "Second reminder sent.",
+    proofCount: 0,
+    hasValidatedBilling: false,
+    sentAt: Date.now() - 58 * 24 * 60 * 60 * 1000,
+    viewedAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 62 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_5",
+    invoiceNumber: "INV-2025-005",
+    clientName: "Creative Studios",
+    clientEmail: "hello@creativestudios.design",
+    status: "sent",
+    issueDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() + 20 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li7", description: "Brand Identity System", quantity: 45, rate: 95, amount: 4275, hasProof: true },
+      { id: "li8", description: "Style Guide Documentation", quantity: 15, rate: 95, amount: 1425, hasProof: true },
+    ],
+    subtotal: 5700,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 5700,
+    currency: "USD",
+    proofCount: 4,
+    hasValidatedBilling: true,
+    sentAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_6",
+    invoiceNumber: "INV-2025-006",
+    clientName: "HealthTech Partners",
+    clientEmail: "finance@healthtech.io",
+    status: "viewed",
+    issueDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() + 23 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li9", description: "HIPAA Compliance Module", quantity: 50, rate: 130, amount: 6500, hasProof: true },
+    ],
+    subtotal: 6500,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 6500,
+    currency: "USD",
+    proofCount: 2,
+    hasValidatedBilling: true,
+    sentAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+    viewedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+    createdAt: Date.now() - 9 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  },
+  {
+    _id: "inv_7",
+    invoiceNumber: "INV-2025-007",
+    clientName: "FinServe Analytics",
+    clientEmail: "ap@finserve.com",
+    status: "draft",
+    issueDate: Date.now(),
+    dueDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li10", description: "Real-time Reporting Engine", quantity: 30, rate: 140, amount: 4200, hasProof: false },
+      { id: "li11", description: "Chart Library Integration", quantity: 12, rate: 140, amount: 1680, hasProof: false },
+    ],
+    subtotal: 5880,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 5880,
+    currency: "USD",
+    notes: "Pending client approval before sending.",
+    proofCount: 0,
+    hasValidatedBilling: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    _id: "inv_8",
+    invoiceNumber: "INV-2025-008",
+    clientName: "EduLearn Platform",
+    clientEmail: "billing@edulearn.org",
+    status: "draft",
+    issueDate: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    dueDate: Date.now() + 28 * 24 * 60 * 60 * 1000,
+    lineItems: [
+      { id: "li12", description: "Course Management System - Sprint 1", quantity: 55, rate: 90, amount: 4950, hasProof: false },
+    ],
+    subtotal: 4950,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 4950,
+    currency: "USD",
+    proofCount: 0,
+    hasValidatedBilling: false,
+    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    updatedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+  },
 ];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -480,6 +676,7 @@ function ReminderManagerContent({
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // ── Workspace Context ──
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
@@ -530,7 +727,10 @@ export default function Invoices() {
   const skipReminderMutation = useMutation(api.billing.reminders.skipReminder);
 
   // ── Computed ───────────────────────────────────────────────────────────
-  const safeInvoices = invoices ?? [];
+  // ─── Determine demo mode ───────────────────────────────────────────────
+  const isDemoMode = !authLoading && !isAuthenticated;
+
+  const safeInvoices = isDemoMode ? MOCK_INVOICES : (invoices ?? []);
 
   const filteredInvoices = useMemo(() => {
     return safeInvoices.filter((inv) => {
@@ -553,7 +753,25 @@ export default function Invoices() {
     return counts;
   }, [safeInvoices]);
 
-  const safeStats = stats ?? {
+  const mockStats = useMemo(() => {
+    const paid = MOCK_INVOICES.filter(i => i.status === "paid");
+    const sent = MOCK_INVOICES.filter(i => i.status === "sent");
+    const viewed = MOCK_INVOICES.filter(i => i.status === "viewed");
+    const overdue = MOCK_INVOICES.filter(i => i.status === "overdue");
+    const draft = MOCK_INVOICES.filter(i => i.status === "draft");
+    return {
+      total: MOCK_INVOICES.length,
+      paid: paid.length,
+      pending: sent.length + viewed.length,
+      overdue: overdue.length,
+      draft: draft.length,
+      totalRevenue: paid.reduce((s, i) => s + i.total, 0),
+      totalOutstanding: [...sent, ...viewed, ...overdue].reduce((s, i) => s + i.total, 0),
+      withProof: MOCK_INVOICES.filter(i => (i.proofCount ?? 0) > 0 || i.hasValidatedBilling).length,
+    };
+  }, []);
+
+  const safeStats = isDemoMode ? mockStats : (stats ?? {
     total: 0,
     paid: 0,
     pending: 0,
@@ -562,7 +780,7 @@ export default function Invoices() {
     totalRevenue: 0,
     totalOutstanding: 0,
     withProof: 0,
-  };
+  });
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleSendInvoice = async (invoiceId: string) => {
@@ -620,11 +838,15 @@ export default function Invoices() {
   // the page with safe fallbacks so the user can interact (seed data, etc.)
   const [showSkeleton, setShowSkeleton] = useState(true);
   useEffect(() => {
+    if (isDemoMode) {
+      setShowSkeleton(false);
+      return;
+    }
     const timer = setTimeout(() => setShowSkeleton(false), 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isDemoMode]);
 
-  if (invoices === undefined && showSkeleton) {
+  if (!isDemoMode && invoices === undefined && showSkeleton) {
     return (
       <motion.div
         className="w-full min-h-screen bg-background text-foreground flex items-center justify-center"
@@ -661,6 +883,20 @@ export default function Invoices() {
             Create, manage, and track your invoices with validated billing
           </p>
         </div>
+
+        {/* Demo mode banner */}
+        {isDemoMode && (
+          <div className="flex items-center gap-3 p-3 mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                Sign in
+              </a>{" "}
+              to manage your real invoices.
+            </div>
+          </div>
+        )}
 
         {/* ── Stats Cards ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">

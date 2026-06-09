@@ -46,6 +46,7 @@ import {
   FolderOpen,
   CheckCircle2,
   Zap,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
@@ -62,6 +63,96 @@ import { useNavigate } from "react-router";
 import { ProjectList } from "@/components/project-protection/ProjectList";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
+
+// ─── Mock data for demo mode (unauthenticated) ──────────────────────────────
+
+const MOCK_PROJECTS = [
+  {
+    _id: "proj_1" as any,
+    projectName: "E-Commerce Platform Redesign",
+    clientId: "client_1" as any,
+    hourlyRate: 95,
+    projectType: "ongoing" as const,
+    protectionLevel: "maximum" as const,
+    protectionScore: 92,
+    totalHours: 148.5,
+    totalValue: 14107,
+    atRiskAmount: 0,
+    activeSession: true,
+    rejectedHours: 0,
+    status: "active" as const,
+    createdAt: Date.now() - 75 * 24 * 60 * 60 * 1000,
+    sharing: [],
+  },
+  {
+    _id: "proj_2" as any,
+    projectName: "Mobile Banking App MVP",
+    clientId: "client_2" as any,
+    hourlyRate: 120,
+    projectType: "milestone" as const,
+    protectionLevel: "enhanced" as const,
+    protectionScore: 78,
+    totalHours: 213.0,
+    totalValue: 25560,
+    atRiskAmount: 3600,
+    activeSession: false,
+    rejectedHours: 4,
+    status: "active" as const,
+    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+    sharing: [],
+  },
+  {
+    _id: "proj_3" as any,
+    projectName: "SaaS Dashboard Analytics",
+    clientId: "client_3" as any,
+    hourlyRate: 85,
+    projectType: "fixed" as const,
+    protectionLevel: "standard" as const,
+    protectionScore: 65,
+    totalHours: 96.0,
+    totalValue: 8160,
+    atRiskAmount: 2550,
+    activeSession: false,
+    rejectedHours: 8,
+    status: "paused" as const,
+    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+    sharing: [],
+  },
+  {
+    _id: "proj_4" as any,
+    projectName: "Healthcare Portal Integration",
+    clientId: "client_4" as any,
+    hourlyRate: 110,
+    projectType: "ongoing" as const,
+    protectionLevel: "enhanced" as const,
+    protectionScore: 85,
+    totalHours: 172.0,
+    totalValue: 18920,
+    atRiskAmount: 0,
+    activeSession: false,
+    rejectedHours: 0,
+    status: "active" as const,
+    createdAt: Date.now() - 200 * 24 * 60 * 60 * 1000,
+    sharing: [],
+  },
+  {
+    _id: "proj_5" as any,
+    projectName: "Legacy API Migration",
+    clientId: "client_5" as any,
+    hourlyRate: 75,
+    projectType: "fixed" as const,
+    protectionLevel: "standard" as const,
+    protectionScore: 42,
+    totalHours: 64.0,
+    totalValue: 4800,
+    atRiskAmount: 4800,
+    activeSession: false,
+    rejectedHours: 12,
+    status: "archived" as const,
+    createdAt: Date.now() - 365 * 24 * 60 * 60 * 1000,
+    sharing: [],
+  },
+];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -182,7 +273,7 @@ function StatCardSkeleton() {
 // ─── Main Component ────────────────────────────────────────────────────────
 
 export default function Projects() {
-  useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { tier } = useSubscriptionTier();
 
@@ -302,8 +393,15 @@ export default function Projects() {
     }
   }, [projects]);
 
-  const isLoading = projects === undefined && !queryTimeout;
-  const safeProjects = useMemo(() => projects ?? [], [projects]);
+  const isLoading = authLoading || (projects === undefined && !queryTimeout);
+
+  // ─── Determine demo mode ───────────────────────────────────────────────
+  const isDemoMode = !authLoading && !isAuthenticated;
+
+  const safeProjects = useMemo(
+    () => (isDemoMode ? MOCK_PROJECTS : (projects ?? [])),
+    [isDemoMode, projects]
+  );
 
   // ── Derived Data ──
   const filteredProjects = useMemo(() => {
@@ -489,6 +587,20 @@ export default function Projects() {
     <div className="w-full min-h-screen bg-background text-foreground">
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* ── Page Header ── */}
+        {/* Demo mode banner */}
+        {isDemoMode && (
+          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                Sign in
+              </a>{" "}
+              to manage your real projects.
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
