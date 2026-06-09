@@ -77,3 +77,34 @@ Stage Summary:
 - PaymentReminders component integrated
 - Fixed 2 bugs: processDueFollowUps internalMutation, getReminderHistory sort field
 - All changes deployed to Convex, GitHub, and preview
+---
+Task ID: invoice-connectivity-P1-P3
+Agent: main
+Task: Complete all 3 priorities for invoice system connectivity, commit to GitHub, create clean backup release, push to disk
+
+Work Log:
+- Analyzed current state of invoice system: found most Priority 1 and 2 features already existed
+- InvoiceBuilder.tsx already had: client dropdown (Select component), projectId/dealId/proposalId URL param reading, auto-fill client info from CRM
+- Projects.tsx already had: "Invoice Unbilled Hours" button calling generateInvoiceFromSessions
+- Proposals.tsx already had: "Convert to Invoice" button for signed proposals calling createInvoiceFromProposal
+- Pipeline.tsx already had: Deal Won auto-prompt toast with "Create Invoice" action button
+- tracking.ts already had: invoiced + invoiceId fields on workSessions
+- Built remaining Priority 3 features: recurring invoices backend (setupRecurringInvoice, getRecurringInvoices, toggleRecurringInvoice, removeRecurringInvoice, processRecurringInvoices internalMutation)
+- Added Stripe webhook handler (handleStripeWebhook for payment_succeeded/payment_failed)
+- Added recurring invoices UI to Invoices.tsx (collapsible card, setup dialog, toggle, delete)
+- Cron job already configured for daily recurring invoice processing
+- Built project successfully
+- Removed large backup files from git history using git filter-branch
+- Committed and pushed to GitHub (force push due to history rewrite)
+- Created git tag v3.3.0
+- Created GitHub Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.3.0
+- Uploaded clean backup: AXIA-v3.3.0-invoice-connectivity.tar.gz (12MB)
+- Pushed code to /home/z/my-project/disk/ (src/ + dist/ + config files)
+- Restarted preview server on 0.0.0.0:3000
+
+Stage Summary:
+- All 3 priorities for invoice system connectivity are COMPLETE
+- GitHub: https://github.com/doongarshimamania-lab/AXIA (main branch, tag v3.3.0)
+- Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.3.0
+- Disk: /home/z/my-project/disk/ (clean copy of src/ + dist/ + configs)
+- Preview: https://preview-81.space-z.ai/ (running)

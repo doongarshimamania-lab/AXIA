@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Convex local backend
+convex_local_backend.sqlite3
+
+# Server scripts (not part of app)
+serve-*
+daemon-*
+supervisor*
+watchdog*
+keep-alive*
+proxy-server*
+evergreen*
+robust*
+
+# Database files
+*.db
+*.sqlite3
+skills/
+upload/
+backups/*.tar.gz
+backups/timelock-fullcode-*
