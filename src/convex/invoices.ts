@@ -1214,8 +1214,8 @@ export const getReminderHistory = query({
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
       .collect();
 
-    // Sort by sequenceDay ascending
-    return reminders.sort((a, b) => a.sequenceDay - b.sequenceDay);
+    // Sort by dayNumber ascending
+    return reminders.sort((a, b) => a.dayNumber - b.dayNumber);
   },
 });
 
