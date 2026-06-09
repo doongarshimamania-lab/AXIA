@@ -1,0 +1,3 @@
+{
+  "plan": "1. Verify that the type error in riskTimeline.ts is resolved.\n2. Check if the runtime error on the projects page is gone.\n3. Verify that mock projects are visible for guest users."
+}

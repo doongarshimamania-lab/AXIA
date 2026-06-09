@@ -1,0 +1,9 @@
+timestamp: 20260603T163248
+date: 2026-06-03T16:32:48+00:00
+description: scope-page-post-change-backup
+files:
+  - src/pages/Scope.tsx
+  - src/main.tsx
+  - src/components/CollapsibleSidebar.tsx
+  - CHANGELOG.md
+git_commit_before: b9c08e07f96399e75e24a79a6bfeaf43c508fe08

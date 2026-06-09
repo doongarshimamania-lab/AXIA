@@ -1,0 +1,1 @@
+npx convex dev --once && npx tsc -b --noEmit
