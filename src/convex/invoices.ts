@@ -1469,10 +1469,274 @@ export const createStripePaymentLink = mutation({
       return { paymentUrl: mockUrl, mock: true };
     }
 
-    // Real Stripe integration would go here
-    // For now, return mock
+    // Real Stripe integration:
+    // 1. Create a Stripe Checkout Session with the invoice amount
+    // 2. Set success_url and cancel_url
+    // 3. Set metadata: { invoiceId, userId }
+    // 4. Return the session URL
     const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
     return { paymentUrl: mockUrl, mock: true };
+  },
+});
+
+// ═════════════════════════════════════════════
+// RECURRING INVOICES
+// ═════════════════════════════════════════════
+
+// ─────────────────────────────────────────────
+// SETUP RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const setupRecurringInvoice = mutation({
+  args: {
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    templateInvoiceId: v.id("invoices"),
+    frequency: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("quarterly")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    // Validate client access
+    const client = await ctx.db.get(args.clientId);
+    if (!client) throw new ConvexError("Client not found");
+    if (client.workspaceId) {
+      const access = await getRecordAccess(ctx, client, userId);
+      if (!access) throw new ConvexError("Client does not belong to this workspace");
+    } else if (client.userId !== userId) {
+      throw new ConvexError("Client does not belong to this user");
+    }
+
+    // Validate project access if provided
+    if (args.projectId) {
+      const project = await ctx.db.get(args.projectId);
+      if (!project) throw new ConvexError("Project not found");
+      if (project.workspaceId) {
+        const access = await getRecordAccess(ctx, project, userId);
+        if (!access) throw new ConvexError("Project does not belong to this workspace");
+      } else if (project.userId !== userId) {
+        throw new ConvexError("Project does not belong to this user");
+      }
+    }
+
+    // Validate template invoice access
+    const template = await ctx.db.get(args.templateInvoiceId);
+    if (!template) throw new ConvexError("Template invoice not found");
+    if (template.workspaceId) {
+      const access = await getRecordAccess(ctx, template, userId);
+      if (!access) throw new ConvexError("Template invoice does not belong to this workspace");
+    } else if (template.userId !== userId) {
+      throw new ConvexError("Template invoice does not belong to this user");
+    }
+
+    // Calculate nextDueDate based on frequency
+    const now = Date.now();
+    const dayMs = 86400000;
+    let nextDueDate: number;
+    if (args.frequency === "weekly") {
+      nextDueDate = now + 7 * dayMs;
+    } else if (args.frequency === "monthly") {
+      nextDueDate = now + 30 * dayMs;
+    } else {
+      nextDueDate = now + 90 * dayMs;
+    }
+
+    const recurringInvoiceId = await ctx.db.insert("recurringInvoices", {
+      userId,
+      workspaceId: template.workspaceId ?? undefined,
+      clientId: args.clientId,
+      projectId: args.projectId ?? undefined,
+      templateInvoiceId: args.templateInvoiceId,
+      frequency: args.frequency,
+      nextDueDate,
+      active: true,
+      createdFromInvoiceId: args.templateInvoiceId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return recurringInvoiceId;
+  },
+});
+
+// ─────────────────────────────────────────────
+// GET RECURRING INVOICES
+// ─────────────────────────────────────────────
+export const getRecurringInvoices = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db
+      .query("recurringInvoices")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Enrich with client info
+    const enriched = await Promise.all(
+      recurring.map(async (rec) => {
+        const client = await ctx.db.get(rec.clientId);
+        const template = await ctx.db.get(rec.templateInvoiceId);
+        return {
+          ...rec,
+          clientName: client ? (client as any).name : "Unknown",
+          templateInvoiceNumber: template ? template.invoiceNumber : "N/A",
+          templateTotal: template ? template.total : 0,
+          templateCurrency: template ? template.currency : "USD",
+        };
+      })
+    );
+
+    return enriched.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+// ─────────────────────────────────────────────
+// TOGGLE RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const toggleRecurringInvoice = mutation({
+  args: {
+    recurringInvoiceId: v.id("recurringInvoices"),
+    active: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db.get(args.recurringInvoiceId);
+    if (!recurring) throw new ConvexError("Recurring invoice not found");
+
+    if (recurring.workspaceId) {
+      const access = await getRecordAccess(ctx, recurring, userId);
+      if (!access) throw new ConvexError("Not authorized");
+    } else if (recurring.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    const now = Date.now();
+
+    // If reactivating, recalculate nextDueDate based on now
+    let nextDueDate = recurring.nextDueDate;
+    if (args.active && !recurring.active) {
+      const dayMs = 86400000;
+      if (recurring.frequency === "weekly") {
+        nextDueDate = now + 7 * dayMs;
+      } else if (recurring.frequency === "monthly") {
+        nextDueDate = now + 30 * dayMs;
+      } else {
+        nextDueDate = now + 90 * dayMs;
+      }
+    }
+
+    await ctx.db.patch(args.recurringInvoiceId, {
+      active: args.active,
+      nextDueDate,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+// ─────────────────────────────────────────────
+// REMOVE RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const removeRecurringInvoice = mutation({
+  args: {
+    recurringInvoiceId: v.id("recurringInvoices"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db.get(args.recurringInvoiceId);
+    if (!recurring) throw new ConvexError("Recurring invoice not found");
+
+    if (recurring.workspaceId) {
+      const access = await getRecordAccess(ctx, recurring, userId);
+      if (!access) throw new ConvexError("Not authorized");
+    } else if (recurring.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    await ctx.db.delete(args.recurringInvoiceId);
+
+    return { success: true };
+  },
+});
+
+// ═════════════════════════════════════════════
+// STRIPE WEBHOOK HANDLER
+// ═════════════════════════════════════════════
+
+export const handleStripeWebhook = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    eventType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    const now = Date.now();
+
+    if (args.eventType === "payment_succeeded") {
+      // Mark invoice as paid
+      await ctx.db.patch(args.invoiceId, {
+        status: "paid",
+        paidAt: now,
+        paidAmount: invoice.total,
+        updatedAt: now,
+      });
+
+      // Cancel all pending reminders for this invoice
+      await cancelRemindersInternal(ctx, args.invoiceId);
+
+      // Update client payment stats
+      const client = await ctx.db.get(invoice.clientId);
+      if (client) {
+        const totalPaid = (client.totalPaid ?? 0) + invoice.total;
+        const totalInvoiced = (client.totalInvoiced ?? 0) + invoice.total;
+
+        let avgPaymentDays = client.avgPaymentDays ?? 0;
+        if (invoice.sentAt) {
+          const paymentDays = (now - invoice.sentAt) / (1000 * 60 * 60 * 24);
+          const previousPaymentCount = client.avgPaymentDays ? Math.round((client.totalPaid ?? 0) / Math.max(invoice.total, 1)) : 0;
+          const totalCount = previousPaymentCount + 1;
+          avgPaymentDays = ((avgPaymentDays * previousPaymentCount) + paymentDays) / totalCount;
+        }
+
+        const isOnTime = now <= invoice.dueDate;
+        const currentOnTimeRate = client.onTimeRate ?? 0;
+        const previousPaymentCount = client.totalPaid ? Math.round(client.totalPaid / Math.max(invoice.total, 1)) : 0;
+        const newOnTimeRate = previousPaymentCount === 0
+          ? (isOnTime ? 1 : 0)
+          : ((currentOnTimeRate * previousPaymentCount) + (isOnTime ? 1 : 0)) / (previousPaymentCount + 1);
+
+        await ctx.db.patch(invoice.clientId, {
+          totalPaid,
+          totalInvoiced,
+          avgPaymentDays: Math.round(avgPaymentDays * 10) / 10,
+          onTimeRate: Math.round(newOnTimeRate * 100) / 100,
+          lastPaymentAt: now,
+          updatedAt: now,
+        });
+      }
+    } else if (args.eventType === "payment_failed") {
+      // Update invoice status to indicate payment failure
+      // Keep current status but record the attempt
+      await ctx.db.patch(args.invoiceId, {
+        updatedAt: now,
+      });
+
+      // In a real implementation, you might:
+      // - Send a notification to the user
+      // - Schedule a retry
+      // - Update a paymentAttempts counter
+    }
+
+    return { success: true };
   },
 });
 

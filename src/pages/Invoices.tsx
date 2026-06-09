@@ -48,6 +48,8 @@ import {
   Minus,
   Settings2,
   Info,
+  RefreshCw,
+  ChevronRight,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
@@ -57,6 +59,8 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -76,6 +80,7 @@ interface InvoiceLineItem {
 interface Invoice {
   _id: string;
   invoiceNumber: string;
+  clientId?: string;
   clientName?: string;
   clientEmail?: string;
   status: InvoiceStatus;
@@ -699,6 +704,13 @@ export default function Invoices() {
   const [reminderManagerInvoiceId, setReminderManagerInvoiceId] = useState<string | null>(null);
   const [reminderIntervals, setReminderIntervals] = useState<number[]>([3, 7, 14]);
   const [showIntervalConfig, setShowIntervalConfig] = useState(false);
+  const [showRecurringSection, setShowRecurringSection] = useState(false);
+  const [showSetupRecurring, setShowSetupRecurring] = useState(false);
+  const [recurringClientId, setRecurringClientId] = useState<string>("");
+  const [recurringTemplateInvoiceId, setRecurringTemplateInvoiceId] = useState<string>("");
+  const [recurringFrequency, setRecurringFrequency] = useState<"weekly"|"monthly"|"quarterly">("monthly");
+  const [settingUpRecurring, setSettingUpRecurring] = useState(false);
+  const [deleteRecurringId, setDeleteRecurringId] = useState<string | null>(null);
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
@@ -729,6 +741,12 @@ export default function Invoices() {
   // ── Computed ───────────────────────────────────────────────────────────
   // ─── Determine demo mode ───────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
+
+  // ── Recurring Invoices ──
+  const recurringInvoices = useQuery(api.invoices.getRecurringInvoices, isDemoMode ? "skip" : {}) as any[] | undefined;
+  const setupRecurringMutation = useMutation(api.invoices.setupRecurringInvoice);
+  const toggleRecurringMutation = useMutation(api.invoices.toggleRecurringInvoice);
+  const removeRecurringMutation = useMutation(api.invoices.removeRecurringInvoice);
 
   const safeInvoices = isDemoMode ? MOCK_INVOICES : (invoices ?? []);
 
@@ -1081,6 +1099,160 @@ export default function Invoices() {
             );
           })}
         </div>
+
+        {/* ── Recurring Invoices Section ───────────────────────────────────── */}
+        {!isDemoMode && (
+          <Card className="mb-6">
+            <div
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg"
+              onClick={() => setShowRecurringSection(!showRecurringSection)}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center">
+                  <RefreshCw className="h-4 w-4 text-[#8B5CF6]" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-semibold text-foreground">Recurring Invoices</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {recurringInvoices ? `${recurringInvoices.filter((r: any) => r.active).length} active` : "Loading..."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {recurringInvoices && recurringInvoices.length > 0 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25">
+                    {recurringInvoices.length}
+                  </Badge>
+                )}
+                <motion.div animate={{ rotate: showRecurringSection ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </motion.div>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {showRecurringSection && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-border p-4">
+                    {/* Setup Button */}
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[12px] text-muted-foreground">
+                        Automate invoice creation on a weekly, monthly, or quarterly schedule.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="h-8 px-3 gap-1.5 text-[12px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                        onClick={() => setShowSetupRecurring(true)}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        New Recurring
+                      </Button>
+                    </div>
+
+                    {/* Recurring List */}
+                    {!recurringInvoices || recurringInvoices.length === 0 ? (
+                      <div className="text-center py-6">
+                        <RefreshCw className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                        <p className="text-[12px] text-muted-foreground">
+                          No recurring invoices yet. Create one to automate your billing.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {recurringInvoices.map((rec: any) => (
+                          <div
+                            key={rec._id}
+                            className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/20 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className={`h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0 ${rec.active ? "bg-[#8B5CF6]/10" : "bg-slate-500/10"}`}>
+                                <RefreshCw className={`h-4 w-4 ${rec.active ? "text-[#8B5CF6]" : "text-slate-400"}`} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[13px] font-medium text-foreground truncate">
+                                    {rec.clientName}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[9px] px-1.5 py-0 h-4 ${
+                                      rec.frequency === "weekly"
+                                        ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/25"
+                                        : rec.frequency === "monthly"
+                                        ? "bg-amber-500/15 text-amber-600 border-amber-500/25"
+                                        : "bg-orange-500/15 text-orange-600 border-orange-500/25"
+                                    }`}
+                                  >
+                                    {rec.frequency}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[9px] px-1.5 py-0 h-4 ${
+                                      rec.active
+                                        ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/25"
+                                        : "bg-slate-500/15 text-slate-500 border-slate-500/25"
+                                    }`}
+                                  >
+                                    {rec.active ? "Active" : "Paused"}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    Next: {formatDate(rec.nextDueDate)}
+                                  </span>
+                                  <span>Template: {rec.templateInvoiceNumber}</span>
+                                  {rec.templateTotal > 0 && (
+                                    <span className="font-medium text-foreground">
+                                      {formatCurrency(rec.templateTotal, rec.templateCurrency)}
+                                    </span>
+                                  )}
+                                  {rec.lastGeneratedAt && (
+                                    <span>Last: {formatDate(rec.lastGeneratedAt)}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-3">
+                              <Switch
+                                checked={rec.active}
+                                onCheckedChange={async (checked) => {
+                                  try {
+                                    await toggleRecurringMutation({
+                                      recurringInvoiceId: rec._id,
+                                      active: checked,
+                                    });
+                                    toast.success(checked ? "Recurring invoice activated" : "Recurring invoice paused");
+                                  } catch (err: any) {
+                                    toast.error("Failed to toggle recurring invoice", { description: err.message });
+                                  }
+                                }}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-500/10"
+                                onClick={() => setDeleteRecurringId(rec._id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+        )}
 
         {/* ── Invoice List ───────────────────────────────────────────────── */}
         <div className="space-y-3">
@@ -1681,6 +1853,155 @@ export default function Invoices() {
             onSkipReminder={skipReminderMutation}
             onClose={() => setShowReminderManager(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Setup Recurring Invoice Dialog ──────────────────────────── */}
+      <Dialog open={showSetupRecurring} onOpenChange={setShowSetupRecurring}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-[#8B5CF6]" />
+              Setup Recurring Invoice
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Client Select */}
+            <div>
+              <label className="text-[12px] font-medium text-foreground mb-1.5 block">Client</label>
+              <Select value={recurringClientId} onValueChange={setRecurringClientId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a client..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {safeInvoices
+                    .filter((inv, idx, arr) => arr.findIndex((i) => i.clientName === inv.clientName) === idx)
+                    .map((inv) => (
+                      <SelectItem key={inv._id + "-" + inv.clientName} value={inv.clientId || inv._id}>
+                        {inv.clientName || "Unknown"}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Template Invoice Select */}
+            <div>
+              <label className="text-[12px] font-medium text-foreground mb-1.5 block">Template Invoice</label>
+              <Select value={recurringTemplateInvoiceId} onValueChange={setRecurringTemplateInvoiceId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a template invoice..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {safeInvoices
+                    .filter((inv) => recurringClientId ? (inv.clientId || inv._id) === recurringClientId : true)
+                    .map((inv) => (
+                      <SelectItem key={inv._id} value={inv._id}>
+                        {inv.invoiceNumber} — {inv.clientName || "No client"} ({formatCurrency(inv.total, inv.currency)})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Frequency Select */}
+            <div>
+              <label className="text-[12px] font-medium text-foreground mb-1.5 block">Frequency</label>
+              <Select value={recurringFrequency} onValueChange={(val: any) => setRecurringFrequency(val)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {recurringFrequency && (
+              <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20">
+                <p className="text-[11px] text-muted-foreground">
+                  A new draft invoice will be created{" "}
+                  <span className="font-medium text-[#8B5CF6]">
+                    {recurringFrequency === "weekly" ? "every week" : recurringFrequency === "monthly" ? "every month" : "every quarter"}
+                  </span>{" "}
+                  based on the template invoice. The first invoice will be generated on{" "}
+                  <span className="font-medium text-foreground">
+                    {formatDate(Date.now() + (recurringFrequency === "weekly" ? 7 : recurringFrequency === "monthly" ? 30 : 90) * 86400000)}
+                  </span>.
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSetupRecurring(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+              disabled={!recurringClientId || !recurringTemplateInvoiceId || settingUpRecurring}
+              onClick={async () => {
+                setSettingUpRecurring(true);
+                try {
+                  await setupRecurringMutation({
+                    clientId: recurringClientId as any,
+                    templateInvoiceId: recurringTemplateInvoiceId as any,
+                    frequency: recurringFrequency,
+                  });
+                  toast.success("Recurring invoice created!", {
+                    description: `A new invoice will be generated ${recurringFrequency}`,
+                  });
+                  setShowSetupRecurring(false);
+                  setRecurringClientId("");
+                  setRecurringTemplateInvoiceId("");
+                  setRecurringFrequency("monthly");
+                } catch (err: any) {
+                  toast.error("Failed to create recurring invoice", { description: err.message });
+                } finally {
+                  setSettingUpRecurring(false);
+                }
+              }}
+            >
+              {settingUpRecurring ? (
+                <><Minus className="h-3.5 w-3.5 animate-spin" />Creating...</>
+              ) : (
+                <><RefreshCw className="h-3.5 w-3.5" />Create Recurring</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Recurring Invoice Dialog ──────────────────────────── */}
+      <Dialog open={deleteRecurringId !== null} onOpenChange={(open) => { if (!open) setDeleteRecurringId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Recurring Invoice</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this recurring invoice? No more invoices will be automatically generated for this schedule. Existing invoices will not be affected.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteRecurringId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!deleteRecurringId) return;
+                try {
+                  await removeRecurringMutation({ recurringInvoiceId: deleteRecurringId as any });
+                  setDeleteRecurringId(null);
+                  toast.success("Recurring invoice deleted");
+                } catch (err: any) {
+                  toast.error("Failed to delete recurring invoice", { description: err.message });
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>
