@@ -46,3 +46,5 @@ robust*
 *.sqlite3
 skills/
 upload/
+backups/*.tar.gz
+backups/timelock-fullcode-*
