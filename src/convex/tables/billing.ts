@@ -6,7 +6,9 @@ export const billingTables = {
   invoices: defineTable({
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
-    clientId: v.optional(v.id("clients")),
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    proposalId: v.optional(v.id("proposals")),
     invoiceNumber: v.string(), // INV-001 format
     publicToken: v.string(), // for client-facing view
     status: v.union(
@@ -21,6 +23,7 @@ export const billingTables = {
     issueDate: v.number(),
     dueDate: v.number(),
     paidDate: v.optional(v.number()),
+    paidAmount: v.optional(v.number()),
     clientName: v.optional(v.string()),
     clientEmail: v.optional(v.string()),
     lineItems: v.array(
@@ -30,6 +33,13 @@ export const billingTables = {
         quantity: v.number(),
         rate: v.number(),
         amount: v.number(),
+        type: v.optional(v.union(
+          v.literal("service"),
+          v.literal("product"),
+          v.literal("time"),
+          v.literal("expense"),
+          v.literal("discount"),
+        )),
         workLinkId: v.optional(v.string()), // link to invoiceWorkLinks
         hasProof: v.optional(v.boolean()),
       })
@@ -37,9 +47,14 @@ export const billingTables = {
     subtotal: v.number(),
     taxRate: v.optional(v.number()),
     taxAmount: v.optional(v.number()),
+    discountAmount: v.optional(v.number()),
     total: v.number(),
     currency: v.optional(v.string()),
     notes: v.optional(v.string()),
+    terms: v.optional(v.string()),
+    // Stripe integration
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeInvoiceId: v.optional(v.string()),
     proofCount: v.optional(v.number()), // how many work proofs attached
     hasValidatedBilling: v.optional(v.boolean()),
     sentAt: v.optional(v.number()),
@@ -54,6 +69,8 @@ export const billingTables = {
     .index("by_user", ["userId"])
     .index("by_user_and_status", ["userId", "status"])
     .index("by_client", ["clientId"])
+    .index("by_project", ["projectId"])
+    .index("by_proposal", ["proposalId"])
     .index("by_public_token", ["publicToken"])
     .index("by_invoice_number", ["invoiceNumber"])
     .index("by_workspace", ["workspaceId"])
@@ -81,12 +98,14 @@ export const billingTables = {
     url: v.optional(v.string()),
     fileName: v.optional(v.string()),
     verified: v.optional(v.boolean()),
+    workSessionId: v.optional(v.id("workSessions")),
     createdAt: v.number(),
   })
     .index("by_invoice", ["invoiceId"])
     .index("by_user", ["userId"])
     .index("by_line_item", ["invoiceId", "lineItemId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_workspace", ["workspaceId"])
+    .index("by_session", ["workSessionId"]),
 
   paymentReminders: defineTable({
     userId: v.id("users"),
@@ -94,6 +113,7 @@ export const billingTables = {
     createdBy: v.optional(v.id("users")),
     invoiceId: v.id("invoices"),
     dayNumber: v.number(), // 3, 7, or 14
+    sequenceDay: v.optional(v.number()), // alias for dayNumber, matching invoices.ts convention
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
     tone: v.union(v.literal("friendly"), v.literal("firm"), v.literal("urgent")),
     subject: v.string(),
@@ -165,5 +185,25 @@ export const billingTables = {
   })
     .index("by_user", ["userId"])
     .index("by_system", ["isSystem"])
+    .index("by_workspace", ["workspaceId"]),
+
+  // ─── RECURRING INVOICES ─────────────────────────────────────────────────
+  recurringInvoices: defineTable({
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    templateInvoiceId: v.id("invoices"),
+    frequency: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("quarterly")),
+    nextDueDate: v.number(),
+    active: v.boolean(),
+    lastGeneratedAt: v.optional(v.number()),
+    createdFromInvoiceId: v.optional(v.id("invoices")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_client", ["clientId"])
+    .index("by_next_due_date", ["nextDueDate"])
     .index("by_workspace", ["workspaceId"]),
 };

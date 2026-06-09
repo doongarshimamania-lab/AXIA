@@ -55,6 +55,7 @@ import {
   Play,
   Square,
   Settings2,
+  Receipt,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -742,6 +743,7 @@ function ProposalCard({
   const navigate = useNavigate();
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
+  const createFromProposal = useMutation(api.invoices.createInvoiceFromProposal);
 
   // Fetch follow-ups for this proposal — skip when using mock data
   // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
@@ -813,6 +815,26 @@ function ProposalCard({
                   >
                     <Share2 className="h-3.5 w-3.5" />
                     Share
+                  </DropdownMenuItem>
+                )}
+                {proposal.status === "signed" && (
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        const newId = await createFromProposal({
+                          proposalId: proposal._id as any,
+                          dueDate: Date.now() + 30 * 86400000,
+                        });
+                        toast.success("Invoice created from proposal!");
+                        navigate(`/invoices/new?edit=${newId}`);
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to create invoice");
+                      }
+                    }}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <Receipt className="h-3.5 w-3.5" />
+                    Convert to Invoice
                   </DropdownMenuItem>
                 )}
                 {canDelete && (

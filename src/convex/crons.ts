@@ -22,4 +22,12 @@ crons.interval(
   {}
 );
 
+// Process recurring invoices daily at 6am UTC
+crons.cron(
+  "processRecurringInvoices",
+  "0 6 * * *",
+  internal.invoices.processRecurringInvoices,
+  {}
+);
+
 export default crons;

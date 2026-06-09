@@ -1221,6 +1221,262 @@ export const getReminderHistory = query({
 
 
 // ═════════════════════════════════════════════
+// INVOICE GENERATION FROM SESSIONS / PROPOSALS
+// ═════════════════════════════════════════════
+
+export const generateInvoiceFromSessions = mutation({
+  args: {
+    projectId: v.id("projects"),
+    sessionIds: v.optional(v.array(v.id("workSessions"))),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new ConvexError("Project not found");
+    if (project.userId !== userId) throw new ConvexError("Not authorized");
+
+    const clientId = project.clientId;
+    const client = await ctx.db.get(clientId);
+
+    // Find uninvoiced sessions
+    let sessions: any[];
+    if (args.sessionIds && args.sessionIds.length > 0) {
+      sessions = [];
+      for (const sid of args.sessionIds) {
+        const s = await ctx.db.get(sid);
+        if (s && s.userId === userId && !s.invoiced) sessions.push(s);
+      }
+    } else {
+      const allSessions = await ctx.db
+        .query("workSessions")
+        .withIndex("by_user_and_project", (q: any) => q.eq("userId", userId).eq("projectName", project.projectName))
+        .collect();
+      sessions = allSessions.filter((s: any) => !s.invoiced);
+    }
+
+    if (sessions.length === 0) throw new ConvexError("No uninvoiced sessions found");
+
+    // Group by rate and create line items
+    const rateGroups = new Map<number, { hours: number; sessions: any[] }>();
+    for (const session of sessions) {
+      const rate = session.hourlyRate || project.hourlyRate;
+      const minutes = session.totalMinutes || 0;
+      const hours = minutes / 60;
+      const existing = rateGroups.get(rate) || { hours: 0, sessions: [] as any[] };
+      existing.hours += hours;
+      existing.sessions.push(session);
+      rateGroups.set(rate, existing);
+    }
+
+    const lineItems = Array.from(rateGroups.entries()).map(([rate, group], idx) => ({
+      id: `li_${Date.now()}_${idx}`,
+      description: `${project.projectName} - ${group.sessions.length} session(s)`,
+      quantity: Math.round(group.hours * 100) / 100,
+      rate,
+      amount: Math.round(group.hours * rate * 100) / 100,
+      type: "time" as const,
+    }));
+
+    const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const total = subtotal;
+    const invoiceNumber = await getNextInvoiceNumberInternal(ctx, userId);
+    const publicToken = crypto.randomUUID();
+    const now = Date.now();
+
+    const invoiceId = await ctx.db.insert("invoices", {
+      userId,
+      clientId,
+      projectId: args.projectId,
+      invoiceNumber,
+      publicToken,
+      status: "draft",
+      lineItems,
+      subtotal,
+      total,
+      dueDate: args.dueDate,
+      issueDate: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Mark sessions as invoiced
+    for (const session of sessions) {
+      await ctx.db.patch(session._id, {
+        invoiced: true,
+        invoiceId,
+        updatedAt: now,
+      });
+    }
+
+    return invoiceId;
+  },
+});
+
+export const createInvoiceFromProposal = mutation({
+  args: {
+    proposalId: v.id("proposals"),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const proposal = await ctx.db.get(args.proposalId);
+    if (!proposal) throw new ConvexError("Proposal not found");
+    if (proposal.userId !== userId) throw new ConvexError("Not authorized");
+
+    const clientId = proposal.clientId;
+    const client = await ctx.db.get(clientId);
+
+    // Extract line items from proposal pricing sections
+    const lineItems: any[] = [];
+    let idx = 0;
+    for (const section of proposal.content || []) {
+      if (section.type === "pricing_table" && section.data?.items) {
+        for (const item of section.data.items) {
+          lineItems.push({
+            id: `li_${Date.now()}_${idx++}`,
+            description: item.name || item.description || "Service",
+            quantity: 1,
+            rate: item.price || item.amount || 0,
+            amount: item.price || item.amount || 0,
+            type: "service" as const,
+          });
+        }
+      }
+    }
+
+    // Fallback: if no pricing items found, create a single line item with total value
+    if (lineItems.length === 0 && proposal.totalValue) {
+      lineItems.push({
+        id: `li_${Date.now()}_0`,
+        description: proposal.title,
+        quantity: 1,
+        rate: proposal.totalValue,
+        amount: proposal.totalValue,
+        type: "service" as const,
+      });
+    }
+
+    if (lineItems.length === 0) throw new ConvexError("No billable items found in proposal");
+
+    const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const total = subtotal;
+    const invoiceNumber = await getNextInvoiceNumberInternal(ctx, userId);
+    const publicToken = crypto.randomUUID();
+    const now = Date.now();
+
+    const invoiceId = await ctx.db.insert("invoices", {
+      userId,
+      clientId,
+      proposalId: args.proposalId,
+      invoiceNumber,
+      publicToken,
+      status: "draft",
+      lineItems,
+      subtotal,
+      total,
+      dueDate: args.dueDate,
+      issueDate: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return invoiceId;
+  },
+});
+
+export const processRecurringInvoices = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const recurring = await ctx.db
+      .query("recurringInvoices")
+      .withIndex("by_next_due_date", (q: any) => q.lte("nextDueDate", now))
+      .collect();
+
+    let generated = 0;
+    for (const rec of recurring) {
+      if (!rec.active) continue;
+
+      const template = await ctx.db.get(rec.templateInvoiceId);
+      if (!template) continue;
+
+      const invoiceNumber = await getNextInvoiceNumberInternal(ctx, rec.userId);
+      const publicToken = crypto.randomUUID();
+      const dueDate = now + 30 * 86400000; // 30 days from now
+
+      await ctx.db.insert("invoices", {
+        userId: rec.userId,
+        workspaceId: rec.workspaceId,
+        clientId: rec.clientId,
+        projectId: rec.projectId,
+        invoiceNumber,
+        publicToken,
+        status: "draft",
+        lineItems: template.lineItems,
+        subtotal: template.subtotal,
+        taxRate: template.taxRate,
+        taxAmount: template.taxAmount,
+        total: template.total,
+        dueDate,
+        issueDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Calculate next due date
+      const freq = rec.frequency;
+      let nextDate = rec.nextDueDate;
+      if (freq === "weekly") nextDate += 7 * 86400000;
+      else if (freq === "monthly") nextDate += 30 * 86400000;
+      else if (freq === "quarterly") nextDate += 90 * 86400000;
+
+      await ctx.db.patch(rec._id, {
+        nextDueDate: nextDate,
+        lastGeneratedAt: now,
+        updatedAt: now,
+      });
+
+      generated++;
+    }
+
+    return { generated };
+  },
+});
+
+export const createStripePaymentLink = mutation({
+  args: { invoiceId: v.id("invoices") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+    if (invoice.userId !== userId) throw new ConvexError("Not authorized");
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeKey) {
+      // No Stripe key configured — return a mock payment link
+      const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+      await ctx.db.patch(args.invoiceId, {
+        updatedAt: Date.now(),
+      });
+      return { paymentUrl: mockUrl, mock: true };
+    }
+
+    // Real Stripe integration would go here
+    // For now, return mock
+    const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+    return { paymentUrl: mockUrl, mock: true };
+  },
+});
+
+// ═════════════════════════════════════════════
 // INTERNAL HELPERS
 // ═════════════════════════════════════════════
 
@@ -1331,3 +1587,4 @@ async function cancelRemindersInternal(
     }
   }
 }
+

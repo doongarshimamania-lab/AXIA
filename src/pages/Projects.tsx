@@ -47,6 +47,7 @@ import {
   CheckCircle2,
   Zap,
   Info,
+  Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
@@ -370,6 +371,9 @@ export default function Projects() {
   const archiveProjectMutation = useMutation(
     api.projects.projectProtection.archiveProject
   );
+
+  // Invoice generation from sessions
+  const generateFromSessions = useMutation(api.invoices.generateInvoiceFromSessions);
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(
@@ -1008,6 +1012,28 @@ export default function Projects() {
                           </div>
                         </div>
                       )}
+
+                      {/* Invoice Unbilled Hours Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-[#8B5CF6] border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/10"
+                        onClick={async () => {
+                          try {
+                            const newInvoiceId = await generateFromSessions({
+                              projectId: selectedProjectId as any,
+                              dueDate: Date.now() + 30 * 86400000,
+                            });
+                            toast.success("Invoice created from sessions!");
+                            navigate(`/invoices/new?edit=${newInvoiceId}`);
+                          } catch (err: any) {
+                            toast.error(err.message || "Failed to create invoice");
+                          }
+                        }}
+                      >
+                        <Receipt className="h-4 w-4" />
+                        Invoice Unbilled Hours
+                      </Button>
                     </CardContent>
                   </Card>
 

@@ -590,6 +590,7 @@ export default function Pipeline() {
         return;
       }
       const targetStageName = safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage";
+      const isWonStage = targetStageName === "Won";
 
       if (isMockData) {
         // Mock data: do optimistic local update (no Convex mutation needed)
@@ -599,6 +600,16 @@ export default function Pipeline() {
           return next;
         });
         toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+        if (isWonStage) {
+          toast("Deal won! Create an invoice?", {
+            description: "Convert this deal into an invoice",
+            action: {
+              label: "Create Invoice",
+              onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
+            },
+            duration: 8000,
+          });
+        }
       } else {
         try {
           await moveDealMutation({
@@ -606,6 +617,16 @@ export default function Pipeline() {
             stageId: targetStageId,
           });
           toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+          if (isWonStage) {
+            toast("Deal won! Create an invoice?", {
+              description: "Convert this deal into an invoice",
+              action: {
+                label: "Create Invoice",
+                onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
+              },
+              duration: 8000,
+            });
+          }
         } catch (err) {
           console.error("Failed to move deal:", err);
           toast.error("Failed to move deal");
