@@ -47,3 +47,33 @@ Stage Summary:
 - Convex cloud deployed to veracious-zebra-519
 - Preview server running on port 3000
 - Key fixes: pipeline compact UI, custom fields in dialog, import field types, proposal merge fix, mock data for Projects/Invoices
+
+---
+Task ID: verification
+Agent: main
+Task: Verify all follow-up and reminder features are properly built and showing in preview
+
+Work Log:
+- Verified proposal follow-ups backend: startFollowUps, stopFollowUps, skipFollowUp, getFollowUps, getFollowUpSettings, updateFollowUpSettings all exist in proposals/crud.ts
+- Found and fixed bug: processDueFollowUps was exported as `mutation` but called as `internal.proposals.crud.processDueFollowUps` by cron — changed to `internalMutation`
+- Verified invoice payment reminders backend: startReminders, stopReminders, getReminderHistory, processDueReminders all exist in invoices.ts
+- Found and fixed bug: getReminderHistory was sorting by `sequenceDay` but schema field is `dayNumber` — fixed
+- Verified billing/reminders.ts has skipReminder mutation
+- Verified Proposals page frontend: FollowUpManager dialog with Start/Stop/Skip buttons, interval config, timeline, stats
+- Verified Invoices page frontend: ReminderManagerContent dialog with Bell button on cards, Start/Stop/Skip, interval config
+- Verified PaymentReminders component is imported and rendered on Invoices page
+- Verified cron jobs reference correct internal functions
+- Verified schema: proposalFollowUps and proposalFollowUpSettings tables in billing.ts, paymentReminders in billing.ts
+- Note: business.ts has duplicate/stale paymentReminders definition but it's not imported in schema.ts
+- Built successfully with zero TypeScript errors
+- Deployed to Convex cloud (veracious-zebra-519)
+- Pushed to GitHub (commits a277b8d, e77f23f)
+- Preview server running on port 3000
+
+Stage Summary:
+- All 6 proposal follow-up functions working in backend
+- All invoice reminder functions working in backend
+- Frontend FollowUpManager and ReminderManagerContent components fully rendered
+- PaymentReminders component integrated
+- Fixed 2 bugs: processDueFollowUps internalMutation, getReminderHistory sort field
+- All changes deployed to Convex, GitHub, and preview
