@@ -1,5 +1,5 @@
 // @ts-nocheck — Convex backend file with schema types not yet in generated types
-import { query, mutation } from "../_generated/server";
+import { query, mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "../permissions";
@@ -780,7 +780,7 @@ export const updateFollowUpSettings = mutation({
   },
 });
 
-export const processDueFollowUps = mutation({
+export const processDueFollowUps = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
