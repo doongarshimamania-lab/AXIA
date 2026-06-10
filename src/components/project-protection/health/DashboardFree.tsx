@@ -35,7 +35,7 @@ export function DashboardFree({ data, onUpgrade }: DashboardFreeProps) {
       <div className="relative p-6 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold text-xl text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+            <h3 className="font-bold text-xl text-slate-900">
               Timeline Health Monitor
             </h3>
             <p className="text-sm text-slate-600 mt-1">Basic 7-day timeline view</p>
@@ -64,7 +64,7 @@ export function DashboardFree({ data, onUpgrade }: DashboardFreeProps) {
                 label={pillar.name}
                 unit={pillar.unit}
                 size="lg"
-                color={idx === 0 ? "#1e293b" : "#334155"}
+                color={idx === 0 ? "var(--platinum-800)" : "var(--platinum-700)"}
               />
             </motion.div>
           ))}

@@ -11,7 +11,7 @@ export function PillarGrid({ pillars, tier }: PillarGridProps) {
   const getIcon = (status: string) => {
     switch (status) {
       case 'protected': return <Shield className="w-5 h-5 text-emerald-500" />;
-      case 'optimized': return <Zap className="w-5 h-5 text-[#FFD700]" />;
+      case 'optimized': return <Zap className="w-5 h-5 text-premium" />;
       case 'at_risk': return <AlertTriangle className="w-5 h-5 text-amber-500" />;
       case 'vulnerable': return <Activity className="w-5 h-5 text-red-500" />;
       default: return <CheckCircle className="w-5 h-5 text-slate-400" />;
@@ -70,7 +70,7 @@ export function PillarGrid({ pillars, tier }: PillarGridProps) {
             <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400">
               {pillar.label}
             </h4>
-            <div className="text-xl font-bold text-[#0A192F] dark:text-white mt-1">
+            <div className="text-xl font-bold text-foreground dark:text-white mt-1">
               {pillar.value}
             </div>
           </div>

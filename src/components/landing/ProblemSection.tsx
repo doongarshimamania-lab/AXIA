@@ -53,7 +53,7 @@ export function ProblemSection({
                   The Problem
                 </div>
                 
-                <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-4" style={{ fontFamily: "Space Grotesk" }}>
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
                   {problemTitle}
                 </h3>
                 
@@ -62,7 +62,7 @@ export function ProblemSection({
                 </p>
                 
                 <div className="bg-white dark:bg-slate-900/50 rounded-xl p-6 border border-red-100 dark:border-red-900/20">
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
                     {problemStat}
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400 italic">
@@ -86,7 +86,7 @@ export function ProblemSection({
                 The Axia Solution
               </div>
               
-              <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-6" style={{ fontFamily: "Space Grotesk" }}>
+              <h3 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-6">
                 {solutionTitle}
               </h3>
               

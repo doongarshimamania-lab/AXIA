@@ -27,7 +27,7 @@ export function AdaptiveEvidenceTimeline({ projectData, tier, onUpgrade }: Adapt
     return (
       <Card className="p-6 h-[400px] flex items-center justify-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A192F] dark:border-white"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--platinum-800)] dark:border-white"></div>
           <p className="text-sm text-slate-500">Loading evidence timeline...</p>
         </div>
       </Card>
@@ -56,7 +56,7 @@ export function AdaptiveEvidenceTimeline({ projectData, tier, onUpgrade }: Adapt
       <PillarGrid pillars={data.pillars} tier={data.tier} />
 
       <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-        <p className="text-[#0A192F] dark:text-white font-bold text-sm tracking-tight">
+        <p className="text-foreground dark:text-white font-bold text-sm tracking-tight">
           {data.corePositioning}
         </p>
       </div>

@@ -55,7 +55,7 @@ export default function Landing() {
               whileHover={{ scale: 1.05 }}
             >
               <img src="/logo.svg" alt="Axia" width={32} height={32} />
-              <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Space Grotesk" }}>Axia</span>
+              <span className="text-2xl font-bold tracking-tight">Axia</span>
             </motion.div>
             
             <div className="flex items-center gap-6">

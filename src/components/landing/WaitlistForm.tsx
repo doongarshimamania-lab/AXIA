@@ -188,7 +188,7 @@ export function WaitlistForm({
               ? "bg-white/10 border-white/20 text-white placeholder:text-white/60 focus-visible:border-white"
               : "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:border-primary"
           } transition-all duration-200`}
-          style={{ fontFamily: "Space Grotesk" }}
+         
         />
       </div>
 
@@ -200,7 +200,7 @@ export function WaitlistForm({
             ? "bg-white text-primary hover:bg-white/90"
             : "bg-primary text-primary-foreground hover:bg-primary/90"
         }`}
-        style={{ fontFamily: "Space Grotesk" }}
+       
       >
         {isLoading ? (
           <>
@@ -216,13 +216,13 @@ export function WaitlistForm({
       </Button>
 
       {showScarcity && (
-        <p className={`text-xs font-medium text-center ${isDark ? "text-white/80" : "text-slate-500"}`} style={{ fontFamily: "Space Grotesk" }}>
+        <p className={`text-xs font-medium text-center ${isDark ? "text-white/80" : "text-slate-500"}`}>
           <span className="text-amber-500 font-bold">⚠️ Limited spots:</span> only 36 spots left to close the waitlist
         </p>
       )}
 
       {!showScarcity && (
-        <p className={`text-sm text-center ${isDark ? "text-white/60" : "text-slate-500"}`} style={{ fontFamily: "Space Grotesk" }}>
+        <p className={`text-sm text-center ${isDark ? "text-white/60" : "text-slate-500"}`}>
           No credit card required. Free forever tier available.
         </p>
       )}

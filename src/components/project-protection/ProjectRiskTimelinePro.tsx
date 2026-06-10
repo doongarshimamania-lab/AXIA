@@ -21,15 +21,15 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
 
   return (
-    <Card className="relative overflow-hidden bg-[#0A192F] text-white rounded-2xl border border-slate-700 shadow-xl">
+    <Card className="relative overflow-hidden bg-background text-white rounded-2xl border border-slate-700 shadow-xl">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0A192F] via-[#0f2545] to-[#0A192F] z-0" />
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-[#0f2545] to-background z-0" />
       
       {/* Header */}
       <div className="relative z-10 flex justify-between items-start p-6 border-b border-slate-700/50">
         <div className="flex flex-col gap-2">
           <div>
-            <h3 className="font-bold text-xl text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h3 className="font-bold text-xl text-white">
               Vulnerability Detection
             </h3>
             <p className="text-sm text-slate-400 mt-1">Advanced pattern analysis</p>
@@ -42,13 +42,13 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                 View Full Analysis
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl bg-[#0A192F] border-slate-700 text-white p-0 overflow-hidden">
+            <DialogContent className="max-w-5xl bg-background border-slate-700 text-white p-0 overflow-hidden">
               <DialogHeader className="p-6 border-b border-slate-700/50 bg-[#0f2545]">
-                <DialogTitle className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                <DialogTitle className="text-xl font-bold">
                   Comprehensive Risk Analysis
                 </DialogTitle>
               </DialogHeader>
-              <div className="p-6 bg-[#0A192F] max-h-[80vh] overflow-y-auto">
+              <div className="p-6 bg-background max-h-[80vh] overflow-y-auto">
                 <Tabs defaultValue="starter" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-slate-800 mb-6">
                     <TabsTrigger value="starter" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -103,12 +103,12 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
       <div className="relative z-10 px-6 pb-6">
         {/* Scarcity Banner */}
         {persuasion.scarcity && (
-          <div className="mb-4 bg-[#FFD700] text-[#0A192F] text-xs font-bold py-2 px-4 text-center rounded-lg">
+          <div className="mb-4 bg-premium text-foreground text-xs font-bold py-2 px-4 text-center rounded-lg">
             {persuasion.scarcityMessage}
           </div>
         )}
 
-        <div className="relative h-64 bg-[#0F172A] rounded-xl border border-slate-700 p-6 overflow-hidden">
+        <div className="relative h-64 bg-platinum-900 rounded-xl border border-slate-700 p-6 overflow-hidden">
           {/* Grid Background for Depth */}
           <div className="absolute inset-0 opacity-20">
             <svg className="w-full h-full">
@@ -182,10 +182,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       <div 
                         className={`absolute inset-0 rounded-sm transition-all duration-300 ${
                           event.riskLevel === 'high' || event.riskLevel === 'critical'
-                            ? 'bg-gradient-to-t from-[#DC143C] via-[#FF4D4D] to-[#FF8080]' 
+                            ? 'bg-gradient-to-t from-danger via-[#FF4D4D] to-[#FF8080]' 
                             : event.riskLevel === 'medium'
-                            ? 'bg-gradient-to-t from-[#F59E0B] via-[#FBBF24] to-[#FCD34D]'
-                            : 'bg-gradient-to-t from-[#3B82F6] via-[#60A5FA] to-[#93C5FD]'
+                            ? 'bg-gradient-to-t from-warning via-[#FBBF24] to-[#FCD34D]'
+                            : 'bg-gradient-to-t from-primary via-[#60A5FA] to-[#93C5FD]'
                         } ${isHovered ? 'shadow-lg brightness-110' : 'shadow-sm'}`}
                       />
                       
@@ -195,7 +195,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                           event.riskLevel === 'high' || event.riskLevel === 'critical'
                             ? 'bg-gradient-to-b from-[#991B1B] to-[#B91C1C]' 
                             : event.riskLevel === 'medium'
-                            ? 'bg-gradient-to-b from-[#B45309] to-[#D97706]'
+                            ? 'bg-gradient-to-b from-[#B45309] to-warning'
                             : 'bg-gradient-to-b from-[#1E3A8A] to-[#1E40AF]'
                         } opacity-80`}
                       />
@@ -214,7 +214,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       {/* Pulsing Glow for High Risk */}
                       {(event.riskLevel === 'high' || event.riskLevel === 'critical') && (
                         <motion.div
-                          className="absolute inset-0 w-full rounded-t bg-[#DC143C]"
+                          className="absolute inset-0 w-full rounded-t bg-danger"
                           animate={{ opacity: [0.3, 0.7, 0.3] }}
                           transition={{ duration: 2, repeat: Infinity }}
                         />
@@ -225,12 +225,12 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-8 w-56 bg-[#1F2937] border border-slate-600 rounded-lg shadow-2xl p-3 pointer-events-none z-50"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-8 w-56 bg-platinum-800 border border-slate-600 rounded-lg shadow-2xl p-3 pointer-events-none z-50"
                       style={{ transform: 'translateZ(100px)' }} // Lift tooltip above 3D elements
                     >
                       <div className="flex items-start gap-2 mb-2">
                         <AlertTriangle className={`w-4 h-4 flex-shrink-0 ${
-                          event.riskLevel === 'high' || event.riskLevel === 'critical' ? 'text-[#DC143C]' : 'text-[#F59E0B]'
+                          event.riskLevel === 'high' || event.riskLevel === 'critical' ? 'text-danger' : 'text-warning'
                         }`} />
                         <div className="flex-1">
                           <div className="text-xs font-bold text-white mb-1">{event.description}</div>
@@ -241,7 +241,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-slate-700">
                         <span className="text-[10px] text-slate-400 uppercase">Risk Value</span>
-                        <span className="text-sm font-bold text-[#DC143C]">${event.impactValue.toFixed(0)}</span>
+                        <span className="text-sm font-bold text-danger">${event.impactValue.toFixed(0)}</span>
                       </div>
                       {persuasion.lossAversion && (
                         <div className="text-[9px] text-slate-500 mt-1 italic">
@@ -271,15 +271,15 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
           {/* Risk Legend */}
           <div className="absolute bottom-4 right-6 flex items-center gap-3 text-[10px]">
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#DC143C]" />
+              <div className="w-2 h-2 rounded-full bg-danger" />
               <span className="text-slate-500">High Risk</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+              <div className="w-2 h-2 rounded-full bg-warning" />
               <span className="text-slate-500">Medium</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#3B82F6]" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
               <span className="text-slate-500">Low</span>
             </div>
           </div>
@@ -291,7 +291,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
         <div className="relative z-10 p-6 border-t border-slate-700/50 bg-white/5">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-medium text-white">Protect your entire business</div>
-            <div className="text-sm font-bold text-[#FFD700]">{upgradePrompt.message}</div>
+            <div className="text-sm font-bold text-premium">{upgradePrompt.message}</div>
           </div>
           <Button 
             onClick={onUpgrade}

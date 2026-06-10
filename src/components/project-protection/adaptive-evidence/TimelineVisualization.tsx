@@ -35,7 +35,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm border-2 ${
                 step <= 2 
-                  ? "bg-[#0A192F] text-white border-[#0A192F] scale-110 shadow-md" 
+                  ? "bg-background text-white border-foreground scale-110 shadow-md" 
                   : step === 3
                     ? "bg-white dark:bg-slate-800 text-primary border-primary/50 animate-pulse"
                     : "bg-white dark:bg-slate-950 text-slate-300 border-slate-200 dark:border-slate-800"
@@ -43,7 +43,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                 {step}
               </div>
               <span className={`text-[10px] font-medium uppercase tracking-wider transition-colors ${
-                step <= 2 ? "text-[#0A192F] dark:text-white" : "text-slate-400"
+                step <= 2 ? "text-foreground dark:text-white" : "text-slate-400"
               }`}>
                 {step === 1 ? "Collect" : step === 2 ? "Verify" : step === 3 ? "Analyze" : "Secure"}
               </span>
@@ -57,11 +57,11 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
   if (tier === 'pro') {
     return (
       <TooltipProvider>
-        <div className="h-56 bg-[#0A192F] rounded-xl border border-slate-800 relative overflow-hidden mb-6 p-6 shadow-inner">
+        <div className="h-56 bg-background rounded-xl border border-slate-800 relative overflow-hidden mb-6 p-6 shadow-inner">
           {/* CSS Grid Pattern Background */}
           <div className="absolute inset-0 opacity-20" 
                style={{ 
-                 backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(to right, #334155 1px, transparent 1px)', 
+                 backgroundImage: 'linear-gradient(var(--platinum-700) 1px, transparent 1px), linear-gradient(to right, var(--platinum-700) 1px, transparent 1px)', 
                  backgroundSize: '20px 20px' 
                }} 
           />
@@ -124,8 +124,8 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
 
   if (tier === 'expert') {
     return (
-      <div className="h-80 bg-[#0A192F] rounded-xl border border-slate-800 relative overflow-hidden mb-6 flex flex-col group">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]" />
+      <div className="h-80 bg-background rounded-xl border border-slate-800 relative overflow-hidden mb-6 flex flex-col group">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-[#112240] to-background" />
         
         {/* Animated Background Particles */}
         {[...Array(5)].map((_, i) => (
@@ -219,7 +219,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
               <span className="text-xs font-bold text-white text-center leading-tight px-1">{node.label}</span>
               
               {/* Status Indicator Dot */}
-              <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-[#0A192F] ${
+              <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-foreground ${
                 node.status === 'protected' ? 'bg-emerald-500' : 'bg-amber-500'
               }`} />
             </motion.div>

@@ -1017,7 +1017,7 @@ export default function Projects() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1.5 text-[#8B5CF6] border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/10"
+                        className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                         onClick={async () => {
                           try {
                             const newInvoiceId = await generateFromSessions({

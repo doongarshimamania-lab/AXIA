@@ -112,7 +112,7 @@ export default function WaitlistSuccess() {
               <Check className="w-10 h-10 text-white" />
             </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4" style={{ fontFamily: "Space Grotesk" }}>
+            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
               You're on the waitlist!
             </h1>
 
@@ -121,7 +121,7 @@ export default function WaitlistSuccess() {
             </p>
 
             <div className="inline-block bg-white/20 px-8 py-4 rounded-2xl">
-              <span className="text-6xl font-bold text-white" style={{ fontFamily: "Space Grotesk" }}>
+              <span className="text-6xl font-bold text-white">
                 #{position}
               </span>
             </div>
@@ -139,7 +139,7 @@ export default function WaitlistSuccess() {
 
           {/* Referral Section */}
           <div className="bg-white/5 rounded-2xl p-6 sm:p-8 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-3" style={{ fontFamily: "Space Grotesk" }}>
+            <h2 className="text-2xl font-bold text-white mb-3">
               Want to skip the line?
             </h2>
 
@@ -182,7 +182,7 @@ export default function WaitlistSuccess() {
                   value={referralLink}
                   readOnly
                   className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:border-white/40"
-                  style={{ fontFamily: "Space Grotesk" }}
+                 
                 />
 
                 <Button
@@ -249,7 +249,7 @@ export default function WaitlistSuccess() {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "Space Grotesk" }}>
+              <div className="text-3xl font-bold text-white mb-1">
                 {referralCount}
               </div>
               <div className="text-sm text-blue-200">
@@ -258,7 +258,7 @@ export default function WaitlistSuccess() {
             </div>
 
             <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "Space Grotesk" }}>
+              <div className="text-3xl font-bold text-white mb-1">
                 {referralCount}
               </div>
               <div className="text-sm text-blue-200">

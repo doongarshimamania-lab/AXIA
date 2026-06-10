@@ -20,7 +20,7 @@ export function FinalCTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Protect Your Income Today
           </h2>
           

@@ -39,9 +39,9 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
   };
 
   return (
-    <Card className="overflow-hidden bg-[#0f172a] border border-indigo-900/50 shadow-2xl shadow-indigo-900/20">
+    <Card className="overflow-hidden bg-platinum-900 border border-indigo-900/50 shadow-2xl shadow-indigo-900/20">
       {/* Cyber Header */}
-      <div className="relative p-6 border-b border-indigo-900/50 bg-[#0f172a]">
+      <div className="relative p-6 border-b border-indigo-900/50 bg-platinum-900">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-4">
@@ -66,7 +66,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-indigo-900/50">
         {/* Left: Threat Radar & Rhythm */}
-        <div className="p-6 col-span-2 bg-[#0B1221] space-y-6">
+        <div className="p-6 col-span-2 bg-background space-y-6">
           {/* Vulnerability Scanner */}
           <VulnerabilityScanner vulnerabilities={vulnerabilities} />
 
@@ -117,7 +117,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
         </div>
 
         {/* Right: System Status */}
-        <div className="p-6 bg-[#0f172a]">
+        <div className="p-6 bg-platinum-900">
           <h4 className="text-xs font-mono font-bold text-indigo-400 mb-4 flex items-center gap-2">
             <Terminal className="w-3 h-3" />
             SYSTEM_METRICS
@@ -146,7 +146,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
                       </div>
                     </div>
                   </HoverCardTrigger>
-                  <HoverCardContent className="w-80 bg-[#0B1221] border-indigo-500/30 text-indigo-100 shadow-2xl" align="end">
+                  <HoverCardContent className="w-80 bg-background border-indigo-500/30 text-indigo-100 shadow-2xl" align="end">
                     <div className="space-y-2">
                       <h4 className="text-sm font-mono font-bold text-indigo-400 flex items-center gap-2">
                         {pillar.name.toUpperCase()}

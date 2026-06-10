@@ -44,7 +44,7 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
           <div>
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-xl text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+              <h3 className="font-bold text-xl text-slate-900">
                 Work Rhythm Analyzer
               </h3>
             </div>
@@ -84,7 +84,7 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
                 label={pillar.name}
                 unit={pillar.unit}
                 size="sm"
-                color={["#1e293b", "#334155", "#475569"][idx]}
+                color={["var(--platinum-800)", "var(--platinum-700)", "#475569"][idx]}
                 tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
               />
             </motion.div>

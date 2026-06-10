@@ -323,7 +323,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               onClick={() => navigate("/")}
             />
           </div>
-          <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
+          <CardTitle className="text-[28px]">
             {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
           </CardTitle>
           <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">

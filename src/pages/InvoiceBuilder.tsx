@@ -633,7 +633,7 @@ export default function InvoiceBuilder() {
     return (
       <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5CF6] mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading invoice...</p>
         </div>
       </div>
@@ -663,7 +663,7 @@ export default function InvoiceBuilder() {
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
                   {editId ? "Edit Invoice" : "New Invoice"}
                 </h1>
                 {invoiceNumber !== "(auto-generated)" && (
@@ -679,7 +679,7 @@ export default function InvoiceBuilder() {
                   </Badge>
                 )}
                 {hasAnyProofs && (
-                  <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[11px] h-5">
+                  <Badge className="bg-success/15 text-success border-success/25 text-[11px] h-5">
                     <ShieldCheck className="h-3 w-3 mr-1" />
                     Validated Billing
                   </Badge>
@@ -716,7 +716,7 @@ export default function InvoiceBuilder() {
               <Paperclip className="h-4 w-4" />
               Proofs
               {allWorkProofs.length > 0 && (
-                <span className="ml-1 bg-[#22c55e] text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="ml-1 bg-success text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
                   {allWorkProofs.length}
                 </span>
               )}
@@ -724,7 +724,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
               onClick={() => setImportDialogOpen(true)}
             >
               <Upload className="h-4 w-4" />
@@ -733,7 +733,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
               onClick={handleSaveDraft}
               disabled={saving}
             >
@@ -743,7 +743,7 @@ export default function InvoiceBuilder() {
             {invoiceId && (
               <Button
                 size="sm"
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={handleSendInvoice}
                 disabled={sending || status !== "draft"}
               >
@@ -755,7 +755,7 @@ export default function InvoiceBuilder() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
                 onClick={handleGeneratePaymentLink}
                 disabled={generatingPaymentLink}
               >
@@ -784,7 +784,7 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-[#8B5CF6]" />
+                        <FileText className="h-4 w-4 text-primary" />
                         Client Details
                       </CardTitle>
                     </CardHeader>
@@ -834,12 +834,12 @@ export default function InvoiceBuilder() {
                       {(linkedProjectId || linkedProposalId) && (
                         <div className="flex gap-2 flex-wrap">
                           {linkedProjectId && (
-                            <Badge variant="outline" className="text-xs bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30">
+                            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                               Linked Project
                             </Badge>
                           )}
                           {linkedProposalId && (
-                            <Badge variant="outline" className="text-xs bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30">
+                            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                               Linked Proposal
                             </Badge>
                           )}
@@ -852,7 +852,7 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-[#8B5CF6]" />
+                        <Calendar className="h-4 w-4 text-primary" />
                         Invoice Details
                       </CardTitle>
                     </CardHeader>
@@ -908,13 +908,13 @@ export default function InvoiceBuilder() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-[#8B5CF6]" />
+                          <DollarSign className="h-4 w-4 text-primary" />
                           Line Items
                         </CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1.5 text-[#8B5CF6] border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/10"
+                          className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                           onClick={addLineItem}
                         >
                           <Plus className="h-4 w-4" />
@@ -949,7 +949,7 @@ export default function InvoiceBuilder() {
                                       className="border-0 shadow-none focus-visible:ring-0 px-1 h-8 text-sm"
                                     />
                                     {li.hasProof && (
-                                      <Badge className="mt-1 bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
+                                      <Badge className="mt-1 bg-success/15 text-success border-success/25 text-[10px] h-4 px-1.5">
                                         <Paperclip className="h-2.5 w-2.5 mr-0.5" />
                                         Proof Attached
                                       </Badge>
@@ -996,7 +996,7 @@ export default function InvoiceBuilder() {
                                         title="Link Work Proof"
                                         onClick={() => openProofDialog(li.id)}
                                       >
-                                        <Link2 className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                        <Link2 className="h-3.5 w-3.5 text-primary" />
                                       </Button>
                                       <Button
                                         variant="ghost"
@@ -1042,7 +1042,7 @@ export default function InvoiceBuilder() {
                           <Separator />
                           <div className="flex justify-between text-base font-bold">
                             <span>Total</span>
-                            <span className="text-[#8B5CF6]">{formatCurrency(total, currency)}</span>
+                            <span className="text-primary">{formatCurrency(total, currency)}</span>
                           </div>
                         </div>
                       </div>
@@ -1080,7 +1080,7 @@ export default function InvoiceBuilder() {
                         <div>
                           <h2
                             className="text-3xl font-bold text-foreground"
-                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                           
                           >
                             INVOICE
                           </h2>
@@ -1088,7 +1088,7 @@ export default function InvoiceBuilder() {
                         </div>
                         <div className="text-right">
                           {hasAnyProofs && (
-                            <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 mb-2">
+                            <Badge className="bg-success/15 text-success border-success/25 mb-2">
                               <ShieldCheck className="h-3.5 w-3.5 mr-1" />
                               Validated Billing
                             </Badge>
@@ -1133,7 +1133,7 @@ export default function InvoiceBuilder() {
                                     <div className="flex items-center gap-2">
                                       {li.description}
                                       {li.hasProof && (
-                                        <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
+                                        <Badge className="bg-success/15 text-success border-success/25 text-[10px] h-4 px-1.5">
                                           <Paperclip className="h-2.5 w-2.5 mr-0.5" />
                                           Proof
                                         </Badge>
@@ -1176,7 +1176,7 @@ export default function InvoiceBuilder() {
                               >
                                 Total
                               </TableCell>
-                              <TableCell className="text-right font-bold text-base text-[#8B5CF6]">
+                              <TableCell className="text-right font-bold text-base text-primary">
                                 {formatCurrency(total, currency)}
                               </TableCell>
                             </TableRow>
@@ -1196,10 +1196,10 @@ export default function InvoiceBuilder() {
 
                       {/* Work Proof Summary */}
                       {allWorkProofs.length > 0 && (
-                        <div className="mt-6 p-4 rounded-lg bg-[#22c55e]/5 border border-[#22c55e]/20">
+                        <div className="mt-6 p-4 rounded-lg bg-success/5 border border-success/20">
                           <div className="flex items-center gap-2 mb-3">
-                            <ShieldCheck className="h-4 w-4 text-[#22c55e]" />
-                            <span className="font-semibold text-sm text-[#22c55e]">
+                            <ShieldCheck className="h-4 w-4 text-success" />
+                            <span className="font-semibold text-sm text-success">
                               Work Proof Summary
                             </span>
                           </div>
@@ -1258,7 +1258,7 @@ export default function InvoiceBuilder() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Paperclip className="h-4 w-4 text-[#8B5CF6]" />
+                        <Paperclip className="h-4 w-4 text-primary" />
                         Work Proofs
                       </CardTitle>
                       <Button
@@ -1271,8 +1271,8 @@ export default function InvoiceBuilder() {
                       </Button>
                     </div>
                     {hasAnyProofs && (
-                      <div className="mt-2 p-2 rounded-md bg-[#22c55e]/10 border border-[#22c55e]/20">
-                        <div className="flex items-center gap-1.5 text-xs text-[#22c55e] font-medium">
+                      <div className="mt-2 p-2 rounded-md bg-success/10 border border-success/20">
+                        <div className="flex items-center gap-1.5 text-xs text-success font-medium">
                           <ShieldCheck className="h-3.5 w-3.5" />
                           Validated Billing Active
                         </div>
@@ -1303,12 +1303,12 @@ export default function InvoiceBuilder() {
                               key={proof._id}
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="p-3 rounded-lg border border-border bg-card hover:border-[#8B5CF6]/30 transition-colors"
+                              className="p-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-start gap-2 min-w-0">
-                                  <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-[#8B5CF6]" />}
+                                  <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-primary" />}
                                   </div>
                                   <div className="min-w-0">
                                     <p className="text-sm font-medium text-foreground truncate">
@@ -1382,7 +1382,7 @@ export default function InvoiceBuilder() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-[#8B5CF6]" />
+              <Link2 className="h-5 w-5 text-primary" />
               Link Work Proof
             </DialogTitle>
           </DialogHeader>
@@ -1524,7 +1524,7 @@ export default function InvoiceBuilder() {
               Cancel
             </Button>
             <Button
-              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
               onClick={handleAddProof}
               disabled={!proofForm.title.trim() || !invoiceId}
             >

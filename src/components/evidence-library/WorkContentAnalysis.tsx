@@ -25,7 +25,7 @@ export function WorkContentAnalysis({ qualityScore, hasAccess, contentData }: Wo
   const contextIssues = contentData?.contextIssues || "17 items flagged for potential non-work activity. Review and add context notes.";
 
   return (
-    <Card className="p-6 bg-[#1E293B] border-[#334155]">
+    <Card className="p-6 bg-platinum-800 border-border">
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div>

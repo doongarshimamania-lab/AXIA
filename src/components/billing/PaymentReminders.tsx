@@ -373,8 +373,8 @@ function getStatusConfig(status: string) {
       return {
         label: "Scheduled",
         icon: Clock,
-        color: "text-[#8B5CF6]",
-        badgeClass: "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25",
+        color: "text-primary",
+        badgeClass: "bg-primary/15 text-primary border-primary/25",
       };
     case "skipped":
       return {
@@ -440,8 +440,8 @@ function IntervalConfig({
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 mt-2">
-        <p className="text-[11px] font-semibold text-[#8B5CF6] mb-2">Configure Reminder Intervals</p>
+      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mt-2">
+        <p className="text-[11px] font-semibold text-primary mb-2">Configure Reminder Intervals</p>
         <div className="flex flex-wrap gap-2 mb-3">
           {intervals.map((day, idx) => (
             <div key={idx} className="flex items-center gap-1">
@@ -479,7 +479,7 @@ function IntervalConfig({
           ))}
           <button
             onClick={handleAdd}
-            className="h-7 px-2 rounded-md border border-dashed border-[#8B5CF6]/30 flex items-center gap-1 text-[10px] text-[#8B5CF6] hover:bg-[#8B5CF6]/10 transition-colors"
+            className="h-7 px-2 rounded-md border border-dashed border-primary/30 flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 transition-colors"
           >
             <Plus className="h-3 w-3" />
             Add
@@ -488,7 +488,7 @@ function IntervalConfig({
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            className="h-6 px-3 text-[10px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+            className="h-6 px-3 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={onConfirm}
           >
             <Play className="h-2.5 w-2.5 mr-1" />
@@ -711,13 +711,13 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                 <Switch
                   checked={safeSettings.autoRemindersEnabled}
                   onCheckedChange={handleToggleAutoReminders}
-                  className="data-[state=checked]:bg-[#8B5CF6]"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 h-8 text-[12px] border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+                className="gap-1.5 h-8 text-[12px] border-primary/30 text-primary hover:bg-primary/10"
                 onClick={handleScheduleAutoReminders}
               >
                 <Zap className="h-3.5 w-3.5" />
@@ -768,7 +768,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                               <Switch
                                 checked={isEnabled}
                                 onCheckedChange={(val) => handleToggleDay(day, val)}
-                                className="scale-75 data-[state=checked]:bg-[#8B5CF6]"
+                                className="scale-75 data-[state=checked]:bg-primary"
                               />
                               <span className="text-[10px] font-medium text-foreground">Day {day}</span>
                               <Badge
@@ -798,7 +798,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                             onClick={() => handleSetDefaultChannel(ch)}
                             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[10px] font-medium transition-colors ${
                               safeSettings.defaultChannel === ch
-                                ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/10 text-[#8B5CF6]"
+                                ? "border-primary/40 bg-primary/10 text-primary"
                                 : "border-border/50 bg-background text-muted-foreground hover:bg-muted/40"
                             }`}
                           >
@@ -864,10 +864,10 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
               <p className="text-[18px] font-bold text-emerald-600">{totalRemindersSent}</p>
               <p className="text-[10px] text-emerald-500">delivered</p>
             </div>
-            <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/10">
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
               <p className="text-[11px] text-muted-foreground">Scheduled</p>
-              <p className="text-[18px] font-bold text-[#8B5CF6]">{totalScheduledReminders}</p>
-              <p className="text-[10px] text-[#8B5CF6]">pending</p>
+              <p className="text-[18px] font-bold text-primary">{totalScheduledReminders}</p>
+              <p className="text-[10px] text-primary">pending</p>
             </div>
           </div>
 
@@ -1032,7 +1032,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                               {invoice.reminders.filter((r) => r.status === "scheduled").length > 0 && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[10px] px-1.5 py-0 h-4 bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25"
+                                  className="text-[10px] px-1.5 py-0 h-4 bg-primary/15 text-primary border-primary/25"
                                 >
                                   <Bell className="h-2.5 w-2.5 mr-0.5" />
                                   {invoice.reminders.filter((r) => r.status === "scheduled").length} scheduled
@@ -1073,7 +1073,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                           ) : (
                             <Button
                               size="sm"
-                              className="h-7 px-2.5 gap-1.5 text-[11px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                              className="h-7 px-2.5 gap-1.5 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openIntervalConfig(invoice._id);
@@ -1087,7 +1087,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 px-2.5 gap-1.5 text-[11px] border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+                            className="h-7 px-2.5 gap-1.5 text-[11px] border-primary/30 text-primary hover:bg-primary/10"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendReminder(invoice._id);
@@ -1141,7 +1141,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                                   reminderForDay?.status === "sent"
                                     ? "bg-emerald-500 text-white"
                                     : reminderForDay?.status === "scheduled"
-                                      ? "bg-[#8B5CF6] text-white"
+                                      ? "bg-primary text-primary-foreground"
                                       : isReached
                                         ? "bg-red-500/20 text-red-600"
                                         : "bg-muted text-muted-foreground/50"

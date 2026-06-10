@@ -42,7 +42,7 @@ export function PlatformConnections({
           return (
             <div
               key={platform}
-              className="flex items-center justify-between p-1.5 rounded bg-[#1F2937] border border-[#374151]"
+              className="flex items-center justify-between p-1.5 rounded bg-platinum-800 border border-[#374151]"
             >
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <div 
@@ -75,7 +75,7 @@ export function PlatformConnections({
                 ) : (
                   <Button
                     size="sm"
-                    className="h-5 px-1 text-[8px] bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+                    className="h-5 px-1 text-[8px] bg-primary hover:bg-primary/90 text-primary-foreground"
                     onClick={() => onConnectClick(platform)}
                   >
                     Connect

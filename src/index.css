@@ -48,6 +48,17 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* V2: Semantic color tokens bridge */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-premium: var(--premium);
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--primary-foreground);
+  --color-surface-dark: var(--bg-safe-dark);
+  --color-surface-card: var(--card);
+  --color-surface-elevated: var(--platinum-800);
+
   /* V2: Platinum scale bridge */
   --color-platinum-50: var(--platinum-50);
   --color-platinum-100: var(--platinum-100);
@@ -133,6 +144,12 @@
   --teal-brand-foreground: oklch(0.985 0 0);
   --accent-highlight: var(--platinum-400);
 
+  /* V2: Semantic Colors */
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --premium: var(--platinum-400);
+
   /* V2: Crypto-Distancing */
   --bg-safe-dark: oklch(0.06 0.02 260);
   --glow-disabled: 0 0 0 transparent;
@@ -200,6 +217,12 @@
   --teal-brand: oklch(0.60 0.12 185);
   --teal-brand-foreground: oklch(0.06 0.02 260);
   --accent-highlight: var(--platinum-400);
+
+  /* V2: Semantic Colors — Dark */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --premium: var(--platinum-400);
 
   --bg-safe-dark: oklch(0.06 0.02 260);
   --glow-disabled: 0 0 0 transparent;

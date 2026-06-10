@@ -124,7 +124,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                 </motion.div>
 
                 {/* Header */}
-                <h2 className="text-xl font-bold text-center mb-1 text-slate-900 dark:text-white" style={{ fontFamily: "Space Grotesk" }}>
+                <h2 className="text-xl font-bold text-center mb-1 text-slate-900 dark:text-white">
                   You're on the waitlist!
                 </h2>
 
@@ -135,7 +135,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                 {/* Position Display */}
                 <div className="flex items-center justify-center mb-3">
                   <div className="bg-primary px-6 py-3 rounded-lg">
-                    <span className="text-3xl font-bold text-white" style={{ fontFamily: "Space Grotesk" }}>
+                    <span className="text-3xl font-bold text-white">
                       BZ #{position}
                     </span>
                   </div>
@@ -153,7 +153,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
 
                 {/* Referral Section */}
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 mb-3">
-                  <h3 className="text-base font-bold mb-1 text-slate-900 dark:text-white" style={{ fontFamily: "Space Grotesk" }}>
+                  <h3 className="text-base font-bold mb-1 text-slate-900 dark:text-white">
                     Move up faster!
                   </h3>
 
@@ -200,7 +200,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                         value={referralLink}
                         readOnly
                         className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white"
-                        style={{ fontFamily: "Space Grotesk" }}
+                       
                       />
 
                       <Button
@@ -273,7 +273,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                 {referralCount > 0 && (
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-center">
-                      <div className="text-2xl font-bold text-primary dark:text-blue-400" style={{ fontFamily: "Space Grotesk" }}>
+                      <div className="text-2xl font-bold text-primary dark:text-blue-400">
                         {referralCount}
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-400">
@@ -282,7 +282,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-center">
-                      <div className="text-2xl font-bold text-green-500" style={{ fontFamily: "Space Grotesk" }}>
+                      <div className="text-2xl font-bold text-green-500">
                         -{referralCount}
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-400">

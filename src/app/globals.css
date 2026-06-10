@@ -57,6 +57,17 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* V2: Semantic color tokens → Tailwind bridge */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-premium: var(--premium);
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--primary-foreground);
+  --color-surface-dark: var(--bg-safe-dark);
+  --color-surface-card: var(--card);
+  --color-surface-elevated: var(--platinum-800);
+
   /* V2: Platinum scale → Tailwind color bridge */
   --color-platinum-50: var(--platinum-50);
   --color-platinum-100: var(--platinum-100);
@@ -149,6 +160,12 @@
   /* 5% Accent: Platinum highlights (badges, CTAs, special states) */
   --accent-highlight: var(--platinum-400);
 
+  /* ── V2: Semantic Colors ── */
+  --success: #16A34A;       /* Green-600 — verified, complete, positive */
+  --warning: #D97706;      /* Amber-600 — pending, caution, negotiation */
+  --danger: #DC2626;       /* Red-600 — overdue, critical, lost */
+  --premium: var(--platinum-400);  /* Platinum accent — premium tier, badges */
+
   /* ── V2: Crypto-Distancing Rules ── */
   /* No pure black backgrounds — use navy-tinted #0A0F1C instead */
   /* No saturated neon greens */
@@ -228,6 +245,12 @@
   --teal-brand: oklch(0.60 0.12 185);
   --teal-brand-foreground: oklch(0.06 0.02 260);
   --accent-highlight: var(--platinum-400);
+
+  /* ── V2: Semantic Colors — Dark Mode ── */
+  --success: #22C55E;      /* Green-500 — brighter for dark backgrounds */
+  --warning: #F59E0B;     /* Amber-500 */
+  --danger: #EF4444;      /* Red-500 */
+  --premium: var(--platinum-400);
 
   /* ── V2: Crypto-Distancing — Dark Mode ── */
   --bg-safe-dark: oklch(0.06 0.02 260);

@@ -31,7 +31,7 @@ export function ProtectionMetrics({
                 cx="64"
                 cy="64"
                 r="56"
-                stroke="#1E293B"
+                stroke="var(--platinum-800)"
                 strokeWidth="8"
                 fill="none"
               />
@@ -62,25 +62,25 @@ export function ProtectionMetrics({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-[#1E293B] rounded-lg p-3">
+          <div className="bg-platinum-800 rounded-lg p-3">
             <div className="text-[10px] text-[#9CA3AF] mb-1">Active Session</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.activeSession ? `${activeSessionDuration}m` : '0m'}
             </div>
           </div>
-          <div className="bg-[#1E293B] rounded-lg p-3">
+          <div className="bg-platinum-800 rounded-lg p-3">
             <div className="text-[10px] text-[#9CA3AF] mb-1">Protected Today</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.protectedHours ? `${Math.floor(protectionMetrics.protectedHours)}h` : '0h'}
             </div>
           </div>
-          <div className="bg-[#1E293B] rounded-lg p-3">
+          <div className="bg-platinum-800 rounded-lg p-3">
             <div className="text-[10px] text-[#9CA3AF] mb-1">Evidence Events</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.evidenceEvents || 0}
             </div>
           </div>
-          <div className="bg-[#1E293B] rounded-lg p-3">
+          <div className="bg-platinum-800 rounded-lg p-3">
             <div className="text-[10px] text-[#9CA3AF] mb-1">Platforms</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.connectedPlatforms || 0}

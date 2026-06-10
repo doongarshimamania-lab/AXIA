@@ -110,7 +110,7 @@ function MembersSkeleton() {
 
 // ─── Team Color Options ──────────────────────────────────────
 const TEAM_COLORS = [
-  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+  "hsl(var(--primary))", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
   "#EC4899", "#6366F1", "#64748B", "#F97316", "#475569",
 ];
 
@@ -1343,7 +1343,7 @@ function TeamCard({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ backgroundColor: team.color || "#8B5CF6" }}
+            style={{ backgroundColor: team.color || "hsl(var(--primary))" }}
           >
             {team.name.charAt(0).toUpperCase()}
           </div>

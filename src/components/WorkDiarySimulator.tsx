@@ -28,7 +28,7 @@ export function WorkDiarySimulator({ timeBlocks, onBlockHover, selectedPlatform 
 
   const getFillClasses = (platform: TimeBlock["platform"], status: TimeBlock["complianceStatus"]) => {
     if (status === "rejected") {
-      return "bg-[#DC2626] border border-[#B91C1C] rounded";
+      return "bg-danger border border-danger rounded";
     }
     switch (platform) {
       case "upwork":
@@ -39,7 +39,7 @@ export function WorkDiarySimulator({ timeBlocks, onBlockHover, selectedPlatform 
         return "bg-[#7E3AF2] rounded"; // purple
       case "client":
       default:
-        return "bg-[#D97706] rounded"; // yellow
+        return "bg-warning rounded"; // yellow
     }
   };
 

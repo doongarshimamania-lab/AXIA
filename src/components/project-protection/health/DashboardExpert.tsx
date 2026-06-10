@@ -25,7 +25,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Header */}
       <div className="flex justify-between items-start p-6 border-b border-slate-200">
         <div>
-          <h3 className="font-bold text-xl text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+          <h3 className="font-bold text-xl text-slate-900">
             Project Health Dashboard
           </h3>
           <p className="text-sm text-slate-600 mt-1">Enterprise-level timeline protection</p>
@@ -46,7 +46,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
               label={pillar.name}
               unit={pillar.unit}
               size="sm"
-              color={["#1e293b", "#334155", "#475569", "#FFD700"][idx]}
+              color={["var(--platinum-800)", "var(--platinum-700)", "#475569", "var(--premium)"][idx]}
               tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
             />
           ))}

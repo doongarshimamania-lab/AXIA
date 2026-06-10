@@ -72,7 +72,7 @@ const ClientGapPredictionFree = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
             Basic Gap Prediction
           </h3>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -85,7 +85,7 @@ const ClientGapPredictionFree = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-slate-600 dark:text-slate-400 font-medium text-base">evidence gap predicted</div>
@@ -137,7 +137,7 @@ const ClientGapPredictionStarter = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100">
             Contextual Gap Prevention
           </h3>
           <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
@@ -150,7 +150,7 @@ const ClientGapPredictionStarter = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-blue-700 dark:text-blue-300 font-medium text-base">contextual evidence gap predicted</div>
@@ -220,7 +220,7 @@ const ClientGapPredictionPro = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 rounded-2xl border-2 border-amber-200 dark:border-amber-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100">
             Platform-Specific Gap Prevention
           </h3>
           <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
@@ -233,7 +233,7 @@ const ClientGapPredictionPro = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-amber-900 dark:text-amber-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-amber-900 dark:text-amber-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-amber-700 dark:text-amber-300 font-medium text-base">platform-specific evidence gap predicted</div>
@@ -324,7 +324,7 @@ const ClientGapPredictionExpert = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100">
             Business-Wide Gap Prevention
           </h3>
           <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
@@ -337,7 +337,7 @@ const ClientGapPredictionExpert = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-purple-700 dark:text-purple-300 font-medium text-base">business-level evidence gap predicted</div>

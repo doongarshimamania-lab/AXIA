@@ -24,7 +24,7 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
   return (
     <div className="flex gap-6">
       {/* Filter Sidebar */}
-      <Card className="w-64 p-4 bg-[#1E293B] border-[#334155] h-fit">
+      <Card className="w-64 p-4 bg-platinum-800 border-border h-fit">
         <h3 className="font-bold text-white mb-3">Filter Evidence</h3>
         <div className="space-y-1">
           <Button 
@@ -59,7 +59,7 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
       </Card>
 
       {/* Evidence List */}
-      <Card className="flex-1 p-6 bg-[#1E293B] border-[#334155]">
+      <Card className="flex-1 p-6 bg-platinum-800 border-border">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold text-2xl text-white">Evidence Library</h3>
           <div className="flex items-center gap-3">

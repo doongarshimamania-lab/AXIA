@@ -44,7 +44,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
       <Card className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
               Basic Payment Protection
             </h3>
             <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -58,7 +58,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <p className="text-slate-900 dark:text-slate-100 text-base mb-1">
-            You've protected <span className="text-2xl font-bold text-primary" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${trackedValue}</span>/week
+            You've protected <span className="text-2xl font-bold text-primary">${trackedValue}</span>/week
           </p>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
             by identifying timeline risks
@@ -68,7 +68,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Evidence Timeline</div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {evidenceCount} items
             </div>
             <div className="text-xs text-slate-500 mt-1">85% experience late payments</div>
@@ -76,7 +76,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Basic Verification</div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {verificationScore}%
             </div>
             <div className="text-xs text-slate-500 mt-1">65% have payment disputes</div>
@@ -84,7 +84,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Memo Quality Check</div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {contextGaps} gaps
             </div>
             <div className="text-xs text-slate-500 mt-1">57% disputes from vague memos</div>
@@ -92,7 +92,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Activity Density</div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {activityDensity.toFixed(1)} events/min
             </div>
             <div className={`text-xs mt-1 font-semibold ${
@@ -128,7 +128,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
       <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100">
               Contextual Protection
             </h3>
             <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
@@ -142,7 +142,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="mb-6 p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
           <p className="text-blue-900 dark:text-blue-100 text-base mb-1">
-            You're protecting <span className="text-2xl font-bold text-blue-600 dark:text-blue-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${weeklyProtection}</span>/week
+            You're protecting <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">${weeklyProtection}</span>/week
           </p>
           <p className="text-blue-700 dark:text-blue-300 text-sm">
             from context-related payment denials
@@ -152,7 +152,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
             <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Client Requirement Mapping</div>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               ${weeklyProtection}/week
             </div>
             <div className="text-xs text-blue-500 mt-1">49% disputes from misalignment</div>
@@ -160,7 +160,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
             <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Memo Enhancement</div>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               {memoScore}/100
             </div>
             <div className="text-xs text-blue-500 mt-1">57% disputes from vague memos</div>
@@ -168,7 +168,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
             <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Platform-Specific Guidance</div>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               {platformGaps} gaps fixed
             </div>
             <div className="text-xs text-blue-500 mt-1">Platform-specific denials</div>
@@ -176,7 +176,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
             <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Dispute Risk Identification</div>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               {riskCount} risks fixed
             </div>
             <div className="text-xs text-blue-500 mt-1">65% have payment disputes</div>
@@ -209,7 +209,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
       <Card className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 rounded-2xl border-2 border-amber-200 dark:border-amber-700">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100">
               Comprehensive Protection
             </h3>
             <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
@@ -223,7 +223,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="mb-6 p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <p className="text-amber-900 dark:text-amber-100 text-base mb-1">
-            You're preventing <span className="text-2xl font-bold text-amber-600 dark:text-amber-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${preventedValue}</span>/month
+            You're preventing <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">${preventedValue}</span>/month
           </p>
           <p className="text-amber-700 dark:text-amber-300 text-sm">
             in potential payment losses
@@ -233,7 +233,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
             <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Real-Time Prevention</div>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
               ${preventedValue}
             </div>
             <div className="text-xs text-amber-500 mt-1">63% disputes from low activity</div>
@@ -241,7 +241,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
             <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Client-Specific Templates</div>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
               {templateCount} templates
             </div>
             <div className="text-xs text-amber-500 mt-1">Saved {timeSaved} hours</div>
@@ -249,7 +249,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
             <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Dispute Simulation</div>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
               {successRate}%
             </div>
             <div className="text-xs text-amber-500 mt-1">39% lose income from disputes</div>
@@ -257,7 +257,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           
           <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
             <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Platform Compliance</div>
-            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
               {complianceRate}%
             </div>
             <div className="text-xs text-amber-500 mt-1">Platform-specific rules</div>
@@ -288,7 +288,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
     <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100">
             Business-Level Protection
           </h3>
           <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
@@ -302,7 +302,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
       
       <div className="mb-6 p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
         <p className="text-purple-900 dark:text-purple-100 text-base mb-1">
-          You're protecting <span className="text-2xl font-bold text-purple-600 dark:text-purple-400" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${expertProtection}</span>/month
+          You're protecting <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">${expertProtection}</span>/month
         </p>
         <p className="text-purple-700 dark:text-purple-300 text-sm">
           across all projects through business-wide protection
@@ -312,7 +312,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Business-Wide Mapping</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             ${expertProtection}
           </div>
           <div className="text-xs text-purple-500 mt-1">32% have cross-project issues</div>
@@ -320,7 +320,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Payment Pattern Analysis</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {reliabilityScore}%
           </div>
           <div className="text-xs text-purple-500 mt-1">58% experience non-payment</div>
@@ -328,7 +328,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Strategic Milestone Protection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {milestonesProtected}
           </div>
           <div className="text-xs text-purple-500 mt-1">39% lose income from disputes</div>
@@ -336,7 +336,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Automated Dispute Resolution</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {disputeSuccessRate}%
           </div>
           <div className="text-xs text-purple-500 mt-1">65% have payment disputes</div>

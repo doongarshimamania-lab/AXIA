@@ -66,7 +66,7 @@ export function TestimonialCarousel() {
                 ))}
               </div>
               
-              <p className="text-xl md:text-2xl font-medium text-slate-800 dark:text-slate-100 mb-8 leading-relaxed italic" style={{ fontFamily: "Space Grotesk" }}>
+              <p className="text-xl md:text-2xl font-medium text-slate-800 dark:text-slate-100 mb-8 leading-relaxed italic">
                 "{testimonials[activeIndex].quote}"
               </p>
               

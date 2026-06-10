@@ -25,7 +25,7 @@ export function DisputeSuccessSimulation({ successRate, hasAccess, disputeData }
   const platformCompliance = disputeData?.platformCompliance || 94;
 
   return (
-    <Card className="p-6 bg-[#1E293B] border-[#334155]">
+    <Card className="p-6 bg-platinum-800 border-border">
       <div className="space-y-4">
         <div>
           <h3 className="font-bold text-lg text-white">Dispute Success Simulation</h3>

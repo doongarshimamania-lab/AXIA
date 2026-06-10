@@ -133,7 +133,7 @@ export function getProposalActions(proposalId: string, proposalStatus: string): 
       feature: "Projects",
       url: `/projects?createFromProposal=${proposalId}`,
       variant: "default",
-      color: "bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white",
+      color: "bg-primary hover:bg-primary/90 text-primary-foreground",
     });
   }
 

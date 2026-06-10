@@ -73,7 +73,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
             Basic Verification
           </h3>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -88,7 +88,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-3xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
@@ -131,7 +131,7 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100">
             Contextual Verification
           </h3>
           <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
@@ -146,14 +146,14 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
           <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
           <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {contextRelevance}%
           </div>
         </div>
@@ -209,7 +209,7 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 rounded-2xl border-2 border-amber-200 dark:border-amber-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100">
             Platform-Specific Protection
           </h3>
           <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
@@ -224,21 +224,21 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {contextRelevance}%
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Platform Vulnerability</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {platformVulnerability}%
           </div>
         </div>
@@ -317,7 +317,7 @@ const ClientPolicyProfileExpert = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100">
             Business-Wide Protection
           </h3>
           <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
@@ -332,28 +332,28 @@ const ClientPolicyProfileExpert = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {contextRelevance}%
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Platform Vulnerability</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {platformVulnerability}%
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Business Protection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
             {businessProtection}%
           </div>
         </div>

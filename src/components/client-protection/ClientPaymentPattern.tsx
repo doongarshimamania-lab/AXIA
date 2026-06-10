@@ -22,7 +22,7 @@ export function ClientPaymentPattern({ paymentPattern, tier }: ClientPaymentPatt
     return (
       <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-slate-900 dark:text-slate-100 font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <CardTitle className="text-slate-900 dark:text-slate-100 font-bold">
             Payment Pattern Analysis
           </CardTitle>
         </CardHeader>
@@ -47,7 +47,7 @@ export function ClientPaymentPattern({ paymentPattern, tier }: ClientPaymentPatt
   return (
     <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 border-2 border-amber-200 dark:border-amber-700 rounded-2xl">
       <CardHeader>
-        <CardTitle className="text-amber-900 dark:text-amber-100 font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <CardTitle className="text-amber-900 dark:text-amber-100 font-bold">
           Payment Pattern Analysis
         </CardTitle>
       </CardHeader>

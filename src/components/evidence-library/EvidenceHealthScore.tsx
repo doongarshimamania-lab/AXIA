@@ -18,7 +18,7 @@ export function EvidenceHealthScore({ protectedHours, healthScore }: EvidenceHea
   const improvement = healthScore?.possibleImprovement || 13;
 
   return (
-    <Card className="p-6 bg-[#1E293B] border-[#334155]">
+    <Card className="p-6 bg-platinum-800 border-border">
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div>

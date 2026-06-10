@@ -68,10 +68,10 @@ export function Testimonials() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-[32px] font-bold text-foreground mb-4">
             Trusted by Freelancers Worldwide
           </h2>
-          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto">
             Real stories from freelancers who've protected their income with Axia
           </p>
         </motion.div>
@@ -92,14 +92,14 @@ export function Testimonials() {
             >
               <p 
                 className="text-xl text-foreground leading-8 mb-6"
-                style={{ fontFamily: "Space Grotesk" }}
+               
               >
                 "{testimonials[activeIndex].quote}"
               </p>
-              <p className="text-base font-semibold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
+              <p className="text-base font-semibold text-foreground mb-2">
                 {testimonials[activeIndex].author}
               </p>
-              <p className="text-sm text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
+              <p className="text-sm text-muted-foreground">
                 {testimonials[activeIndex].details}
               </p>
             </motion.div>

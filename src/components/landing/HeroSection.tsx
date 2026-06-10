@@ -21,7 +21,7 @@ export function HeroSection() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white mb-3 border border-white/10"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span className="text-sm font-bold tracking-wide uppercase" style={{ fontFamily: "Space Grotesk" }}>
+            <span className="text-sm font-bold tracking-wide uppercase">
               For Freelancers Who Value Their Time
             </span>
           </motion.div>
@@ -32,7 +32,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-3xl md:text-5xl font-semibold text-white leading-[1.2] tracking-tight mb-3 max-w-[900px]"
-            style={{ fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}
+            style={{ fontFamily: "Geist Sans, Space Grotesk, system-ui, sans-serif" }}
           >
             Stop Losing Payments to Invoice Errors, Context Gaps, and Pricing Disputes
           </motion.h1>
@@ -43,7 +43,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg md:text-xl text-blue-100 mb-6 max-w-[700px] leading-relaxed"
-            style={{ fontFamily: "Space Grotesk" }}
+           
           >
             35% of payment disputes happen because of simple mistakes you can prevent. 
             Axia verifies your work against platform requirements <i>before</i> submission—so you get paid, every time.
