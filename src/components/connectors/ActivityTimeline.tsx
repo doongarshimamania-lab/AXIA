@@ -36,9 +36,9 @@ const stepIconMap: Record<string, React.ElementType> = {
 
 const stepColorMap: Record<string, { completed: string; active: string; upcoming: string }> = {
   proposal: { completed: "text-blue-500 bg-blue-500/20 border-blue-500/30", active: "text-blue-500 bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
-  project: { completed: "text-purple-500 bg-purple-500/20 border-purple-500/30", active: "text-purple-500 bg-purple-500/10 border-purple-500/50 ring-2 ring-purple-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
+  project: { completed: "text-platinum-400 bg-platinum-500/20 border-platinum-500/30", active: "text-platinum-400 bg-platinum-500/10 border-platinum-500/50 ring-2 ring-platinum-600", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
   time: { completed: "text-emerald-500 bg-emerald-500/20 border-emerald-500/30", active: "text-emerald-500 bg-emerald-500/10 border-emerald-500/50 ring-2 ring-emerald-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
-  evidence: { completed: "text-indigo-500 bg-indigo-500/20 border-indigo-500/30", active: "text-indigo-500 bg-indigo-500/10 border-indigo-500/50 ring-2 ring-indigo-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
+  evidence: { completed: "text-axia-teal-600 bg-axia-teal-500/20 border-axia-teal-500/30", active: "text-axia-teal-600 bg-axia-teal-500/10 border-axia-teal-500/50 ring-2 ring-axia-teal-600", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
   invoice: { completed: "text-amber-500 bg-amber-500/20 border-amber-500/30", active: "text-amber-500 bg-amber-500/10 border-amber-500/50 ring-2 ring-amber-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
   payment: { completed: "text-green-500 bg-green-500/20 border-green-500/30", active: "text-green-500 bg-green-500/10 border-green-500/50 ring-2 ring-green-500/20", upcoming: "text-gray-400 bg-gray-500/10 border-gray-500/20" },
 };

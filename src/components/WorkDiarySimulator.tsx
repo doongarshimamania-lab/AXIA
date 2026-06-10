@@ -36,7 +36,7 @@ export function WorkDiarySimulator({ timeBlocks, onBlockHover, selectedPlatform 
       case "fiverr":
         return "bg-success rounded"; // green
       case "toptal":
-        return "bg-indigo rounded"; // purple
+        return "bg-axia-teal-600 rounded"; // teal (V2 brand)
       case "client":
       default:
         return "bg-warning rounded"; // yellow

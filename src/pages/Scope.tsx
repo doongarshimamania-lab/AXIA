@@ -110,7 +110,7 @@ function getChangeTypeIcon(type: string) {
     case "addition": return <Plus className="w-3.5 h-3.5 text-blue-500" />;
     case "modification": return <Edit3 className="w-3.5 h-3.5 text-amber-500" />;
     case "removal": return <Trash2 className="w-3.5 h-3.5 text-red-500" />;
-    case "revision": return <GitBranch className="w-3.5 h-3.5 text-purple-500" />;
+    case "revision": return <GitBranch className="w-3.5 h-3.5 text-platinum-400" />;
     default: return <FileText className="w-3.5 h-3.5" />;
   }
 }
@@ -129,7 +129,7 @@ function getStatusBadge(status: string) {
     case "rejected":
       return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-0 text-xs"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
     case "auto_generated":
-      return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
+      return <Badge className="bg-platinum-100 text-platinum-400 dark:bg-platinum-900/30 dark:text-platinum-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
     case "active":
       return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-0 text-xs">Active</Badge>;
     case "completed":
@@ -147,7 +147,7 @@ function getDeliverableStatusIcon(status?: string) {
   switch (status) {
     case "completed": return <CheckCircle2 className="w-4 h-4 text-green-500" />;
     case "in_progress": return <Clock className="w-4 h-4 text-blue-500" />;
-    case "revised": return <Edit3 className="w-4 h-4 text-purple-500" />;
+    case "revised": return <Edit3 className="w-4 h-4 text-platinum-400" />;
     case "pending": return <Clock className="w-4 h-4 text-muted-foreground" />;
     default: return <Clock className="w-4 h-4 text-muted-foreground" />;
   }
@@ -805,8 +805,8 @@ export default function Scope() {
               </Card>
               <Card className="p-4 bg-card rounded-xl border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <div className="p-2 rounded-lg bg-platinum-100 dark:bg-platinum-900/30">
+                    <FileText className="w-4 h-4 text-platinum-400 dark:text-platinum-400" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{totalUnformalized}</p>
@@ -861,7 +861,7 @@ export default function Scope() {
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               Formalizations
               {totalUnformalized > 0 && (
-                <Badge className="ml-1.5 bg-purple-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
+                <Badge className="ml-1.5 bg-platinum-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
@@ -1040,7 +1040,7 @@ export default function Scope() {
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              <Button size="sm" className="h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setShowFormalizeDialog(true)}>
+                              <Button size="sm" className="h-7 text-xs bg-platinum-600 hover:bg-platinum-700 text-white" onClick={() => setShowFormalizeDialog(true)}>
                                 <FileText className="w-3 h-3 mr-1" />
                                 Formalize This Change
                               </Button>
@@ -1105,9 +1105,9 @@ export default function Scope() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-start gap-2">
-              <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5" />
-              <div className="text-xs text-indigo-800 dark:text-indigo-200">
+            <div className="p-3 bg-axia-teal-50 dark:bg-axia-teal-950/20 border border-axia-teal-200 dark:border-axia-teal-800 rounded-lg flex items-start gap-2">
+              <Shield className="w-4 h-4 text-axia-teal-600 dark:text-axia-teal-600 mt-0.5" />
+              <div className="text-xs text-axia-teal-600 dark:text-axia-teal-600">
                 <p className="font-bold mb-1">Why define scope?</p>
                 <p>Scope definitions create a documented baseline. When clients request changes beyond this baseline, they're formally tracked as change orders with time, cost, and deadline impacts — protecting your income from scope creep.</p>
               </div>
@@ -1295,7 +1295,7 @@ export default function Scope() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowFormalizeDialog(false)}>Cancel</Button>
-            <Button onClick={handleFormalize} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button onClick={handleFormalize} className="bg-axia-teal-600 hover:bg-axia-teal-700">
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Formalize Change
             </Button>

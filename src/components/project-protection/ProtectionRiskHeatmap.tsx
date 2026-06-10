@@ -183,7 +183,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
           <div className="flex items-center gap-2">
             <Badge variant="outline">{totalRiskEvents} risk events</Badge>
             {normalizedTier === "expert" && (
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">
+              <Badge className="bg-gradient-to-r from-platinum-500 to-amber-500">
                 AI-Enhanced
               </Badge>
             )}
@@ -232,7 +232,7 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
                           </div>
                           {normalizedTier === "expert" && (
                             <div className="pt-2 border-t text-xs">
-                              <div className="flex items-center gap-1 text-purple-500">
+                              <div className="flex items-center gap-1 text-platinum-400">
                                 <TrendingUp className="h-3 w-3" />
                                 <span>AI Recommendation: Schedule critical work outside this window</span>
                               </div>
@@ -326,9 +326,9 @@ export function ProtectionRiskHeatmap({ projectId, tier, onUpgrade }: Protection
 
         {/* Expert-Only AI Insights */}
         {normalizedTier === "expert" && (
-          <div className="pt-4 border-t bg-gradient-to-r from-purple-500/10 to-pink-500/10 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+          <div className="pt-4 border-t bg-gradient-to-r from-platinum-500/10 to-amber-500/10 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-purple-500 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-platinum-400 mt-0.5" />
               <div>
                 <p className="text-sm font-medium">AI Strategic Insight</p>
                 <p className="text-xs text-muted-foreground mt-1">

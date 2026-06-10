@@ -130,7 +130,7 @@ export function MilestoneProtectionExpert({
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl border-2 border-slate-700 shadow-2xl">
       {/* Premium Header with Animated Gradient */}
-      <div className="relative p-6 border-b border-slate-700 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+      <div className="relative p-6 border-b border-slate-700 bg-gradient-to-r from-axia-teal-600 via-platinum-600 to-amber-600 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
         <div className="relative flex items-center justify-between">
           <div>
@@ -138,7 +138,7 @@ export function MilestoneProtectionExpert({
               <Shield className="w-6 h-6" />
               Milestone Protection Intelligence
             </h3>
-            <p className="text-sm text-indigo-100 mt-1">
+            <p className="text-sm text-axia-teal-600 mt-1">
               Advanced 8-week tracking with automated reports
             </p>
           </div>
@@ -150,10 +150,10 @@ export function MilestoneProtectionExpert({
 
       {/* PRO FEATURE: Testing Controls with Enhanced Explanations */}
       {projectId && (
-        <div className="p-4 bg-gradient-to-br from-purple-900/50 to-blue-900/50 border-b border-purple-700/50">
+        <div className="p-4 bg-gradient-to-br from-platinum-900/50 to-blue-900/50 border-b border-platinum-700/50">
           <div className="flex items-center gap-2 mb-3">
-            <TestTube className="w-5 h-5 text-purple-400" />
-            <h5 className="font-semibold text-purple-100">
+            <TestTube className="w-5 h-5 text-platinum-400" />
+            <h5 className="font-semibold text-platinum-400">
               Test Milestone Features
             </h5>
             <Badge className="bg-blue-500/20 text-blue-300 border-blue-500 ml-auto text-xs">
@@ -163,14 +163,14 @@ export function MilestoneProtectionExpert({
           
           <div className="space-y-3 mb-3">
             {/* Snapshot Explanation */}
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-purple-700/30">
+            <div className="bg-slate-800/50 rounded-lg p-3 border border-platinum-700/30">
               <div className="flex items-start gap-2">
-                <Camera className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                <Camera className="w-4 h-4 text-platinum-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-purple-100 mb-1">
+                  <div className="font-medium text-sm text-platinum-400 mb-1">
                     📸 Weekly Snapshot
                   </div>
-                  <p className="text-xs text-purple-300 mb-2">
+                  <p className="text-xs text-platinum-400 mb-2">
                     Captures a point-in-time record of your work week: total hours worked, evidence collected, and protection rate. 
                     This creates a permanent record that proves your work history if disputes arise later.
                   </p>
@@ -187,14 +187,14 @@ export function MilestoneProtectionExpert({
             </div>
 
             {/* Alert Explanation */}
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-purple-700/30">
+            <div className="bg-slate-800/50 rounded-lg p-3 border border-platinum-700/30">
               <div className="flex items-start gap-2">
                 <Bell className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-purple-100 mb-1">
+                  <div className="font-medium text-sm text-platinum-400 mb-1">
                     🔔 Protection Alert
                   </div>
-                  <p className="text-xs text-purple-300 mb-2">
+                  <p className="text-xs text-platinum-400 mb-2">
                     Notifies you when your protection rate drops below safe levels or evidence gaps are detected. 
                     Helps you fix issues before they become disputes.
                   </p>
@@ -211,14 +211,14 @@ export function MilestoneProtectionExpert({
             </div>
 
             {/* Report Explanation */}
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-purple-700/30">
+            <div className="bg-slate-800/50 rounded-lg p-3 border border-platinum-700/30">
               <div className="flex items-start gap-2">
                 <FileText className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-purple-100 mb-1">
+                  <div className="font-medium text-sm text-platinum-400 mb-1">
                     📊 Weekly Report
                   </div>
-                  <p className="text-xs text-purple-300 mb-2">
+                  <p className="text-xs text-platinum-400 mb-2">
                     Analyzes your week's work patterns, compares to previous weeks, and provides actionable insights. 
                     Shows trends in hours, protection rate, and evidence quality to help you improve.
                   </p>
@@ -239,9 +239,9 @@ export function MilestoneProtectionExpert({
 
       {/* EXPERT: AI Predictive Intelligence (Algorithmic) */}
       {predictions && (
-        <div className="p-6 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 border-y border-purple-700/50">
+        <div className="p-6 bg-gradient-to-br from-platinum-900/50 to-axia-teal-900/50 border-y border-platinum-700/50">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-purple-400" />
+            <TrendingUp className="w-5 h-5 text-platinum-400" />
             <h4 className="font-bold text-white text-lg">Predictive Intelligence</h4>
             <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500 ml-auto">
               <Sparkles className="w-3 h-3 mr-1" />
@@ -250,12 +250,12 @@ export function MilestoneProtectionExpert({
           </div>
 
           {/* What This Means */}
-          <div className="bg-purple-950/30 rounded-lg p-3 mb-4 border border-purple-800/30">
-            <div className="text-xs font-semibold text-purple-200 mb-1 flex items-center gap-1">
+          <div className="bg-platinum-950/30 rounded-lg p-3 mb-4 border border-platinum-800/30">
+            <div className="text-xs font-semibold text-platinum-400 mb-1 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               Smart Predictions Based on Your Data:
             </div>
-            <p className="text-xs text-purple-300 leading-relaxed">
+            <p className="text-xs text-platinum-400 leading-relaxed">
               Our algorithms analyze your work patterns, protection trends, and evidence collection habits 
               to predict risks and recommend actions. No guesswork—just data-driven insights.
             </p>
@@ -263,8 +263,8 @@ export function MilestoneProtectionExpert({
 
           <div className="grid grid-cols-2 gap-3 mb-4">
             {/* Next Week Prediction */}
-            <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 rounded-lg p-4 border border-indigo-800/30">
-              <div className="text-xs text-indigo-300 mb-1">Next Week Forecast</div>
+            <div className="bg-gradient-to-br from-axia-teal-900/40 to-platinum-900/40 rounded-lg p-4 border border-axia-teal-800/30">
+              <div className="text-xs text-axia-teal-600 mb-1">Next Week Forecast</div>
               <div className="text-3xl font-bold text-white mb-2">
                 {predictions.nextWeekProtection}%
               </div>
@@ -285,7 +285,7 @@ export function MilestoneProtectionExpert({
             {/* Risk Level */}
             <div className={`rounded-lg p-4 border ${
               predictions.riskLevel === "high" 
-                ? "bg-gradient-to-br from-red-900/40 to-pink-900/40 border-red-800/30"
+                ? "bg-gradient-to-br from-red-900/40 to-amber-900/40 border-red-800/30"
                 : predictions.riskLevel === "medium"
                 ? "bg-gradient-to-br from-amber-900/40 to-orange-900/40 border-amber-800/30"
                 : "bg-gradient-to-br from-emerald-900/40 to-primary/20 border-emerald-800/30"
@@ -309,9 +309,9 @@ export function MilestoneProtectionExpert({
             {predictions.recommendedActions.map((action, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/50 border border-purple-700/30 text-sm text-purple-200"
+                className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/50 border border-platinum-700/30 text-sm text-platinum-400"
               >
-                <CheckCircle2 className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-platinum-400 flex-shrink-0 mt-0.5" />
                 <span>{action}</span>
               </div>
             ))}
@@ -344,7 +344,7 @@ export function MilestoneProtectionExpert({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 rounded-lg p-3 border border-blue-800/30">
+            <div className="bg-gradient-to-br from-blue-900/40 to-axia-teal-900/40 rounded-lg p-3 border border-blue-800/30">
               <div className="text-xs text-blue-300 mb-1">Avg Protection</div>
               <div className="text-2xl font-bold text-white">{predictions.analytics.avgProtection}%</div>
               <div className="text-xs text-blue-400 mt-1">Last 4 weeks</div>
@@ -354,10 +354,10 @@ export function MilestoneProtectionExpert({
               <div className="text-2xl font-bold text-white">{predictions.analytics.consistency}%</div>
               <div className="text-xs text-emerald-400 mt-1">Protection stability</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 rounded-lg p-3 border border-purple-800/30">
-              <div className="text-xs text-purple-300 mb-1">Avg Hours/Week</div>
+            <div className="bg-gradient-to-br from-platinum-900/40 to-amber-900/40 rounded-lg p-3 border border-platinum-800/30">
+              <div className="text-xs text-platinum-400 mb-1">Avg Hours/Week</div>
               <div className="text-2xl font-bold text-white">{predictions.analytics.avgHours}h</div>
-              <div className="text-xs text-purple-400 mt-1">
+              <div className="text-xs text-platinum-400 mt-1">
                 {predictions.trends.hoursTrend > 0 ? "+" : ""}{predictions.trends.hoursTrend}% trend
               </div>
             </div>
@@ -408,7 +408,7 @@ export function MilestoneProtectionExpert({
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 rounded-lg p-3 border border-blue-800/30">
+            <div className="bg-gradient-to-br from-blue-900/40 to-axia-teal-900/40 rounded-lg p-3 border border-blue-800/30">
               <div className="text-xs text-blue-300 mb-1">Total Hours</div>
               <div className="text-2xl font-bold text-white mb-1">
                 {latestReport.metrics.totalHours.toFixed(1)}h
@@ -426,8 +426,8 @@ export function MilestoneProtectionExpert({
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 rounded-lg p-3 border border-purple-800/30">
-              <div className="text-xs text-purple-300 mb-1">Protection Rate</div>
+            <div className="bg-gradient-to-br from-platinum-900/40 to-amber-900/40 rounded-lg p-3 border border-platinum-800/30">
+              <div className="text-xs text-platinum-400 mb-1">Protection Rate</div>
               <div className="text-2xl font-bold text-white mb-1">
                 {latestReport.metrics.protectionRate}%
               </div>
@@ -582,8 +582,8 @@ export function MilestoneProtectionExpert({
               onClick={() => setSelectedWeek(selectedWeek === idx ? null : idx)}
               className={`bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border-2 transition-all cursor-pointer ${
                 selectedWeek === idx
-                  ? "border-indigo-500 shadow-xl shadow-indigo-500/20 scale-[1.02]"
-                  : "border-slate-700 hover:border-indigo-600"
+                  ? "border-axia-teal-500 shadow-xl shadow-axia-teal-500/20 scale-[1.02]"
+                  : "border-slate-700 hover:border-axia-teal-600"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -597,7 +597,7 @@ export function MilestoneProtectionExpert({
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-amber-500 flex items-center justify-center shadow-lg">
                       <XCircle className="w-6 h-6 text-white" />
                     </div>
                   )}
@@ -672,7 +672,7 @@ export function MilestoneProtectionExpert({
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-300">
+                      <div className="text-lg font-bold text-axia-teal-600">
                         {snapshot.protectionRate}%
                       </div>
                       <div className="text-xs text-slate-400">
@@ -689,9 +689,9 @@ export function MilestoneProtectionExpert({
 
       {/* Expert Features Showcase */}
       <div className="p-6 border-t border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
-        <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/30 rounded-xl p-5">
+        <div className="bg-gradient-to-r from-axia-teal-500/10 to-platinum-500/10 border border-axia-teal-500/30 rounded-xl p-5">
           <h5 className="font-bold text-white mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-indigo-400" />
+            <Shield className="w-5 h-5 text-axia-teal-600" />
             Expert Tier Exclusive Features
           </h5>
           
@@ -718,14 +718,14 @@ export function MilestoneProtectionExpert({
               </div>
             </div>
             <div className="flex items-start gap-2 text-slate-300">
-              <FileText className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+              <FileText className="w-4 h-4 text-platinum-400 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="font-semibold text-white">Auto Reports</div>
                 <div className="text-xs text-slate-400">Weekly summaries</div>
               </div>
             </div>
             <div className="flex items-start gap-2 text-slate-300">
-              <Camera className="w-4 h-4 text-pink-400 flex-shrink-0 mt-0.5" />
+              <Camera className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="font-semibold text-white">Auto Snapshots</div>
                 <div className="text-xs text-slate-400">Weekly backups</div>

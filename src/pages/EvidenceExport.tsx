@@ -81,7 +81,7 @@ const FORMAT_CONFIG: Record<ExportFormat, { label: string; icon: React.ReactNode
   pdf: { label: "PDF", icon: <FileText className="h-5 w-5" />, color: "text-red-500", tierRequired: "pro" },
   csv: { label: "CSV", icon: <FileSpreadsheet className="h-5 w-5" />, color: "text-green-500", tierRequired: "free" },
   json: { label: "JSON", icon: <FileJson className="h-5 w-5" />, color: "text-amber-500", tierRequired: "starter" },
-  legal: { label: "Legal Package", icon: <Package className="h-5 w-5" />, color: "text-purple-500", tierRequired: "pro" },
+  legal: { label: "Legal Package", icon: <Package className="h-5 w-5" />, color: "text-platinum-400", tierRequired: "pro" },
 };
 
 const STATUS_CONFIG: Record<ExportStatus, { label: string; icon: React.ReactNode; badgeVariant: "default" | "secondary" | "destructive" | "outline" }> = {

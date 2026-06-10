@@ -264,11 +264,11 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           </div>
         </div>
         
-        <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800">
-          <p className="text-purple-900 dark:text-purple-100 text-sm font-semibold mb-2">
+        <div className="mt-6 p-4 bg-platinum-50 dark:bg-platinum-900/20 rounded-xl border-2 border-platinum-200 dark:border-platinum-800">
+          <p className="text-platinum-400 dark:text-platinum-400 text-sm font-semibold mb-2">
             Protect your entire business
           </p>
-          <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">
+          <p className="text-platinum-400 dark:text-platinum-400 text-sm mb-3">
             Protect ${Math.round(monthlyValue * 0.95)}/month across all projects with business-wide protection
           </p>
           <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
@@ -285,61 +285,61 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
   const disputeSuccessRate = 95;
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
+    <Card className="p-6 bg-gradient-to-br from-platinum-50 to-platinum-100 dark:from-platinum-900 dark:to-platinum-800 rounded-2xl border-2 border-platinum-200 dark:border-platinum-700">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100">
+          <h3 className="font-bold text-xl text-platinum-400 dark:text-platinum-400">
             Business-Level Protection
           </h3>
-          <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
+          <p className="text-platinum-400 dark:text-platinum-400 text-sm mt-1">
             Is my entire business protected from payment denials?
           </p>
         </div>
-        <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+        <span className="bg-platinum-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
           Expert
         </span>
       </div>
       
-      <div className="mb-6 p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-        <p className="text-purple-900 dark:text-purple-100 text-base mb-1">
-          You're protecting <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">${expertProtection}</span>/month
+      <div className="mb-6 p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+        <p className="text-platinum-400 dark:text-platinum-400 text-base mb-1">
+          You're protecting <span className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">${expertProtection}</span>/month
         </p>
-        <p className="text-purple-700 dark:text-purple-300 text-sm">
+        <p className="text-platinum-400 dark:text-platinum-400 text-sm">
           across all projects through business-wide protection
         </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Business-Wide Mapping</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Business-Wide Mapping</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             ${expertProtection}
           </div>
-          <div className="text-xs text-purple-500 mt-1">32% have cross-project issues</div>
+          <div className="text-xs text-platinum-400 mt-1">32% have cross-project issues</div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Payment Pattern Analysis</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Payment Pattern Analysis</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {reliabilityScore}%
           </div>
-          <div className="text-xs text-purple-500 mt-1">58% experience non-payment</div>
+          <div className="text-xs text-platinum-400 mt-1">58% experience non-payment</div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Strategic Milestone Protection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Strategic Milestone Protection</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {milestonesProtected}
           </div>
-          <div className="text-xs text-purple-500 mt-1">39% lose income from disputes</div>
+          <div className="text-xs text-platinum-400 mt-1">39% lose income from disputes</div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Automated Dispute Resolution</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Automated Dispute Resolution</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {disputeSuccessRate}%
           </div>
-          <div className="text-xs text-purple-500 mt-1">65% have payment disputes</div>
+          <div className="text-xs text-platinum-400 mt-1">65% have payment disputes</div>
         </div>
       </div>
       

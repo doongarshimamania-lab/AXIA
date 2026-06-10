@@ -26,7 +26,7 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-indigo-500" />
+              <TrendingUp className="w-5 h-5 text-axia-teal-600" />
               Scope Defense Timeline - Detailed Analysis
             </DialogTitle>
           </DialogHeader>

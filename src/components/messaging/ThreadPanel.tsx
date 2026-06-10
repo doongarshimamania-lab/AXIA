@@ -58,7 +58,7 @@ export function ThreadPanel({
           {/* Parent Message */}
           <div className="flex gap-3 pb-3 border-b border-border">
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback className="text-xs bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
+              <AvatarFallback className="text-xs bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 text-white">
                 {parentMessage.authorName
                   .split(" ")
                   .map((n) => n[0])

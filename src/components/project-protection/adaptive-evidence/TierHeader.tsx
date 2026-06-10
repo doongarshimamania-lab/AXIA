@@ -9,7 +9,7 @@ export function TierHeader({ tier, description }: TierHeaderProps) {
   const tierColors = {
     free: "bg-blue-100 text-blue-800 border-blue-200",
     starter: "bg-primary/10 text-primary border-primary/20",
-    pro: "bg-indigo-100 text-indigo-800 border-indigo-200",
+    pro: "bg-axia-teal-100 text-axia-teal-600 border-axia-teal-200",
     expert: "bg-slate-100 text-slate-800 border-slate-200",
   };
 

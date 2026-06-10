@@ -192,7 +192,7 @@ function getProtectionLevelColor(level: string) {
     case "standard":
       return "text-sky-600 bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800";
     case "enhanced":
-      return "text-violet-600 bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800";
+      return "text-axia-teal-700 bg-axia-teal-50 dark:bg-axia-teal-900/20 border-axia-teal-200 dark:border-axia-teal-800";
     case "maximum":
       return "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800";
     default:
@@ -708,8 +708,8 @@ export default function Projects() {
               </Card>
               <Card className="p-4 bg-card rounded-xl border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30">
-                    <DollarSign className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <div className="p-2 rounded-lg bg-axia-teal-100 dark:bg-axia-teal-900/30">
+                    <DollarSign className="w-4 h-4 text-axia-teal-700 dark:text-axia-teal-700" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">
@@ -896,7 +896,7 @@ export default function Projects() {
                           selectedProject.protectionLevel === "maximum"
                             ? "bg-emerald-500/10 dark:bg-emerald-500/5"
                             : selectedProject.protectionLevel === "enhanced"
-                            ? "bg-violet-500/10 dark:bg-violet-500/5"
+                            ? "bg-axia-teal-500/10 dark:bg-axia-teal-500/5"
                             : "bg-sky-500/10 dark:bg-sky-500/5"
                         }`}
                       >
@@ -1515,12 +1515,12 @@ export default function Projects() {
               <div
                 className={`p-2 rounded-lg border text-center text-xs cursor-pointer transition ${
                   formProtectionLevel === "enhanced"
-                    ? "border-violet-300 bg-violet-50 dark:bg-violet-900/20 dark:border-violet-700"
+                    ? "border-axia-teal-300 bg-axia-teal-50 dark:bg-axia-teal-900/20 dark:border-axia-teal-700"
                     : "border-border bg-muted/30"
                 }`}
                 onClick={() => setFormProtectionLevel("enhanced")}
               >
-                <Shield className="h-4 w-4 mx-auto mb-1 text-violet-500" />
+                <Shield className="h-4 w-4 mx-auto mb-1 text-axia-teal-700" />
                 <p className="font-medium">Enhanced</p>
                 <p className="text-[10px] text-muted-foreground">+Auto evidence</p>
               </div>

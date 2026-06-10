@@ -70,7 +70,7 @@ export function Teams({ subscriptionTier = "free" }: TeamsProps) {
 
           {/* Tier-Based Feature Access Notice */}
           {!hasTierAccess("pro") && (
-            <Card className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+            <Card className="p-4 bg-gradient-to-br from-blue-50 to-axia-teal-50 dark:from-blue-950 dark:to-axia-teal-950 border-blue-200 dark:border-blue-800">
               <div className="flex items-center gap-3">
                 <Lock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <div>

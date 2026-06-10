@@ -109,7 +109,7 @@ export function MilestoneProtectionStarter({
       </div>
 
       {/* Upgrade Prompt */}
-      <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+      <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-gradient-to-br from-blue-50 to-axia-teal-50 dark:from-blue-950/30 dark:to-axia-teal-950/30">
         <div className="flex items-start gap-3 mb-3">
           <ArrowUpRight className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
           <div>
@@ -123,7 +123,7 @@ export function MilestoneProtectionStarter({
         </div>
         <Button
           onClick={onUpgrade}
-          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold"
+          className="w-full bg-gradient-to-r from-blue-500 to-axia-teal-600 hover:from-blue-600 hover:to-axia-teal-700 text-white font-semibold"
         >
           Upgrade to Pro → $7/mo
         </Button>

@@ -226,7 +226,7 @@ export function getInvoiceActions(invoiceId: string, hasProofs?: boolean): Workf
       feature: "Evidence",
       url: `/evidence-library?invoiceId=${invoiceId}`,
       variant: "default",
-      color: "bg-indigo-600 hover:bg-indigo-700 text-white",
+      color: "bg-axia-teal-600 hover:bg-axia-teal-700 text-white",
     });
   }
 

@@ -172,16 +172,16 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                         </div>
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-80 bg-slate-900 border-indigo-500/30 text-slate-200 shadow-2xl" align="center">
+                    <HoverCardContent className="w-80 bg-slate-900 border-axia-teal-500/30 text-slate-200 shadow-2xl" align="center">
                       <div className="space-y-2">
-                        <h4 className="text-sm font-bold text-indigo-400 flex items-center gap-2 font-mono">
+                        <h4 className="text-sm font-bold text-axia-teal-600 flex items-center gap-2 font-mono">
                           {pillar.name.toUpperCase()}
                         </h4>
                         <p className="text-xs text-slate-300 leading-relaxed">
                           {def.description}
                         </p>
                         <div className="pt-2 border-t border-white/10 mt-2">
-                          <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-1">Tactical Impact</p>
+                          <p className="text-[10px] font-bold text-axia-teal-600 uppercase tracking-wide mb-1">Tactical Impact</p>
                           <p className="text-xs text-slate-400 italic">
                             "{def.impact}"
                           </p>
@@ -291,18 +291,18 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
             {proData.vulnerabilities && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="bg-slate-950/50 rounded-xl p-4 border border-indigo-500/20 hover:bg-indigo-950/20 transition-all cursor-pointer group">
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-axia-teal-500/20 hover:bg-axia-teal-950/20 transition-all cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-indigo-500/10 rounded-lg">
-                          <Shield className="w-4 h-4 text-indigo-400" />
+                        <div className="p-2 bg-axia-teal-500/10 rounded-lg">
+                          <Shield className="w-4 h-4 text-axia-teal-600" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-indigo-100">Security Ops</h4>
-                          <p className="text-[10px] text-indigo-400">Pro Module</p>
+                          <h4 className="text-sm font-bold text-axia-teal-600">Security Ops</h4>
+                          <p className="text-[10px] text-axia-teal-600">Pro Module</p>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
+                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-axia-teal-600 transition-colors" />
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-slate-400">
@@ -311,9 +311,9 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-950 border-indigo-500/30 text-white sm:max-w-lg">
+                <DialogContent className="bg-slate-950 border-axia-teal-500/30 text-white sm:max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="font-mono text-indigo-400 flex items-center gap-2">
+                    <DialogTitle className="font-mono text-axia-teal-600 flex items-center gap-2">
                       <Shield className="w-4 h-4" />
                       SECURITY_OPERATIONS_CENTER
                     </DialogTitle>

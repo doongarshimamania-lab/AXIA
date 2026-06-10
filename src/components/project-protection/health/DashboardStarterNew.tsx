@@ -68,7 +68,7 @@ export function DashboardStarterNew({ data, onUpgrade }: DashboardStarterNewProp
                   <HoverCardTrigger asChild>
                     <div className="flex items-center justify-between group cursor-help p-2 -mx-2 rounded-lg hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-blue-500' : idx === 1 ? 'bg-purple-500' : 'bg-emerald-500'}`} />
+                        <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-blue-500' : idx === 1 ? 'bg-platinum-500' : 'bg-emerald-500'}`} />
                         <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors border-b border-dotted border-slate-300 group-hover:border-slate-900">
                           {pillar.name}
                         </span>

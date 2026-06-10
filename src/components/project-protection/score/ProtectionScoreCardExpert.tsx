@@ -367,7 +367,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
             {/* Inherited Metrics - Scrollable */}
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {/* Pro Tier Metrics */}
-              <h4 className="text-xs font-bold text-purple-400/70 uppercase tracking-wider mb-2 sticky top-0 bg-amber-950/5 py-2 z-10">Inherited: Pro Tier</h4>
+              <h4 className="text-xs font-bold text-platinum-400 uppercase tracking-wider mb-2 sticky top-0 bg-amber-950/5 py-2 z-10">Inherited: Pro Tier</h4>
               {data.pillars.filter(p => ['scope_adherence', 'change_detection', 'dispute_readiness', 'vuln_shield'].includes(p.id)).map((pillar) => (
                 <TooltipProvider key={pillar.id}>
                   <Tooltip>

@@ -1,3 +1,107 @@
+# Task 8-extended: Replace All Forbidden Purple/Indigo/Violet/Pink Tailwind Classes — Worklog
+
+**Date:** 2026-03-05
+**Agent:** Task 8-extended Agent
+
+## Summary
+
+Systematically replaced ALL forbidden indigo/violet/purple/pink Tailwind CSS utility classes across 42 source files (332 lines changed) with V2-compliant teal/platinum/amber equivalents per Section 9 of the V2 Brand PDF. Zero forbidden color classes remain in code — only in preserved comments and PLATFORM_COLORS.
+
+## Replacement Rules Applied
+
+| Forbidden Class | V2 Replacement | Context |
+|----------------|---------------|---------|
+| `bg-indigo-*` | `bg-axia-teal-*` | Primary brand backgrounds |
+| `text-indigo-*` | `text-axia-teal-600` | Primary brand text |
+| `border-indigo-*` | `border-axia-teal-*` | Primary brand borders |
+| `bg-violet-*` | `bg-axia-teal-*` | Deeper brand backgrounds |
+| `text-violet-*` | `text-axia-teal-700` | Deeper brand text |
+| `border-violet-*` | `border-axia-teal-*` | Deeper brand borders |
+| `bg-purple-*` | `bg-platinum-*` | Secondary/neutral backgrounds |
+| `text-purple-*` | `text-platinum-400` | Secondary/neutral text |
+| `border-purple-*` | `border-platinum-*` | Secondary/neutral borders |
+| `bg-pink-*` | `bg-amber-*` | Warning/attention backgrounds |
+| `text-pink-*` | `text-amber-500` | Warning/attention text |
+| `from-indigo-*`/`to-indigo-*` | `from-axia-teal-*`/`to-axia-teal-*` | Gradients |
+| `from-purple-*`/`to-purple-*` | `from-platinum-*`/`to-platinum-*` | Gradients |
+| `from-pink-*`/`to-pink-*` | `from-amber-*`/`to-amber-*` | Gradients |
+| `shadow-indigo-*` | `shadow-axia-teal-*` | Box shadows |
+| `divide-indigo-*` | `divide-axia-teal-*` | Dividers |
+| `ring-indigo-*`/`ring-purple-*` | `ring-axia-teal-600` | Focus rings |
+
+## Files Modified (42 files, 332 lines changed)
+
+### Pages (8 files)
+- **`Scope.tsx`** (11 lines): purple-500/600/800/100/900/600 → platinum-400/platinum-600/platinum-100/platinum-900; indigo-50/200/600/700/800/950 → axia-teal-50/200/600/700/800/950
+- **`Auth.tsx`** (2 lines): bare `bg-indigo` → `bg-axia-teal-600`, `hover:bg-indigo/90` → `hover:bg-axia-teal-600/90`
+- **`Projects.tsx`** (6 lines): violet-50/100/400/500/600/700/800/900 → axia-teal-50/100/400/500/600/700/800/900
+- **`EvidenceExport.tsx`** (1 line): text-purple-500 → text-platinum-400
+- **`PaymentPatterns.tsx`** (1 line): text-violet-600 + bg-violet-500 → text-axia-teal-700 + bg-axia-teal-500
+- **`ClientDashboard.tsx`** (7 lines): violet-500/600/500/10 → axia-teal-700/600/500/10
+- **`TeamManagement.tsx`** (11 lines): purple-500/600/100/200/800/950 → platinum-400/platinum-600/platinum-100/platinum-200/platinum-800/platinum-950; indigo-50/950 → axia-teal-50/950
+
+### Components — Project Protection (12 files)
+- **`MilestoneProtectionPro.tsx`** (20 lines): indigo-500/950/50 → axia-teal-500/950/50; purple-50/100/200/400/500/600/700/800/900/950 → platinum-50/100/200/400/500/600/700/800/900/950; pink-50/500/600/700/950 → amber-50/500/600/700/950
+- **`MilestoneProtectionStarter.tsx`** (2 lines): indigo-50/600/700/950 → axia-teal-50/600/700/950
+- **`MilestoneProtectionExpert.tsx`** (40 lines): indigo-600/500/800/900/300/400/100/950 → axia-teal-600/500/800/900/300/400/100/950; purple-600/700/400/800/900/950/100/200/300 → platinum-600/700/400/800/900/950/100/200/300; pink-600/500/400/900 → amber-600/500/400/900
+- **`ProjectList.tsx`** (1 line): purple-500 → platinum-400
+- **`ProtectionRiskHeatmap.tsx`** (4 lines): purple-500/10 → platinum-500/10; pink-500 → amber-500
+- **`TierHeader.tsx`** (1 line): indigo-100/800/200 → axia-teal-100/800/200
+- **`FormalizeScopeChangeDialog.tsx`** (2 lines): indigo-500/600/700 → axia-teal-500/600/700
+- **`ProtectionScoreCardPro.tsx`** (24 lines): indigo-500/950/200/300/400/600/100 → axia-teal-500/950/200/300/400/600/100; purple-600/500 → platinum-600/500
+- **`ProtectionScoreCardExpert.tsx`** (1 line): purple-400 → platinum-400
+- **`ScopeDefenseModal.tsx`** (1 line): indigo-500 → axia-teal-500
+- **`DashboardStarterNew.tsx`** (1 line): purple-500 → platinum-500 (chart dot)
+
+### Components — Health Dashboard (5 files)
+- **`DashboardExpertNew.tsx`** (11 lines): indigo-500/950/400/100/300 → axia-teal-500/950/400/100/300
+- **`DashboardProNew.tsx`** (28 lines): indigo-500/950/400/100/300/200/600 → axia-teal-500/950/400/100/300/200/600; purple-500 → platinum-500; pink-500 → amber-500; shadow-indigo → shadow-axia-teal; divide-indigo → divide-axia-teal
+- **`VulnerabilityScanner.tsx`** (9 lines): indigo-500/950/400/300/900 → axia-teal-500/950/400/300/900
+- **`WorkRhythmVisualizer.tsx`** (2 lines): purple-500 → platinum-400
+
+### Components — Client Protection (4 files)
+- **`ClientPolicyProfile.tsx`** (46 lines): All purple-50/100/200/400/500/600/700/800/900 → platinum-50/100/200/400/500/600/700/800/900
+- **`ClientDisputeSimulation.tsx`** (27 lines): All purple-50/100/200/400/500/600/700/800/900 → platinum-50/100/200/400/500/600/700/800/900
+- **`ClientGapPrediction.tsx`** (41 lines): All purple-50/100/200/400/500/600/700/800/900 → platinum-50/100/200/400/500/600/700/800/900
+- **`ClientList.tsx`** (4 lines): violet-500/600 → axia-teal-700/600
+
+### Components — Messaging (5 files)
+- **`MessageList.tsx`** (1 line): from-violet-400 to-indigo-500 → from-axia-teal-400 to-axia-teal-500
+- **`ThreadPanel.tsx`** (1 line): from-violet-400 to-indigo-500 → from-axia-teal-400 to-axia-teal-500
+- **`MemberList.tsx`** (1 line): from-violet-400 to-indigo-500 → from-axia-teal-400 to-axia-teal-500
+- **`ChannelHeader.tsx`** (1 line): from-violet-400 to-indigo-500 → from-axia-teal-400 to-axia-teal-500
+- **`ChannelList.tsx`** (1 line): from-violet-400 to-indigo-500 → from-axia-teal-400 to-axia-teal-500
+
+### Components — Connectors & Other (8 files)
+- **`WorkflowActions.tsx`** (1 line): bg-indigo-600 → bg-axia-teal-600
+- **`ActivityTimeline.tsx`** (2 lines): purple-500 → platinum-400; indigo-500 → axia-teal-500
+- **`FeatureConnector.tsx`** (4 lines): purple-500/600/10/15/25 → platinum-500/600/10/15/25; indigo-500/10 → axia-teal-500/10
+- **`WorkspaceSwitcher.tsx`** (5 lines): purple-500/400/10/20 → platinum-500/400/10/20
+- **`BulkImportDialog.tsx`** (1 line): text-purple-500 → text-platinum-400
+- **`ShareDialog.tsx`** (1 line): text-purple-500/400 → text-platinum-400
+- **`CustomFieldManager.tsx`** (1 line): text-purple-500 → text-platinum-400
+- **`RealTimeWorkValidation.tsx`** (1 line): text-purple-500 → text-platinum-400
+- **`Teams.tsx`** (1 line): to-indigo-50/950 → to-axia-teal-50/950
+- **`LostIncomeCalculator.tsx`** (1 line): text-violet-500 → text-axia-teal-700
+- **`Features.tsx`** (1 line): to-indigo-600 → to-axia-teal-600
+- **`TruthLayerWidget.tsx`** (6 lines): bare `indigo` → `axia-teal-600`
+- **`WorkDiarySimulator.tsx`** (1 line): bare `bg-indigo` → `bg-axia-teal-600`
+
+## Preserved (per rules)
+- **`tokens.ts`** comments mentioning forbidden colors (lines 15, 21, 37, 72) — NOT changed
+- **`PLATFORM_COLORS`** in tokens.ts — NOT changed (third-party brand colors, e.g., shopify: '#5C6AC4')
+
+## Verification
+- Comprehensive regex scan confirms **zero forbidden color Tailwind classes** remain in any .tsx/.ts file
+- Only remaining "indigo"/"purple" references are in preserved comments in tokens.ts
+- All shade numbers preserved where visually appropriate (light bg → light replacement, dark bg → dark replacement)
+- Dark mode variants (dark:bg-*, dark:text-*) properly replaced
+- Hover/focus/group-hover variants properly replaced
+- Gradient from/to/via directions properly replaced
+- Shadow and divide utilities properly replaced
+
+---
+
 # Task 8-9: Add Teal Accents & Matte Gradients — Worklog
 
 **Date:** 2026-03-05

@@ -191,7 +191,7 @@ function ActivityIcon({ icon }: { icon: string }) {
     check: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
     alert: <AlertTriangle className="h-4 w-4 text-amber-500" />,
     receipt: <Receipt className="h-4 w-4 text-blue-500" />,
-    message: <MessageSquare className="h-4 w-4 text-violet-500" />,
+    message: <MessageSquare className="h-4 w-4 text-axia-teal-700" />,
     activity: <Activity className="h-4 w-4 text-primary" />,
   };
   return (
@@ -415,7 +415,7 @@ export default function ClientDashboard() {
             icon={Clock}
             trend={pendingApprovals > 0 ? "down" : "neutral"}
             trendLabel={pendingApprovals > 0 ? "Needs attention" : "All clear"}
-            color="text-violet-500"
+            color="text-axia-teal-700"
           />
         </motion.div>
 
@@ -540,8 +540,8 @@ export default function ClientDashboard() {
                         <p className="text-2xl font-bold text-blue-600">{verifiedFreelancers}/{MOCK_PROJECTS.length}</p>
                         <p className="text-xs text-muted-foreground">Verified Freelancers</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-violet-500/10">
-                        <p className="text-2xl font-bold text-violet-600">98%</p>
+                      <div className="text-center p-3 rounded-lg bg-axia-teal-500/10">
+                        <p className="text-2xl font-bold text-axia-teal-700">98%</p>
                         <p className="text-xs text-muted-foreground">Dispute Win Rate</p>
                       </div>
                       <div className="text-center p-3 rounded-lg bg-amber-500/10">
@@ -594,7 +594,7 @@ export default function ClientDashboard() {
                       variant="outline"
                       onClick={() => handleQuickAction("directory")}
                     >
-                      <UserSearch className="h-4 w-4 text-violet-500" />
+                      <UserSearch className="h-4 w-4 text-axia-teal-700" />
                       Browse Freelancers
                     </Button>
                     <Button
@@ -885,11 +885,11 @@ export default function ClientDashboard() {
                     <div className="flex flex-col sm:flex-row items-start gap-4">
                       <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         approval.type === "scope_change" ? "bg-blue-500/10" :
-                        approval.type === "contract_review" ? "bg-violet-500/10" :
+                        approval.type === "contract_review" ? "bg-axia-teal-500/10" :
                         "bg-emerald-500/10"
                       }`}>
                         {approval.type === "scope_change" && <FileText className="h-5 w-5 text-blue-500" />}
-                        {approval.type === "contract_review" && <Shield className="h-5 w-5 text-violet-500" />}
+                        {approval.type === "contract_review" && <Shield className="h-5 w-5 text-axia-teal-700" />}
                         {approval.type === "evidence_review" && <Eye className="h-5 w-5 text-emerald-500" />}
                       </div>
                       <div className="flex-1 space-y-2 min-w-0">

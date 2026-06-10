@@ -16,7 +16,7 @@ const features = [
     description: "AI-powered analysis identifies missing evidence before disputes happen. Never submit incomplete work context again.",
     stat: "87%",
     statLabel: "Gaps caught early",
-    color: "from-primary to-indigo-600",
+    color: "from-primary to-axia-teal-600",
   },
   {
     icon: TrendingUp,
