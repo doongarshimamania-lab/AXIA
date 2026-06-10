@@ -1,83 +1,76 @@
-/* V2 DESIGN SYSTEM — AXIA Brand Tokens */
-/* This file mirrors globals.css for compatibility */
-
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
 @import "@fontsource/geist-sans/400.css";
 @import "@fontsource/geist-sans/500.css";
 @import "@fontsource/geist-sans/600.css";
 @import "@fontsource/geist-sans/700.css";
 @import "@fontsource/geist-mono/400.css";
 @import "@fontsource/geist-mono/500.css";
+
 @custom-variant dark (&:is(.dark *));
 
-/* DO NOT CHANGE */
+/* ============================================================
+   V2 DESIGN SYSTEM — AXIA Brand Tokens
+   Source: axia_brand_identity_system_v2.pdf
+   85/10/5 rule: 85% neutral, 10% teal brand, 5% accent
+   ============================================================ */
+
 @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Geist Sans", "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  /* V2: Semantic color tokens bridge */
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-premium: var(--premium);
-  --color-brand: var(--primary);
-  --color-brand-foreground: var(--primary-foreground);
-  --color-surface-dark: var(--bg-safe-dark);
-  --color-surface-card: var(--card);
-  --color-surface-elevated: var(--platinum-800);
 
-  /* V2: Stage / pipeline colors bridge */
-  --color-stage-lead: var(--stage-lead);
-  --color-stage-qualified: var(--stage-qualified);
-  --color-stage-proposal: var(--stage-proposal);
-  --color-stage-negotiation: var(--stage-negotiation);
-  --color-stage-won: var(--stage-won);
-  --color-stage-lost: var(--stage-lost);
+  /* ── Brand Primary: Deep Teal Scale (10% of visible area) ── */
+  --color-axia-teal-50: var(--axia-teal-50);
+  --color-axia-teal-100: var(--axia-teal-100);
+  --color-axia-teal-200: var(--axia-teal-200);
+  --color-axia-teal-300: var(--axia-teal-300);
+  --color-axia-teal-400: var(--axia-teal-400);
+  --color-axia-teal-500: var(--axia-teal-500);
+  --color-axia-teal-600: var(--axia-teal-600);
+  --color-axia-teal-700: var(--axia-teal-700);
+  --color-axia-teal-800: var(--axia-teal-800);
+  --color-axia-teal-900: var(--axia-teal-900);
 
-  /* V2: Extended semantic */
-  --color-info: var(--info);
-  --color-indigo: var(--indigo);
-  --color-border-muted: var(--border-muted);
-  --color-text-muted: var(--muted-foreground);
-  --color-icon-blue: var(--icon-blue);
-  --color-page-bg-from: var(--page-bg-from);
-  --color-page-bg-to: var(--page-bg-to);
-  --color-navy-accent: var(--navy-accent);
-
-  /* V2: Platinum scale bridge */
+  /* ── Brand Secondary: Platinum Silver Scale (5% accent) ── */
   --color-platinum-50: var(--platinum-50);
   --color-platinum-100: var(--platinum-100);
   --color-platinum-200: var(--platinum-200);
@@ -89,60 +82,131 @@
   --color-platinum-800: var(--platinum-800);
   --color-platinum-900: var(--platinum-900);
   --color-platinum-950: var(--platinum-950);
+
+  /* ── Semantic: Status Colors (5% accent tier) ── */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-protected: var(--protected);
+  --color-info: var(--info);
+
+  /* ── Semantic: Brand & Surface ── */
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--primary-foreground);
+  --color-surface-dark: var(--bg-page);
+  --color-surface-card: var(--card);
+  --color-surface-elevated: var(--bg-surface-3);
+
+  /* ── Stage / Pipeline Colors ── */
+  --color-stage-lead: var(--stage-lead);
+  --color-stage-qualified: var(--stage-qualified);
+  --color-stage-proposal: var(--stage-proposal);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-won: var(--stage-won);
+  --color-stage-lost: var(--stage-lost);
+
+  /* ── Extended Semantic ── */
+  --color-indigo: var(--indigo);
+  --color-border-muted: var(--border-muted);
+  --color-icon-blue: var(--icon-blue);
+  --color-page-bg-from: var(--page-bg-from);
+  --color-page-bg-to: var(--page-bg-to);
+  --color-navy-accent: var(--navy-accent);
+  --color-chart-primary: var(--chart-primary);
+  --color-chart-frost: var(--chart-frost);
 }
 
-/* V2 THEME VALUES */
 :root {
   --radius: 0.625rem;
 
-  /* Base palette — navy primary + platinum accent */
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  /* ═══════════════════════════════════════════════════════════
+     85% NEUTRAL — Dark backgrounds, platinum grays, text
+     ═══════════════════════════════════════════════════════════ */
 
-  /* Primary: Deep navy (brand anchor) */
-  --primary: oklch(0.25 0.08 250);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Dark Mode Background System (PDF Section 4.2) */
+  --bg-page: #0A0F1C;           /* Deepest background */
+  --bg-surface-1: #0C1322;      /* Cards, modals, sidebar */
+  --bg-surface-2: #111827;      /* Elevated surfaces, dropdowns */
+  --bg-surface-3: #1A2035;      /* Highest elevation, overlays */
 
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Borders — opacity-based (PDF Section 4.2) */
+  --border-subtle: rgba(255,255,255,0.04);   /* Barely visible */
+  --border-default: rgba(255,255,255,0.08);  /* Visible */
+  --border-strong: rgba(255,255,255,0.12);   /* Focus, active, hover */
 
-  /* V2: Accent → Platinum #94A3B8 (was brass gold #B5953C) */
-  --accent: oklch(0.70 0.02 250);
-  --accent-foreground: oklch(0.145 0 0);
+  /* Text System (PDF Section 4.3) */
+  --text-primary: #F1F5F9;      /* Body text — never pure #FFFFFF */
+  --text-secondary: #94A3B8;    /* Labels, descriptions */
+  --text-tertiary: #64748B;     /* Timestamps, placeholders */
+  --text-inverse: #1E293B;      /* On accent backgrounds */
 
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Light mode shadcn bridge */
+  --background: #F8FAFC;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
 
-  --chart-1: oklch(0.25 0.08 250);
-  --chart-2: oklch(0.70 0.02 250);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Primary: Deep navy for shadcn compatibility */
+  --primary: #00246B;
+  --primary-foreground: #F1F5F9;
 
-  /* Sidebar: Light mode */
-  --sidebar: oklch(0.985 0.002 250);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.25 0.08 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0.005 250);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.922 0.005 250);
-  --sidebar-ring: oklch(0.708 0 0);
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1E293B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
 
-  /* V2: Platinum Scale */
+  /* Accent → Teal brand (PDF: --accent-primary) */
+  --accent: #0D9488;
+  --accent-foreground: #F1F5F9;
+
+  --destructive: #EF4444;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0D9488;
+
+  --chart-1: #475993;   /* Steel Blue — data viz primary (PDF Section 11) */
+  --chart-2: #0D9488;   /* Teal */
+  --chart-3: #94A3B8;   /* Platinum */
+  --chart-4: #7DD3FC;   /* Frost (PDF Section 11) */
+  --chart-5: #64748B;   /* Slate */
+
+  /* Sidebar */
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #1E293B;
+  --sidebar-primary: #0D9488;
+  --sidebar-primary-foreground: #F1F5F9;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #1E293B;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #0D9488;
+
+  /* ═══════════════════════════════════════════════════════════
+     10% BRAND PRIMARY — Deep Teal (PDF Section 4.1)
+     The color of protection. Bridges blue/trust + green/safety.
+     ═══════════════════════════════════════════════════════════ */
+  --axia-teal-50: #F0FDFA;
+  --axia-teal-100: #CCFBF1;
+  --axia-teal-200: #99F6E4;
+  --axia-teal-300: #5EEAD4;
+  --axia-teal-400: #2DD4BF;
+  --axia-teal-500: #14B8A6;     /* Light mode brand primary */
+  --axia-teal-600: #0D9488;     /* Dark mode brand primary */
+  --axia-teal-700: #0F766E;     /* Interactive hover */
+  --axia-teal-800: #115E59;     /* Active/pressed */
+  --axia-teal-900: #134E4A;     /* Deep accent */
+
+  /* ═══════════════════════════════════════════════════════════
+     5% ACCENT — Platinum + Semantic (PDF Sections 4.4, 7.4)
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Platinum Silver Scale (PDF Section 4.1 — Brand Secondary) */
   --platinum-50: #F8FAFC;
   --platinum-100: #F1F5F9;
   --platinum-200: #E2E8F0;
   --platinum-300: #CBD5E1;
-  --platinum-400: #94A3B8;
+  --platinum-400: #94A3B8;      /* ← Secondary accent (replaces #B5953C) */
   --platinum-500: #64748B;
   --platinum-600: #475569;
   --platinum-700: #334155;
@@ -150,27 +214,25 @@
   --platinum-900: #0F172A;
   --platinum-950: #020617;
 
-  /* V2: Matte Gradient Recipes */
-  --gradient-institutional: linear-gradient(135deg, oklch(0.985 0.002 250), oklch(0.97 0.005 250));
-  --gradient-card-elevate: linear-gradient(180deg, oklch(1 0 0), oklch(0.985 0.002 250));
-  --gradient-sidebar: linear-gradient(180deg, oklch(0.985 0.002 250), oklch(0.97 0.005 250));
-  --gradient-hero: linear-gradient(135deg, oklch(0.25 0.08 250), oklch(0.30 0.06 240));
-  --gradient-subtle: linear-gradient(180deg, oklch(0.985 0 0), oklch(0.97 0 0));
+  /* Semantic State Colors (PDF Section 4.4) */
+  --protected: #10B981;         /* Emerald — PROTECTED state ONLY (PDF: Pavlovian safety) */
+  --warning: #F59E0B;          /* Amber — attention, premium features */
+  --danger: #EF4444;           /* Red — unprotected, errors, disputes */
+  --success: #14B8A6;          /* Teal — generic success (PDF: use teal, NOT emerald for generic) */
+  --info: #3B82F6;             /* Blue — informational, links */
 
-  /* V2: 85/10/5 Color Ratio Tokens */
-  --teal-brand: oklch(0.55 0.12 185);
-  --teal-brand-foreground: oklch(0.985 0 0);
-  --accent-highlight: var(--platinum-400);
+  /* Data Visualization (PDF Section 11) */
+  --chart-primary: #475993;     /* Steel Blue */
+  --chart-frost: #7DD3FC;       /* Ice Frost */
 
-  /* V2: Semantic Colors */
-  --success: #16A34A;
-  --warning: #D97706;
-  --danger: #DC2626;
-  --premium: var(--platinum-400);
-  --info: #2563EB;
-  --indigo: #4F46E5;
+  /* Matte Gradient Recipes (PDF Section 5.3) */
+  --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
 
-  /* V2: Stage / Pipeline Colors */
+  /* Stage / Pipeline Colors */
   --stage-lead: #6366F1;
   --stage-qualified: #8B5CF6;
   --stage-proposal: #A855F7;
@@ -178,58 +240,72 @@
   --stage-won: #22C55E;
   --stage-lost: #EF4444;
 
-  /* V2: Extended semantic */
+  /* Extended semantic */
+  --indigo: #4F46E5;
   --border-muted: #374151;
   --icon-blue: #60A5FA;
   --page-bg-from: #F0F9FF;
   --page-bg-to: #F8FAFC;
   --navy-accent: #112240;
-
-  /* V2: Crypto-Distancing */
-  --bg-safe-dark: oklch(0.06 0.02 260);
-  --glow-disabled: 0 0 0 transparent;
+  --accent-highlight: var(--platinum-400);
 }
 
 .dark {
-  /* V2: Dark mode — navy-tinted #0A0F1C */
-  --background: oklch(0.06 0.02 260);
-  --foreground: oklch(0.98 0.005 240);
-  --card: oklch(0.14 0.02 240);
-  --card-foreground: oklch(0.96 0.005 240);
-  --popover: oklch(0.14 0.02 240);
-  --popover-foreground: oklch(0.96 0.005 240);
-  --primary: oklch(0.25 0.08 250);
-  --primary-foreground: oklch(0.98 0.005 240);
-  --secondary: oklch(0.18 0.025 240);
-  --secondary-foreground: oklch(0.96 0.005 240);
-  --muted: oklch(0.18 0.025 240);
-  --muted-foreground: oklch(0.70 0.015 240);
+  /* ═══════════════════════════════════════════════════════════
+     DARK MODE — Navy-tinted backgrounds (PDF Section 4.2)
+     Pure black forbidden. Use #0A0F1C navy-tinted instead.
+     ═══════════════════════════════════════════════════════════ */
+  --background: #0A0F1C;       /* --bg-page */
+  --foreground: #F1F5F9;       /* --text-primary (never pure white) */
+  --card: #0C1322;             /* --bg-surface-1 */
+  --card-foreground: #F1F5F9;
+  --popover: #0C1322;
+  --popover-foreground: #F1F5F9;
 
-  /* V2: Accent → Platinum */
-  --accent: oklch(0.70 0.02 250);
-  --accent-foreground: oklch(0.06 0.02 260);
+  --primary: #0D9488;          /* ── TEAL = brand primary in dark mode ── */
+  --primary-foreground: #F1F5F9;
 
-  --destructive: oklch(0.58 0.18 25);
-  --border: oklch(0.25 0.03 240);
-  --input: oklch(0.20 0.025 240);
-  --ring: oklch(0.25 0.08 250);
+  --secondary: #111827;        /* --bg-surface-2 */
+  --secondary-foreground: #F1F5F9;
+  --muted: #111827;
+  --muted-foreground: #94A3B8;  /* --text-secondary */
 
-  --chart-1: oklch(0.25 0.08 250);
-  --chart-2: oklch(0.70 0.02 250);
-  --chart-3: oklch(0.72 0.15 140);
-  --chart-4: oklch(0.62 0.20 280);
-  --chart-5: oklch(0.70 0.17 60);
+  --accent: #0D9488;           /* Teal accent (PDF: --accent-primary) */
+  --accent-foreground: #F1F5F9;
 
-  --sidebar: oklch(0.14 0.02 240);
-  --sidebar-foreground: oklch(0.96 0.005 240);
-  --sidebar-primary: oklch(0.25 0.08 250);
-  --sidebar-primary-foreground: oklch(0.98 0.005 240);
-  --sidebar-accent: oklch(0.18 0.025 240);
-  --sidebar-accent-foreground: oklch(0.96 0.005 240);
-  --sidebar-border: oklch(0.25 0.03 240);
-  --sidebar-ring: oklch(0.25 0.08 250);
+  --destructive: #EF4444;
+  --border: rgba(255,255,255,0.08);  /* --border-default */
+  --input: rgba(255,255,255,0.08);
+  --ring: #0D9488;             /* Teal ring for focus */
 
-  /* V2: Platinum Scale — Dark */
+  --chart-1: #475993;
+  --chart-2: #0D9488;
+  --chart-3: #94A3B8;
+  --chart-4: #7DD3FC;
+  --chart-5: #64748B;
+
+  --sidebar: #0C1322;
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #0D9488;
+  --sidebar-primary-foreground: #F1F5F9;
+  --sidebar-accent: #111827;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #0D9488;
+
+  /* Teal Scale — same in dark mode */
+  --axia-teal-50: #F0FDFA;
+  --axia-teal-100: #CCFBF1;
+  --axia-teal-200: #99F6E4;
+  --axia-teal-300: #5EEAD4;
+  --axia-teal-400: #2DD4BF;
+  --axia-teal-500: #14B8A6;
+  --axia-teal-600: #0D9488;
+  --axia-teal-700: #0F766E;
+  --axia-teal-800: #115E59;
+  --axia-teal-900: #134E4A;
+
+  /* Platinum Scale — same */
   --platinum-50: #F8FAFC;
   --platinum-100: #F1F5F9;
   --platinum-200: #E2E8F0;
@@ -242,26 +318,24 @@
   --platinum-900: #0F172A;
   --platinum-950: #020617;
 
-  /* V2: Matte Gradient Recipes — Dark */
-  --gradient-institutional: linear-gradient(135deg, oklch(0.08 0.025 260), oklch(0.06 0.02 250));
-  --gradient-card-elevate: linear-gradient(180deg, oklch(0.16 0.025 240), oklch(0.12 0.02 250));
-  --gradient-sidebar: linear-gradient(180deg, oklch(0.12 0.02 240), oklch(0.08 0.025 250));
-  --gradient-hero: linear-gradient(135deg, oklch(0.25 0.08 250), oklch(0.18 0.06 240));
-  --gradient-subtle: linear-gradient(180deg, oklch(0.08 0.02 260), oklch(0.06 0.015 250));
+  /* Gradients — Dark mode (PDF recipes) */
+  --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
 
-  --teal-brand: oklch(0.60 0.12 185);
-  --teal-brand-foreground: oklch(0.06 0.02 260);
-  --accent-highlight: var(--platinum-400);
+  /* Semantic — dark mode brighter variants */
+  --protected: #34D399;         /* Emerald-400 — brighter for dark */
+  --warning: #FBBF24;          /* Amber-400 */
+  --danger: #F87171;           /* Red-400 */
+  --success: #2DD4BF;          /* Teal-400 — generic success */
+  --info: #60A5FA;             /* Blue-400 */
 
-  /* V2: Semantic Colors — Dark */
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --premium: var(--platinum-400);
-  --info: #3B82F6;
-  --indigo: #6366F1;
+  --chart-primary: #475993;
+  --chart-frost: #7DD3FC;
 
-  /* V2: Stage / Pipeline Colors — Dark */
+  /* Stage colors — brighter for dark */
   --stage-lead: #818CF8;
   --stage-qualified: #A78BFA;
   --stage-proposal: #C084FC;
@@ -269,15 +343,14 @@
   --stage-won: #4ADE80;
   --stage-lost: #F87171;
 
-  /* V2: Extended semantic — Dark */
+  /* Extended semantic */
+  --indigo: #6366F1;
   --border-muted: #4B5563;
   --icon-blue: #93C5FD;
-  --page-bg-from: oklch(0.08 0.025 260);
-  --page-bg-to: oklch(0.06 0.02 250);
+  --page-bg-from: #0A0F1C;
+  --page-bg-to: #0C1322;
   --navy-accent: #112240;
-
-  --bg-safe-dark: oklch(0.06 0.02 260);
-  --glow-disabled: 0 0 0 transparent;
+  --accent-highlight: var(--platinum-400);
 }
 
 @layer base {
@@ -298,4 +371,70 @@
   .font-mono {
     font-family: "Geist Mono", Menlo, "Courier New", monospace;
   }
+}
+
+/* ── V2: Gradient utility classes ── */
+.gradient-institutional { background: var(--gradient-institutional); }
+.gradient-teal-veil { background: var(--gradient-teal-veil); }
+.gradient-card-elevate { background: var(--gradient-card-elevate); }
+.gradient-hero-accent { background: var(--gradient-hero-accent); }
+.gradient-steel-horizon { background: var(--gradient-steel-horizon); }
+.gradient-hero { background: var(--gradient-hero-accent); } /* Legacy alias */
+.gradient-sidebar { background: var(--gradient-institutional); } /* Legacy alias */
+.gradient-subtle { background: var(--gradient-card-elevate); } /* Legacy alias */
+
+/* ── V2: Accessibility focus indicators (WCAG 2.1 AA) ── */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-to-content for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+  z-index: 99999;
+  font-weight: 600;
+  transition: top 0.2s;
+}
+.skip-to-content:focus {
+  top: 0.5rem;
+}
+
+/* Custom scrollbar for dark sidebar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth animations — V2: no glow effects (crypto-distancing) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* V2: pulse-subtle — matte, no glow (crypto-distancing) */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }
