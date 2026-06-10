@@ -140,3 +140,37 @@ Stage Summary:
 - Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.4.0
 - Disk: /home/z/my-project/disk/ (clean copy of src/ + dist/ + configs)
 - Preview: https://preview-81.space-z.ai/ (running)
+
+---
+Task ID: v2-brand-system-P1-P4
+Agent: main
+Task: Implement all 4 priority levels of V2 brand system redesign
+
+Work Log:
+- P1-1: Replaced brass gold accent (oklch 0.45 0.12 45 / #B5953C) with Platinum (oklch 0.70 0.02 250 / #94A3B8) across globals.css and index.css
+- P1-2: Added V2 CSS custom properties: Platinum scale (50-950), 5 matte gradient recipes, 85/10/5 ratio tokens, crypto-distancing variables
+- P1-3: Replaced pure black bg (oklch 0.04 0 0 / #0F1117) with navy-tinted #0A0F1C (oklch 0.06 0.02 260) in dark mode
+- P2-1: Applied 5 matte gradients to sidebar (gradient-sidebar), hero (gradient-hero), CTA sections across 16 landing/auth components
+- P2-1: Replaced all hardcoded #00246B hex references with semantic primary tokens across landing page components
+- P2-2: Enforced 85/10/5 color ratio: reduced teal/cyan from 71 Tailwind refs → 3 intentional accent dots in ProtectionScoreCardStarter
+- P2-2: Fixed teal overuse in 30+ components across project-protection, client-protection, landing, pages modules
+- P2-2: Replaced hex teal/cyan (#14b8a6, #06b6d4, #0891b2) with platinum equivalents in Tags, TeamManagement, autoSeed, dialog components
+- P2-3: Crypto-distancing: removed 12 glow effects (shadow-[0_0_...]) from TimelineVisualization, DashboardExpertNew, ProjectRiskTimelinePro, Pipeline
+- P2-3: Replaced pulse-glow animation with pulse-subtle (opacity-based, no glow) in globals.css
+- P2-3: Added --glow-disabled and --bg-safe-dark CSS variables for enforcement
+- P3-1: Built shared V2 component library (8 files): StatCard, EmptyState, PageHeader, ActionButton, TabNav, StatusBadge, ErrorBoundary, index.ts barrel
+- P3-2: Added WCAG 2.1 AA focus indicators (:focus-visible with 2px outline), skip-to-content link, role=alert on ErrorBoundary
+- P3-3: Installed @fontsource/geist-sans + @fontsource/geist-mono, configured as primary font stack in both CSS files
+- P4-1: Citation issues — no external-facing document found in codebase; needs brand guide doc to review separately
+- Built successfully with npx vite build (zero errors)
+- Committed and pushed to GitHub (commit 51f75f8)
+- Created git tag v3.5.0 and pushed to GitHub
+- Backup tarball created: /tmp/AXIA-v3.5.0-v2-brand-system.tar.gz
+- Pushed code to /home/z/my-project/disk/
+
+Stage Summary:
+- All 4 priority levels implemented (P1: 3 tasks, P2: 3 tasks, P3: 3 tasks, P4: noted)
+- 66 files changed (744 insertions, 229 deletions)
+- GitHub: https://github.com/doongarshimamania-lab/AXIA (main branch, tag v3.5.0)
+- Disk: /home/z/my-project/disk/ (clean copy)
+- Build: passing (zero errors)

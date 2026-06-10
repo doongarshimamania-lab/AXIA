@@ -57,7 +57,7 @@ export function HowItWorks() {
                 transition={{ duration: 0.5, delay: index * 0.15 }}
                 className="relative text-center w-1/4 px-4"
               >
-                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-[#00246B] text-white flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
                   {step.number}
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
@@ -82,7 +82,7 @@ export function HowItWorks() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="flex gap-4"
             >
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#00246B] text-white flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
                 {step.number}
               </div>
               <div>

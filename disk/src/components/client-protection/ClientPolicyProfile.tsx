@@ -109,7 +109,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for context-specific protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Starter → $4/mo
         </Button>
       </div>
@@ -184,7 +184,7 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for platform-specific protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Pro → $7/mo
         </Button>
       </div>
@@ -291,7 +291,7 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
         <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">
           Upgrade for business-wide protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Expert → $12/mo
         </Button>
       </div>

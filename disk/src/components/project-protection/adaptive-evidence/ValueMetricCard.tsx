@@ -36,7 +36,7 @@ export function ValueMetricCard({ label, amount, period, description, tier }: Va
 
   const textClass = isExpert ? "text-white" : "text-[#0A192F] dark:text-white";
   const subTextClass = isExpert ? "text-slate-300" : "text-slate-500 dark:text-slate-400";
-  const accentClass = isExpert ? "text-[#FFD700]" : "text-[#0087A6]";
+  const accentClass = isExpert ? "text-[#FFD700]" : "text-primary";
 
   return (
     <motion.div 
@@ -63,7 +63,7 @@ export function ValueMetricCard({ label, amount, period, description, tier }: Va
           <span className="text-lg font-normal opacity-70 ml-1">/{period}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`p-1 rounded-full ${isExpert ? 'bg-[#FFD700]/10' : 'bg-[#0087A6]/10'}`}>
+          <div className={`p-1 rounded-full ${isExpert ? 'bg-[#FFD700]/10' : 'bg-primary/10'}`}}>
             <TrendingUp className={`w-3 h-3 ${accentClass}`} />
           </div>
           <span className={`text-sm ${subTextClass}`}>

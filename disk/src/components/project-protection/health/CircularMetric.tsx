@@ -16,7 +16,7 @@ export function CircularMetric({
   label, 
   unit = "%", 
   size = "md", 
-  color = "#00C9B7",
+  color = "#1e293b",
   tooltip,
   onClick 
 }: CircularMetricProps) {

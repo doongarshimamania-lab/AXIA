@@ -179,7 +179,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar gradient-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
         animate={{ width: isExpanded ? 320 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}

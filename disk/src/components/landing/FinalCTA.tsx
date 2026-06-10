@@ -5,7 +5,7 @@ export function FinalCTA() {
   return (
     <section 
       data-waitlist-section
-      className="py-8 px-6 md:px-10 bg-[#00246B] dark:bg-slate-900 relative overflow-hidden"
+      className="py-8 px-6 md:px-10 gradient-hero relative overflow-hidden"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">

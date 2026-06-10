@@ -39,11 +39,11 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
       )}
 
       {/* Header with gradient */}
-      <div className="relative p-6 border-b border-slate-200 bg-gradient-to-br from-blue-50 via-white to-teal-50">
+      <div className="relative p-6 border-b border-slate-200 bg-gradient-to-br from-blue-50 via-white to-muted/50">
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-teal-600" />
+              <Zap className="w-5 h-5 text-primary" />
               <h3 className="font-bold text-xl text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
                 Work Rhythm Analyzer
               </h3>
@@ -51,7 +51,7 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
             <p className="text-sm text-slate-600 mt-1">14-day pattern detection & optimization</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+            <div className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
               ${valueMetric.amount}
             </div>
             <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
@@ -84,7 +84,7 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
                 label={pillar.name}
                 unit={pillar.unit}
                 size="sm"
-                color={["#00C9B7", "#0087A6", "#00A896"][idx]}
+                color={["#1e293b", "#334155", "#475569"][idx]}
                 tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
               />
             </motion.div>
@@ -108,13 +108,13 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mx-6 mb-6 p-4 rounded-lg bg-gradient-to-br from-teal-50 to-blue-50 border border-teal-200"
+          className="mx-6 mb-6 p-4 rounded-lg bg-gradient-to-br from-muted/50 to-blue-50 border border-border"
         >
           <div className="flex items-start justify-between">
             <div>
               <h5 className="font-medium text-slate-900 mb-1">Work Pattern Insights</h5>
               <p className="text-sm text-slate-600">
-                Peak productivity at <span className="font-semibold text-teal-600">{workPatterns.peakHour}:00</span>
+                Peak productivity at <span className="font-semibold text-primary">{workPatterns.peakHour}:00</span>
               </p>
               {workPatterns.weekendWork > 0 && (
                 <p className="text-xs text-slate-500 mt-1">
@@ -134,7 +134,7 @@ export function DashboardStarter({ data, onUpgrade }: DashboardStarterProps) {
         className="px-6 py-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white"
       >
         <p className="text-center text-slate-900">
-          Optimizing <span className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">${valueMetric.amount}</span>/{valueMetric.cadence} through rhythm analysis
+          Optimizing <span className="font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">${valueMetric.amount}</span>/{valueMetric.cadence} through rhythm analysis
         </p>
       </motion.div>
 

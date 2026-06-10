@@ -32,7 +32,7 @@ export function MilestoneProtectionStarter({
     <Card className="relative overflow-hidden bg-white dark:bg-slate-950 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-md">
       {/* Header with gradient accent */}
       <div className="relative p-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-500"></div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/60 via-primary/40 to-blue-500"></div>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
@@ -42,7 +42,7 @@ export function MilestoneProtectionStarter({
               Basic milestone tracking for 1 client
             </p>
           </div>
-          <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100 border-0">
+          <Badge className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary border-0">
             Starter
           </Badge>
         </div>
@@ -71,7 +71,7 @@ export function MilestoneProtectionStarter({
         {displayMilestones.map((milestone, idx) => (
           <div
             key={idx}
-            className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 transition-colors cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 hover:border-primary/30 dark:hover:border-primary/40 transition-colors cursor-pointer"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">

@@ -134,7 +134,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
 
                 {/* Position Display */}
                 <div className="flex items-center justify-center mb-3">
-                  <div className="bg-[#00246B] px-6 py-3 rounded-lg">
+                  <div className="bg-primary px-6 py-3 rounded-lg">
                     <span className="text-3xl font-bold text-white" style={{ fontFamily: "Space Grotesk" }}>
                       BZ #{position}
                     </span>
@@ -167,7 +167,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                       <span className="text-xs text-slate-600 dark:text-slate-400">
                         {referralCount > 0 ? `${referralCount} joined` : 'Share to start'}
                       </span>
-                      <span className="text-xs font-bold text-[#00246B] dark:text-blue-400">
+                      <span className="text-xs font-bold text-primary dark:text-blue-400">
                         {referralCount}/5
                       </span>
                     </div>
@@ -206,7 +206,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                       <Button
                         onClick={copyToClipboard}
                         size="sm"
-                        className="px-3 py-1.5 bg-[#00246B] hover:bg-[#00246B]/90 text-white text-xs"
+                        className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
                       >
                         {copied ? (
                           <>
@@ -273,7 +273,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                 {referralCount > 0 && (
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 text-center">
-                      <div className="text-2xl font-bold text-[#00246B] dark:text-blue-400" style={{ fontFamily: "Space Grotesk" }}>
+                      <div className="text-2xl font-bold text-primary dark:text-blue-400" style={{ fontFamily: "Space Grotesk" }}>
                         {referralCount}
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-400">

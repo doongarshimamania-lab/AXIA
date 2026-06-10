@@ -4,7 +4,7 @@ import { CheckCircle2, ShieldCheck, TrendingUp } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative pt-4 pb-2 px-6 md:px-10 overflow-hidden bg-[#00246B] dark:bg-slate-900">
+    <section className="relative pt-4 pb-2 px-6 md:px-10 overflow-hidden gradient-hero">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">
         <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white blur-3xl" />

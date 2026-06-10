@@ -192,7 +192,7 @@ function ActivityIcon({ icon }: { icon: string }) {
     alert: <AlertTriangle className="h-4 w-4 text-amber-500" />,
     receipt: <Receipt className="h-4 w-4 text-blue-500" />,
     message: <MessageSquare className="h-4 w-4 text-violet-500" />,
-    activity: <Activity className="h-4 w-4 text-cyan-500" />,
+    activity: <Activity className="h-4 w-4 text-primary" />,
   };
   return (
     <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
@@ -602,7 +602,7 @@ export default function ClientDashboard() {
                       variant="outline"
                       onClick={() => setActiveTab("messages")}
                     >
-                      <MessageSquare className="h-4 w-4 text-cyan-500" />
+                      <MessageSquare className="h-4 w-4 text-primary" />
                       Messages
                     </Button>
                   </CardContent>
