@@ -42,7 +42,7 @@ export function PlatformConnections({
           return (
             <div
               key={platform}
-              className="flex items-center justify-between p-1.5 rounded bg-platinum-800 border border-border-muted"
+              className="flex items-center justify-between p-1.5 rounded bg-muted/50 dark:bg-platinum-800 border border-border-muted"
             >
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <div 
@@ -52,7 +52,7 @@ export function PlatformConnections({
                   {platformLabels[platform][0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-white text-[11px] font-medium truncate">
+                  <div className="text-foreground text-[11px] font-medium truncate">
                     {platformLabels[platform]}
                   </div>
                   {isConnected && connection.lastSyncedAt && (
@@ -67,7 +67,7 @@ export function PlatformConnections({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 px-1 text-[8px] text-white/60 hover:text-white hover:bg-border-muted"
+                    className="h-5 px-1 text-[8px] text-muted-foreground hover:text-foreground hover:bg-border-muted"
                     onClick={() => onDisconnectClick(platform)}
                   >
                     Disconnect

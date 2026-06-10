@@ -470,13 +470,80 @@
 :root:not(.dark) .to-slate-950 { --tw-gradient-to: #FFFFFF !important; }
 :root:not(.dark) .from-slate-800 { --tw-gradient-from: #F1F5F9 !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(241,245,249,0)) !important; }
 
-/* Light mode: Dialog/Tooltip content overrides */
+/* ── Light mode: Platinum scale overrides (bg-platinum-800/900 are dark-only) ── */
+:root:not(.dark) .bg-platinum-900 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-platinum-800 { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-platinum-700 { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-platinum-950 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-platinum-900\/50 { background-color: rgba(255,255,255,0.95) !important; }
+:root:not(.dark) .bg-platinum-800\/50 { background-color: rgba(248,250,252,0.95) !important; }
+
+/* ── Light mode: Teal scale overrides (bg-axia-teal-950/900/800 are dark-only) ── */
+:root:not(.dark) .bg-axia-teal-950 { background-color: #F0FDFA !important; }
+:root:not(.dark) .bg-axia-teal-900 { background-color: #CCFBF1 !important; }
+:root:not(.dark) .bg-axia-teal-800 { background-color: #99F6E4 !important; }
+:root:not(.dark) .bg-axia-teal-950\/30 { background-color: rgba(240,253,250,0.6) !important; }
+:root:not(.dark) .bg-axia-teal-900\/50 { background-color: rgba(204,251,241,0.5) !important; }
+:root:not(.dark) .border-axia-teal-900\/50 { border-color: rgba(13,148,136,0.15) !important; }
+:root:not(.dark) .border-axia-teal-900\/30 { border-color: rgba(13,148,136,0.1) !important; }
+
+/* ── Light mode: bg-slate-700 (dark-only) ── */
+:root:not(.dark) .bg-slate-700 { background-color: #E2E8F0 !important; }
+:root:not(.dark) .bg-slate-700\/50 { background-color: rgba(226,232,240,0.5) !important; }
+:root:not(.dark) .border-slate-600 { border-color: #CBD5E1 !important; }
+
+/* ── Light mode: text-blue-100/200 (light blue — invisible on white) ── */
+:root:not(.dark) .text-blue-100 { color: #1E40AF !important; }
+:root:not(.dark) .text-blue-200 { color: #1D4ED8 !important; }
+:root:not(.dark) .text-blue-200\/60 { color: rgba(29,78,216,0.6) !important; }
+:root:not(.dark) .text-blue-200\/80 { color: rgba(29,78,216,0.8) !important; }
+:root:not(.dark) .text-blue-300 { color: #2563EB !important; }
+:root:not(.dark) .text-blue-400 { color: #3B82F6 !important; }
+
+/* ── Light mode: text-red-400 (low contrast on light) ── */
+:root:not(.dark) .text-red-400 { color: #DC2626 !important; }
+
+/* ── Light mode: text-white/80 and text-white/60 on non-accent surfaces ── */
+:root:not(.dark) .text-white\/80:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.8) !important; }
+:root:not(.dark) .text-white\/60:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.6) !important; }
+:root:not(.dark) .text-white\/90:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.9) !important; }
+
+/* ── Light mode: bg-white/20 on non-accent (translucent white = invisible on light bg) ── */
+:root:not(.dark) .bg-white\/20:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .bg-white\/30:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.1) !important; }
+
+/* ── Light mode: border-white/30 (translucent white border = invisible on light) ── */
+:root:not(.dark) .border-white\/30 { border-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .border-white\/15 { border-color: rgba(0,0,0,0.06) !important; }
+
+/* ── Light mode: Hardcoded hex backgrounds ── */
+:root:not(.dark) .bg-\[\#0A0F1C\] { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-\[\#0C1322\] { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-\[\#111827\] { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-\[\#1A2035\] { background-color: #E2E8F0 !important; }
+:root:not(.dark) .bg-\[\#1E293B\] { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-\[\#0F172A\] { background-color: #F8FAFC !important; }
+
+/* ── Light mode: TooltipContent overrides ── */
 :root:not(.dark) [data-radix-popper-content-wrapper] > div,
 :root:not(.dark) [role="dialog"] > div {
   background-color: #FFFFFF !important;
   color: #1E293B !important;
   border-color: #E2E8F0 !important;
 }
+
+/* ── Light mode: bg-slate-900 tooltips (used in ProtectionScoreCard Free/Starter) ── */
+:root:not(.dark) .bg-slate-900.text-white,
+:root:not(.dark) .bg-slate-800.text-white {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* ── Light mode: hover:white on buttons ── */
+:root:not(.dark) .hover\:bg-white\/20:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .hover\:bg-white\/30:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .hover\:text-white\/60:hover { color: rgba(30,41,59,0.6) !important; }
 
 @layer base {
   * {

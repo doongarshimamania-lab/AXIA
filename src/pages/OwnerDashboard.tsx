@@ -865,7 +865,7 @@ function ConvexLogsSection() {
                     {log.env.toUpperCase()}
                   </Badge>
                 )}
-                <span className="text-slate-200 break-all">{log.message}</span>
+                <span className="text-foreground dark:text-slate-200 break-all">{log.message}</span>
               </div>
             ))
           )}

@@ -57,7 +57,7 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
 
       {/* Business Map Visualization */}
       <div className="relative z-10 p-6">
-        <div className="relative h-64 bg-platinum-900 rounded-xl border border-slate-300 dark:border-slate-700 p-4 overflow-hidden">
+        <div className="relative h-64 bg-muted/50 dark:bg-platinum-900 rounded-xl border border-slate-300 dark:border-slate-700 p-4 overflow-hidden">
           <div className="absolute top-4 left-4 z-20">
             <div className="text-xs font-bold text-premium uppercase mb-1">Strategic Recommendations</div>
             <div className="flex flex-col gap-2">

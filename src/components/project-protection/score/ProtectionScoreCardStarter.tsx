@@ -96,7 +96,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                       <TooltipTrigger>
                         <Info className="w-3 h-3 text-slate-400" />
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                      <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                         <p className="text-xs">Shows how your evidence matches specific client requirements</p>
                       </TooltipContent>
                     </Tooltip>
@@ -141,7 +141,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                           <span className="text-[10px] text-slate-400 text-center">{entry.time}</span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 text-white">
+                      <TooltipContent className="bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                         <p className="text-xs">Status: {entry.status}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -184,7 +184,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         <div className="mt-2 text-xs font-bold text-primary dark:text-primary/80">Score: {pillar.score}</div>
                       </motion.button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -223,7 +223,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         <div className="mt-2 text-xs font-bold text-primary dark:text-primary/80">Score: {pillar.score}</div>
                       </motion.button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
                   </Tooltip>

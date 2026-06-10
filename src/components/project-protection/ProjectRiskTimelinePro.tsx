@@ -88,12 +88,12 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10 hover:bg-white/10 transition-colors"
+            className="bg-muted/50 dark:bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/10 transition-colors"
           >
             <div className="flex justify-between items-start mb-2">
               <Activity className="w-4 h-4 text-primary" />
             </div>
-            <div className="text-lg font-bold text-white mb-1">{pillar.displayValue}</div>
+            <div className="text-lg font-bold text-foreground mb-1">{pillar.displayValue}</div>
             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">{pillar.label}</div>
           </motion.div>
         ))}
@@ -108,7 +108,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
           </div>
         )}
 
-        <div className="relative h-64 bg-platinum-900 rounded-xl border border-slate-700 p-6 overflow-hidden">
+        <div className="relative h-64 bg-muted/50 dark:bg-platinum-900 rounded-xl border border-border dark:border-slate-700 p-6 overflow-hidden">
           {/* Grid Background for Depth */}
           <div className="absolute inset-0 opacity-20">
             <svg className="w-full h-full">
@@ -122,7 +122,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
           </div>
 
           {/* Timeline Labels */}
-          <div className="absolute top-4 left-6 right-6 flex justify-between text-xs text-slate-300 font-mono z-10 font-bold tracking-wider">
+          <div className="absolute top-4 left-6 right-6 flex justify-between text-xs text-muted-foreground dark:text-slate-300 font-mono z-10 font-bold tracking-wider">
             <span>30 DAYS AGO</span>
             <span>15 DAYS AGO</span>
             <span>TODAY</span>
@@ -225,7 +225,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-8 w-56 bg-platinum-800 border border-slate-600 rounded-lg shadow-2xl p-3 pointer-events-none z-50"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-8 w-56 bg-card border-border dark:bg-platinum-800 dark:border-slate-600 rounded-lg shadow-2xl p-3 pointer-events-none z-50"
                       style={{ transform: 'translateZ(100px)' }} // Lift tooltip above 3D elements
                     >
                       <div className="flex items-start gap-2 mb-2">
@@ -233,7 +233,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                           event.riskLevel === 'high' || event.riskLevel === 'critical' ? 'text-danger' : 'text-warning'
                         }`} />
                         <div className="flex-1">
-                          <div className="text-xs font-bold text-white mb-1">{event.description}</div>
+                          <div className="text-xs font-bold text-foreground mb-1">{event.description}</div>
                           <div className="text-[10px] text-slate-400">
                             {new Date(event.timestamp).toLocaleDateString()} at {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
@@ -288,9 +288,9 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
 
       {/* Upgrade Prompt */}
       {upgradePrompt && (
-        <div className="relative z-10 p-6 border-t border-slate-700/50 bg-white/5">
+        <div className="relative z-10 p-6 border-t border-border bg-muted/50 dark:bg-white/5">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium text-white">Protect your entire business</div>
+            <div className="text-sm font-medium text-foreground">Protect your entire business</div>
             <div className="text-sm font-bold text-premium">{upgradePrompt.message}</div>
           </div>
           <Button 
