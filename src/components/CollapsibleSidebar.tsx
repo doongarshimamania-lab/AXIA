@@ -179,7 +179,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar gradient-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar gradient-teal-veil border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
         animate={{ width: isExpanded ? 320 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -556,11 +556,11 @@ function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
     <div
       className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
         isActive
-          ? "bg-primary/20 text-primary"
-          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          ? "accent-tint text-axia-teal-600 dark:text-axia-teal-400"
+          : "text-platinum-400 dark:text-platinum-500 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-axia-teal-600 dark:text-axia-teal-400" : ""}`} />
       {isExpanded && (
         <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
           {label}

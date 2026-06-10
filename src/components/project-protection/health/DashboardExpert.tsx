@@ -14,10 +14,10 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
   const darkPsychology = data.darkPsychology || {};
 
   return (
-    <Card className="relative overflow-hidden bg-white rounded-2xl border border-slate-500 shadow-xl">
+    <Card className="relative overflow-hidden bg-white dark:bg-card rounded-2xl border border-slate-500 dark:border-border shadow-xl gradient-card-elevate">
       {/* Authority Banner */}
       {darkPsychology.authority && (
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-3">
+        <div className="bg-gradient-to-r from-slate-800 to-platinum-900 px-6 py-3">
           <p className="text-sm text-white font-medium text-center">{darkPsychology.authority}</p>
         </div>
       )}
@@ -31,13 +31,13 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
           <p className="text-sm text-slate-600 mt-1">Enterprise-level timeline protection</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="text-2xl font-bold text-primary">${valueMetric.amount}</div>
+          <div className="text-2xl font-bold text-axia-teal-600 dark:text-axia-teal-400">${valueMetric.amount}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
         </div>
       </div>
 
       {/* Circular Metrics Grid */}
-      <div className="p-6 bg-gradient-to-b from-page-bg-from to-page-bg-to">
+      <div className="p-6 gradient-institutional">
         <div className="grid grid-cols-4 gap-4">
           {pillars.map((pillar: any, idx: number) => (
             <CircularMetric
@@ -46,7 +46,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
               label={pillar.name}
               unit={pillar.unit}
               size="sm"
-              color={["var(--platinum-800)", "var(--platinum-700)", "#475569", "var(--premium)"][idx]}
+              color={["var(--axia-teal-700)", "var(--axia-teal-600)", "var(--platinum-600)", "var(--premium)"][idx]}
               tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
             />
           ))}
@@ -56,16 +56,16 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Strategic Recommendations */}
       {strategicRecommendations.length > 0 && (
         <div className="px-6 pb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="accent-tint border border-axia-teal-200 dark:border-axia-teal-800 rounded-lg p-4">
             <div className="flex items-start gap-2">
-              <Zap className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Zap className="w-5 h-5 text-axia-teal-600 dark:text-axia-teal-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h5 className="font-medium text-blue-900 mb-2">Strategic Recommendations</h5>
+                <h5 className="font-medium text-axia-teal-900 dark:text-axia-teal-100 mb-2">Strategic Recommendations</h5>
                 <ul className="space-y-2">
                   {strategicRecommendations.map((rec: string, idx: number) => (
                     <motion.li
                       key={idx}
-                      className="text-sm text-blue-800"
+                      className="text-sm text-axia-teal-800 dark:text-axia-teal-200"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.1 }}
@@ -83,7 +83,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Social Proof */}
       {darkPsychology.socialProof && (
         <div className="px-6 pb-6">
-          <div className="bg-gradient-to-r from-muted/50 to-blue-50 rounded-lg p-4 border border-border">
+          <div className="bg-gradient-to-r from-muted/50 to-accent-tint rounded-lg p-4 border border-border">
             <p className="text-sm text-center text-slate-900 font-medium">{darkPsychology.socialProof}</p>
           </div>
         </div>
@@ -92,14 +92,14 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Value Statement */}
       <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
         <p className="text-center text-slate-900">
-          You're protecting <span className="font-bold text-primary">${valueMetric.amount}</span>/{valueMetric.cadence} across all projects through business-wide timeline protection
+          You're protecting <span className="font-bold text-axia-teal-600 dark:text-axia-teal-400">${valueMetric.amount}</span>/{valueMetric.cadence} across all projects through business-wide timeline protection
         </p>
       </div>
 
       {/* Top Tier Badge */}
-      <div className="p-6 border-t border-slate-200 bg-gradient-to-r from-muted/50 to-blue-50">
+      <div className="p-6 border-t border-slate-200 dark:border-border bg-gradient-to-r from-muted/50 to-accent-tint">
         <div className="text-center">
-          <TrendingUp className="w-8 h-8 text-primary mx-auto mb-2" />
+          <TrendingUp className="w-8 h-8 text-axia-teal-600 dark:text-axia-teal-400 mx-auto mb-2" />
           <p className="font-medium text-slate-900">Top-tier protection active</p>
           <p className="text-sm text-slate-600 mt-1">You have access to all enterprise features</p>
         </div>

@@ -86,7 +86,7 @@ function EmptyState({
       </div>
       <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
       <p className="text-xs text-muted-foreground mb-4 max-w-[240px]">{description}</p>
-      <Button size="sm" onClick={onAction}>
+      <Button size="sm" className="bg-axia-teal-600 hover:bg-axia-teal-500 text-white" onClick={onAction}>
         <Plus className="mr-1 h-3 w-3" />
         {actionLabel}
       </Button>
@@ -109,7 +109,7 @@ function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddCli
           Your dashboard is empty. Seed demo data to see how everything works, or start adding clients, deals, and proposals.
         </p>
         <div className="flex gap-3">
-          <Button onClick={onSeed}>
+          <Button className="bg-axia-teal-600 hover:bg-axia-teal-500" onClick={onSeed}>
             <Sparkles className="mr-2 h-4 w-4" />
             Seed Demo Data
           </Button>
@@ -143,19 +143,19 @@ function statusColor(status: string): "default" | "secondary" | "destructive" | 
 
 function statusIcon(type: string, status: string) {
   if (type === "deal") {
-    if (status === "won") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-    if (status === "lost") return <AlertCircle className="h-4 w-4 text-red-500" />;
-    return <TrendingUp className="h-4 w-4 text-blue-500" />;
+    if (status === "won") return <CheckCircle2 className="h-4 w-4 text-protected" />;
+    if (status === "lost") return <AlertCircle className="h-4 w-4 text-danger" />;
+    return <TrendingUp className="h-4 w-4 text-axia-teal-500" />;
   }
   if (type === "proposal") {
-    if (status === "signed") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-    if (status === "sent" || status === "viewed") return <Send className="h-4 w-4 text-blue-500" />;
+    if (status === "signed") return <CheckCircle2 className="h-4 w-4 text-protected" />;
+    if (status === "sent" || status === "viewed") return <Send className="h-4 w-4 text-axia-teal-500" />;
     return <FileText className="h-4 w-4 text-muted-foreground" />;
   }
   // invoice
-  if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (status === "overdue") return <AlertCircle className="h-4 w-4 text-red-500" />;
-  return <DollarSign className="h-4 w-4 text-amber-500" />;
+  if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-protected" />;
+  if (status === "overdue") return <AlertCircle className="h-4 w-4 text-danger" />;
+  return <DollarSign className="h-4 w-4 text-warning" />;
 }
 
 // ─── Format currency ─────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ export default function Dashboard() {
 
   return (
     <motion.div
-      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+      className="flex-1 min-h-screen gradient-institutional text-foreground transition-colors"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -349,7 +349,7 @@ export default function Dashboard() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">Clients</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-[24px] font-bold text-foreground">{totalClients}</div>
@@ -363,7 +363,7 @@ export default function Dashboard() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">Active Deals</CardTitle>
-                  <LayoutList className="h-4 w-4 text-muted-foreground" />
+                  <LayoutList className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-[24px] font-bold text-foreground">{totalDeals}</div>
@@ -377,10 +377,10 @@ export default function Dashboard() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">Pipeline Value</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-[24px] font-bold text-foreground">{fmtCurrency(weightedValue)}</div>
+                  <div className="text-[24px] font-bold text-axia-teal-500 dark:text-axia-teal-400">{fmtCurrency(weightedValue)}</div>
                   <p className="text-[12px] text-muted-foreground">
                     Weighted · {fmtCurrency(pipelineValue)} total
                   </p>
@@ -391,10 +391,10 @@ export default function Dashboard() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">Proposals</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <FileText className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-[24px] font-bold text-foreground">{proposalTotal}</div>
+                  <div className="text-[24px] font-bold text-axia-teal-500 dark:text-axia-teal-400">{proposalTotal}</div>
                   <p className="text-[12px] text-muted-foreground">
                     {proposalTotal === 0
                       ? "Create your first proposal"
@@ -407,10 +407,10 @@ export default function Dashboard() {
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">Invoices</CardTitle>
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
+                  <Receipt className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-[24px] font-bold text-foreground">{invoiceTotal}</div>
+                  <div className="text-[24px] font-bold text-axia-teal-500 dark:text-axia-teal-400">{invoiceTotal}</div>
                   <p className="text-[12px] text-muted-foreground">
                     {invoiceTotal === 0
                       ? "Create your first invoice"
@@ -425,10 +425,10 @@ export default function Dashboard() {
                   <CardTitle className="text-[14px] font-medium text-muted-foreground">
                     {invoiceOutstanding > 0 ? "Outstanding" : "Revenue"}
                   </CardTitle>
-                  <Ruler className="h-4 w-4 text-muted-foreground" />
+                  <Ruler className="h-4 w-4 text-axia-teal-600 dark:text-axia-teal-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-[24px] font-bold text-foreground">
+                  <div className="text-[24px] font-bold text-axia-teal-500 dark:text-axia-teal-400">
                     {fmtCurrency(invoiceOutstanding > 0 ? invoiceOutstanding : invoiceRevenue)}
                   </div>
                   <p className="text-[12px] text-muted-foreground">
@@ -608,7 +608,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">Close Rate</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(proposalTotalValue)}</p>
+                      <p className="text-lg font-bold text-protected">{fmtCurrency(proposalTotalValue)}</p>
                       <p className="text-xs text-muted-foreground">Signed Value</p>
                     </div>
                   </div>
@@ -625,7 +625,7 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(invoiceRevenue)}</p>
+                      <p className="text-lg font-bold text-protected">{fmtCurrency(invoiceRevenue)}</p>
                       <p className="text-xs text-muted-foreground">Collected</p>
                     </div>
                     <div>

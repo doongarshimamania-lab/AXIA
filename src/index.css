@@ -1,9 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/600.css";
-@import "@fontsource/space-grotesk/700.css";
 @import "@fontsource/geist-sans/400.css";
 @import "@fontsource/geist-sans/500.css";
 @import "@fontsource/geist-sans/600.css";
@@ -22,7 +18,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist Sans", "Space Grotesk", system-ui, sans-serif;
+  --font-sans: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -97,7 +93,7 @@
   --color-surface-card: var(--card);
   --color-surface-elevated: var(--bg-surface-3);
 
-  /* ── Stage / Pipeline Colors ── */
+  /* ── Stage / Pipeline Colors (V2 Section 9 compliant — no indigo/purple) ── */
   --color-stage-lead: var(--stage-lead);
   --color-stage-qualified: var(--stage-qualified);
   --color-stage-proposal: var(--stage-proposal);
@@ -105,8 +101,7 @@
   --color-stage-won: var(--stage-won);
   --color-stage-lost: var(--stage-lost);
 
-  /* ── Extended Semantic ── */
-  --color-indigo: var(--indigo);
+  /* ── Extended Semantic (indigo REMOVED — forbidden per V2 Section 9) ── */
   --color-border-muted: var(--border-muted);
   --color-icon-blue: var(--icon-blue);
   --color-page-bg-from: var(--page-bg-from);
@@ -134,6 +129,26 @@
   --border-default: rgba(255,255,255,0.08);  /* Visible */
   --border-strong: rgba(255,255,255,0.12);   /* Focus, active, hover */
 
+  /* Spacing Tokens (PDF Section 4.1) */
+  --space-1: 4px;    /* Micro gaps: icon-to-label */
+  --space-2: 8px;    /* Small: button padding */
+  --space-3: 12px;   /* Medium: card internal padding */
+  --space-4: 16px;   /* Large: card padding */
+  --space-5: 24px;   /* Extra: section gaps */
+  --space-6: 32px;   /* 2X: major section breaks */
+  --space-7: 48px;   /* 3X: page-level spacing */
+
+  /* Type Scale (PDF Section 3.4) */
+  --text-xs: 12px;       /* Captions, timestamps, badges */
+  --text-sm: 14px;       /* Labels, secondary text */
+  --text-base: 16px;     /* Body text */
+  --text-lg: 18px;       /* Card titles */
+  --text-xl: 20px;       /* Section headings */
+  --text-2xl: 24px;      /* Page subtitles */
+  --text-3xl: 30px;      /* Page titles (H1) */
+  --text-4xl: 36px;      /* Hero stats, dashboard metrics */
+  --text-display: 48px;  /* Marketing hero headings only */
+
   /* Text System (PDF Section 4.3) */
   --text-primary: #F1F5F9;      /* Body text — never pure #FFFFFF */
   --text-secondary: #94A3B8;    /* Labels, descriptions */
@@ -148,8 +163,8 @@
   --popover: #FFFFFF;
   --popover-foreground: #1E293B;
 
-  /* Primary: Deep navy for shadcn compatibility */
-  --primary: #00246B;
+  /* Primary: Teal is brand primary even in light mode per PDF */
+  --primary: #0D9488;
   --primary-foreground: #F1F5F9;
 
   --secondary: #F1F5F9;
@@ -160,6 +175,12 @@
   /* Accent → Teal brand (PDF: --accent-primary) */
   --accent: #0D9488;
   --accent-foreground: #F1F5F9;
+
+  /* V2 Accent Tokens (PDF Section 11) */
+  --accent-primary: var(--axia-teal-600);
+  --accent-hover: var(--axia-teal-500);
+  --accent-muted: rgba(13,148,136,0.15);
+  --accent-secondary: var(--platinum-400);
 
   --destructive: #EF4444;
   --border: #E2E8F0;
@@ -232,16 +253,15 @@
   --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
   --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
 
-  /* Stage / Pipeline Colors */
-  --stage-lead: #6366F1;
-  --stage-qualified: #8B5CF6;
-  --stage-proposal: #A855F7;
-  --stage-negotiation: #C084FC;
-  --stage-won: #22C55E;
-  --stage-lost: #EF4444;
+  /* Stage / Pipeline Colors (V2 Section 9 — indigo/purple FORBIDDEN) */
+  --stage-lead: #0D9488;         /* Teal-600: brand primary */
+  --stage-qualified: #0F766E;    /* Teal-700: deeper engagement */
+  --stage-proposal: #475993;     /* Steel blue: formal stage */
+  --stage-negotiation: #94A3B8;  /* Platinum: secondary accent */
+  --stage-won: #10B981;          /* Emerald: "protected" signal per PDF */
+  --stage-lost: #EF4444;         /* Red: danger (correct) */
 
-  /* Extended semantic */
-  --indigo: #4F46E5;
+  /* Extended semantic (indigo REMOVED — forbidden per V2 Section 9) */
   --border-muted: #374151;
   --icon-blue: #60A5FA;
   --page-bg-from: #F0F9FF;
@@ -335,16 +355,15 @@
   --chart-primary: #475993;
   --chart-frost: #7DD3FC;
 
-  /* Stage colors — brighter for dark */
-  --stage-lead: #818CF8;
-  --stage-qualified: #A78BFA;
-  --stage-proposal: #C084FC;
-  --stage-negotiation: #D8B4FE;
-  --stage-won: #4ADE80;
-  --stage-lost: #F87171;
+  /* Stage colors — brighter for dark (V2 Section 9 compliant — no indigo/purple) */
+  --stage-lead: #14B8A6;         /* Teal-500 brighter */
+  --stage-qualified: #2DD4BF;    /* Teal-400 brighter */
+  --stage-proposal: #7DD3FC;     /* Frost brighter */
+  --stage-negotiation: #CBD5E1;  /* Platinum-300 brighter */
+  --stage-won: #34D399;          /* Emerald-400 brighter */
+  --stage-lost: #F87171;         /* Red: danger (correct) */
 
-  /* Extended semantic */
-  --indigo: #6366F1;
+  /* Extended semantic (indigo REMOVED — forbidden per V2 Section 9) */
   --border-muted: #4B5563;
   --icon-blue: #93C5FD;
   --page-bg-from: #0A0F1C;
@@ -353,17 +372,38 @@
   --accent-highlight: var(--platinum-400);
 }
 
+/* ── V2: Light Mode Override (PDF Section 11) ── */
+[data-theme="light"] {
+  --bg-page: #F8FAFC;
+  --bg-surface-1: #FFFFFF;
+  --bg-surface-2: #F1F5F9;
+  --bg-surface-3: #E2E8F0;
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #94A3B8;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #F1F5F9;
+  --accent-primary: var(--axia-teal-500);
+  --accent-hover: var(--axia-teal-400);
+  --accent-secondary: var(--platinum-500);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
     letter-spacing: -0.01em;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600; /* SemiBold max per PDF Section 3.5 — no 700+ */
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: "Geist Sans", "Space Grotesk", system-ui, sans-serif;
+    font-family: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   .font-sans {
-    font-family: "Geist Sans", "Space Grotesk", system-ui, sans-serif;
+    font-family: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   .font-serif {
     font-family: Georgia, Georgia, serif;
@@ -382,6 +422,10 @@
 .gradient-hero { background: var(--gradient-hero-accent); } /* Legacy alias */
 .gradient-sidebar { background: var(--gradient-institutional); } /* Legacy alias */
 .gradient-subtle { background: var(--gradient-card-elevate); } /* Legacy alias */
+
+/* ── V2: Accent tint utility classes (PDF Section 11) ── */
+.accent-tint { background: rgba(13,148,136,0.15); }
+.accent-tint-subtle { background: rgba(13,148,136,0.08); }
 
 /* ── V2: Accessibility focus indicators (WCAG 2.1 AA) ── */
 :focus-visible {
@@ -415,6 +459,24 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* V2 Motion System (PDF Section 6) */
+.transition-v2-hover { transition: all 150ms ease-out; }
+.transition-v2-page { transition: all 200ms ease-in-out; }
+.transition-v2-modal { transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.transition-v2-sidebar { transition: all 300ms ease-in-out; }
+.transition-v2-toast { transition: all 300ms ease-out; }
+
+/* V2 Crypto-Distancing Rules */
+/* Forbidden: neon glow, saturated green on pure black, glowing effects */
+.no-glow {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+/* Safe dark: warm-tinted navy, never pure black */
+.bg-safe-dark {
+  background-color: #0A0F1C; /* Navy-tinted, not #000000 */
 }
 
 /* Smooth animations — V2: no glow effects (crypto-distancing) */

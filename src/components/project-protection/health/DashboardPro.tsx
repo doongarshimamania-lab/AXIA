@@ -18,11 +18,11 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
   const darkPsychology = data.darkPsychology || {};
 
   return (
-    <Card className="relative overflow-hidden bg-white rounded-2xl border border-slate-400 shadow-lg">
+    <Card className="relative overflow-hidden bg-white dark:bg-card rounded-2xl border border-slate-400 dark:border-border shadow-lg gradient-card-elevate">
       {/* Social Proof Banner */}
       {darkPsychology.socialProof && (
-        <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
-          <p className="text-sm text-blue-900 font-medium text-center">{darkPsychology.socialProof}</p>
+        <div className="accent-tint border-b border-axia-teal-200 dark:border-axia-teal-800 px-6 py-3">
+          <p className="text-sm text-axia-teal-900 dark:text-axia-teal-100 font-medium text-center">{darkPsychology.socialProof}</p>
         </div>
       )}
 
@@ -35,13 +35,13 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
           <p className="text-sm text-slate-600 mt-1">Advanced vulnerability detection</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="text-2xl font-bold text-primary">${valueMetric.amount}</div>
+          <div className="text-2xl font-bold text-axia-teal-600 dark:text-axia-teal-400">${valueMetric.amount}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
         </div>
       </div>
 
       {/* Circular Metrics Grid */}
-      <div className="p-6 bg-gradient-to-b from-page-bg-from to-page-bg-to">
+      <div className="p-6 gradient-institutional">
         <div className="grid grid-cols-4 gap-4">
           {pillars.map((pillar: any, idx: number) => (
             <CircularMetric
@@ -50,7 +50,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
               label={pillar.name}
               unit={pillar.unit}
               size="sm"
-              color={["var(--platinum-800)", "var(--platinum-700)", "#475569", "#64748b"][idx]}
+              color={["var(--axia-teal-700)", "var(--axia-teal-600)", "var(--platinum-600)", "var(--platinum-500)"][idx]}
               tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
             />
           ))}
@@ -62,7 +62,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
         <div className="px-6 pb-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-2">
-              <Shield className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <Shield className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h5 className="font-medium text-red-900 mb-2">Vulnerability Hotspots</h5>
                 <div className="space-y-2">
@@ -91,7 +91,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
       {/* Value Statement */}
       <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
         <p className="text-center text-slate-900">
-          You're preventing <span className="font-bold text-primary">${valueMetric.amount}</span>/{valueMetric.cadence} in timeline-related payment denials
+          You're preventing <span className="font-bold text-axia-teal-600 dark:text-axia-teal-400">${valueMetric.amount}</span>/{valueMetric.cadence} in timeline-related payment denials
         </p>
       </div>
 

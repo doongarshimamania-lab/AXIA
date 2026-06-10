@@ -110,8 +110,8 @@ function MembersSkeleton() {
 
 // ─── Team Color Options ──────────────────────────────────────
 const TEAM_COLORS = [
-  "hsl(var(--primary))", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
-  "#EC4899", "#6366F1", "#64748B", "#F97316", "#475569",
+  "hsl(var(--primary))", "#0D9488", "#10B981", "#F59E0B", "#EF4444",
+  "#475993", "#14B8A6", "#94A3B8", "#7DD3FC", "#475569",
 ];
 
 export default function TeamManagement() {
