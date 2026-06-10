@@ -20,7 +20,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
              initial={{ width: "0%" }}
              animate={{ width: "60%" }}
              transition={{ duration: 1.5, ease: "easeInOut" }}
-             className="h-full bg-gradient-to-r from-blue-500 to-teal-400"
+             className="h-full bg-gradient-to-r from-blue-500 to-primary/60"
            />
         </div>
 
@@ -37,7 +37,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                 step <= 2 
                   ? "bg-[#0A192F] text-white border-[#0A192F] scale-110 shadow-md" 
                   : step === 3
-                    ? "bg-white dark:bg-slate-800 text-teal-600 border-teal-500 animate-pulse"
+                    ? "bg-white dark:bg-slate-800 text-primary border-primary/50 animate-pulse"
                     : "bg-white dark:bg-slate-950 text-slate-300 border-slate-200 dark:border-slate-800"
               } group-hover/step:scale-110`}>
                 {step}
@@ -68,14 +68,14 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
           
           {/* Scanning Line Animation */}
           <motion.div 
-            className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-teal-400 to-transparent z-0 opacity-50"
+            className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-primary/40 to-transparent z-0 opacity-50"
             animate={{ left: ["0%", "100%"] }}
             transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
           />
           
           <div className="flex justify-between items-center mb-8 relative z-10">
             <h4 className="text-white/90 text-sm font-medium flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"/>
+              <span className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"/>
               Evidence Gap Analysis
             </h4>
             <div className="text-[10px] text-slate-400 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-700">
@@ -95,8 +95,8 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                     transition={{ delay: i * 0.15, type: "spring" }}
                     whileHover={{ scaleY: 1.2, zIndex: 20 }}
                     className={`absolute h-12 w-1.5 rounded-full cursor-pointer transition-all duration-300 ${
-                      segment.riskLevel === 'high' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
-                      segment.riskLevel === 'medium' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.5)]'
+                      segment.riskLevel === 'high' ? 'bg-red-500 shadow-sm' : 
+                      segment.riskLevel === 'medium' ? 'bg-amber-500 shadow-sm' : 'bg-primary shadow-sm'
                     }`}
                     style={{ left: `${segment.start}%`, height: `${40 + (Math.random() * 40)}px` }}
                   />
@@ -105,7 +105,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                   <div className="text-xs font-bold mb-1">{segment.label}</div>
                   <div className="text-[10px] text-slate-400">Gap Risk: <span className={
                     segment.riskLevel === 'high' ? 'text-red-400' : 
-                    segment.riskLevel === 'medium' ? 'text-amber-400' : 'text-teal-400'
+                    segment.riskLevel === 'medium' ? 'text-amber-400' : 'text-primary'
                   }>{segment.riskLevel.toUpperCase()}</span></div>
                 </TooltipContent>
               </Tooltip>
@@ -154,7 +154,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
         
         <div className="flex justify-between items-center p-6 pb-2 relative z-10 shrink-0">
           <h4 className="text-white/90 text-sm font-medium flex items-center gap-2">
-            <Info className="w-4 h-4 text-teal-400" />
+            <Info className="w-4 h-4 text-primary/60" />
             Business Evidence Map
           </h4>
           <div className="flex gap-2">
@@ -205,8 +205,8 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
               transition={{ delay: i * 0.2, type: "spring", stiffness: 200 }}
               whileHover={{ scale: 1.15 }}
               className={`absolute w-20 h-20 rounded-full border-2 flex flex-col items-center justify-center cursor-pointer backdrop-blur-md shadow-lg group/node ${
-                node.status === 'protected' ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' :
-                node.status === 'optimized' ? 'border-amber-500/50 bg-amber-950/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]' :
+                node.status === 'protected' ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-400 shadow-sm' :
+                node.status === 'optimized' ? 'border-amber-500/50 bg-amber-950/40 text-amber-400 shadow-sm' :
                 'border-slate-500/50 bg-slate-900/40 text-slate-400'
               }`}
               style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}

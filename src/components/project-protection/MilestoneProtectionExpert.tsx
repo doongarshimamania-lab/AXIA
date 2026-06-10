@@ -288,7 +288,7 @@ export function MilestoneProtectionExpert({
                 ? "bg-gradient-to-br from-red-900/40 to-pink-900/40 border-red-800/30"
                 : predictions.riskLevel === "medium"
                 ? "bg-gradient-to-br from-amber-900/40 to-orange-900/40 border-amber-800/30"
-                : "bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-800/30"
+                : "bg-gradient-to-br from-emerald-900/40 to-primary/20 border-emerald-800/30"
             }`}>
               <div className="text-xs text-slate-300 mb-1">Risk Level</div>
               <div className="text-2xl font-bold text-white mb-2 capitalize">
@@ -349,7 +349,7 @@ export function MilestoneProtectionExpert({
               <div className="text-2xl font-bold text-white">{predictions.analytics.avgProtection}%</div>
               <div className="text-xs text-blue-400 mt-1">Last 4 weeks</div>
             </div>
-            <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 rounded-lg p-3 border border-emerald-800/30">
+            <div className="bg-gradient-to-br from-emerald-900/40 to-primary/20 rounded-lg p-3 border border-emerald-800/30">
               <div className="text-xs text-emerald-300 mb-1">Consistency Score</div>
               <div className="text-2xl font-bold text-white">{predictions.analytics.consistency}%</div>
               <div className="text-xs text-emerald-400 mt-1">Protection stability</div>
@@ -444,7 +444,7 @@ export function MilestoneProtectionExpert({
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 rounded-lg p-3 border border-emerald-800/30">
+            <div className="bg-gradient-to-br from-emerald-900/40 to-primary/20 rounded-lg p-3 border border-emerald-800/30">
               <div className="text-xs text-emerald-300 mb-1">Evidence Items</div>
               <div className="text-2xl font-bold text-white mb-1">
                 {latestReport.metrics.totalEvidence}
@@ -589,7 +589,7 @@ export function MilestoneProtectionExpert({
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   {milestone.status === "protected" ? (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-primary/60 flex items-center justify-center shadow-lg">
                       <CheckCircle2 className="w-6 h-6 text-white" />
                     </div>
                   ) : milestone.status === "at_risk" ? (
@@ -753,7 +753,7 @@ export function MilestoneProtectionExpert({
       </div>
 
       {/* Success Message */}
-      <div className="p-6 bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-t border-slate-700">
+      <div className="p-6 bg-gradient-to-r from-emerald-900/30 to-primary/20 border-t border-slate-700">
         <div className="text-center">
           <div className="text-emerald-400 font-bold text-lg mb-1">
             🎯 Maximum Protection Active

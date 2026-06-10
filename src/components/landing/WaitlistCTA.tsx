@@ -41,7 +41,7 @@ export function WaitlistCTA() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="flex flex-col items-center min-w-[180px]"
               >
-                <div className="text-[32px] font-bold text-[#00246B] dark:text-white leading-none mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                <div className="text-[32px] font-bold text-primary dark:text-white leading-none mb-2" style={{ fontFamily: "Space Grotesk" }}>
                   {metric.amount}
                 </div>
                 <div className="text-base text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>

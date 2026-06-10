@@ -82,7 +82,7 @@ export function FeatureComparison() {
       return <X className="w-5 h-5 text-[#DC143C] mx-auto" />;
     }
     if (value === true) {
-      return <Check className="w-5 h-5 text-[#00C9B7] mx-auto" />;
+      return <Check className="w-5 h-5 text-primary mx-auto" />;
     }
     return <span className="text-sm text-foreground" style={{ fontFamily: "Space Grotesk" }}>{value}</span>;
   };
@@ -164,7 +164,7 @@ export function FeatureComparison() {
                     <Button
                       onClick={() => handleTierClick(tier.name)}
                       disabled={loadingTier === tier.name}
-                      className="w-full max-w-[180px] h-14 rounded-xl font-bold text-base bg-[#00246B] text-white hover:bg-[#00246B]/90 shadow-lg transition-all hover:scale-105"
+                      className="w-full max-w-[180px] h-14 rounded-xl font-bold text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-all hover:scale-105"
                       style={{ fontFamily: "Space Grotesk" }}
                     >
                       {tier.name === "Free" ? "Get Started" : `Get ${tier.name}`}

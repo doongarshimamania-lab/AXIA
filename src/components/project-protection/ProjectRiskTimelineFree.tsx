@@ -115,7 +115,7 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
         </div>
         
         {persuasion.socialProof && (
-          <div className="flex items-center gap-2 mb-4 text-sm text-[#0087A6]">
+          <div className="flex items-center gap-2 mb-4 text-sm text-primary">
             <Shield className="w-4 h-4" />
             <span className="font-medium">{persuasion.socialProofMessage}</span>
           </div>
@@ -125,14 +125,14 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-[#0A192F]">Upgrade to Starter</span>
-              <Badge variant="outline" className="bg-white text-[#00C9B7] border-[#00C9B7]">
+              <Badge variant="outline" className="bg-white text-primary border-primary">
                 Recommended
               </Badge>
             </div>
             <p className="text-sm text-slate-600">{upgradePrompt.message}</p>
             <Button 
               onClick={onUpgrade}
-              className="w-full bg-gradient-to-r from-[#00C9B7] to-[#0087A6] hover:opacity-90 text-white shadow-md"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
             >
               Upgrade to Starter
             </Button>

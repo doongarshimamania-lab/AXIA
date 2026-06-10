@@ -92,7 +92,7 @@ export function ThreadPanel({
             {replies.map((reply) => (
               <div key={reply.id} className="flex gap-3">
                 <Avatar className="h-6 w-6 flex-shrink-0 mt-0.5">
-                  <AvatarFallback className="text-[9px] bg-gradient-to-br from-blue-400 to-cyan-500 text-white">
+                  <AvatarFallback className="text-[9px] bg-gradient-to-br from-blue-400 to-primary text-white">
                     {reply.authorName
                       .split(" ")
                       .map((n) => n[0])

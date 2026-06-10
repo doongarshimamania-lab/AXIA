@@ -35,7 +35,7 @@ export function ClientPaymentPattern({ paymentPattern, tier }: ClientPaymentPatt
             <div className="text-xs text-slate-500 dark:text-slate-500">
               Identify high-risk payment periods and get proactive protection plans
             </div>
-            <Button className="mt-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+            <Button className="mt-4 bg-primary hover:bg-primary/90 text-white font-semibold">
               Upgrade to {tier === "free" ? "Starter → $4/mo" : "Pro → $7/mo"}
             </Button>
           </div>
@@ -87,16 +87,16 @@ export function ClientPaymentPattern({ paymentPattern, tier }: ClientPaymentPatt
             )}
 
             {paymentPattern.protectionPlan && paymentPattern.protectionPlan.length > 0 && (
-              <div className="p-4 bg-teal-50 dark:bg-teal-950 rounded-xl border border-teal-200 dark:border-teal-800">
-                <div className="text-sm font-medium text-teal-900 dark:text-teal-100 mb-3">
+              <div className="p-4 bg-muted dark:bg-primary/10 rounded-xl border border-border dark:border-border">
+                <div className="text-sm font-medium text-primary dark:text-primary mb-3">
                   Proactive Protection Plan
                 </div>
                 <div className="space-y-2">
                   {paymentPattern.protectionPlan.map((plan: any, idx: number) => (
-                    <div key={idx} className="flex items-start gap-3 p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                    <div key={idx} className="flex items-start gap-3 p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
                       <span className="text-lg">✅</span>
                       <div className="flex-1">
-                        <div className="text-sm text-teal-900 dark:text-teal-100">{plan.action}</div>
+                        <div className="text-sm text-primary dark:text-primary">{plan.action}</div>
                         <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
                           Impact: {plan.impact}
                         </div>

@@ -76,9 +76,9 @@ const sectionTypeConfig: Record<
   milestone: { label: "Milestone", icon: Milestone, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
   client_info: { label: "Client Info", icon: User, color: "#ec4899" },
-  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#64748B" },
   summary: { label: "Summary", icon: ClipboardList, color: "#f97316" },
-  scope_of_work: { label: "Scope", icon: FileText, color: "#06b6d4" },
+  scope_of_work: { label: "Scope", icon: FileText, color: "#475569" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
