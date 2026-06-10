@@ -86,7 +86,7 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
                   </span>
                   
                   {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap">
+                  <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap">
                     {event.description}
                   </div>
                 </motion.div>

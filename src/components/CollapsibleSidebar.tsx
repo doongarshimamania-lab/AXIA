@@ -225,7 +225,7 @@ export function CollapsibleSidebar() {
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="font-[Space_Grotesk] font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
+                  className="font-sans font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
                 >
                   Axia
                 </motion.span>
@@ -275,6 +275,8 @@ export function CollapsibleSidebar() {
             div::-webkit-scrollbar-track { background: transparent; }
             div::-webkit-scrollbar-thumb { background: oklch(0.4 0.02 240); border-radius: 2px; }
             div::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0.02 240); }
+            :root:not(.dark) div::-webkit-scrollbar-thumb { background: oklch(0.75 0.02 240); }
+            :root:not(.dark) div::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.02 240); }
           `}</style>
           <AnimatePresence>
             {isExpanded ? (
@@ -557,10 +559,10 @@ function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
       className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
         isActive
           ? "accent-tint text-axia-teal-600 dark:text-axia-teal-400"
-          : "text-platinum-400 dark:text-platinum-500 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          : "text-platinum-600 dark:text-platinum-400 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-axia-teal-600 dark:text-axia-teal-400" : ""}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-axia-teal-600 dark:text-axia-teal-400" : "text-platinum-500 dark:text-platinum-400"}`} />
       {isExpanded && (
         <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
           {label}

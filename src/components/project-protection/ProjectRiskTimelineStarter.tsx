@@ -53,18 +53,18 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
 
       {/* Contextual Score Banner */}
       <div className="px-6 pb-4">
-        <div className="bg-background rounded-xl p-4 flex items-center justify-between text-white">
+        <div className="bg-slate-900 dark:bg-background rounded-xl p-4 flex items-center justify-between text-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-lg">
+            <div className="p-2 bg-white/10 dark:bg-white/10 rounded-lg">
               <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-medium text-slate-300">{activePillars[3]?.label}</div>
+              <div className="text-sm font-medium text-slate-200 dark:text-slate-300">{activePillars[3]?.label}</div>
               <div className="text-lg font-bold">{activePillars[3]?.displayValue}</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-slate-400">Impact</div>
+            <div className="text-xs text-slate-300 dark:text-slate-400">Impact</div>
             <div className="text-sm font-medium text-primary">+{activePillars[3]?.dollarImpact ? `$${activePillars[3].dollarImpact}` : '$0'}</div>
           </div>
         </div>
@@ -88,9 +88,9 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
                 <AlertCircle className={`w-4 h-4 ${event.riskLevel === 'high' ? 'text-danger' : 'text-warning'}`} />
                 
                 {/* Hover Tooltip */}
-                <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-background text-white text-xs p-2 rounded-lg shadow-xl z-10">
+                <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-slate-900 dark:bg-background text-white text-xs p-2 rounded-lg shadow-xl z-10">
                   <div className="font-bold mb-1">{event.description}</div>
-                  <div className="text-slate-300">Risk: ${event.impactValue.toFixed(0)}</div>
+                  <div className="text-slate-200 dark:text-slate-300">Risk: ${event.impactValue.toFixed(0)}</div>
                 </div>
               </div>
             ))}
@@ -107,7 +107,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
           </div>
           <Button 
             onClick={onUpgrade}
-            className="w-full bg-background hover:bg-platinum-800 text-white shadow-lg"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
           >
             Upgrade to Pro
           </Button>

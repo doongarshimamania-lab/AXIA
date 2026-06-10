@@ -50,7 +50,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
               <Shield className="w-8 h-8 text-axia-teal-600 relative z-10" />
             </div>
             <div>
-              <h3 className="font-mono font-bold text-xl text-white tracking-tight">SECURITY_HEALTH</h3>
+              <h3 className="font-mono font-bold text-xl text-foreground dark:text-white tracking-tight">SECURITY_HEALTH</h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <p className="text-xs font-mono text-axia-teal-600">SYSTEM_ACTIVE</p>
@@ -58,7 +58,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono text-3xl font-bold text-white tracking-tight">${valueMetric.amount}</div>
+            <div className="font-mono text-3xl font-bold text-foreground dark:text-white tracking-tight">${valueMetric.amount}</div>
             <div className="text-[10px] font-mono text-axia-teal-600 uppercase">Value_Secured</div>
           </div>
         </div>
@@ -83,18 +83,18 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
               
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-axia-teal-950/30 border-axia-teal-500/30 text-axia-teal-600 hover:bg-axia-teal-900/50 hover:text-white font-mono text-xs">
+                  <Button variant="outline" size="sm" className="bg-axia-teal-950/30 border-axia-teal-500/30 text-axia-teal-600 hover:bg-axia-teal-900/50 hover:text-foreground dark:hover:text-white font-mono text-xs">
                     OPEN_MODULE <ArrowUpRight className="w-3 h-3 ml-2" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-900 border-axia-teal-500/30 text-white sm:max-w-md">
+                <DialogContent className="bg-white dark:bg-slate-900 border-axia-teal-500/30 text-foreground dark:text-white shadow-lg dark:shadow-none sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle className="font-mono text-axia-teal-600 flex items-center gap-2">
                       <Zap className="w-4 h-4" />
                       WORK_RHYTHM_ANALYSIS
                     </DialogTitle>
                   </DialogHeader>
-                  <div className="bg-slate-950/50 rounded-lg border border-axia-teal-900/30 p-4 h-[200px]">
+                  <div className="bg-slate-50 dark:bg-slate-950/50 rounded-lg border border-axia-teal-900/30 p-4 h-[200px]">
                     <WorkRhythmVisualizer 
                       rhythm={starterData.pillars?.find((p: any) => p.name === "Rhythm Health")?.value || 0}
                       velocity={starterData.workPatterns.velocity}
@@ -106,7 +106,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
                      {starterData.pillars?.map((p: any, i: number) => (
                         <div key={i} className="bg-axia-teal-950/30 p-2 rounded border border-axia-teal-500/10 text-center">
                           <div className="text-[10px] text-axia-teal-600 uppercase">{p.name.replace(" Health", "")}</div>
-                          <div className="text-lg font-bold text-white">{p.value}{p.unit}</div>
+                          <div className="text-lg font-bold text-foreground dark:text-white">{p.value}{p.unit}</div>
                         </div>
                       ))}
                   </div>
@@ -130,7 +130,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
                 <HoverCard key={idx}>
                   <HoverCardTrigger asChild>
                     <div className="space-y-1 cursor-help group">
-                      <div className="flex justify-between text-xs font-mono text-axia-teal-600 group-hover:text-white transition-colors">
+                      <div className="flex justify-between text-xs font-mono text-axia-teal-600 group-hover:text-foreground dark:group-hover:text-white transition-colors">
                         <span className="border-b border-dotted border-axia-teal-500/50">{pillar.name.toUpperCase().replace(" ", "_")}</span>
                         <span>{pillar.value}%</span>
                       </div>

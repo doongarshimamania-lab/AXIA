@@ -41,7 +41,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
       </div>
 
       {/* Circular Metrics Grid */}
-      <div className="p-6 gradient-institutional">
+      <div className="p-6 gradient-institutional rounded-b-lg">
         <div className="grid grid-cols-4 gap-4">
           {pillars.map((pillar: any, idx: number) => (
             <CircularMetric

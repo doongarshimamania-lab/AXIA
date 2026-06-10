@@ -40,12 +40,12 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                   ? "bg-background text-white border-foreground scale-110 shadow-md" 
                   : step === 3
                     ? "bg-white dark:bg-slate-800 text-primary border-primary/50 animate-pulse"
-                    : "bg-white dark:bg-slate-950 text-slate-300 border-slate-200 dark:border-slate-800"
+                    : "bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-800"
               } group-hover/step:scale-110`}>
                 {step}
               </div>
               <span className={`text-[10px] font-medium uppercase tracking-wider transition-colors ${
-                step <= 2 ? "text-foreground dark:text-white" : "text-slate-400"
+                step <= 2 ? "text-foreground dark:text-white" : "text-slate-500 dark:text-slate-400"
               }`}>
                 {step === 1 ? "Collect" : step === 2 ? "Verify" : step === 3 ? "Analyze" : "Secure"}
               </span>
@@ -59,7 +59,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
   if (tier === 'pro') {
     return (
       <TooltipProvider>
-        <div className="h-56 bg-background rounded-xl border border-slate-800 relative overflow-hidden mb-6 p-6 shadow-inner">
+        <div className="h-56 bg-background rounded-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden mb-6 p-6 shadow-inner">
           {/* CSS Grid Pattern Background */}
           <div className="absolute inset-0 opacity-20" 
                style={{ 
@@ -76,17 +76,17 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
           />
           
           <div className="flex justify-between items-center mb-8 relative z-10">
-            <h4 className="text-white/90 text-sm font-medium flex items-center gap-2">
+            <h4 className="text-foreground/90 dark:text-white/90 text-sm font-medium flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary/60 animate-pulse"/>
               Evidence Gap Analysis
             </h4>
-            <div className="text-[10px] text-slate-400 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-700">
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-900/50 px-2 py-1 rounded border border-slate-300 dark:border-slate-700">
               LIVE MONITORING
             </div>
           </div>
           
           <div className="relative h-24 flex items-center z-10 mt-4">
-            <div className="absolute inset-x-0 h-1 bg-slate-700/50 rounded-full" />
+            <div className="absolute inset-x-0 h-1 bg-slate-200 dark:bg-slate-700/50 rounded-full" />
             
             {data.timelineSegments?.map((segment: any, i: number) => (
               <Tooltip key={segment.id}>
@@ -103,9 +103,9 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
                     style={{ left: `${segment.start}%`, height: `${40 + (Math.random() * 40)}px` }}
                   />
                 </TooltipTrigger>
-                <TooltipContent side="top" className="bg-slate-900 border-slate-700 text-white">
+                <TooltipContent side="top" className="bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-foreground dark:text-white shadow-lg dark:shadow-none">
                   <div className="text-xs font-bold mb-1">{segment.label}</div>
-                  <div className="text-[10px] text-slate-400">Gap Risk: <span className={
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Gap Risk: <span className={
                     segment.riskLevel === 'high' ? 'text-red-400' : 
                     segment.riskLevel === 'medium' ? 'text-amber-400' : 'text-primary'
                   }>{segment.riskLevel.toUpperCase()}</span></div>
@@ -126,7 +126,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
 
   if (tier === 'expert') {
     return (
-      <div className="h-80 bg-background rounded-xl border border-slate-800 relative overflow-hidden mb-6 flex flex-col group">
+      <div className="h-80 bg-background rounded-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden mb-6 flex flex-col group">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-navy-accent to-background" />
         
         {/* Animated Background Particles */}
@@ -155,7 +155,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
         />
         
         <div className="flex justify-between items-center p-6 pb-2 relative z-10 shrink-0">
-          <h4 className="text-white/90 text-sm font-medium flex items-center gap-2">
+          <h4 className="text-foreground/90 dark:text-white/90 text-sm font-medium flex items-center gap-2">
             <Info className="w-4 h-4 text-primary/60" />
             Business Evidence Map
           </h4>
@@ -218,7 +218,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
               }`} />
               
               <span className="text-[9px] font-bold uppercase tracking-wider mb-1 opacity-70">{node.type}</span>
-              <span className="text-xs font-bold text-white text-center leading-tight px-1">{node.label}</span>
+              <span className="text-xs font-bold text-foreground dark:text-white text-center leading-tight px-1">{node.label}</span>
               
               {/* Status Indicator Dot */}
               <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-foreground ${

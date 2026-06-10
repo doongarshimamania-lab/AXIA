@@ -846,12 +846,12 @@ function ConvexLogsSection() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 max-h-[400px] overflow-y-auto bg-slate-950 p-4 rounded-lg font-mono text-sm">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto bg-white dark:bg-slate-950 p-4 rounded-lg font-mono text-sm">
           {logs.length === 0 ? (
-            <p className="text-slate-400">No logs yet. Logs will appear here in real-time.</p>
+            <p className="text-slate-500 dark:text-slate-400">No logs yet. Logs will appear here in real-time.</p>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="flex gap-3 border-b border-slate-800 pb-2">
+              <div key={index} className="flex gap-3 border-b border-slate-200 dark:border-slate-800 pb-2">
                 <span className="text-slate-500 whitespace-nowrap">{log.time}</span>
                 <span className={`font-semibold whitespace-nowrap ${
                   log.level === 'error' ? 'text-red-400' :

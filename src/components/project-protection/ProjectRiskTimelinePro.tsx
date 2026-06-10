@@ -21,36 +21,36 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
 
   return (
-    <Card className="relative overflow-hidden bg-background text-white rounded-2xl border border-slate-700 shadow-xl">
+    <Card className="relative overflow-hidden bg-background text-foreground dark:text-white rounded-2xl border border-slate-300 dark:border-slate-700 shadow-xl">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/40 to-background z-0" />
       
       {/* Header */}
-      <div className="relative z-10 flex justify-between items-start p-6 border-b border-slate-700/50">
+      <div className="relative z-10 flex justify-between items-start p-6 border-b border-slate-300/50 dark:border-slate-700/50">
         <div className="flex flex-col gap-2">
           <div>
-            <h3 className="font-bold text-xl text-white">
+            <h3 className="font-bold text-xl text-foreground dark:text-white">
               Vulnerability Detection
             </h3>
-            <p className="text-sm text-slate-400 mt-1">Advanced pattern analysis</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Advanced pattern analysis</p>
           </div>
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="w-fit h-8 gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-slate-300 hover:text-white transition-colors">
+              <Button variant="outline" size="sm" className="w-fit h-8 gap-2 bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-foreground dark:hover:text-white transition-colors">
                 <Layers className="w-3.5 h-3.5" />
                 View Full Analysis
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl bg-background border-slate-700 text-white p-0 overflow-hidden">
-              <DialogHeader className="p-6 border-b border-slate-700/50 bg-primary/40">
+            <DialogContent className="max-w-5xl bg-white dark:bg-background border-slate-300 dark:border-slate-700 text-foreground dark:text-white shadow-lg dark:shadow-none p-0 overflow-hidden">
+              <DialogHeader className="p-6 border-b border-slate-300/50 dark:border-slate-700/50 bg-primary/40">
                 <DialogTitle className="text-xl font-bold">
                   Comprehensive Risk Analysis
                 </DialogTitle>
               </DialogHeader>
               <div className="p-6 bg-background max-h-[80vh] overflow-y-auto">
                 <Tabs defaultValue="starter" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-slate-800 mb-6">
+                  <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800 mb-6">
                     <TabsTrigger value="starter" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       Contextual Analysis (Starter)
                     </TabsTrigger>

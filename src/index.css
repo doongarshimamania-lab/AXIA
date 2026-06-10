@@ -373,6 +373,32 @@
 }
 
 /* ── V2: Light Mode Override (PDF Section 11) ── */
+/* Applied when .dark class is removed from <html> */
+:root:not(.dark) {
+  --bg-page: #F8FAFC;
+  --bg-surface-1: #FFFFFF;
+  --bg-surface-2: #F1F5F9;
+  --bg-surface-3: #E2E8F0;
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #94A3B8;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #F1F5F9;
+  --accent-primary: var(--axia-teal-500);
+  --accent-hover: var(--axia-teal-400);
+  --accent-secondary: var(--platinum-500);
+
+  /* Light mode gradient overrides */
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* Keep [data-theme="light"] as fallback alias */
 [data-theme="light"] {
   --bg-page: #F8FAFC;
   --bg-surface-1: #FFFFFF;
@@ -388,6 +414,68 @@
   --accent-primary: var(--axia-teal-500);
   --accent-hover: var(--axia-teal-400);
   --accent-secondary: var(--platinum-500);
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* ── Light mode: Global text-white override ── */
+/* In light mode, text-white on non-accent surfaces is invisible — override to dark text */
+:root:not(.dark) .text-white:not(.bg-axia-teal-*):not(.bg-primary):not(.bg-emerald-*):not(.bg-amber-*):not(.bg-red-*):not(.bg-destructive):not(button):not(.btn):not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="bg-destructive"]) {
+  color: var(--foreground) !important;
+}
+
+/* Light mode: bg-slate-950/900/800 → proper light surfaces */
+:root:not(.dark) .bg-slate-950 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-slate-900 { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-slate-800 { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-slate-950\/50 { background-color: rgba(255,255,255,0.95) !important; }
+:root:not(.dark) .bg-slate-900\/50 { background-color: rgba(248,250,252,0.95) !important; }
+:root:not(.dark) .bg-slate-900\/80 { background-color: rgba(248,250,252,0.97) !important; }
+:root:not(.dark) .bg-slate-800\/50 { background-color: rgba(241,245,249,0.95) !important; }
+
+/* Light mode: border fixes */
+:root:not(.dark) .border-slate-800 { border-color: #E2E8F0 !important; }
+:root:not(.dark) .border-slate-700 { border-color: #CBD5E1 !important; }
+:root:not(.dark) .border-slate-700\/50 { border-color: rgba(203,213,225,0.5) !important; }
+:root:not(.dark) .border-slate-700\/30 { border-color: rgba(203,213,225,0.3) !important; }
+:root:not(.dark) .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .border-white\/20 { border-color: rgba(0,0,0,0.08) !important; }
+
+/* Light mode: text-slate fixes for contrast */
+:root:not(.dark) .text-slate-200 { color: #334155 !important; }
+:root:not(.dark) .text-slate-300 { color: #475569 !important; }
+:root:not(.dark) .text-slate-400 { color: #64748B !important; }
+:root:not(.dark) .text-slate-500 { color: #64748B !important; }
+:root:not(.dark) .text-slate-600 { color: #475569 !important; }
+
+/* Light mode: bg-white/5, bg-white/10 fixes */
+:root:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+:root:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+
+/* Light mode: hover states */
+:root:not(.dark) .hover\:bg-slate-800:hover { background-color: #E2E8F0 !important; }
+:root:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: rgba(226,232,240,0.7) !important; }
+:root:not(.dark) .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .hover\:text-white:hover { color: var(--foreground) !important; }
+
+/* Light mode: gradient-to-br from-slate-900 etc. */
+:root:not(.dark) .from-slate-900 { --tw-gradient-from: #F8FAFC !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(248,250,252,0)) !important; }
+:root:not(.dark) .via-slate-800 { --tw-gradient-via: #F1F5F9 !important; }
+:root:not(.dark) .to-slate-900 { --tw-gradient-to: #F8FAFC !important; }
+:root:not(.dark) .to-slate-950 { --tw-gradient-to: #FFFFFF !important; }
+:root:not(.dark) .from-slate-800 { --tw-gradient-from: #F1F5F9 !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(241,245,249,0)) !important; }
+
+/* Light mode: Dialog/Tooltip content overrides */
+:root:not(.dark) [data-radix-popper-content-wrapper] > div,
+:root:not(.dark) [role="dialog"] > div {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #E2E8F0 !important;
 }
 
 @layer base {
@@ -413,7 +501,7 @@
   }
 }
 
-/* ── V2: Gradient utility classes ── */
+/* ── V2: Gradient utility classes (light/dark adaptive) ── */
 .gradient-institutional { background: var(--gradient-institutional); }
 .gradient-teal-veil { background: var(--gradient-teal-veil); }
 .gradient-card-elevate { background: var(--gradient-card-elevate); }
@@ -423,9 +511,31 @@
 .gradient-sidebar { background: var(--gradient-institutional); } /* Legacy alias */
 .gradient-subtle { background: var(--gradient-card-elevate); } /* Legacy alias */
 
-/* ── V2: Accent tint utility classes (PDF Section 11) ── */
+/* Light mode gradient overrides — clean white/slate, no navy */
+:root:not(.dark) .gradient-institutional,
+:root:not(.dark) .gradient-sidebar {
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+}
+:root:not(.dark) .gradient-teal-veil {
+  background: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+}
+:root:not(.dark) .gradient-card-elevate,
+:root:not(.dark) .gradient-subtle {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+:root:not(.dark) .gradient-hero-accent,
+:root:not(.dark) .gradient-hero {
+  background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+}
+:root:not(.dark) .gradient-steel-horizon {
+  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* ── V2: Accent tint utility classes (PDF Section 11) — light/dark adaptive ── */
 .accent-tint { background: rgba(13,148,136,0.15); }
 .accent-tint-subtle { background: rgba(13,148,136,0.08); }
+:root:not(.dark) .accent-tint { background: rgba(13,148,136,0.10); }
+:root:not(.dark) .accent-tint-subtle { background: rgba(13,148,136,0.05); }
 
 /* ── V2: Accessibility focus indicators (WCAG 2.1 AA) ── */
 :focus-visible {
@@ -477,6 +587,9 @@
 /* Safe dark: warm-tinted navy, never pure black */
 .bg-safe-dark {
   background-color: #0A0F1C; /* Navy-tinted, not #000000 */
+}
+:root:not(.dark) .bg-safe-dark {
+  background-color: #F8FAFC; /* Light mode: use page background */
 }
 
 /* Smooth animations — V2: no glow effects (crypto-distancing) */

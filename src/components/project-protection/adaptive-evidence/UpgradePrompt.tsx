@@ -35,7 +35,7 @@ export function UpgradePrompt({ upgrade, onUpgrade }: UpgradePromptProps) {
         
         <Button 
           onClick={onUpgrade}
-          className="bg-background hover:bg-platinum-800 text-white min-w-[160px]"
+          className="bg-slate-900 hover:bg-slate-800 text-white min-w-[160px]"
         >
           {upgrade.cta} <ArrowRight className="w-4 h-4 ml-2" />
         </Button>

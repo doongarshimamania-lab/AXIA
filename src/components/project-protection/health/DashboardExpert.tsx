@@ -17,8 +17,8 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
     <Card className="relative overflow-hidden bg-white dark:bg-card rounded-2xl border border-slate-500 dark:border-border shadow-xl gradient-card-elevate">
       {/* Authority Banner */}
       {darkPsychology.authority && (
-        <div className="bg-gradient-to-r from-slate-800 to-platinum-900 px-6 py-3">
-          <p className="text-sm text-white font-medium text-center">{darkPsychology.authority}</p>
+        <div className="bg-gradient-to-r from-slate-200 to-slate-100 dark:from-slate-800 dark:to-platinum-900 px-6 py-3">
+          <p className="text-sm text-foreground dark:text-white font-medium text-center">{darkPsychology.authority}</p>
         </div>
       )}
 

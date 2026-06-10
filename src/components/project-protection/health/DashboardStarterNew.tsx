@@ -131,14 +131,14 @@ export function DashboardStarterNew({ data, onUpgrade }: DashboardStarterNewProp
       </div>
 
       {/* Upgrade Banner */}
-      <div className="bg-slate-900 p-4 flex items-center justify-between">
+      <div className="bg-slate-50 dark:bg-slate-900 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-          <p className="text-sm text-slate-300 font-medium">
-            Want to see <span className="text-white font-bold">security vulnerabilities</span> in your timeline?
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
+            Want to see <span className="text-foreground dark:text-white font-bold">security vulnerabilities</span> in your timeline?
           </p>
         </div>
-        <Button onClick={onUpgrade} size="sm" variant="ghost" className="text-primary hover:text-primary/80 hover:bg-slate-800">
+        <Button onClick={onUpgrade} size="sm" variant="ghost" className="text-primary hover:text-primary/80 hover:bg-slate-100 dark:hover:bg-slate-800">
           Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
