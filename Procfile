@@ -1,1 +1,1 @@
-web: cd /home/z/my-project/timelock && node serve-dist.cjs
+web: cd /home/z/my-project && node server.mjs
