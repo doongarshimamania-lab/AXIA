@@ -115,19 +115,20 @@
   --radius: 0.625rem;
 
   /* ═══════════════════════════════════════════════════════════
-     85% NEUTRAL — Dark backgrounds, platinum grays, text
+     85% NEUTRAL — Light mode defaults (Tailwind .dark strategy)
+     :root = LIGHT mode, .dark = DARK mode overrides
      ═══════════════════════════════════════════════════════════ */
 
-  /* Dark Mode Background System (PDF Section 4.2) */
-  --bg-page: #0A0F1C;           /* Deepest background */
-  --bg-surface-1: #0C1322;      /* Cards, modals, sidebar */
-  --bg-surface-2: #111827;      /* Elevated surfaces, dropdowns */
-  --bg-surface-3: #1A2035;      /* Highest elevation, overlays */
+  /* Light Mode Background System */
+  --bg-page: #F8FAFC;           /* Page background */
+  --bg-surface-1: #FFFFFF;      /* Cards, modals, sidebar */
+  --bg-surface-2: #F1F5F9;      /* Elevated surfaces, dropdowns */
+  --bg-surface-3: #E2E8F0;      /* Highest elevation, overlays */
 
-  /* Borders — opacity-based (PDF Section 4.2) */
-  --border-subtle: rgba(255,255,255,0.04);   /* Barely visible */
-  --border-default: rgba(255,255,255,0.08);  /* Visible */
-  --border-strong: rgba(255,255,255,0.12);   /* Focus, active, hover */
+  /* Borders — light mode */
+  --border-subtle: #E2E8F0;              /* Barely visible */
+  --border-default: #CBD5E1;             /* Visible */
+  --border-strong: #94A3B8;              /* Focus, active, hover */
 
   /* Spacing Tokens (PDF Section 4.1) */
   --space-1: 4px;    /* Micro gaps: icon-to-label */
@@ -149,11 +150,11 @@
   --text-4xl: 36px;      /* Hero stats, dashboard metrics */
   --text-display: 48px;  /* Marketing hero headings only */
 
-  /* Text System (PDF Section 4.3) */
-  --text-primary: #F1F5F9;      /* Body text — never pure #FFFFFF */
-  --text-secondary: #94A3B8;    /* Labels, descriptions */
-  --text-tertiary: #64748B;     /* Timestamps, placeholders */
-  --text-inverse: #1E293B;      /* On accent backgrounds */
+  /* Text System — Light mode defaults */
+  --text-primary: #1E293B;      /* Body text */
+  --text-secondary: #64748B;    /* Labels, descriptions */
+  --text-tertiary: #94A3B8;     /* Timestamps, placeholders */
+  --text-inverse: #F1F5F9;      /* On accent backgrounds */
 
   /* Light mode shadcn bridge */
   --background: #F8FAFC;
@@ -246,12 +247,12 @@
   --chart-primary: #475993;     /* Steel Blue */
   --chart-frost: #7DD3FC;       /* Ice Frost */
 
-  /* Matte Gradient Recipes (PDF Section 5.3) */
-  --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
-  --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
-  --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
-  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
-  --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
+  /* Matte Gradient Recipes — Light mode defaults */
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
 
   /* Stage / Pipeline Colors (V2 Section 9 — indigo/purple FORBIDDEN) */
   --stage-lead: #0D9488;         /* Teal-600: brand primary */
@@ -261,12 +262,12 @@
   --stage-won: #10B981;          /* Emerald: "protected" signal per PDF */
   --stage-lost: #EF4444;         /* Red: danger (correct) */
 
-  /* Extended semantic (indigo REMOVED — forbidden per V2 Section 9) */
-  --border-muted: #374151;
-  --icon-blue: #60A5FA;
+  /* Extended semantic — Light mode defaults */
+  --border-muted: #CBD5E1;
+  --icon-blue: #3B82F6;
   --page-bg-from: #F0F9FF;
   --page-bg-to: #F8FAFC;
-  --navy-accent: #112240;
+  --navy-accent: #F1F5F9;
   --accent-highlight: var(--platinum-400);
 }
 
@@ -275,6 +276,24 @@
      DARK MODE — Navy-tinted backgrounds (PDF Section 4.2)
      Pure black forbidden. Use #0A0F1C navy-tinted instead.
      ═══════════════════════════════════════════════════════════ */
+
+  /* Dark Mode Background System */
+  --bg-page: #0A0F1C;           /* Deepest background */
+  --bg-surface-1: #0C1322;      /* Cards, modals, sidebar */
+  --bg-surface-2: #111827;      /* Elevated surfaces, dropdowns */
+  --bg-surface-3: #1A2035;      /* Highest elevation, overlays */
+
+  /* Borders — dark mode opacity-based */
+  --border-subtle: rgba(255,255,255,0.04);
+  --border-default: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.12);
+
+  /* Text System — Dark mode */
+  --text-primary: #F1F5F9;      /* Body text — never pure #FFFFFF */
+  --text-secondary: #94A3B8;    /* Labels, descriptions */
+  --text-tertiary: #64748B;     /* Timestamps, placeholders */
+  --text-inverse: #1E293B;      /* On accent backgrounds */
+
   --background: #0A0F1C;       /* --bg-page */
   --foreground: #F1F5F9;       /* --text-primary (never pure white) */
   --card: #0C1322;             /* --bg-surface-1 */
@@ -372,8 +391,7 @@
   --accent-highlight: var(--platinum-400);
 }
 
-/* ── V2: Light Mode Override (PDF Section 11) ── */
-/* Applied when .dark class is removed from <html> */
+/* ── V2: Light Mode Override (now redundant since :root has light defaults) ── */
 :root:not(.dark) {
   --bg-page: #F8FAFC;
   --bg-surface-1: #FFFFFF;
@@ -422,9 +440,27 @@
 }
 
 /* ── Light mode: Global text-white override ── */
-/* In light mode, text-white on non-accent surfaces is invisible — override to dark text */
-:root:not(.dark) .text-white:not(.bg-axia-teal-*):not(.bg-primary):not(.bg-emerald-*):not(.bg-amber-*):not(.bg-red-*):not(.bg-destructive):not(button):not(.btn):not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="bg-destructive"]) {
+/* In light mode, text-white is invisible on light surfaces — override to dark text
+   EXCEPT: elements on colored/accent backgrounds (buttons, badges, icons inside teal/emerald/red bg) */
+:root:not(.dark) .text-white {
   color: var(--foreground) !important;
+}
+/* Restore white text on actual colored backgrounds */
+:root:not(.dark) button.text-white,
+:root:not(.dark) .btn.text-white,
+:root:not(.dark) [class*="bg-axia-teal"] .text-white,
+:root:not(.dark) [class*="bg-primary"] .text-white,
+:root:not(.dark) [class*="bg-emerald"] .text-white,
+:root:not(.dark) [class*="bg-red-"] .text-white,
+:root:not(.dark) [class*="bg-destructive"] .text-white,
+:root:not(.dark) [class*="bg-amber-"] .text-white,
+:root:not(.dark) [class*="bg-blue-600"] .text-white,
+:root:not(.dark) [class*="bg-blue-700"] .text-white,
+:root:not(.dark) [class*="bg-green-"] .text-white,
+:root:not(.dark) [class*="bg-\\[\\#"] .text-white,
+:root:not(.dark) .bg-axia-teal-600.text-white,
+:root:not(.dark) .bg-primary.text-white {
+  color: #FFFFFF !important;
 }
 
 /* Light mode: bg-slate-950/900/800 → proper light surfaces */

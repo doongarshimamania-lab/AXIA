@@ -316,7 +316,7 @@ export default function Dashboard() {
 
   return (
     <motion.div
-      className="flex-1 min-h-screen gradient-institutional text-foreground transition-colors"
+      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}

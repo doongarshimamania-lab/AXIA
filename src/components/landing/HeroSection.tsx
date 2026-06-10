@@ -18,7 +18,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 dark:bg-white/10 text-foreground dark:text-white mb-3 border border-primary/20 dark:border-white/10"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 dark:bg-white/10 text-foreground mb-3 border border-primary/20 dark:border-white/10"
           >
             <ShieldCheck className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold tracking-wide uppercase">
@@ -31,7 +31,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl md:text-5xl font-semibold text-foreground dark:text-white leading-[1.2] tracking-tight mb-3 max-w-[900px]"
+            className="text-3xl md:text-5xl font-semibold text-foreground leading-[1.2] tracking-tight mb-3 max-w-[900px]"
             style={{ fontFamily: "Geist Sans, system-ui, sans-serif" }}
           >
             Stop Losing Payments to Invoice Errors, Context Gaps, and Pricing Disputes
@@ -42,7 +42,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-lg md:text-xl text-muted-foreground dark:text-blue-100 mb-6 max-w-[700px] leading-relaxed"
+            className="text-lg md:text-xl text-muted-foreground mb-6 max-w-[700px] leading-relaxed"
           >
             35% of payment disputes happen because of simple mistakes you can prevent. 
             Axia verifies your work against platform requirements <i>before</i> submission—so you get paid, every time.
@@ -68,18 +68,18 @@ export function HeroSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-6 md:gap-12 text-muted-foreground dark:text-blue-200/80"
+            className="flex flex-wrap justify-center gap-6 md:gap-12 text-muted-foreground"
           >
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-primary dark:text-blue-400" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span className="font-medium text-sm">Avg. Loss Prevented: $697</span>
             </div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary dark:text-blue-400" />
+              <TrendingUp className="w-4 h-4 text-primary" />
               <span className="font-medium text-sm">83% Dispute Success Rate</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary dark:text-blue-400" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               <span className="font-medium text-sm">Real-Time Verification</span>
             </div>
           </motion.div>

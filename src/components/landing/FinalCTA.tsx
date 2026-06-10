@@ -20,11 +20,11 @@ export function FinalCTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground dark:text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Protect Your Income Today
           </h2>
           
-          <p className="text-lg text-muted-foreground dark:text-blue-100 mb-6 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
             Join the waitlist to get early access to the only tool that verifies your work context against platform requirements—before you submit.
           </p>
 
@@ -37,7 +37,7 @@ export function FinalCTA() {
             />
           </div>
           
-          <p className="mt-6 text-sm text-muted-foreground dark:text-blue-200/60">
+          <p className="mt-6 text-sm text-muted-foreground">
             Join 2,000+ freelancers on the waitlist. Launching soon.
           </p>
         </motion.div>
