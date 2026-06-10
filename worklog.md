@@ -108,3 +108,35 @@ Stage Summary:
 - Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.3.0
 - Disk: /home/z/my-project/disk/ (clean copy of src/ + dist/ + configs)
 - Preview: https://preview-81.space-z.ai/ (running)
+
+---
+Task ID: priority-fixes-P1-P4
+Agent: main
+Task: Implement all 4 priority fixes for schema consolidation and duplicate cleanup, push to GitHub/disk, create release backup
+
+Work Log:
+- Analyzed entire codebase to identify 4 priority issues: clients table schema conflict, orphaned business.ts, duplicate standalone table files, disputeReports/extensionTokens duplication
+- P1: Merged all CRM fields (email, company, phone, industry, website, notes, address, status, avgPaymentDays, onTimeRate, totalPaid, totalInvoiced, lastPaymentAt, source, contactEmail, contactName, assignedMemberIds) into active clients table in projects.ts
+- P1: Made freelancer-specific fields (platform, hourlyRate, contractType, riskLevel) optional so CRM-created clients don't require them
+- P1: Added by_user_and_status index for CRM list query support
+- P1: Fixed (client as any).name → client.clientName || client.name in billing/crud.ts
+- P1: Fixed (client as any).email → client.email ?? client.contactEmail in billing/crud.ts
+- P1: Fixed (client as any).name → client.clientName || client.name in invoices.ts
+- P1: Synced clientName↔name fields in both create paths (clients.ts CRM and clients/crud.ts freelancer)
+- P2: Disabled orphaned business.ts (not imported in schema.ts, all tables defined elsewhere)
+- P3: Disabled duplicate standalone table files: clients.ts, work.ts, security.ts, platform.ts
+- P4: Verified disputeReports canonical in features.ts, extensionTokens canonical in features.ts, platformComplianceChecks canonical in compliance.ts
+- Built successfully with npx vite build (zero errors)
+- Started preview server on port 3000
+- Committed and pushed to GitHub (commit 5b9271d)
+- Pushed src/ and dist/ to /home/z/my-project/disk/
+- Created git tag v3.4.0
+- Created GitHub Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.4.0
+- Uploaded backup: AXIA-v3.4.0-schema-consolidation.tar.gz (13MB)
+
+Stage Summary:
+- All 4 priority fixes implemented and verified
+- GitHub: https://github.com/doongarshimamania-lab/AXIA (main branch, tag v3.4.0)
+- Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v3.4.0
+- Disk: /home/z/my-project/disk/ (clean copy of src/ + dist/ + configs)
+- Preview: https://preview-81.space-z.ai/ (running)
