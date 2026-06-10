@@ -32,11 +32,11 @@ export function WorkDiarySimulator({ timeBlocks, onBlockHover, selectedPlatform 
     }
     switch (platform) {
       case "upwork":
-        return "bg-[#2563EB] rounded"; // blue
+        return "bg-info rounded"; // blue
       case "fiverr":
-        return "bg-[#059669] rounded"; // green
+        return "bg-success rounded"; // green
       case "toptal":
-        return "bg-[#7E3AF2] rounded"; // purple
+        return "bg-indigo rounded"; // purple
       case "client":
       default:
         return "bg-warning rounded"; // yellow

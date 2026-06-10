@@ -224,7 +224,7 @@ function RecommendationCard({
         <Button
           variant="link"
           size="sm"
-          className="h-auto p-0 mt-1 text-[#4F46E5] hover:text-[#4338CA] text-xs gap-1"
+          className="h-auto p-0 mt-1 text-indigo hover:text-indigo text-xs gap-1"
           onClick={() => onNavigate(rec.actionRoute)}
         >
           {rec.actionLabel}
@@ -317,7 +317,7 @@ export function TruthLayerWidget({
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-[#4F46E5]" />
+              <Shield className="h-4 w-4 text-indigo" />
               <span className="text-sm">Truth Layer</span>
             </div>
             <TruthLayerBadge score={scores.overall} size="sm" />
@@ -344,14 +344,14 @@ export function TruthLayerWidget({
       transition={{ duration: 0.5 }}
     >
       <Card
-        className={`overflow-hidden border border-[#4F46E5]/20 bg-gradient-to-br from-[#4F46E5]/5 via-background to-[#4F46E5]/3 backdrop-blur-sm ${className}`}
+        className={`overflow-hidden border border-indigo/20 bg-gradient-to-br from-indigo/5 via-background to-indigo/3 backdrop-blur-sm ${className}`}
       >
         {/* Header */}
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center">
-                <Shield className="h-4.5 w-4.5 text-[#4F46E5]" />
+              <div className="h-8 w-8 rounded-lg bg-indigo/10 flex items-center justify-center">
+                <Shield className="h-4.5 w-4.5 text-indigo" />
               </div>
               <div>
                 <div className="text-base font-bold text-foreground">Truth Layer</div>
@@ -391,7 +391,7 @@ export function TruthLayerWidget({
           {scores.recommendations.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-[#4F46E5]" />
+                <TrendingUp className="h-4 w-4 text-indigo" />
                 <h4 className="text-sm font-semibold text-foreground">
                   Strengthen Your Truth Layer
                 </h4>

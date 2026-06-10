@@ -72,18 +72,18 @@ export function ProfileModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-platinum-800 border-[#374151]">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-platinum-800 border-border-muted">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-white">
             Profile & Settings
           </DialogTitle>
-          <DialogDescription className="text-[#9CA3AF]">
+          <DialogDescription className="text-muted-foreground">
             Manage your Axia account and preferences
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-platinum-900 border border-[#374151]">
+          <TabsList className="grid w-full grid-cols-4 bg-platinum-900 border border-border-muted">
             <TabsTrigger value="personal" className="text-xs">Personal</TabsTrigger>
             <TabsTrigger value="professional" className="text-xs">Professional</TabsTrigger>
             <TabsTrigger value="appearance" className="text-xs">Appearance</TabsTrigger>
@@ -92,13 +92,13 @@ export function ProfileModal() {
 
           {/* Personal Information Tab */}
           <TabsContent value="personal" className="space-y-4 mt-4">
-            <div className="p-4 bg-platinum-900 rounded-lg border border-[#374151] space-y-4">
+            <div className="p-4 bg-platinum-900 rounded-lg border border-border-muted space-y-4">
               <div>
                 <label className="text-sm font-medium text-white mb-2 block">Full Name</label>
                 <Input
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
-                  className="bg-platinum-800 border-[#374151] text-white"
+                  className="bg-platinum-800 border-border-muted text-white"
                   placeholder="Your name"
                 />
               </div>
@@ -109,14 +109,14 @@ export function ProfileModal() {
                   <Input
                     value={profileEmail}
                     onChange={(e) => setProfileEmail(e.target.value)}
-                    className="bg-platinum-800 border-[#374151] text-white"
+                    className="bg-platinum-800 border-border-muted text-white"
                     placeholder="your@email.com"
                   />
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleCopyEmail}
-                    className="border-[#374151] text-white hover:bg-[#374151]"
+                    className="border-border-muted text-white hover:bg-border-muted"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </Button>
@@ -129,12 +129,12 @@ export function ProfileModal() {
                   type="number"
                   value={profileHourlyRate}
                   onChange={(e) => setProfileHourlyRate(e.target.value)}
-                  className="bg-platinum-800 border-[#374151] text-white"
+                  className="bg-platinum-800 border-border-muted text-white"
                   placeholder="50"
                 />
               </div>
 
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151] space-y-3">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted space-y-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-white flex items-center gap-2">
                     <Zap className="w-4 h-4 text-yellow-400" />
@@ -144,7 +144,7 @@ export function ProfileModal() {
                     {subscriptionTier}
                   </span>
                 </div>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-muted-foreground">
                   {subscriptionTier === "free"
                     ? "Upgrade to unlock advanced protection features"
                     : "Thank you for your subscription!"}
@@ -154,7 +154,7 @@ export function ProfileModal() {
                   <select
                     value={subscriptionTier}
                     onChange={(e) => handleTierChange(e.target.value as 'free' | 'starter' | 'pro' | 'expert' | 'client')}
-                    className="w-full bg-platinum-800 border border-[#374151] text-white rounded px-3 py-2 text-sm"
+                    className="w-full bg-platinum-800 border border-border-muted text-white rounded px-3 py-2 text-sm"
                   >
                     <option value="free">Free</option>
                     <option value="starter">Starter</option>
@@ -169,22 +169,22 @@ export function ProfileModal() {
 
           {/* Professional Information Tab */}
           <TabsContent value="professional" className="space-y-4 mt-4">
-            <div className="p-4 bg-platinum-900 rounded-lg border border-[#374151] space-y-4">
+            <div className="p-4 bg-platinum-900 rounded-lg border border-border-muted space-y-4">
               <div>
                 <label className="text-sm font-medium text-white mb-2 block">Professional Bio</label>
                 <Textarea
                   value={profileBio}
                   onChange={(e) => setProfileBio(e.target.value.slice(0, 500))}
-                  className="bg-platinum-800 border-[#374151] text-white min-h-24"
+                  className="bg-platinum-800 border-border-muted text-white min-h-24"
                   placeholder="Tell us about your professional background..."
                   maxLength={500}
                 />
-                <p className="text-xs text-[#9CA3AF] mt-1">{profileBio.length}/500 characters</p>
+                <p className="text-xs text-muted-foreground mt-1">{profileBio.length}/500 characters</p>
               </div>
 
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div className="text-sm font-medium text-white mb-2">Protection Metrics</div>
-                <div className="space-y-2 text-xs text-[#9CA3AF]">
+                <div className="space-y-2 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Axia Protection:</span>
                     <span className="text-emerald-400">✅ Active</span>
@@ -200,13 +200,13 @@ export function ProfileModal() {
                 </div>
               </div>
 
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div className="text-sm font-medium text-white mb-3">Platform Connections</div>
                 <div className="space-y-2">
                   {["Upwork", "Fiverr", "Toptal"].map((platform) => (
                     <div key={platform} className="flex items-center justify-between p-2 bg-platinum-800 rounded">
                       <span className="text-xs text-white">{platform}</span>
-                      <Button size="sm" variant="outline" className="h-6 text-xs border-[#374151] text-white hover:bg-[#374151]">
+                      <Button size="sm" variant="outline" className="h-6 text-xs border-border-muted text-white hover:bg-border-muted">
                         Connect
                       </Button>
                     </div>
@@ -218,11 +218,11 @@ export function ProfileModal() {
 
           {/* Appearance Tab */}
           <TabsContent value="appearance" className="space-y-4 mt-4">
-            <div className="p-4 bg-platinum-900 rounded-lg border border-[#374151] space-y-4">
-              <div className="flex items-center justify-between p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+            <div className="p-4 bg-platinum-900 rounded-lg border border-border-muted space-y-4">
+              <div className="flex items-center justify-between p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div>
                   <div className="text-sm font-medium text-white">Dark Mode</div>
-                  <p className="text-xs text-[#9CA3AF] mt-1">Enable dark theme for the application</p>
+                  <p className="text-xs text-muted-foreground mt-1">Enable dark theme for the application</p>
                 </div>
                 <Switch
                   checked={theme === "dark"}
@@ -231,14 +231,14 @@ export function ProfileModal() {
                 />
               </div>
 
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div className="text-sm font-medium text-white mb-2">Theme Preview</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 bg-platinum-800 rounded border border-[#374151] text-center">
-                    <div className="text-xs text-[#9CA3AF]">Light Mode</div>
+                  <div className="p-3 bg-platinum-800 rounded border border-border-muted text-center">
+                    <div className="text-xs text-muted-foreground">Light Mode</div>
                   </div>
-                  <div className="p-3 bg-platinum-900 rounded border border-[#374151] text-center">
-                    <div className="text-xs text-[#9CA3AF]">Dark Mode</div>
+                  <div className="p-3 bg-platinum-900 rounded border border-border-muted text-center">
+                    <div className="text-xs text-muted-foreground">Dark Mode</div>
                   </div>
                 </div>
               </div>
@@ -247,27 +247,27 @@ export function ProfileModal() {
 
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-4 mt-4">
-            <div className="p-4 bg-platinum-900 rounded-lg border border-[#374151] space-y-4">
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+            <div className="p-4 bg-platinum-900 rounded-lg border border-border-muted space-y-4">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div className="flex items-center gap-2 mb-3">
-                  <Lock className="w-4 h-4 text-[#60A5FA]" />
+                  <Lock className="w-4 h-4 text-icon-blue" />
                   <span className="text-sm font-medium text-white">Account Security</span>
                 </div>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start border-[#374151] text-white hover:bg-[#374151]">
+                  <Button variant="outline" className="w-full justify-start border-border-muted text-white hover:bg-border-muted">
                     <Mail className="w-4 h-4 mr-2" />
                     Change Email
                   </Button>
-                  <Button variant="outline" className="w-full justify-start border-[#374151] text-white hover:bg-[#374151]">
+                  <Button variant="outline" className="w-full justify-start border-border-muted text-white hover:bg-border-muted">
                     <Lock className="w-4 h-4 mr-2" />
                     Change Password
                   </Button>
                 </div>
               </div>
 
-              <div className="p-3 bg-platinum-900 rounded-lg border border-[#374151]">
+              <div className="p-3 bg-platinum-900 rounded-lg border border-border-muted">
                 <div className="text-sm font-medium text-white mb-2">Session Information</div>
-                <div className="space-y-1 text-xs text-[#9CA3AF]">
+                <div className="space-y-1 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Last Login:</span>
                     <span className="text-white">Today at 10:30 AM</span>
@@ -293,7 +293,7 @@ export function ProfileModal() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex gap-2 mt-6 pt-4 border-t border-[#374151]">
+        <div className="flex gap-2 mt-6 pt-4 border-t border-border-muted">
           <Button
             onClick={handleSaveProfile}
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -303,7 +303,7 @@ export function ProfileModal() {
           <Button
             onClick={() => setIsOpen(false)}
             variant="outline"
-            className="flex-1 border-[#374151] text-white hover:bg-[#374151]"
+            className="flex-1 border-border-muted text-white hover:bg-border-muted"
           >
             Close
           </Button>

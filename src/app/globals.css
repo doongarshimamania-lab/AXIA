@@ -68,6 +68,26 @@
   --color-surface-card: var(--card);
   --color-surface-elevated: var(--platinum-800);
 
+  /* V2: Stage / pipeline colors → Tailwind bridge */
+  --color-stage-lead: var(--stage-lead);
+  --color-stage-qualified: var(--stage-qualified);
+  --color-stage-proposal: var(--stage-proposal);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-won: var(--stage-won);
+  --color-stage-lost: var(--stage-lost);
+
+  /* V2: Extended semantic colors */
+  --color-info: var(--info);
+  --color-indigo: var(--indigo);
+  --color-border-muted: var(--border-muted);
+  --color-text-muted: var(--muted-foreground);
+  --color-icon-blue: var(--icon-blue);
+
+  /* V2: Gradient page backgrounds */
+  --color-page-bg-from: var(--page-bg-from);
+  --color-page-bg-to: var(--page-bg-to);
+  --color-navy-accent: var(--navy-accent);
+
   /* V2: Platinum scale → Tailwind color bridge */
   --color-platinum-50: var(--platinum-50);
   --color-platinum-100: var(--platinum-100);
@@ -165,6 +185,23 @@
   --warning: #D97706;      /* Amber-600 — pending, caution, negotiation */
   --danger: #DC2626;       /* Red-600 — overdue, critical, lost */
   --premium: var(--platinum-400);  /* Platinum accent — premium tier, badges */
+  --info: #2563EB;          /* Blue-600 — informational, links */
+  --indigo: #4F46E5;       /* Indigo-600 — truth layer, insights */
+
+  /* ── V2: Stage / Pipeline Colors ── */
+  --stage-lead: #6366F1;         /* Indigo-500 */
+  --stage-qualified: #8B5CF6;    /* Violet-500 */
+  --stage-proposal: #A855F7;     /* Purple-500 */
+  --stage-negotiation: #C084FC;  /* Purple-400 */
+  --stage-won: #22C55E;          /* Green-500 */
+  --stage-lost: #EF4444;          /* Red-500 */
+
+  /* ── V2: Extended semantic tokens ── */
+  --border-muted: #374151;       /* Gray-700 — subtle borders in dark UI */
+  --icon-blue: #60A5FA;          /* Blue-400 — informational icons */
+  --page-bg-from: #F0F9FF;       /* Sky-50 — page gradient start */
+  --page-bg-to: #F8FAFC;         /* Slate-50 — page gradient end */
+  --navy-accent: #112240;        /* Dark navy — expert-tier background accent */
 
   /* ── V2: Crypto-Distancing Rules ── */
   /* No pure black backgrounds — use navy-tinted #0A0F1C instead */
@@ -251,6 +288,23 @@
   --warning: #F59E0B;     /* Amber-500 */
   --danger: #EF4444;      /* Red-500 */
   --premium: var(--platinum-400);
+  --info: #3B82F6;          /* Blue-500 */
+  --indigo: #6366F1;       /* Indigo-500 */
+
+  /* ── V2: Stage / Pipeline Colors — Dark Mode ── */
+  --stage-lead: #818CF8;         /* Indigo-400 — brighter for dark */
+  --stage-qualified: #A78BFA;    /* Violet-400 */
+  --stage-proposal: #C084FC;     /* Purple-400 */
+  --stage-negotiation: #D8B4FE;  /* Purple-300 */
+  --stage-won: #4ADE80;          /* Green-400 */
+  --stage-lost: #F87171;          /* Red-400 */
+
+  /* ── V2: Extended semantic tokens — Dark Mode ── */
+  --border-muted: #4B5563;       /* Gray-600 — lighter for dark bg */
+  --icon-blue: #93C5FD;          /* Blue-300 */
+  --page-bg-from: oklch(0.08 0.025 260);  /* Navy-tinted gradient start */
+  --page-bg-to: oklch(0.06 0.02 250);     /* Navy-tinted gradient end */
+  --navy-accent: #112240;                   /* Dark navy — expert-tier background accent */
 
   /* ── V2: Crypto-Distancing — Dark Mode ── */
   --bg-safe-dark: oklch(0.06 0.02 260);

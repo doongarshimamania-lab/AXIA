@@ -37,7 +37,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       </div>
 
       {/* Circular Metrics Grid */}
-      <div className="p-6" style={{ background: "linear-gradient(to bottom, #EDF2F7 0%, #F8FAFC 100%)" }}>
+      <div className="p-6 bg-gradient-to-b from-page-bg-from to-page-bg-to">
         <div className="grid grid-cols-4 gap-4">
           {pillars.map((pillar: any, idx: number) => (
             <CircularMetric

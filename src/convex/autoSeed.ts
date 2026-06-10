@@ -115,6 +115,7 @@ export const autoSeed = mutation({
 
     let stageIds: string[] = [];
     if (existingStages.length === 0) {
+      // NOTE: Stage colors should match STAGE_COLORS in src/lib/tokens.ts
       const defaults = [
         { name: "Lead", color: "#6366f1" },
         { name: "Qualified", color: "#8b5cf6" },

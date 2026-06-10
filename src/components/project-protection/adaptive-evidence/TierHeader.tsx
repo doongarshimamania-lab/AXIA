@@ -21,7 +21,7 @@ export function TierHeader({ tier, description }: TierHeaderProps) {
         <h3 className="font-bold text-xl text-foreground dark:text-gray-100 tracking-tight">
           Adaptive Evidence Timeline
         </h3>
-        <p className="text-sm text-[#475569] dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
           {description}
         </p>
       </div>

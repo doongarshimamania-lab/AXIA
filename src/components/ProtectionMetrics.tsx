@@ -39,7 +39,7 @@ export function ProtectionMetrics({
                 cx="64"
                 cy="64"
                 r="56"
-                stroke="#10B981"
+                stroke="var(--color-success, #10B981)"
                 strokeWidth="8"
                 fill="none"
                 strokeDasharray={`${2 * Math.PI * 56}`}
@@ -63,25 +63,25 @@ export function ProtectionMetrics({
 
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-platinum-800 rounded-lg p-3">
-            <div className="text-[10px] text-[#9CA3AF] mb-1">Active Session</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Active Session</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.activeSession ? `${activeSessionDuration}m` : '0m'}
             </div>
           </div>
           <div className="bg-platinum-800 rounded-lg p-3">
-            <div className="text-[10px] text-[#9CA3AF] mb-1">Protected Today</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Protected Today</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.protectedHours ? `${Math.floor(protectionMetrics.protectedHours)}h` : '0h'}
             </div>
           </div>
           <div className="bg-platinum-800 rounded-lg p-3">
-            <div className="text-[10px] text-[#9CA3AF] mb-1">Evidence Events</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Evidence Events</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.evidenceEvents || 0}
             </div>
           </div>
           <div className="bg-platinum-800 rounded-lg p-3">
-            <div className="text-[10px] text-[#9CA3AF] mb-1">Platforms</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Platforms</div>
             <div className="text-base font-bold text-white">
               {protectionMetrics?.connectedPlatforms || 0}
             </div>

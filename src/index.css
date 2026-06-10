@@ -59,6 +59,24 @@
   --color-surface-card: var(--card);
   --color-surface-elevated: var(--platinum-800);
 
+  /* V2: Stage / pipeline colors bridge */
+  --color-stage-lead: var(--stage-lead);
+  --color-stage-qualified: var(--stage-qualified);
+  --color-stage-proposal: var(--stage-proposal);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-won: var(--stage-won);
+  --color-stage-lost: var(--stage-lost);
+
+  /* V2: Extended semantic */
+  --color-info: var(--info);
+  --color-indigo: var(--indigo);
+  --color-border-muted: var(--border-muted);
+  --color-text-muted: var(--muted-foreground);
+  --color-icon-blue: var(--icon-blue);
+  --color-page-bg-from: var(--page-bg-from);
+  --color-page-bg-to: var(--page-bg-to);
+  --color-navy-accent: var(--navy-accent);
+
   /* V2: Platinum scale bridge */
   --color-platinum-50: var(--platinum-50);
   --color-platinum-100: var(--platinum-100);
@@ -149,6 +167,23 @@
   --warning: #D97706;
   --danger: #DC2626;
   --premium: var(--platinum-400);
+  --info: #2563EB;
+  --indigo: #4F46E5;
+
+  /* V2: Stage / Pipeline Colors */
+  --stage-lead: #6366F1;
+  --stage-qualified: #8B5CF6;
+  --stage-proposal: #A855F7;
+  --stage-negotiation: #C084FC;
+  --stage-won: #22C55E;
+  --stage-lost: #EF4444;
+
+  /* V2: Extended semantic */
+  --border-muted: #374151;
+  --icon-blue: #60A5FA;
+  --page-bg-from: #F0F9FF;
+  --page-bg-to: #F8FAFC;
+  --navy-accent: #112240;
 
   /* V2: Crypto-Distancing */
   --bg-safe-dark: oklch(0.06 0.02 260);
@@ -223,6 +258,23 @@
   --warning: #F59E0B;
   --danger: #EF4444;
   --premium: var(--platinum-400);
+  --info: #3B82F6;
+  --indigo: #6366F1;
+
+  /* V2: Stage / Pipeline Colors — Dark */
+  --stage-lead: #818CF8;
+  --stage-qualified: #A78BFA;
+  --stage-proposal: #C084FC;
+  --stage-negotiation: #D8B4FE;
+  --stage-won: #4ADE80;
+  --stage-lost: #F87171;
+
+  /* V2: Extended semantic — Dark */
+  --border-muted: #4B5563;
+  --icon-blue: #93C5FD;
+  --page-bg-from: oklch(0.08 0.025 260);
+  --page-bg-to: oklch(0.06 0.02 250);
+  --navy-accent: #112240;
 
   --bg-safe-dark: oklch(0.06 0.02 260);
   --glow-disabled: 0 0 0 transparent;

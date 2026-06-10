@@ -61,7 +61,7 @@ export function PricingCard({
                 className={`flex items-center gap-2 ${feature.disabled ? "opacity-50" : ""}`}
               >
                 {feature.disabled ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-[#E2E8F0]" />
+                  <div className="h-5 w-5 rounded-full border-2 border-platinum-200" />
                 ) : (
                   <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                 )}

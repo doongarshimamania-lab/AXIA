@@ -15,7 +15,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
   const activePillars = pillars.starter || pillars.free; // Fallback should not happen in correct tier
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-b from-[#F0F9FF] to-white rounded-2xl border border-slate-200 shadow-md">
+    <Card className="relative overflow-hidden bg-gradient-to-b from-page-bg-from to-white rounded-2xl border border-slate-200 shadow-md">
       {/* Header */}
       <div className="flex justify-between items-start p-6 border-b border-slate-100">
         <div>

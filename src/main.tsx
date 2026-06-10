@@ -60,8 +60,8 @@ class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { has
       // Show a subtle error banner instead of crashing the whole page
       return (
         <div>
-          <div style={{ padding: '12px 16px', background: '#fef2f2', borderBottom: '1px solid #fecaca', color: '#991b1b', fontSize: '14px' }}>
-            Something went wrong on this page. <button onClick={() => this.setState({ hasError: false, error: null })} style={{ textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', color: '#991b1b', font: 'inherit' }}>Try again</button>
+          <div className="p-3 px-4 bg-red-50 dark:bg-red-950 border-b border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
+            Something went wrong on this page. <button onClick={() => this.setState({ hasError: false, error: null })} className="underline cursor-pointer bg-transparent border-none text-red-800 dark:text-red-200 font-inherit">Try again</button>
           </div>
           {this.props.children}
         </div>

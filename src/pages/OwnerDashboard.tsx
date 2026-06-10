@@ -266,7 +266,7 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
             <path d={`M 640 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="url(#greenZone)" stroke="none" />
 
             {/* Arc outline */}
-            <path d={`M 100 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="none" stroke="#E2E8F0" strokeWidth="2" />
+            <path d={`M 100 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="none" stroke="var(--platinum-200)" strokeWidth="2" />
 
             {/* Tick marks and labels */}
             {[0, 100, 200, 300, 400, 500].map((value) => {
@@ -283,7 +283,7 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
 
               return (
                 <g key={value}>
-                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#64748B" strokeWidth="2" />
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--platinum-500)" strokeWidth="2" />
                   <text
                     x={labelX}
                     y={labelY}
@@ -691,7 +691,7 @@ function SystemHealthMonitor() {
       case "Healthy": return "var(--success)";
       case "Warning": return "var(--warning)";
       case "Critical": return "var(--danger)";
-      default: return "#64748B";
+      default: return "var(--platinum-500)";
     }
   };
 
@@ -1033,7 +1033,7 @@ function OwnerLogin({ onLogin, showError, password, setPassword }: {
             <ThemeToggle />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-semibold" style={{ fontFamily: 'Geist Sans, Space Grotesk, system-ui, sans-serif' }}>
+            <h1 className="text-2xl font-semibold font-sans">
               Axia Owner
             </h1>
           </div>

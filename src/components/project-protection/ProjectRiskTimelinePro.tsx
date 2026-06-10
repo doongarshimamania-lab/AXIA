@@ -23,7 +23,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
   return (
     <Card className="relative overflow-hidden bg-background text-white rounded-2xl border border-slate-700 shadow-xl">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-[#0f2545] to-background z-0" />
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/40 to-background z-0" />
       
       {/* Header */}
       <div className="relative z-10 flex justify-between items-start p-6 border-b border-slate-700/50">
@@ -43,7 +43,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-5xl bg-background border-slate-700 text-white p-0 overflow-hidden">
-              <DialogHeader className="p-6 border-b border-slate-700/50 bg-[#0f2545]">
+              <DialogHeader className="p-6 border-b border-slate-700/50 bg-primary/40">
                 <DialogTitle className="text-xl font-bold">
                   Comprehensive Risk Analysis
                 </DialogTitle>
@@ -182,10 +182,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       <div 
                         className={`absolute inset-0 rounded-sm transition-all duration-300 ${
                           event.riskLevel === 'high' || event.riskLevel === 'critical'
-                            ? 'bg-gradient-to-t from-danger via-[#FF4D4D] to-[#FF8080]' 
+                            ? 'bg-gradient-to-t from-danger via-danger/60 to-danger/50' 
                             : event.riskLevel === 'medium'
-                            ? 'bg-gradient-to-t from-warning via-[#FBBF24] to-[#FCD34D]'
-                            : 'bg-gradient-to-t from-primary via-[#60A5FA] to-[#93C5FD]'
+                            ? 'bg-gradient-to-t from-warning via-warning/70 to-warning/80'
+                            : 'bg-gradient-to-t from-primary via-primary/70 to-primary/80'
                         } ${isHovered ? 'shadow-lg brightness-110' : 'shadow-sm'}`}
                       />
                       
@@ -193,10 +193,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       <div 
                         className={`absolute top-0 left-full w-3 h-full rounded-tr-sm origin-top-left transform -skew-y-[20deg] transition-all duration-300 ${
                           event.riskLevel === 'high' || event.riskLevel === 'critical'
-                            ? 'bg-gradient-to-b from-[#991B1B] to-[#B91C1C]' 
+                            ? 'bg-gradient-to-b from-danger to-danger' 
                             : event.riskLevel === 'medium'
-                            ? 'bg-gradient-to-b from-[#B45309] to-warning'
-                            : 'bg-gradient-to-b from-[#1E3A8A] to-[#1E40AF]'
+                            ? 'bg-gradient-to-b from-warning to-warning'
+                            : 'bg-gradient-to-b from-info to-info'
                         } opacity-80`}
                       />
 
@@ -204,10 +204,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                       <div 
                         className={`absolute bottom-full left-0 w-full h-3 origin-bottom-left transform skew-x-[70deg] transition-all duration-300 ${
                           event.riskLevel === 'high' || event.riskLevel === 'critical'
-                            ? 'bg-[#FF8080]' 
+                            ? 'bg-danger/50' 
                             : event.riskLevel === 'medium'
-                            ? 'bg-[#FCD34D]'
-                            : 'bg-[#93C5FD]'
+                            ? 'bg-warning/80'
+                            : 'bg-primary/80'
                         } opacity-90`}
                       />
 

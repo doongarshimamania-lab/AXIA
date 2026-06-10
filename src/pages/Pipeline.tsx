@@ -75,6 +75,7 @@ import {
 } from "lucide-react";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
+import { STAGE_COLORS, PLATFORM_COLORS, SEMANTIC_COLORS } from "@/lib/tokens";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -124,10 +125,10 @@ interface PipelineStats {
 // ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
 
 const MOCK_STAGES: Stage[] = [
-  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: "#6366f1", order: 0, isDefault: true },
-  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: "#8b5cf6", order: 1, isDefault: true },
-  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: "#a855f7", order: 2, isDefault: true },
-  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: "#c084fc", order: 3, isDefault: true },
+  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: STAGE_COLORS.lead, order: 0, isDefault: true },
+  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: STAGE_COLORS.qualified, order: 1, isDefault: true },
+  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: STAGE_COLORS.proposal, order: 2, isDefault: true },
+  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: STAGE_COLORS.negotiation, order: 3, isDefault: true },
   { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "var(--success)", order: 4, isDefault: true },
   { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "var(--danger)", order: 5, isDefault: true },
 ];
@@ -188,12 +189,12 @@ const MOCK_PIPELINE_STATS: PipelineStats = {
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SOURCE_OPTIONS = [
-  { value: "upwork", label: "Upwork", color: "#14a800" },
-  { value: "fiverr", label: "Fiverr", color: "#00b22d" },
-  { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
+  { value: "upwork", label: "Upwork", color: PLATFORM_COLORS.upwork },
+  { value: "fiverr", label: "Fiverr", color: PLATFORM_COLORS.fiverr },
+  { value: "linkedin", label: "LinkedIn", color: PLATFORM_COLORS.linkedin },
   { value: "referral", label: "Referral", color: "hsl(var(--primary))" },
-  { value: "direct", label: "Direct", color: "#f59e0b" },
-  { value: "other", label: "Other", color: "#6b7280" },
+  { value: "direct", label: "Direct", color: STAGE_COLORS.lead },
+  { value: "other", label: "Other", color: SEMANTIC_COLORS.neutral },
 ];
 
 const DEFAULT_PROBABILITIES: Record<string, number> = {
@@ -1036,14 +1037,14 @@ export default function Pipeline() {
             icon={<DollarSign className="h-5 w-5" />}
             label="Pipeline Value"
             value={isLoading ? "—" : formatCurrency(safeStats.totalValue)}
-            accent="#6366f1"
+            accent={STAGE_COLORS.lead}
           />
           <StatsCard
             icon={<TrendingUp className="h-5 w-5" />}
             label="Weighted Value"
             value={isLoading ? "—" : formatCurrency(safeStats.weightedValue)}
             subtitle="Value × Probability"
-            accent="#a855f7"
+            accent={STAGE_COLORS.proposal}
           />
           <StatsCard
             icon={<Target className="h-5 w-5" />}

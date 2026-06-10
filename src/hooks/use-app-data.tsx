@@ -14,6 +14,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useConvexPipeline } from "./use-convex-pipeline";
 import { useConvexProposals } from "./use-convex-proposals";
+import { STAGE_COLORS } from "@/lib/tokens";
 
 // ─── Shared Types ────────────────────────────────────────────────────────────
 
@@ -798,7 +799,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
   {
     id: "deal_7",
@@ -821,7 +822,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
   {
     id: "deal_13",
@@ -844,7 +845,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
   {
     id: "deal_14",
@@ -867,7 +868,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
   {
     id: "deal_15",
@@ -890,7 +891,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_005", name: "Elena Volkov", email: "elena.volkov@axiaagency.com", image: null, role: "member", title: "UI/UX Designer" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
 
   // ── Qualified stage (4 deals) ──
@@ -915,7 +916,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
     linkedProposal: null,
     stageName: "Qualified",
-    stageColor: "#8b5cf6",
+    stageColor: STAGE_COLORS.qualified,
   },
   {
     id: "deal_8",
@@ -938,7 +939,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
     linkedProposal: null,
     stageName: "Qualified",
-    stageColor: "#8b5cf6",
+    stageColor: STAGE_COLORS.qualified,
   },
   {
     id: "deal_16",
@@ -961,7 +962,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
     linkedProposal: null,
     stageName: "Qualified",
-    stageColor: "#8b5cf6",
+    stageColor: STAGE_COLORS.qualified,
   },
   {
     id: "deal_17",
@@ -984,7 +985,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
     linkedProposal: null,
     stageName: "Qualified",
-    stageColor: "#8b5cf6",
+    stageColor: STAGE_COLORS.qualified,
   },
 
   // ── Proposal stage (4 deals) ──
@@ -1009,7 +1010,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
     linkedProposal: { id: "prop_2", title: "Mobile Banking App — Full Development", status: "sent", totalValue: 25000 },
     stageName: "Proposal",
-    stageColor: "#a855f7",
+    stageColor: STAGE_COLORS.proposal,
   },
   {
     id: "deal_9",
@@ -1032,7 +1033,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
     linkedProposal: { id: "prop_4", title: "Creative Studios Motion Design Package", status: "viewed", totalValue: 7500 },
     stageName: "Proposal",
-    stageColor: "#a855f7",
+    stageColor: STAGE_COLORS.proposal,
   },
   {
     id: "deal_18",
@@ -1055,7 +1056,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
     linkedProposal: { id: "prop_3", title: "Healthcare Patient Portal", status: "draft", totalValue: 18000 },
     stageName: "Proposal",
-    stageColor: "#a855f7",
+    stageColor: STAGE_COLORS.proposal,
   },
   {
     id: "deal_19",
@@ -1078,7 +1079,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
     linkedProposal: { id: "prop_7", title: "Brand Identity for NovaTech", status: "sent", totalValue: 8500 },
     stageName: "Proposal",
-    stageColor: "#a855f7",
+    stageColor: STAGE_COLORS.proposal,
   },
 
   // ── Negotiation stage (3 deals) ──
@@ -1103,7 +1104,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
     linkedProposal: { id: "prop_8", title: "Full-Stack SaaS Platform", status: "sent", totalValue: 45000 },
     stageName: "Negotiation",
-    stageColor: "#c084fc",
+    stageColor: STAGE_COLORS.negotiation,
   },
   {
     id: "deal_10",
@@ -1126,7 +1127,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
     linkedProposal: null,
     stageName: "Negotiation",
-    stageColor: "#c084fc",
+    stageColor: STAGE_COLORS.negotiation,
   },
   {
     id: "deal_20",
@@ -1149,7 +1150,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
     linkedProposal: { id: "prop_9", title: "Insurance Claims Processing Platform", status: "sent", totalValue: 28000 },
     stageName: "Negotiation",
-    stageColor: "#c084fc",
+    stageColor: STAGE_COLORS.negotiation,
   },
 
   // ── Negotiation stage (additional 1 deal) ──
@@ -1174,7 +1175,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
     linkedProposal: { id: "prop_16", title: "Manufacturing Quality Control System Proposal", status: "viewed", totalValue: 38000 },
     stageName: "Negotiation",
-    stageColor: "#c084fc",
+    stageColor: STAGE_COLORS.negotiation,
   },
 
   // ── Won stage (6 deals) ──
@@ -1387,7 +1388,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
   {
     id: "deal_27",
@@ -1410,7 +1411,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
     linkedProposal: null,
     stageName: "Lead",
-    stageColor: "#6366f1",
+    stageColor: STAGE_COLORS.lead,
   },
 
   // ── Additional Qualified deal (1) ──
@@ -1435,7 +1436,7 @@ const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
     linkedProposal: null,
     stageName: "Qualified",
-    stageColor: "#8b5cf6",
+    stageColor: STAGE_COLORS.qualified,
   },
 
   // ── Additional Won deals (2) ──
@@ -1565,7 +1566,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: { id: "client_6", name: "FinServe Analytics", platform: "upwork", contactEmail: "cto@finserve.io", contactName: "Michael Torres" },
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
-    linkedDeal: { id: "deal_3", title: "Mobile Banking App", value: 25000, stageName: "Proposal", stageColor: "#a855f7" },
+    linkedDeal: { id: "deal_3", title: "Mobile Banking App", value: 25000, stageName: "Proposal", stageColor: STAGE_COLORS.proposal },
   },
   {
     id: "prop_9",
@@ -1584,7 +1585,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
-    linkedDeal: { id: "deal_20", title: "Insurance Claims Platform", value: 28000, stageName: "Negotiation", stageColor: "#c084fc" },
+    linkedDeal: { id: "deal_20", title: "Insurance Claims Platform", value: 28000, stageName: "Negotiation", stageColor: STAGE_COLORS.negotiation },
   },
 
   // ── Viewed proposals (2) ──
@@ -1605,7 +1606,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
     assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
-    linkedDeal: { id: "deal_9", title: "Creative Studios Motion Design Package", value: 7500, stageName: "Proposal", stageColor: "#a855f7" },
+    linkedDeal: { id: "deal_9", title: "Creative Studios Motion Design Package", value: 7500, stageName: "Proposal", stageColor: STAGE_COLORS.proposal },
   },
   {
     id: "prop_11",
@@ -1645,7 +1646,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
-    linkedDeal: { id: "deal_18", title: "Healthcare Patient Portal", value: 35000, stageName: "Proposal", stageColor: "#a855f7" },
+    linkedDeal: { id: "deal_18", title: "Healthcare Patient Portal", value: 35000, stageName: "Proposal", stageColor: STAGE_COLORS.proposal },
   },
   {
     id: "prop_12",
@@ -1664,7 +1665,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
-    linkedDeal: { id: "deal_16", title: "Supply Chain Management System", value: 32000, stageName: "Qualified", stageColor: "#8b5cf6" },
+    linkedDeal: { id: "deal_16", title: "Supply Chain Management System", value: 32000, stageName: "Qualified", stageColor: STAGE_COLORS.qualified },
   },
   {
     id: "prop_13",
@@ -1683,7 +1684,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
-    linkedDeal: { id: "deal_17", title: "Restaurant POS & Ordering System", value: 14000, stageName: "Qualified", stageColor: "#8b5cf6" },
+    linkedDeal: { id: "deal_17", title: "Restaurant POS & Ordering System", value: 14000, stageName: "Qualified", stageColor: STAGE_COLORS.qualified },
   },
 
   // ── Declined proposal (1) ──
@@ -1725,7 +1726,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
-    linkedDeal: { id: "deal_14", title: "EdTech Course Platform", value: 9500, stageName: "Lead", stageColor: "#6366f1" },
+    linkedDeal: { id: "deal_14", title: "EdTech Course Platform", value: 9500, stageName: "Lead", stageColor: STAGE_COLORS.lead },
   },
 
   // ── Additional Signed proposals (2) ──
@@ -1786,7 +1787,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
-    linkedDeal: { id: "deal_26", title: "Nonprofit Donation Platform", value: 8000, stageName: "Lead", stageColor: "#6366f1" },
+    linkedDeal: { id: "deal_26", title: "Nonprofit Donation Platform", value: 8000, stageName: "Lead", stageColor: STAGE_COLORS.lead },
   },
   {
     id: "prop_17",
@@ -1805,7 +1806,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
-    linkedDeal: { id: "deal_28", title: "Legal Practice Management", value: 16000, stageName: "Qualified", stageColor: "#8b5cf6" },
+    linkedDeal: { id: "deal_28", title: "Legal Practice Management", value: 16000, stageName: "Qualified", stageColor: STAGE_COLORS.qualified },
   },
 
   // ── Additional Viewed proposal (1) ──
@@ -1826,7 +1827,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
-    linkedDeal: { id: "deal_23", title: "Manufacturing Quality Control System", value: 38000, stageName: "Negotiation", stageColor: "#c084fc" },
+    linkedDeal: { id: "deal_23", title: "Manufacturing Quality Control System", value: 38000, stageName: "Negotiation", stageColor: STAGE_COLORS.negotiation },
   },
 
   // ── Additional Draft proposal (1) ──
@@ -1847,7 +1848,7 @@ const INITIAL_PROPOSALS: Proposal[] = [
     workspaceId: null,
     client: null,
     assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
-    linkedDeal: { id: "deal_27", title: "Travel Booking Engine", value: 22000, stageName: "Lead", stageColor: "#6366f1" },
+    linkedDeal: { id: "deal_27", title: "Travel Booking Engine", value: 22000, stageName: "Lead", stageColor: STAGE_COLORS.lead },
   },
 ];
 

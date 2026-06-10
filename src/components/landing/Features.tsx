@@ -32,7 +32,7 @@ const features = [
     description: "Get instant notifications when your work context doesn't meet Upwork, Fiverr, or Toptal requirements.",
     stat: "Real-time",
     statLabel: "Instant alerts",
-    color: "from-danger to-[#FF6B6B]",
+    color: "from-danger to-danger/70",
   },
   {
     icon: Clock,
@@ -40,7 +40,7 @@ const features = [
     description: "Smart recommendations on when and what evidence to collect based on your work patterns and client requirements.",
     stat: "87 min",
     statLabel: "Saved weekly",
-    color: "from-premium to-[#FFA500]",
+    color: "from-premium to-warning",
   },
   {
     icon: CheckCircle,

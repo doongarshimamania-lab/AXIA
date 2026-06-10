@@ -13,7 +13,9 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
   if (tier === 'free' || tier === 'starter') {
     return (
       <div className="h-32 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden mb-6 group">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px]" />
+        <div className="absolute inset-0 opacity-30"
+             style={{ backgroundImage: 'linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px)', backgroundSize: '14px 24px' }}
+        />
         
         <div className="absolute inset-x-12 h-1 bg-slate-200 dark:bg-slate-800 top-1/2 -translate-y-1/2 rounded-full overflow-hidden">
            <motion.div 
@@ -125,7 +127,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
   if (tier === 'expert') {
     return (
       <div className="h-80 bg-background rounded-xl border border-slate-800 relative overflow-hidden mb-6 flex flex-col group">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-[#112240] to-background" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-navy-accent to-background" />
         
         {/* Animated Background Particles */}
         {[...Array(5)].map((_, i) => (
@@ -147,7 +149,7 @@ export function TimelineVisualization({ tier, data }: TimelineVisualizationProps
 
         <div className="absolute inset-0 opacity-10" 
              style={{ 
-               backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', 
+               backgroundImage: 'radial-gradient(var(--platinum-400) 1px, transparent 1px)', 
                backgroundSize: '24px 24px' 
              }} 
         />

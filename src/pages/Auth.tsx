@@ -443,7 +443,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                className="w-full h-11 bg-indigo hover:bg-indigo/90 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -499,7 +499,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                className="w-full h-11 bg-indigo hover:bg-indigo/90 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
