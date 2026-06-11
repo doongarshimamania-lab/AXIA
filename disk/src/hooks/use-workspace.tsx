@@ -243,16 +243,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [hasCreateApi, createWorkspaceMutation]);
 
+  // ── Convex mutation for converting to team workspace ──
+  const convertToTeamMutation = useMutation(
+    (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
+  );
+
   const upgradeToTeam = useCallback(() => {
     // Use the Convex mutation to convert
-    const convertApi = (api as any).workspaces?.crud?.convertToTeamWorkspace;
-    if (convertApi && activeWorkspace?._id) {
-      useMutation(convertApi)({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
+    if (convertToTeamMutation && activeWorkspace?._id) {
+      convertToTeamMutation({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
         .catch(() => {});
     }
     setAccountModeState("team");
     saveToStorage(STORAGE_KEY_MODE, "team");
-  }, [activeWorkspace]);
+  }, [activeWorkspace, convertToTeamMutation]);
 
   const refreshWorkspaces = useCallback(() => {
     // Convex queries auto-refresh, but we can force a re-render by toggling

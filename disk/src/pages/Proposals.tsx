@@ -190,8 +190,8 @@ export default function Proposals() {
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
+  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
 
   // Convex queries
   const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : (activeFilter === "all" ? {} : { status: activeFilter })) as Proposal[] | undefined;

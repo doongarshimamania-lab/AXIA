@@ -13,7 +13,7 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Info, Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
@@ -107,9 +107,12 @@ export default function Clients() {
   // ─── Permissions ────────────────────────────────────────────────────────
   const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
 
+  // ─── Permissions for selected client (hook MUST be at top level) ──────
+  const perms = usePermissions(selectedClient as any);
+
   // ─── Convex mutations for sharing ───────────────────────────────────────
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
+  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
 
   // ─── Convex queries ────────────────────────────────────────────────────
   const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : {});
@@ -136,18 +139,8 @@ export default function Clients() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
-
-  useEffect(() => {
-    if (clientsData === undefined) {
-      const timer = setTimeout(() => setQueryTimeout(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [clientsData]);
-
-  const isLoading = !authLoading && clientsData === undefined && !queryTimeout;
+  const isLoading = !authLoading && clientsData === undefined;
+  const loadingTimedOut = useQueryTimeout(isLoading, 6000);
 
   // ─── Determine demo mode ───────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -308,11 +301,18 @@ export default function Clients() {
         )}
 
         {/* Loading state */}
-        {isLoading ? (
+        {isLoading && !loadingTimedOut ? (
           <div className="space-y-4">
             <Skeleton className="h-[280px] w-full rounded-xl" />
             <Skeleton className="h-[300px] w-full rounded-xl" />
           </div>
+        ) : loadingTimedOut && isLoading ? (
+          <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+            <Info className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+            <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
+            <p className="text-sm text-muted-foreground mb-3">Could not load client data. The backend may not be running.</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Refresh</Button>
+          </Card>
         ) : (
           <>
             {/* Client List */}
@@ -358,43 +358,36 @@ export default function Clients() {
                 <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
                 {selectedClientId && (
                   <div className="flex items-center gap-2">
-                    {(() => {
-                      const perms = usePermissions(selectedClient as any);
-                      return (
-                        <>
-                          {(canShareRecords || perms.canShare) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                              onClick={() => {
-                                setSharingRecord({
-                                  id: selectedClientId!,
-                                  type: "client",
-                                  sharing: (selectedClient as any)?.sharing || [],
-                                });
-                                setShowShareDialog(true);
-                              }}
-                            >
-                              <Share2 className="h-4 w-4" />
-                              Share
-                            </Button>
-                          )}
-                          {(canDeleteRecords || perms.canDelete) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                              onClick={() => setShowDeleteConfirm(true)}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Client
-                            </Button>
-                          )}
-                        </>
-                      );
-                    })()}
+                    {(canShareRecords || perms.canShare) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          setSharingRecord({
+                            id: selectedClientId!,
+                            type: "client",
+                            sharing: (selectedClient as any)?.sharing || [],
+                          });
+                          setShowShareDialog(true);
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </Button>
+                    )}
+                    {(canDeleteRecords || perms.canDelete) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Client
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>

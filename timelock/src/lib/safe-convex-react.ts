@@ -38,6 +38,11 @@ export { ConvexReactClient, ConvexProvider, useConvexAuth, useQuery_experimental
 // A stable dummy query reference used when we want to skip a query.
 const DUMMY_QUERY = (anyApi as any)._skip_placeholder;
 
+// A stable dummy mutation reference — always call _useMutation with this
+// when the real mutation is null, to maintain consistent hook ordering.
+// The result is never actually invoked (gated by isNull check).
+const DUMMY_MUTATION = (anyApi as any)._system?.__dummyMutation;
+
 // ── Query Result Types ─────────────────────────────────────────────────────────
 
 export interface QueryResultLoading {
@@ -217,22 +222,29 @@ export function useQueryResult(query: any, args: any): QueryResult {
  *
  * - If the mutation reference is null/undefined, returns a no-op that logs a warning.
  * - Execution errors are RE-THROWN so callers' try/catch blocks work properly.
+ *
+ * IMPORTANT: We always call _useMutation to maintain consistent hook ordering.
+ * When mutation is null, we use a no-op wrapper. This avoids conditional hook calls
+ * which violate the Rules of Hooks.
  */
 export function useMutation(mutation: any): any {
-  if (mutation === null || mutation === undefined) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(async (_args: any) => {
-      console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
-      return undefined;
-    }, []);
-  }
+  const isNull = mutation === null || mutation === undefined;
+
+  // Always call _useMutation with a valid reference to maintain consistent hook ordering.
+  // When mutation is null, we use DUMMY_MUTATION (a stable proxy object from anyApi)
+  // so the hook is always called. Execution is gated by the isNull flag.
+  const effectiveMutation = isNull ? DUMMY_MUTATION : mutation;
 
   try {
     // @ts-ignore - dynamic mutation reference
-    const originalMutation = _useMutation(mutation);
+    const originalMutation = _useMutation(effectiveMutation);
 
     const safeMutation = useCallback(
       async (args: any) => {
+        if (isNull) {
+          console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
+          return undefined;
+        }
         try {
           return await originalMutation(args);
         } catch (err: any) {
@@ -240,12 +252,14 @@ export function useMutation(mutation: any): any {
           throw err;
         }
       },
-      [originalMutation]
+      [originalMutation, isNull]
     );
 
     return safeMutation;
   } catch (err: any) {
     console.warn("[safe-convex-react] useMutation init error:", err?.message || err);
+    // Fallback: return a no-op. This should rarely happen since we always
+    // provide a valid-looking reference to _useMutation.
     return useCallback(async (_args: any) => {
       console.warn("[safe-convex-react] mutation not available (no-op)");
       return undefined;

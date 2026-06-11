@@ -1,0 +1,1102 @@
+     1→import { useState, useMemo } from "react";
+     2→import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+     3→import { api } from "@/convex/_generated/api";
+     4→import type { Id } from "@/convex/_generated/dataModel";
+     5→import { useNavigate } from "react-router";
+     6→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     7→import { Button } from "@/components/ui/button";
+     8→import { Badge } from "@/components/ui/badge";
+     9→import { Input } from "@/components/ui/input";
+    10→import {
+    11→  Dialog,
+    12→  DialogContent,
+    13→  DialogHeader,
+    14→  DialogTitle,
+    15→  DialogFooter,
+    16→} from "@/components/ui/dialog";
+    17→import { motion, AnimatePresence } from "framer-motion";
+    18→import { toast } from "sonner";
+    19→import PaymentReminders from "@/components/billing/PaymentReminders";
+    20→import {
+    21→  DollarSign,
+    22→  Clock,
+    23→  AlertTriangle,
+    24→  Plus,
+    25→  FileText,
+    26→  Search,
+    27→  ChevronDown,
+    28→  Send,
+    29→  Calendar,
+    30→  User,
+    31→  ShieldCheck,
+    32→  Paperclip,
+    33→  Trash2,
+    34→  Database,
+    35→  Eye,
+    36→  Share2,
+    37→  Receipt,
+    38→  ArrowUpRight,
+    39→  Hash,
+    40→  RefreshCw,
+    41→} from "lucide-react";
+    42→import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
+    43→import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
+    44→import { useWorkspaceContext } from "@/hooks/use-workspace";
+    45→import { useWorkspacePermissions, usePermissions, type RecordWithSharing } from "@/hooks/use-permissions";
+    46→import { ShareDialog } from "@/components/ShareDialog";
+    47→import { BulkImportDialog } from "@/components/BulkImportDialog";
+    48→
+    49→
+    50→// ─── Types ──────────────────────────────────────────────────────────────────
+    51→
+    52→type InvoiceStatus = "draft" | "sent" | "viewed" | "paid" | "overdue";
+    53→
+    54→interface InvoiceLineItem {
+    55→  id: string;
+    56→  description: string;
+    57→  quantity: number;
+    58→  rate: number;
+    59→  amount: number;
+    60→  hasProof?: boolean;
+    61→  workLinkId?: string;
+    62→}
+    63→
+    64→interface Invoice {
+    65→  _id: string;
+    66→  invoiceNumber: string;
+    67→  clientName?: string;
+    68→  clientEmail?: string;
+    69→  status: InvoiceStatus;
+    70→  issueDate: number;
+    71→  dueDate: number;
+    72→  paidDate?: number;
+    73→  lineItems: InvoiceLineItem[];
+    74→  subtotal: number;
+    75→  taxRate?: number;
+    76→  taxAmount?: number;
+    77→  total: number;
+    78→  currency?: string;
+    79→  notes?: string;
+    80→  proofCount?: number;
+    81→  hasValidatedBilling?: boolean;
+    82→  sentAt?: number;
+    83→  viewedAt?: number;
+    84→  createdAt: number;
+    85→  updatedAt: number;
+    86→}
+    87→
+    88→// ─── Constants ──────────────────────────────────────────────────────────────
+    89→
+    90→const STATUS_CONFIG: Record<
+    91→  InvoiceStatus,
+    92→  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string }
+    93→> = {
+    94→  draft: {
+    95→    label: "Draft",
+    96→    variant: "secondary",
+    97→    className: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/25 hover:bg-slate-500/25",
+    98→  },
+    99→  sent: {
+   100→    label: "Sent",
+   101→    variant: "outline",
+   102→    className: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/25 hover:bg-amber-500/25",
+   103→  },
+   104→  viewed: {
+   105→    label: "Viewed",
+   106→    variant: "outline",
+   107→    className: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/25",
+   108→  },
+   109→  paid: {
+   110→    label: "Paid",
+   111→    variant: "secondary",
+   112→    className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25",
+   113→  },
+   114→  overdue: {
+   115→    label: "Overdue",
+   116→    variant: "destructive",
+   117→    className: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/25 hover:bg-red-500/25",
+   118→  },
+   119→};
+   120→
+   121→const FILTER_TABS: { key: "all" | InvoiceStatus; label: string }[] = [
+   122→  { key: "all", label: "All" },
+   123→  { key: "draft", label: "Draft" },
+   124→  { key: "sent", label: "Sent" },
+   125→  { key: "viewed", label: "Viewed" },
+   126→  { key: "paid", label: "Paid" },
+   127→  { key: "overdue", label: "Overdue" },
+   128→];
+   129→
+   130→// ─── Helpers ────────────────────────────────────────────────────────────────
+   131→
+   132→function formatCurrency(amount: number, currency: string = "USD"): string {
+   133→  try {
+   134→    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+   135→  } catch {
+   136→    return `$${amount.toFixed(2)}`;
+   137→  }
+   138→}
+   139→
+   140→function formatDate(ts: number): string {
+   141→  return new Date(ts).toLocaleDateString("en-US", {
+   142→    month: "short",
+   143→    day: "numeric",
+   144→    year: "numeric",
+   145→  });
+   146→}
+   147→
+   148→function daysOverdue(dueDate: number): number {
+   149→  const now = Date.now();
+   150→  return Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
+   151→}
+   152→
+   153→// ─── InvoiceActions sub-component (fixes rules-of-hooks violation) ──────────
+   154→
+   155→function InvoiceActions({
+   156→  invoice,
+   157→  canShareRecords,
+   158→  canDeleteRecords,
+   159→  onShare,
+   160→  onDelete,
+   161→}: {
+   162→  invoice: Invoice;
+   163→  canShareRecords: boolean;
+   164→  canDeleteRecords: boolean;
+   165→  onShare: () => void;
+   166→  onDelete: () => void;
+   167→}) {
+   168→  const perms = usePermissions(invoice as unknown as RecordWithSharing);
+   169→
+   170→  return (
+   171→    <>
+   172→      {(canShareRecords || perms.canShare) && (
+   173→        <Button
+   174→          variant="ghost"
+   175→          size="sm"
+   176→          className="h-8 px-2"
+   177→          onClick={(e) => {
+   178→            e.stopPropagation();
+   179→            onShare();
+   180→          }}
+   181→        >
+   182→          <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+   183→        </Button>
+   184→      )}
+   185→      {(canDeleteRecords || perms.canDelete) && (
+   186→        <Button
+   187→          variant="ghost"
+   188→          size="sm"
+   189→          className="h-8 px-2 text-red-600 hover:text-red-700"
+   190→          onClick={(e) => {
+   191→            e.stopPropagation();
+   192→            onDelete();
+   193→          }}
+   194→        >
+   195→          <Trash2 className="h-3.5 w-3.5" />
+   196→        </Button>
+   197→      )}
+   198→    </>
+   199→  );
+   200→}
+   201→
+   202→// ─── Component ──────────────────────────────────────────────────────────────
+   203→
+   204→export default function Invoices() {
+   205→  const navigate = useNavigate();
+   206→
+   207→  // ── Workspace Context ──
+   208→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   209→  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+   210→
+   211→  // ── Permissions ──
+   212→  const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
+   213→
+   214→  // ── Local State ────────────────────────────────────────────────────────
+   215→  const [activeFilter, setActiveFilter] = useState<"all" | InvoiceStatus>("all");
+   216→  const [searchQuery, setSearchQuery] = useState("");
+   217→  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+   218→  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+   219→  const [seeding, setSeeding] = useState(false);
+   220→  const [showShareDialog, setShowShareDialog] = useState(false);
+   221→  const [shareInvoiceId, setShareInvoiceId] = useState<string | null>(null);
+   222→  const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+   223→  const [showBulkImport, setShowBulkImport] = useState(false);
+   224→
+   225→  // ── Convex mutations for sharing ──
+   226→  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
+   227→  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
+   228→
+   229→  // ── Convex Queries ─────────────────────────────────────────────────────
+   230→  const invoices = useQuery(api.billing.crud.getInvoices, workspaceId ? { workspaceId } : {}) as Invoice[] | undefined;
+   231→  const stats = useQuery(api.billing.crud.getInvoiceStats, workspaceId ? { workspaceId } : {}) as {
+   232→    total: number;
+   233→    paid: number;
+   234→    pending: number;
+   235→    overdue: number;
+   236→    draft: number;
+   237→    totalRevenue: number;
+   238→    totalOutstanding: number;
+   239→    withProof: number;
+   240→  } | undefined;
+   241→
+   242→  // ── Convex Mutations ───────────────────────────────────────────────────
+   243→  const sendInvoice = useMutation(api.billing.crud.sendInvoice);
+   244→  const markInvoicePaid = useMutation(api.billing.crud.markInvoicePaid);
+   245→  const deleteInvoice = useMutation(api.billing.crud.deleteInvoice);
+   246→  const seedMockInvoices = useMutation(api.billing.crud.seedMockInvoices);
+   247→
+   248→  // ── Computed ───────────────────────────────────────────────────────────
+   249→  const safeInvoices = invoices ?? [];
+   250→
+   251→  const filteredInvoices = useMemo(() => {
+   252→    return safeInvoices.filter((inv) => {
+   253→      const matchesFilter = activeFilter === "all" || inv.status === activeFilter;
+   254→      const matchesSearch =
+   255→        searchQuery === "" ||
+   256→        (inv.clientName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+   257→        inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase());
+   258→      return matchesFilter && matchesSearch;
+   259→    });
+   260→  }, [safeInvoices, activeFilter, searchQuery]);
+   261→
+   262→  const filterCounts = useMemo(() => {
+   263→    const counts: Record<string, number> = { all: safeInvoices.length };
+   264→    for (const status of ["draft", "sent", "viewed", "paid", "overdue"] as InvoiceStatus[]) {
+   265→      counts[status] = safeInvoices.filter((i) => i.status === status).length;
+   266→    }
+   267→    // "pending" counts sent + viewed
+   268→    counts["pending"] = (counts["sent"] || 0) + (counts["viewed"] || 0);
+   269→    return counts;
+   270→  }, [safeInvoices]);
+   271→
+   272→  const safeStats = stats ?? {
+   273→    total: 0,
+   274→    paid: 0,
+   275→    pending: 0,
+   276→    overdue: 0,
+   277→    draft: 0,
+   278→    totalRevenue: 0,
+   279→    totalOutstanding: 0,
+   280→    withProof: 0,
+   281→  };
+   282→
+   283→  // ── Handlers ───────────────────────────────────────────────────────────
+   284→  const handleSendInvoice = async (invoiceId: string) => {
+   285→    try {
+   286→      await sendInvoice({ invoiceId: invoiceId as any });
+   287→      toast.success("Invoice sent!", {
+   288→        description: "The invoice has been sent to the client.",
+   289→      });
+   290→    } catch (err: any) {
+   291→      toast.error("Failed to send invoice", { description: err.message });
+   292→    }
+   293→  };
+   294→
+   295→  const handleMarkPaid = async (invoiceId: string) => {
+   296→    try {
+   297→      await markInvoicePaid({ invoiceId: invoiceId as any });
+   298→      toast.success("Invoice marked as paid!");
+   299→    } catch (err: any) {
+   300→      toast.error("Failed to mark invoice as paid", { description: err.message });
+   301→    }
+   302→  };
+   303→
+   304→  const handleDelete = async (invoiceId: string) => {
+   305→    try {
+   306→      await deleteInvoice({ invoiceId: invoiceId as any });
+   307→      setDeleteConfirmId(null);
+   308→      toast.success("Invoice deleted");
+   309→    } catch (err: any) {
+   310→      toast.error("Failed to delete invoice", { description: err.message });
+   311→    }
+   312→  };
+   313→
+   314→  const handleSeedData = async () => {
+   315→    setSeeding(true);
+   316→    try {
+   317→      const result = await seedMockInvoices({});
+   318→      if ((result as any)?.seeded) {
+   319→        toast.success("Mock data seeded!", {
+   320→          description: `${(result as any).count} invoices created`,
+   321→        });
+   322→      } else {
+   323→        toast.info("Invoices already exist", {
+   324→          description: `${(result as any)?.count || 0} invoices found`,
+   325→        });
+   326→      }
+   327→    } catch (err: any) {
+   328→      toast.error("Failed to seed data", { description: err.message });
+   329→    } finally {
+   330→      setSeeding(false);
+   331→    }
+   332→  };
+   333→
+   334→  // ── Loading: useQueryTimeout for loading timeout ──
+   335→  const isLoading = invoices === undefined || stats === undefined;
+   336→  const timedOut = useQueryTimeout(isLoading, 6000);
+   337→
+   338→  if (isLoading && !timedOut) {
+   339→    return (
+   340→      <motion.div
+   341→        className="w-full min-h-screen bg-background text-foreground flex items-center justify-center"
+   342→        initial={{ opacity: 0 }}
+   343→        animate={{ opacity: 1 }}
+   344→        transition={{ duration: 0.4 }}
+   345→      >
+   346→        <div className="text-center">
+   347→          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5CF6] mx-auto" />
+   348→          <p className="mt-4 text-muted-foreground">Loading invoices...</p>
+   349→        </div>
+   350→      </motion.div>
+   351→    );
+   352→  }
+   353→
+   354→  if (timedOut && isLoading) {
+   355→    return (
+   356→      <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
+   357→        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+   358→          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+   359→            <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+   360→          </div>
+   361→          <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+   362→          <p className="text-sm text-muted-foreground max-w-md mb-6">
+   363→            Unable to load data. This might be a connection issue.
+   364→          </p>
+   365→          <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+   366→            <RefreshCw className="h-4 w-4" />
+   367→            Retry
+   368→          </Button>
+   369→        </div>
+   370→      </div>
+   371→    );
+   372→  }
+   373→
+   374→  // ─── RENDER ────────────────────────────────────────────────────────────
+   375→  return (
+   376→    <motion.div
+   377→      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+   378→      initial={{ opacity: 0 }}
+   379→      animate={{ opacity: 1 }}
+   380→      transition={{ duration: 0.5 }}
+   381→    >
+   382→      <div className="container mx-auto px-4 py-6">
+   383→        {/* ── Header ─────────────────────────────────────────────────────── */}
+   384→        <div className="mb-6">
+   385→          <h1
+   386→            className="text-[32px] font-bold text-foreground tracking-tight mb-2"
+   387→            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+   388→          >
+   389→            Invoices
+   390→          </h1>
+   391→          <p className="text-[16px] text-muted-foreground">
+   392→            Create, manage, and track your invoices with validated billing
+   393→          </p>
+   394→        </div>
+   395→
+   396→        {/* ── Stats Cards ────────────────────────────────────────────────── */}
+   397→        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+   398→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}>
+   399→            <Card>
+   400→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   401→                <CardTitle className="text-[13px] font-medium text-muted-foreground">Total</CardTitle>
+   402→                <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center">
+   403→                  <Receipt className="h-3.5 w-3.5 text-[#8B5CF6]" />
+   404→                </div>
+   405→              </CardHeader>
+   406→              <CardContent>
+   407→                <div className="text-[22px] font-bold text-foreground">{safeStats.total}</div>
+   408→                <p className="text-[11px] text-muted-foreground">Invoices</p>
+   409→              </CardContent>
+   410→            </Card>
+   411→          </motion.div>
+   412→
+   413→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+   414→            <Card>
+   415→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   416→                <CardTitle className="text-[13px] font-medium text-muted-foreground">Revenue</CardTitle>
+   417→                <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center">
+   418→                  <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+   419→                </div>
+   420→              </CardHeader>
+   421→              <CardContent>
+   422→                <div className="text-[22px] font-bold text-foreground">
+   423→                  {formatCurrency(safeStats.totalRevenue)}
+   424→                </div>
+   425→                <p className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+   426→                  <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+   427→                  <span className="text-emerald-600">{safeStats.paid} paid</span>
+   428→                </p>
+   429→              </CardContent>
+   430→            </Card>
+   431→          </motion.div>
+   432→
+   433→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+   434→            <Card>
+   435→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   436→                <CardTitle className="text-[13px] font-medium text-muted-foreground">Outstanding</CardTitle>
+   437→                <div className="h-7 w-7 rounded-md bg-amber-500/10 flex items-center justify-center">
+   438→                  <Clock className="h-3.5 w-3.5 text-amber-600" />
+   439→                </div>
+   440→              </CardHeader>
+   441→              <CardContent>
+   442→                <div className="text-[22px] font-bold text-foreground">
+   443→                  {formatCurrency(safeStats.totalOutstanding)}
+   444→                </div>
+   445→                <p className="text-[11px] text-muted-foreground">
+   446→                  <span className="text-amber-600">{safeStats.pending} pending</span>
+   447→                </p>
+   448→              </CardContent>
+   449→            </Card>
+   450→          </motion.div>
+   451→
+   452→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+   453→            <Card>
+   454→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   455→                <CardTitle className="text-[13px] font-medium text-muted-foreground">Overdue</CardTitle>
+   456→                <div className="h-7 w-7 rounded-md bg-red-500/10 flex items-center justify-center">
+   457→                  <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+   458→                </div>
+   459→              </CardHeader>
+   460→              <CardContent>
+   461→                <div className="text-[22px] font-bold text-[#DC2626]">{safeStats.overdue}</div>
+   462→                <p className="text-[11px] text-red-600">Overdue invoices</p>
+   463→              </CardContent>
+   464→            </Card>
+   465→          </motion.div>
+   466→
+   467→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
+   468→            <Card>
+   469→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   470→                <CardTitle className="text-[13px] font-medium text-muted-foreground">With Proof</CardTitle>
+   471→                <div className="h-7 w-7 rounded-md bg-[#22c55e]/10 flex items-center justify-center">
+   472→                  <ShieldCheck className="h-3.5 w-3.5 text-[#22c55e]" />
+   473→                </div>
+   474→              </CardHeader>
+   475→              <CardContent>
+   476→                <div className="text-[22px] font-bold text-[#22c55e]">{safeStats.withProof}</div>
+   477→                <p className="text-[11px] text-muted-foreground">Validated billing</p>
+   478→              </CardContent>
+   479→            </Card>
+   480→          </motion.div>
+   481→
+   482→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
+   483→            <Card>
+   484→              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   485→                <CardTitle className="text-[13px] font-medium text-muted-foreground">Draft</CardTitle>
+   486→                <div className="h-7 w-7 rounded-md bg-slate-500/10 flex items-center justify-center">
+   487→                  <FileText className="h-3.5 w-3.5 text-slate-500" />
+   488→                </div>
+   489→              </CardHeader>
+   490→              <CardContent>
+   491→                <div className="text-[22px] font-bold text-foreground">{safeStats.draft}</div>
+   492→                <p className="text-[11px] text-muted-foreground">Awaiting send</p>
+   493→              </CardContent>
+   494→            </Card>
+   495→          </motion.div>
+   496→        </div>
+   497→
+   498→        {/* ── Payment Reminders (only when overdue) ──────────────────────── */}
+   499→        {safeStats.overdue > 0 && (
+   500→          <PaymentReminders overdueCount={safeStats.overdue} />
+   501→        )}
+   502→
+   503→        {/* ── Action Bar ─────────────────────────────────────────────────── */}
+   504→        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+   505→          <div className="relative w-full sm:w-80">
+   506→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   507→            <Input
+   508→              placeholder="Search invoices..."
+   509→              value={searchQuery}
+   510→              onChange={(e) => setSearchQuery(e.target.value)}
+   511→              className="pl-9"
+   512→            />
+   513→          </div>
+   514→          <div className="flex items-center gap-2">
+   515→            {import.meta.env.DEV && safeInvoices.length === 0 && (
+   516→              <Button
+   517→                variant="outline"
+   518→                size="sm"
+   519→                className="gap-1.5"
+   520→                onClick={handleSeedData}
+   521→                disabled={seeding}
+   522→              >
+   523→                <Database className="h-4 w-4" />
+   524→                {seeding ? "Seeding..." : "Seed Demo Data"}
+   525→              </Button>
+   526→            )}
+   527→            <Button
+   528→              variant="outline"
+   529→              size="sm"
+   530→              className="gap-1.5"
+   531→              onClick={() => setShowBulkImport(true)}
+   532→            >
+   533→              <Database className="h-4 w-4" />
+   534→              Bulk Import
+   535→            </Button>
+   536→            <Button
+   537→              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-primary-foreground gap-2"
+   538→              onClick={() => navigate("/invoices/new")}
+   539→            >
+   540→              <Plus className="h-4 w-4" />
+   541→              Create Invoice
+   542→            </Button>
+   543→          </div>
+   544→        </div>
+   545→
+   546→        {/* ── Filter Tabs ────────────────────────────────────────────────── */}
+   547→        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+   548→          {FILTER_TABS.map((tab) => {
+   549→            const isActive = activeFilter === tab.key;
+   550→            return (
+   551→              <button
+   552→                key={tab.key}
+   553→                onClick={() => setActiveFilter(tab.key)}
+   554→                className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
+   555→                  isActive
+   556→                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+   557→                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+   558→                }`}
+   559→              >
+   560→                <span>{tab.label}</span>
+   561→                <span
+   562→                  className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+   563→                    isActive
+   564→                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+   565→                      : "bg-muted text-muted-foreground"
+   566→                  }`}
+   567→                >
+   568→                  {filterCounts[tab.key] ?? 0}
+   569→                </span>
+   570→                <div
+   571→                  className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+   572→                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+   573→                  }`}
+   574→                />
+   575→              </button>
+   576→            );
+   577→          })}
+   578→        </div>
+   579→
+   580→        {/* ── Invoice List ───────────────────────────────────────────────── */}
+   581→        <div className="space-y-3">
+   582→          <AnimatePresence mode="popLayout">
+   583→            {filteredInvoices.length === 0 ? (
+   584→              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   585→                <Card>
+   586→                  <CardContent className="py-12">
+   587→                    <div className="text-center text-muted-foreground">
+   588→                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-40" />
+   589→                      <p className="text-[16px] font-medium mb-1">No invoices found</p>
+   590→                      <p className="text-[14px]">
+   591→                        {searchQuery
+   592→                          ? "Try adjusting your search terms"
+   593→                          : safeInvoices.length === 0
+   594→                          ? "Create your first invoice or seed demo data to get started"
+   595→                          : "No invoices match this filter"}
+   596→                      </p>
+   597→                      {import.meta.env.DEV && safeInvoices.length === 0 && (
+   598→                        <Button
+   599→                          className="mt-4 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-2"
+   600→                          onClick={handleSeedData}
+   601→                          disabled={seeding}
+   602→                        >
+   603→                          <Database className="h-4 w-4" />
+   604→                          {seeding ? "Seeding..." : "Seed Demo Data"}
+   605→                        </Button>
+   606→                      )}
+   607→                    </div>
+   608→                  </CardContent>
+   609→                </Card>
+   610→              </motion.div>
+   611→            ) : (
+   612→              filteredInvoices.map((invoice, idx) => {
+   613→                const isExpanded = expandedInvoiceId === invoice._id;
+   614→                const config = STATUS_CONFIG[invoice.status] || STATUS_CONFIG.draft;
+   615→                const overdueDays =
+   616→                  invoice.status === "overdue" ? daysOverdue(invoice.dueDate) : 0;
+   617→                const hasProofs = (invoice.proofCount ?? 0) > 0 || invoice.hasValidatedBilling;
+   618→
+   619→                return (
+   620→                  <motion.div
+   621→                    key={invoice._id}
+   622→                    initial={{ opacity: 0, y: 10 }}
+   623→                    animate={{ opacity: 1, y: 0 }}
+   624→                    exit={{ opacity: 0, y: -10 }}
+   625→                    transition={{ duration: 0.25, delay: idx * 0.03 }}
+   626→                    layout
+   627→                  >
+   628→                    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${hasProofs ? "border-[#22c55e]/20" : ""}`}>
+   629→                      {/* ── Invoice Row ──────────────────────────────────────── */}
+   630→                      <div
+   631→                        className="cursor-pointer"
+   632→                        onClick={() => setExpandedInvoiceId(isExpanded ? null : invoice._id)}
+   633→                      >
+   634→                        <CardContent className="p-4 sm:p-5">
+   635→                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   636→                            {/* Left section */}
+   637→                            <div className="flex items-start gap-3 min-w-0 flex-1">
+   638→                              <div
+   639→                                className={`h-9 w-9 rounded-md flex items-center justify-center flex-shrink-0 ${
+   640→                                  invoice.status === "paid"
+   641→                                    ? "bg-emerald-500/10"
+   642→                                    : invoice.status === "sent" || invoice.status === "viewed"
+   643→                                    ? "bg-amber-500/10"
+   644→                                    : invoice.status === "overdue"
+   645→                                    ? "bg-red-500/10"
+   646→                                    : "bg-slate-500/10"
+   647→                                }`}
+   648→                              >
+   649→                                <Receipt
+   650→                                  className={`h-4 w-4 ${
+   651→                                    invoice.status === "paid"
+   652→                                      ? "text-emerald-600"
+   653→                                      : invoice.status === "sent" || invoice.status === "viewed"
+   654→                                      ? "text-amber-600"
+   655→                                      : invoice.status === "overdue"
+   656→                                      ? "text-red-600"
+   657→                                      : "text-slate-500"
+   658→                                  }`}
+   659→                                />
+   660→                              </div>
+   661→                              <div className="min-w-0 flex-1">
+   662→                                <div className="flex items-center gap-2 flex-wrap">
+   663→                                  <span className="font-semibold text-[14px] text-foreground">
+   664→                                    {invoice.invoiceNumber}
+   665→                                  </span>
+   666→                                  <Badge
+   667→                                    variant={config.variant}
+   668→                                    className={`text-[11px] px-2 py-0 h-5 ${config.className}`}
+   669→                                  >
+   670→                                    {config.label}
+   671→                                  </Badge>
+   672→                                  {hasProofs && (
+   673→                                    <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[11px] px-2 py-0 h-5">
+   674→                                      <ShieldCheck className="h-3 w-3 mr-0.5" />
+   675→                                      Validated
+   676→                                    </Badge>
+   677→                                  )}
+   678→                                  <TruthLayerBadge
+   679→                                    score={calculateFinancialVerificationScore([invoice]).score}
+   680→                                    size="sm"
+   681→                                    showScore={true}
+   682→                                    details={[
+   683→                                      { label: `Proofs: ${invoice.proofCount ?? 0} attached`, verified: (invoice.proofCount ?? 0) > 0 },
+   684→                                      { label: "Validated billing", verified: !!invoice.hasValidatedBilling },
+   685→                                      { label: `Line items: ${invoice.lineItems?.length ?? 0}`, verified: (invoice.lineItems?.filter((li: any) => li.hasProof).length ?? 0) > 0 },
+   686→                                    ]}
+   687→                                  />
+   688→                                  {invoice.status === "overdue" && overdueDays > 0 && (
+   689→                                    <span className="text-[11px] text-red-600 font-medium">
+   690→                                      {overdueDays}d overdue
+   691→                                    </span>
+   692→                                  )}
+   693→                                </div>
+   694→                                <div className="flex items-center gap-3 mt-1 text-[13px] text-muted-foreground">
+   695→                                  <span className="flex items-center gap-1">
+   696→                                    <User className="h-3 w-3" />
+   697→                                    {invoice.clientName || "No client"}
+   698→                                  </span>
+   699→                                  {(invoice.proofCount ?? 0) > 0 && (
+   700→                                    <span className="flex items-center gap-1 text-[#22c55e]">
+   701→                                      <Paperclip className="h-3 w-3" />
+   702→                                      {invoice.proofCount} proof{(invoice.proofCount ?? 0) !== 1 ? "s" : ""}
+   703→                                    </span>
+   704→                                  )}
+   705→                                </div>
+   706→                              </div>
+   707→                            </div>
+   708→
+   709→                            {/* Right section */}
+   710→                            <div className="flex items-center gap-4 sm:gap-6">
+   711→                              <div className="text-right hidden sm:block">
+   712→                                <p className="text-[11px] text-muted-foreground">Issued</p>
+   713→                                <p className="text-[13px] text-foreground">
+   714→                                  {formatDate(invoice.issueDate)}
+   715→                                </p>
+   716→                              </div>
+   717→                              <div className="text-right hidden sm:block">
+   718→                                <p className="text-[11px] text-muted-foreground">Due</p>
+   719→                                <p className={`text-[13px] ${invoice.status === "overdue" ? "text-red-500 font-medium" : "text-foreground"}`}>
+   720→                                  {formatDate(invoice.dueDate)}
+   721→                                </p>
+   722→                              </div>
+   723→                              <div className="text-right">
+   724→                                <p className="text-[18px] font-bold text-foreground">
+   725→                                  {formatCurrency(invoice.total, invoice.currency)}
+   726→                                </p>
+   727→                              </div>
+   728→                              <div className="flex items-center gap-1">
+   729→                                {invoice.status === "draft" && (
+   730→                                  <Button
+   731→                                    variant="ghost"
+   732→                                    size="sm"
+   733→                                    className="h-8 px-2"
+   734→                                    onClick={(e) => {
+   735→                                      e.stopPropagation();
+   736→                                      handleSendInvoice(invoice._id);
+   737→                                    }}
+   738→                                  >
+   739→                                    <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
+   740→                                  </Button>
+   741→                                )}
+   742→                                {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
+   743→                                  <Button
+   744→                                    variant="ghost"
+   745→                                    size="sm"
+   746→                                    className="h-8 px-2"
+   747→                                    onClick={(e) => {
+   748→                                      e.stopPropagation();
+   749→                                      handleMarkPaid(invoice._id);
+   750→                                    }}
+   751→                                  >
+   752→                                    <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+   753→                                  </Button>
+   754→                                )}
+   755→                                <Button
+   756→                                  variant="ghost"
+   757→                                  size="sm"
+   758→                                  className="h-8 px-2"
+   759→                                  onClick={(e) => {
+   760→                                    e.stopPropagation();
+   761→                                    navigate(`/invoices/new?edit=${invoice._id}`);
+   762→                                  }}
+   763→                                >
+   764→                                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+   765→                                </Button>
+   766→                                <InvoiceActions
+   767→                                  invoice={invoice}
+   768→                                  canShareRecords={canShareRecords}
+   769→                                  canDeleteRecords={canDeleteRecords}
+   770→                                  onShare={() => {
+   771→                                    setSharingRecord({
+   772→                                      id: invoice._id,
+   773→                                      type: "invoice",
+   774→                                      sharing: (invoice as any).sharing || [],
+   775→                                    });
+   776→                                    setShareInvoiceId(invoice._id);
+   777→                                    setShowShareDialog(true);
+   778→                                  }}
+   779→                                  onDelete={() => {
+   780→                                    setDeleteConfirmId(invoice._id);
+   781→                                  }}
+   782→                                />
+   783→                                <motion.div
+   784→                                  animate={{ rotate: isExpanded ? 180 : 0 }}
+   785→                                  transition={{ duration: 0.2 }}
+   786→                                >
+   787→                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+   788→                                </motion.div>
+   789→                              </div>
+   790→                            </div>
+   791→                          </div>
+   792→                        </CardContent>
+   793→                      </div>
+   794→
+   795→                      {/* ── Expanded Detail ──────────────────────────────────── */}
+   796→                      <AnimatePresence>
+   797→                        {isExpanded && (
+   798→                          <motion.div
+   799→                            initial={{ height: 0, opacity: 0 }}
+   800→                            animate={{ height: "auto", opacity: 1 }}
+   801→                            exit={{ height: 0, opacity: 0 }}
+   802→                            transition={{ duration: 0.25 }}
+   803→                            className="overflow-hidden"
+   804→                          >
+   805→                            <div className="border-t border-border">
+   806→                              <div className="p-5 bg-muted/30">
+   807→                                {/* Line Items */}
+   808→                                <div className="mb-4">
+   809→                                  <h4 className="text-[13px] font-semibold text-foreground mb-3">
+   810→                                    Line Items
+   811→                                  </h4>
+   812→                                  <div className="rounded-lg border border-border overflow-hidden bg-background">
+   813→                                    <table className="w-full text-[13px]">
+   814→                                      <thead>
+   815→                                        <tr className="border-b border-border bg-muted/50">
+   816→                                          <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">
+   817→                                            Description
+   818→                                          </th>
+   819→                                          <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
+   820→                                            Qty
+   821→                                          </th>
+   822→                                          <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
+   823→                                            Rate
+   824→                                          </th>
+   825→                                          <th className="text-right py-2.5 px-3 font-medium text-muted-foreground">
+   826→                                            Amount
+   827→                                          </th>
+   828→                                        </tr>
+   829→                                      </thead>
+   830→                                      <tbody>
+   831→                                        {invoice.lineItems.map((item, i) => (
+   832→                                          <tr
+   833→                                            key={item.id || i}
+   834→                                            className={
+   835→                                              i < invoice.lineItems.length - 1
+   836→                                                ? "border-b border-border"
+   837→                                                : ""
+   838→                                            }
+   839→                                          >
+   840→                                            <td className="py-2.5 px-3 text-foreground">
+   841→                                              <div className="flex items-center gap-2">
+   842→                                                {item.description}
+   843→                                                {item.hasProof && (
+   844→                                                  <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
+   845→                                                    <Paperclip className="h-2.5 w-2.5 mr-0.5" />
+   846→                                                    Proof
+   847→                                                  </Badge>
+   848→                                                )}
+   849→                                              </div>
+   850→                                            </td>
+   851→                                            <td className="py-2.5 px-3 text-right text-muted-foreground">
+   852→                                              {item.quantity}
+   853→                                            </td>
+   854→                                            <td className="py-2.5 px-3 text-right text-muted-foreground">
+   855→                                              {formatCurrency(item.rate, invoice.currency)}
+   856→                                            </td>
+   857→                                            <td className="py-2.5 px-3 text-right font-medium text-foreground">
+   858→                                              {formatCurrency(item.amount, invoice.currency)}
+   859→                                            </td>
+   860→                                          </tr>
+   861→                                        ))}
+   862→                                      </tbody>
+   863→                                      <tfoot>
+   864→                                        {invoice.taxRate != null && invoice.taxRate > 0 && (
+   865→                                          <tr className="border-t border-border bg-muted/20">
+   866→                                            <td colSpan={3} className="py-2 px-3 text-right text-muted-foreground text-[12px]">
+   867→                                              Subtotal
+   868→                                            </td>
+   869→                                            <td className="py-2 px-3 text-right text-foreground text-[12px]">
+   870→                                              {formatCurrency(invoice.subtotal, invoice.currency)}
+   871→                                            </td>
+   872→                                          </tr>
+   873→                                        )}
+   874→                                        {invoice.taxRate != null && invoice.taxRate > 0 && (
+   875→                                          <tr className="border-b border-border bg-muted/20">
+   876→                                            <td colSpan={3} className="py-2 px-3 text-right text-muted-foreground text-[12px]">
+   877→                                              Tax ({invoice.taxRate}%)
+   878→                                            </td>
+   879→                                            <td className="py-2 px-3 text-right text-foreground text-[12px]">
+   880→                                              {formatCurrency(invoice.taxAmount ?? 0, invoice.currency)}
+   881→                                            </td>
+   882→                                          </tr>
+   883→                                        )}
+   884→                                        <tr className="border-t border-border bg-muted/30">
+   885→                                          <td
+   886→                                            colSpan={3}
+   887→                                            className="py-2.5 px-3 text-right font-semibold text-foreground"
+   888→                                          >
+   889→                                            Total
+   890→                                          </td>
+   891→                                          <td className="py-2.5 px-3 text-right font-bold text-foreground">
+   892→                                            {formatCurrency(invoice.total, invoice.currency)}
+   893→                                          </td>
+   894→                                        </tr>
+   895→                                      </tfoot>
+   896→                                    </table>
+   897→                                  </div>
+   898→                                </div>
+   899→
+   900→                                {/* Details Grid */}
+   901→                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+   902→                                  <div className="flex items-center gap-2">
+   903→                                    <Hash className="h-4 w-4 text-muted-foreground" />
+   904→                                    <div>
+   905→                                      <p className="text-[11px] text-muted-foreground">Invoice #</p>
+   906→                                      <p className="text-[13px] font-medium text-foreground">
+   907→                                        {invoice.invoiceNumber}
+   908→                                      </p>
+   909→                                    </div>
+   910→                                  </div>
+   911→                                  <div className="flex items-center gap-2">
+   912→                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+   913→                                    <div>
+   914→                                      <p className="text-[11px] text-muted-foreground">
+   915→                                        {invoice.status === "paid" ? "Paid on" : "Due date"}
+   916→                                      </p>
+   917→                                      <p className={`text-[13px] font-medium ${invoice.status === "overdue" ? "text-red-500" : "text-foreground"}`}>
+   918→                                        {invoice.status === "paid" && invoice.paidDate
+   919→                                          ? formatDate(invoice.paidDate)
+   920→                                          : formatDate(invoice.dueDate)}
+   921→                                      </p>
+   922→                                    </div>
+   923→                                  </div>
+   924→                                  <div className="flex items-center gap-2">
+   925→                                    <User className="h-4 w-4 text-muted-foreground" />
+   926→                                    <div>
+   927→                                      <p className="text-[11px] text-muted-foreground">Client</p>
+   928→                                      <p className="text-[13px] font-medium text-foreground">
+   929→                                        {invoice.clientName || "—"}
+   930→                                      </p>
+   931→                                    </div>
+   932→                                  </div>
+   933→                                  <div className="flex items-center gap-2">
+   934→                                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+   935→                                    <div>
+   936→                                      <p className="text-[11px] text-muted-foreground">Validation</p>
+   937→                                      <p className="text-[13px] font-medium">
+   938→                                        {hasProofs ? (
+   939→                                          <span className="text-[#22c55e]">
+   940→                                            {invoice.proofCount} proof{(invoice.proofCount ?? 0) !== 1 ? "s" : ""} attached
+   941→                                          </span>
+   942→                                        ) : (
+   943→                                          <span className="text-muted-foreground">No proofs</span>
+   944→                                        )}
+   945→                                      </p>
+   946→                                    </div>
+   947→                                  </div>
+   948→                                </div>
+   949→
+   950→                                {/* Notes */}
+   951→                                {invoice.notes && (
+   952→                                  <div className="mb-4 p-3 rounded-lg bg-background border border-border">
+   953→                                    <p className="text-[11px] font-medium text-muted-foreground mb-1">
+   954→                                      Notes
+   955→                                    </p>
+   956→                                    <p className="text-[13px] text-foreground">
+   957→                                      {invoice.notes}
+   958→                                    </p>
+   959→                                  </div>
+   960→                                )}
+   961→
+   962→                                {/* Actions */}
+   963→                                <div className="flex items-center gap-2">
+   964→                                  {invoice.status === "draft" && (
+   965→                                    <Button
+   966→                                      size="sm"
+   967→                                      className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+   968→                                      onClick={(e) => {
+   969→                                        e.stopPropagation();
+   970→                                        handleSendInvoice(invoice._id);
+   971→                                      }}
+   972→                                    >
+   973→                                      <Send className="h-3.5 w-3.5" />
+   974→                                      Send Invoice
+   975→                                    </Button>
+   976→                                  )}
+   977→                                  {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
+   978→                                    <Button
+   979→                                      size="sm"
+   980→                                      variant="outline"
+   981→                                      className="gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+   982→                                      onClick={(e) => {
+   983→                                        e.stopPropagation();
+   984→                                        handleMarkPaid(invoice._id);
+   985→                                      }}
+   986→                                    >
+   987→                                      <DollarSign className="h-3.5 w-3.5" />
+   988→                                      Mark as Paid
+   989→                                    </Button>
+   990→                                  )}
+   991→                                  <Button
+   992→                                    size="sm"
+   993→                                    variant="outline"
+   994→                                    className="gap-1.5"
+   995→                                    onClick={(e) => {
+   996→                                      e.stopPropagation();
+   997→                                      navigate(`/invoices/new?edit=${invoice._id}`);
+   998→                                    }}
+   999→                                  >
+  1000→                                    <Eye className="h-3.5 w-3.5" />
+  1001→                                    Edit Invoice
+  1002→                                  </Button>
+  1003→                                  <Button
+  1004→                                    size="sm"
+  1005→                                    variant="ghost"
+  1006→                                    className="gap-1.5 text-muted-foreground hover:text-red-500"
+  1007→                                    onClick={(e) => {
+  1008→                                      e.stopPropagation();
+  1009→                                      setDeleteConfirmId(invoice._id);
+  1010→                                    }}
+  1011→                                  >
+  1012→                                    <Trash2 className="h-3.5 w-3.5" />
+  1013→                                    Delete
+  1014→                                  </Button>
+  1015→                                </div>
+  1016→                              </div>
+  1017→                            </div>
+  1018→                          </motion.div>
+  1019→                        )}
+  1020→                      </AnimatePresence>
+  1021→                    </Card>
+  1022→                  </motion.div>
+  1023→                );
+  1024→              })
+  1025→            )}
+  1026→          </AnimatePresence>
+  1027→        </div>
+  1028→      </div>
+  1029→
+  1030→      {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}
+  1031→      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+  1032→        <DialogContent className="sm:max-w-md">
+  1033→          <DialogHeader>
+  1034→            <DialogTitle>Delete Invoice</DialogTitle>
+  1035→          </DialogHeader>
+  1036→          <p className="text-sm text-muted-foreground">
+  1037→            Are you sure you want to delete this invoice? This action cannot be undone and will also remove all linked work proofs.
+  1038→          </p>
+  1039→          <DialogFooter>
+  1040→            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+  1041→              Cancel
+  1042→            </Button>
+  1043→            <Button
+  1044→              variant="destructive"
+  1045→              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+  1046→            >
+  1047→              Delete
+  1048→            </Button>
+  1049→          </DialogFooter>
+  1050→        </DialogContent>
+  1051→      </Dialog>
+  1052→
+  1053→      {/* Share Dialog */}
+  1054→      <ShareDialog
+  1055→        open={showShareDialog}
+  1056→        onOpenChange={setShowShareDialog}
+  1057→        recordId={sharingRecord?.id || shareInvoiceId || ""}
+  1058→        recordType={sharingRecord?.type || "invoice"}
+  1059→        currentSharing={sharingRecord?.sharing || []}
+  1060→        onShare={async (args) => {
+  1061→          try {
+  1062→            if (shareRecordMutation) {
+  1063→              await shareRecordMutation({
+  1064→                recordId: sharingRecord?.id || shareInvoiceId,
+  1065→                recordType: sharingRecord?.type || "invoice",
+  1066→                ...args,
+  1067→              });
+  1068→            }
+  1069→            toast.success("Record shared successfully");
+  1070→          } catch (err: any) {
+  1071→            toast.error(err?.message || "Failed to share record");
+  1072→          }
+  1073→        }}
+  1074→        onUnshare={async (args) => {
+  1075→          try {
+  1076→            if (unshareRecordMutation) {
+  1077→              await unshareRecordMutation({
+  1078→                recordId: sharingRecord?.id || shareInvoiceId,
+  1079→                recordType: sharingRecord?.type || "invoice",
+  1080→                ...args,
+  1081→              });
+  1082→            }
+  1083→            toast.success("Access removed");
+  1084→          } catch (err: any) {
+  1085→            toast.error(err?.message || "Failed to remove access");
+  1086→          }
+  1087→        }}
+  1088→      />
+  1089→
+  1090→      {/* Bulk Import Dialog */}
+  1091→      <BulkImportDialog
+  1092→        open={showBulkImport}
+  1093→        onOpenChange={setShowBulkImport}
+  1094→        tableName="invoices"
+  1095→        onImportComplete={() => {
+  1096→          toast.success("Import complete");
+  1097→        }}
+  1098→      />
+  1099→    </motion.div>
+  1100→  );
+  1101→}
+  1102→

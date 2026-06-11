@@ -32,7 +32,7 @@ import {
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 
@@ -890,6 +890,7 @@ function WaitlistEntriesSection({ client, title, envLabel }: { client: ConvexRea
 function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: string }) {
   const entries = useQuery(api.waitlist.getAllWaitlistEntries, {});
   const count = useQuery(api.waitlist.getWaitlistCount, {});
+  const loadingTimedOut = useQueryTimeout(entries === undefined, 6000);
 
   useEffect(() => {
     console.log(`[WAITLIST DASHBOARD ${envLabel}] Entries loaded:`, entries);
@@ -897,7 +898,7 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
   }, [entries, count, envLabel]);
 
   // Show loading state
-  if (entries === undefined) {
+  if (entries === undefined && !loadingTimedOut) {
     return (
       <Card className="col-span-12 mb-8">
         <CardHeader>
@@ -907,8 +908,6 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
           <div className="flex flex-col items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
             <p className="text-muted-foreground">Loading waitlist entries...</p>
-            <p className="text-xs text-muted-foreground mt-2">Connecting to {envLabel}</p>
-            <p className="text-xs text-amber-600 mt-4">Check browser console for logs</p>
           </div>
         </CardContent>
       </Card>

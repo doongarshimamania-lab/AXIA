@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,6 +49,7 @@ import {
   Sparkles,
   X,
   Upload,
+  AlertCircle,
 } from "lucide-react";
 import { TemplateImportDialog } from "@/components/proposals/TemplateImportDialog";
 
@@ -177,6 +178,10 @@ export default function ProposalBuilder() {
   ) as any;
 
   const templates = useQuery(api.proposals.crud.getTemplates, {}) as Template[] | undefined;
+
+  // Loading timeout for edit mode
+  const editLoading = !!(editId && existingProposal === undefined);
+  const editLoadTimedOut = useQueryTimeout(editLoading, 6000);
 
   // Convex mutations
   const createProposal = useMutation(api.proposals.crud.createProposal);
@@ -472,6 +477,31 @@ export default function ProposalBuilder() {
   };
 
   // ─── Render ────────────────────────────────────────────────────────────
+
+  // Show loading state for edit mode
+  if (editLoading && !editLoadTimedOut) {
+    return (
+      <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading proposal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (editLoadTimedOut && editLoading) {
+    return (
+      <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+          <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
+          <p className="text-sm text-muted-foreground mb-3">Could not load proposal data. Please try again.</p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/proposals')}>Back to Proposals</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

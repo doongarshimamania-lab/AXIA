@@ -7,7 +7,7 @@
  */
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import {
   ArrowLeft,
@@ -466,13 +466,42 @@ export default function ClientWorkspace() {
 
   // ---- Loading & Error States ----
 
+  // Timeout fallback for validation query
+  const validationLoading = !isDemo && validation === undefined;
+  const validationTimedOut = useQueryTimeout(validationLoading, 6000);
+
   // Demo tokens are always valid
-  if (!isDemo && validation === undefined) {
+  if (validationLoading && !validationTimedOut) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-3 border-violet-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-500 dark:text-gray-400 text-sm">Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if validation timed out
+  if (validationTimedOut && !isDemo && validation === undefined) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-10 max-w-md text-center">
+          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+            <AlertTriangle className="w-8 h-8 text-amber-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Loading Timed Out
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+            Could not load workspace data. Please try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            Refresh
+          </button>
         </div>
       </div>
     );

@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useQuery, useMutation, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useConvexAuth, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
@@ -229,8 +229,9 @@ export default function PlatformIntegrations() {
 
   // ─── Loading state ────────────────────────────────────────────────────────
   const isLoading = connections === undefined;
+  const loadingTimedOut = useQueryTimeout(isLoading, 6000);
 
-  if (isLoading) {
+  if (isLoading && !loadingTimedOut) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground">
         <div className="container mx-auto px-4 py-6">
@@ -262,6 +263,33 @@ export default function PlatformIntegrations() {
                 ))}
               </div>
             </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Show timeout error state
+  if (loadingTimedOut && isLoading) {
+    return (
+      <div className="w-full min-h-screen bg-background text-foreground">
+        <div className="container mx-auto px-4 py-6">
+          <div className="mb-6">
+            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+              Platform Connections
+            </h1>
+            <p className="text-[16px] text-muted-foreground">
+              Connect and manage your professional platforms
+            </p>
+          </div>
+          <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+            <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
+            <p className="text-sm text-muted-foreground mb-3">Could not load platform connections. Please try refreshing.</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
           </Card>
         </div>
       </div>

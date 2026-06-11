@@ -1,0 +1,903 @@
+     1→import { useState, useMemo } from "react";
+     2→import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+     3→import { api } from "@/convex/_generated/api";
+     4→import type { Id } from "@/convex/_generated/dataModel";
+     5→import { useNavigate } from "react-router";
+     6→import { motion, AnimatePresence } from "framer-motion";
+     7→import { toast } from "sonner";
+     8→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     9→import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
+    10→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    11→import { Button } from "@/components/ui/button";
+    12→import { Badge } from "@/components/ui/badge";
+    13→import { Input } from "@/components/ui/input";
+    14→import {
+    15→  Dialog,
+    16→  DialogContent,
+    17→  DialogHeader,
+    18→  DialogTitle,
+    19→  DialogDescription,
+    20→  DialogFooter,
+    21→} from "@/components/ui/dialog";
+    22→import {
+    23→  DropdownMenu,
+    24→  DropdownMenuContent,
+    25→  DropdownMenuItem,
+    26→  DropdownMenuTrigger,
+    27→} from "@/components/ui/dropdown-menu";
+    28→import {
+    29→  FileText,
+    30→  Plus,
+    31→  Search,
+    32→  Send,
+    33→  Copy,
+    34→  Trash2,
+    35→  Eye,
+    36→  MoreVertical,
+    37→  DollarSign,
+    38→  CheckCircle2,
+    39→  Clock,
+    40→  FilePenLine,
+    41→  AlertCircle,
+    42→  Sparkles,
+    43→  TrendingUp,
+    44→  Mail,
+    45→  Loader2,
+    46→  Briefcase,
+    47→  ShieldCheck,
+    48→  Share2,
+    49→  AlertTriangle,
+    50→  RefreshCw,
+    51→} from "lucide-react";
+    52→import { ShareDialog } from "@/components/ShareDialog";
+    53→import { Skeleton } from "@/components/ui/skeleton";
+    54→
+    55→
+    56→type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
+    57→
+    58→interface ProposalSection {
+    59→  id: string;
+    60→  type: "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+    61→  content: string;
+    62→  metadata?: any;
+    63→}
+    64→
+    65→interface Proposal {
+    66→  _id: string;
+    67→  userId: string;
+    68→  title: string;
+    69→  status: ProposalStatus;
+    70→  clientName?: string;
+    71→  clientEmail?: string;
+    72→  totalValue: number;
+    73→  currency?: string;
+    74→  sections: ProposalSection[];
+    75→  sentAt?: number;
+    76→  viewedAt?: number;
+    77→  signedAt?: number;
+    78→  validUntil?: number;
+    79→  notes?: string;
+    80→  createdAt: number;
+    81→  updatedAt: number;
+    82→}
+    83→
+    84→interface FollowUp {
+    85→  _id: string;
+    86→  dayNumber: number;
+    87→  subject: string;
+    88→  status: "scheduled" | "sent" | "skipped" | "cancelled";
+    89→  scheduledAt: number;
+    90→}
+    91→
+    92→const statusConfig: Record<
+    93→  ProposalStatus,
+    94→  { label: string; className: string; icon: React.ElementType }
+    95→> = {
+    96→  draft: {
+    97→    label: "Draft",
+    98→    className: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/25 hover:bg-slate-500/25",
+    99→    icon: FilePenLine,
+   100→  },
+   101→  sent: {
+   102→    label: "Sent",
+   103→    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/25",
+   104→    icon: Send,
+   105→  },
+   106→  viewed: {
+   107→    label: "Viewed",
+   108→    className: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25 hover:bg-amber-500/25",
+   109→    icon: Eye,
+   110→  },
+   111→  signed: {
+   112→    label: "Signed",
+   113→    className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25",
+   114→    icon: CheckCircle2,
+   115→  },
+   116→  declined: {
+   117→    label: "Declined",
+   118→    className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25 hover:bg-red-500/25",
+   119→    icon: AlertCircle,
+   120→  },
+   121→  expired: {
+   122→    label: "Expired",
+   123→    className: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 hover:bg-orange-500/25",
+   124→    icon: Clock,
+   125→  },
+   126→};
+   127→
+   128→const filterTabs: { key: "all" | ProposalStatus; label: string }[] = [
+   129→  { key: "all", label: "All" },
+   130→  { key: "draft", label: "Draft" },
+   131→  { key: "sent", label: "Sent" },
+   132→  { key: "viewed", label: "Viewed" },
+   133→  { key: "signed", label: "Signed" },
+   134→  { key: "declined", label: "Declined" },
+   135→];
+   136→
+   137→// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
+   138→
+   139→const mockNow = Date.now();
+   140→const mockDay = 86400000;
+   141→
+   142→const MOCK_PROPOSALS: Proposal[] = [
+   143→  // Signed
+   144→  { _id: "prop_1", userId: "", title: "TechCorp Phase 2 — CMS & Marketing Automation", status: "signed", clientName: "David Chen", clientEmail: "david.chen@techcorp.io", totalValue: 15000, sections: [{ id: "1", type: "heading", content: "TechCorp Phase 2" }, { id: "2", type: "text", content: "CMS integration, marketing automation workflows, and analytics dashboard." }, { id: "3", type: "pricing", content: "Phase 2 Package", metadata: { items: [{ name: "CMS Integration", price: 5000 }, { name: "Marketing Automation", price: 4000 }, { name: "Analytics Dashboard", price: 3500 }, { name: "QA & Deployment", price: 2500 }] } }, { id: "4", type: "terms", content: "30% upfront, 40% at CMS milestone, 30% on delivery." }], sentAt: mockNow - 20 * mockDay, viewedAt: mockNow - 18 * mockDay, signedAt: mockNow - 10 * mockDay, createdAt: mockNow - 25 * mockDay, updatedAt: mockNow },
+   145→  { _id: "prop_6", userId: "", title: "E-Commerce Platform Redesign", status: "signed", clientName: "Acme Corp", clientEmail: "sarah@acmecorp.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "E-Commerce Redesign" }, { id: "2", type: "text", content: "Complete redesign with modern UX, mobile-first approach, and optimized checkout." }], sentAt: mockNow - 25 * mockDay, viewedAt: mockNow - 22 * mockDay, signedAt: mockNow - 12 * mockDay, createdAt: mockNow - 30 * mockDay, updatedAt: mockNow },
+   146→  { _id: "prop_10", userId: "", title: "DigiMark Brand Identity Package", status: "signed", clientName: "Lisa Park", clientEmail: "lisa@digitalmarketingco.com", totalValue: 3200, sections: [{ id: "1", type: "heading", content: "Brand Identity" }, { id: "2", type: "text", content: "Complete brand identity refresh including logo, color palette, and guidelines." }], sentAt: mockNow - 15 * mockDay, viewedAt: mockNow - 14 * mockDay, signedAt: mockNow - 8 * mockDay, createdAt: mockNow - 18 * mockDay, updatedAt: mockNow },
+   147→  // Sent
+   148→  { _id: "prop_2", userId: "", title: "Mobile Banking App — Full Development", status: "sent", clientName: "Michael Torres", clientEmail: "cto@finserve.io", totalValue: 25000, sections: [{ id: "1", type: "heading", content: "FinServe Mobile Banking" }, { id: "2", type: "text", content: "Secure mobile banking app with biometric auth and real-time transactions." }, { id: "3", type: "pricing", content: "Enterprise Package", metadata: { items: [{ name: "React Native App", price: 12000 }, { name: "Backend API & Security", price: 8000 }, { name: "Admin Dashboard", price: 3000 }, { name: "Penetration Testing", price: 2000 }] } }], sentAt: mockNow - 5 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
+   149→  { _id: "prop_9", userId: "", title: "Insurance Claims Processing Platform", status: "sent", clientName: "Vikram Mehta", clientEmail: "vikram@insureflow.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "InsureFlow Claims Platform" }, { id: "2", type: "text", content: "Claims processing with document OCR, automated workflows, and compliance engine." }], sentAt: mockNow - 3 * mockDay, viewedAt: mockNow - 1 * mockDay, createdAt: mockNow - 8 * mockDay, updatedAt: mockNow },
+   150→  { _id: "prop_16", userId: "", title: "Nonprofit Donation Platform Proposal", status: "sent", clientName: "Dr. Sarah Okonkwo", clientEmail: "sarah@givehope.org", totalValue: 8000, sections: [{ id: "1", type: "heading", content: "Donation Platform" }, { id: "2", type: "text", content: "Donation and volunteer management platform with recurring donations and impact reporting." }], sentAt: mockNow - 2 * mockDay, createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
+   151→  // Viewed
+   152→  { _id: "prop_4", userId: "", title: "Creative Studios Motion Design Package", status: "viewed", clientName: "Tom Bradley", clientEmail: "tom@creativestudios.art", totalValue: 7500, sections: [{ id: "1", type: "heading", content: "Motion Design Package" }, { id: "2", type: "text", content: "Motion graphics reel and social media content for brand launch campaign." }], sentAt: mockNow - 8 * mockDay, viewedAt: mockNow - 6 * mockDay, createdAt: mockNow - 12 * mockDay, updatedAt: mockNow },
+   153→  { _id: "prop_11", userId: "", title: "Brand Identity for HealthTech Startup", status: "viewed", clientName: "MediTech Inc", clientEmail: "marketing@meditech.org", totalValue: 12000, sections: [{ id: "1", type: "heading", content: "HealthTech Branding" }, { id: "2", type: "text", content: "Complete brand identity for healthcare technology startup with accessible design." }], sentAt: mockNow - 7 * mockDay, viewedAt: mockNow - 5 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
+   154→  { _id: "prop_18", userId: "", title: "Manufacturing Quality Control System Proposal", status: "viewed", clientName: "Ingrid Svensson", clientEmail: "ingrid@precisemfg.se", totalValue: 38000, sections: [{ id: "1", type: "heading", content: "Quality Control System" }, { id: "2", type: "text", content: "IoT-connected quality control system with real-time defect detection." }], sentAt: mockNow - 6 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
+   155→  // Draft
+   156→  { _id: "prop_3", userId: "", title: "Healthcare Patient Portal", status: "draft", clientName: "Dr. Robert Singh", clientEmail: "robert@medportal.health", totalValue: 18000, sections: [{ id: "1", type: "heading", content: "Patient Portal" }, { id: "2", type: "text", content: "HIPAA-compliant patient portal with appointment scheduling and secure messaging." }], createdAt: mockNow - 2 * mockDay, updatedAt: mockNow },
+   157→  { _id: "prop_12", userId: "", title: "Supply Chain Management System", status: "draft", clientName: "Robert Chang", clientEmail: "rchang@logisync.com", totalValue: 32000, sections: [{ id: "1", type: "heading", content: "Supply Chain Platform" }, { id: "2", type: "text", content: "End-to-end supply chain management with inventory tracking and predictive analytics." }], createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
+   158→  { _id: "prop_13", userId: "", title: "Restaurant POS & Ordering System", status: "draft", clientName: "Maria Santos", clientEmail: "maria@freshbites.co", totalValue: 14000, sections: [{ id: "1", type: "heading", content: "Restaurant POS" }, { id: "2", type: "text", content: "Point-of-sale and online ordering system for a 12-location restaurant chain." }], createdAt: mockNow - 3 * mockDay, updatedAt: mockNow },
+   159→  // Declined
+   160→  { _id: "prop_5", userId: "", title: "Social Platform MVP", status: "declined", clientName: "SocialNext", clientEmail: "founders@socialnext.com", totalValue: 35000, sections: [{ id: "1", type: "heading", content: "SocialNext MVP" }, { id: "2", type: "text", content: "Complete social networking MVP with user profiles, feed algorithm, and messaging." }], sentAt: mockNow - 30 * mockDay, viewedAt: mockNow - 28 * mockDay, createdAt: mockNow - 35 * mockDay, updatedAt: mockNow },
+   161→  // Expired
+   162→  { _id: "prop_14exp", userId: "", title: "EdTech Course Platform Proposal", status: "expired", clientName: "Prof. Anika Desai", clientEmail: "anika@learnvista.edu", totalValue: 9500, sections: [{ id: "1", type: "heading", content: "EdTech Platform" }, { id: "2", type: "text", content: "Online course platform with video hosting, quizzes, and certificate generation." }], sentAt: mockNow - 45 * mockDay, viewedAt: mockNow - 43 * mockDay, validUntil: mockNow - 15 * mockDay, createdAt: mockNow - 50 * mockDay, updatedAt: mockNow },
+   163→];
+   164→
+   165→const MOCK_STATS = {
+   166→  total: MOCK_PROPOSALS.length,
+   167→  sent: MOCK_PROPOSALS.filter(p => p.status === "sent").length,
+   168→  signed: MOCK_PROPOSALS.filter(p => p.status === "signed").length,
+   169→  draft: MOCK_PROPOSALS.filter(p => p.status === "draft").length,
+   170→  signatureRate: MOCK_PROPOSALS.length > 0 ? Math.round((MOCK_PROPOSALS.filter(p => p.status === "signed").length / (MOCK_PROPOSALS.filter(p => p.status === "signed").length + MOCK_PROPOSALS.filter(p => p.status === "declined").length + MOCK_PROPOSALS.filter(p => p.status === "expired").length || 1)) * 100) : 0,
+   171→  totalValue: MOCK_PROPOSALS.reduce((s, p) => s + p.totalValue, 0),
+   172→};
+   173→
+   174→export default function Proposals() {
+   175→  const navigate = useNavigate();
+   176→
+   177→  // ── Workspace Context ──
+   178→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   179→  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+   180→
+   181→  // ── Permissions ──
+   182→  const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
+   183→
+   184→  const [activeFilter, setActiveFilter] = useState<"all" | ProposalStatus>("all");
+   185→  const [searchQuery, setSearchQuery] = useState("");
+   186→  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+   187→  const [isSeeding, setIsSeeding] = useState(false);
+   188→  const [showShareDialog, setShowShareDialog] = useState(false);
+   189→  const [shareProposalId, setShareProposalId] = useState<string | null>(null);
+   190→  const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+   191→
+   192→  // ── Convex mutations for sharing ──
+   193→  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
+   194→  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+   195→
+   196→  // Convex queries
+   197→  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : (activeFilter === "all" ? {} : { status: activeFilter })) as Proposal[] | undefined;
+   198→  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : {}) as {
+   199→    total: number;
+   200→    sent: number;
+   201→    signed: number;
+   202→    draft: number;
+   203→    signatureRate: number;
+   204→    totalValue: number;
+   205→  } | undefined;
+   206→
+   207→  // Convex mutations
+   208→  const sendProposal = useMutation(api.proposals.crud.sendProposal);
+   209→  const duplicateProposal = useMutation(api.proposals.crud.duplicateProposal);
+   210→  const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
+   211→  const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
+   212→
+   213→  // Filter counts (from all proposals for the tab badges)
+   214→  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : {}) as Proposal[] | undefined;
+   215→
+   216→  // Track whether we're using mock data (mock IDs are not valid Convex IDs)
+   217→  const isUsingMockData = !convexProposals || convexProposals.length === 0;
+   218→
+   219→  const isLoading = convexProposals === undefined || convexStats === undefined;
+   220→  const timedOut = useQueryTimeout(isLoading, 6000);
+   221→
+   222→  // Use Convex data when available, fall back to mock data
+   223→  const proposals = useMemo(() => {
+   224→    if (convexProposals && convexProposals.length > 0) return convexProposals;
+   225→    // Filter mock data by activeFilter
+   226→    if (activeFilter === "all") return MOCK_PROPOSALS;
+   227→    return MOCK_PROPOSALS.filter(p => p.status === activeFilter);
+   228→  }, [convexProposals, activeFilter]);
+   229→
+   230→  const stats = useMemo(() => {
+   231→    if (convexStats && convexStats.total > 0) return convexStats;
+   232→    return MOCK_STATS;
+   233→  }, [convexStats]);
+   234→
+   235→  const allProposals = useMemo(() => {
+   236→    if (convexAllProposals && convexAllProposals.length > 0) return convexAllProposals;
+   237→    return MOCK_PROPOSALS;
+   238→  }, [convexAllProposals]);
+   239→
+   240→  const filterCounts = useMemo(() => {
+   241→    const counts: Record<string, number> = { all: allProposals.length };
+   242→    for (const p of allProposals) {
+   243→      counts[p.status] = (counts[p.status] || 0) + 1;
+   244→    }
+   245→    return counts;
+   246→  }, [allProposals]);
+   247→
+   248→  // Filtered + searched proposals
+   249→  const filteredProposals = useMemo(() => {
+   250→    if (!proposals) return [];
+   251→    return proposals.filter((p) => {
+   252→      if (searchQuery === "") return true;
+   253→      const q = searchQuery.toLowerCase();
+   254→      return (
+   255→        p.title.toLowerCase().includes(q) ||
+   256→        (p.clientName && p.clientName.toLowerCase().includes(q))
+   257→      );
+   258→    });
+   259→  }, [proposals, searchQuery]);
+   260→
+   261→  const formatCurrency = (amount: number) =>
+   262→    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+   263→
+   264→  const formatDate = (timestamp: number) => {
+   265→    const d = new Date(timestamp);
+   266→    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+   267→  };
+   268→
+   269→  const handleSeed = async () => {
+   270→    setIsSeeding(true);
+   271→    try {
+   272→      const result = await seedMockProposals({});
+   273→      if (result && typeof result === "object" && "seeded" in result) {
+   274→        if ((result as any).seeded) {
+   275→          toast.success("Mock proposals seeded!", {
+   276→            description: `${(result as any).count} proposals created.`,
+   277→          });
+   278→        } else {
+   279→          toast.info("Proposals already exist", {
+   280→            description: `${(result as any).count} proposals found.`,
+   281→          });
+   282→        }
+   283→      }
+   284→    } catch (err: any) {
+   285→      toast.error("Failed to seed proposals", { description: err.message });
+   286→    } finally {
+   287→      setIsSeeding(false);
+   288→    }
+   289→  };
+   290→
+   291→  const handleSend = async (proposalId: string) => {
+   292→    try {
+   293→      await sendProposal({ proposalId: proposalId as any });
+   294→      toast.success("Proposal sent!", {
+   295→        description: "Follow-ups have been scheduled automatically.",
+   296→      });
+   297→    } catch (err: any) {
+   298→      toast.error("Failed to send proposal", { description: err.message });
+   299→    }
+   300→  };
+   301→
+   302→  const handleDuplicate = async (proposalId: string) => {
+   303→    try {
+   304→      const newId = await duplicateProposal({ proposalId: proposalId as any });
+   305→      toast.success("Proposal duplicated!", {
+   306→        description: "A draft copy has been created.",
+   307→      });
+   308→    } catch (err: any) {
+   309→      toast.error("Failed to duplicate proposal", { description: err.message });
+   310→    }
+   311→  };
+   312→
+   313→  const handleDelete = async (proposalId: string) => {
+   314→    try {
+   315→      await deleteProposal({ proposalId: proposalId as any });
+   316→      setDeleteDialogId(null);
+   317→      toast.success("Proposal deleted");
+   318→    } catch (err: any) {
+   319→      toast.error("Failed to delete proposal", { description: err.message });
+   320→    }
+   321→  };
+   322→
+   323→  return (
+   324→    <motion.div
+   325→      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+   326→      initial={{ opacity: 0 }}
+   327→      animate={{ opacity: 1 }}
+   328→      transition={{ duration: 0.5 }}
+   329→    >
+   330→      <div className="container mx-auto px-4 py-6 max-w-7xl">
+   331→        {/* Header */}
+   332→        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+   333→          <div>
+   334→            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+   335→              Proposals
+   336→            </h1>
+   337→            <p className="text-[16px] text-muted-foreground">
+   338→              Create, send, and track proposals with automated follow-ups
+   339→            </p>
+   340→          </div>
+   341→          <div className="flex items-center gap-2">
+   342→            <Button
+   343→              variant="outline"
+   344→              size="sm"
+   345→              className="gap-2 text-muted-foreground"
+   346→              onClick={handleSeed}
+   347→              disabled={isSeeding}
+   348→            >
+   349→              {isSeeding ? (
+   350→                <Loader2 className="h-4 w-4 animate-spin" />
+   351→              ) : (
+   352→                <Sparkles className="h-4 w-4" />
+   353→              )}
+   354→              Seed Data
+   355→            </Button>
+   356→            <Button
+   357→              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+   358→              onClick={() => navigate("/proposals/new")}
+   359→            >
+   360→              <Plus className="h-4 w-4" />
+   361→              Create Proposal
+   362→            </Button>
+   363→          </div>
+   364→        </div>
+   365→
+   366→        {/* Loading State */}
+   367→        {isLoading && !timedOut ? (
+   368→          <div className="space-y-6">
+   369→            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+   370→              {[1, 2, 3, 4, 5, 6].map((i) => (
+   371→                <Card key={i}>
+   372→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+   373→                    <Skeleton className="h-4 w-16" />
+   374→                    <Skeleton className="h-4 w-4" />
+   375→                  </CardHeader>
+   376→                  <CardContent className="px-4 pb-4">
+   377→                    <Skeleton className="h-6 w-12 mb-1" />
+   378→                  </CardContent>
+   379→                </Card>
+   380→              ))}
+   381→            </div>
+   382→            <Skeleton className="h-10 rounded-lg" />
+   383→            <div className="space-y-3">
+   384→              {[1, 2, 3].map((i) => (
+   385→                <Skeleton key={i} className="h-[100px] rounded-xl" />
+   386→              ))}
+   387→            </div>
+   388→          </div>
+   389→        ) : timedOut && isLoading ? (
+   390→          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+   391→            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+   392→              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+   393→            </div>
+   394→            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+   395→            <p className="text-sm text-muted-foreground max-w-md mb-6">
+   396→              Unable to load data. This might be a connection issue.
+   397→            </p>
+   398→            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+   399→              <RefreshCw className="h-4 w-4" />
+   400→              Retry
+   401→            </Button>
+   402→          </div>
+   403→        ) : (
+   404→          <>
+   405→        {/* Stats Bar */}
+   406→        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+   407→          {[
+   408→            {
+   409→              title: "Total",
+   410→              value: stats?.total ?? 0,
+   411→              icon: FileText,
+   412→              color: "text-[#8B5CF6]",
+   413→              bgColor: "bg-[#8B5CF6]/10",
+   414→              format: (v: number) => String(v),
+   415→            },
+   416→            {
+   417→              title: "Sent",
+   418→              value: stats?.sent ?? 0,
+   419→              icon: Send,
+   420→              color: "text-blue-600",
+   421→              bgColor: "bg-blue-500/10",
+   422→              format: (v: number) => String(v),
+   423→            },
+   424→            {
+   425→              title: "Signed",
+   426→              value: stats?.signed ?? 0,
+   427→              icon: CheckCircle2,
+   428→              color: "text-emerald-600",
+   429→              bgColor: "bg-emerald-500/10",
+   430→              format: (v: number) => String(v),
+   431→            },
+   432→            {
+   433→              title: "Draft",
+   434→              value: stats?.draft ?? 0,
+   435→              icon: FilePenLine,
+   436→              color: "text-slate-600 dark:text-slate-400",
+   437→              bgColor: "bg-slate-500/10",
+   438→              format: (v: number) => String(v),
+   439→            },
+   440→            {
+   441→              title: "Signature Rate",
+   442→              value: stats?.signatureRate ?? 0,
+   443→              icon: TrendingUp,
+   444→              color: "text-amber-600",
+   445→              bgColor: "bg-amber-500/10",
+   446→              format: (v: number) => `${v}%`,
+   447→            },
+   448→            {
+   449→              title: "Total Value",
+   450→              value: stats?.totalValue ?? 0,
+   451→              icon: DollarSign,
+   452→              color: "text-emerald-600",
+   453→              bgColor: "bg-emerald-500/10",
+   454→              format: (v: number) => formatCurrency(v),
+   455→            },
+   456→          ].map((stat, idx) => (
+   457→            <motion.div
+   458→              key={stat.title}
+   459→              initial={{ opacity: 0, y: 20 }}
+   460→              animate={{ opacity: 1, y: 0 }}
+   461→              transition={{ duration: 0.4, delay: idx * 0.05 }}
+   462→            >
+   463→              <Card>
+   464→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+   465→                  <CardTitle className="text-[12px] font-medium text-muted-foreground">
+   466→                    {stat.title}
+   467→                  </CardTitle>
+   468→                  <div className={`h-7 w-7 rounded-md ${stat.bgColor} flex items-center justify-center`}>
+   469→                    <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
+   470→                  </div>
+   471→                </CardHeader>
+   472→                <CardContent className="px-4 pb-3">
+   473→                  <div className="text-[20px] font-bold text-foreground">
+   474→                    {stat.format(stat.value)}
+   475→                  </div>
+   476→                </CardContent>
+   477→              </Card>
+   478→            </motion.div>
+   479→          ))}
+   480→        </div>
+   481→
+   482→        {/* Action Bar: Search */}
+   483→        <div className="flex items-center gap-3 mb-4">
+   484→          <div className="relative flex-1 max-w-sm">
+   485→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   486→            <Input
+   487→              placeholder="Search by title or client..."
+   488→              value={searchQuery}
+   489→              onChange={(e) => setSearchQuery(e.target.value)}
+   490→              className="pl-9"
+   491→            />
+   492→          </div>
+   493→        </div>
+   494→
+   495→        {/* Filter Tabs */}
+   496→        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+   497→          {filterTabs.map((tab) => {
+   498→            const isActive = activeFilter === tab.key;
+   499→            return (
+   500→              <button
+   501→                key={tab.key}
+   502→                onClick={() => setActiveFilter(tab.key)}
+   503→                className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
+   504→                  isActive
+   505→                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+   506→                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+   507→                }`}
+   508→              >
+   509→                <span>{tab.label}</span>
+   510→                <span
+   511→                  className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+   512→                    isActive
+   513→                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+   514→                      : "bg-muted text-muted-foreground"
+   515→                  }`}
+   516→                >
+   517→                  {filterCounts[tab.key] ?? 0}
+   518→                </span>
+   519→                <div
+   520→                  className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+   521→                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+   522→                  }`}
+   523→                />
+   524→              </button>
+   525→            );
+   526→          })}
+   527→        </div>
+   528→
+   529→        {/* Proposal Cards Grid */}
+   530→        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+   531→          <AnimatePresence mode="popLayout">
+   532→            {filteredProposals.length === 0 ? (
+   533→              <motion.div
+   534→                initial={{ opacity: 0 }}
+   535→                animate={{ opacity: 1 }}
+   536→                exit={{ opacity: 0 }}
+   537→                className="col-span-full"
+   538→              >
+   539→                <Card>
+   540→                  <CardContent className="py-16">
+   541→                    <div className="text-center text-muted-foreground">
+   542→                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-40" />
+   543→                      <p className="text-[16px] font-medium mb-1">No proposals found</p>
+   544→                      <p className="text-[14px] mb-4">
+   545→                        {searchQuery
+   546→                          ? "Try adjusting your search terms"
+   547→                          : "Create your first proposal or seed sample data"}
+   548→                      </p>
+   549→                      {!searchQuery && (
+   550→                        <div className="flex items-center justify-center gap-3">
+   551→                          <Button
+   552→                            variant="outline"
+   553→                            className="gap-2"
+   554→                            onClick={handleSeed}
+   555→                            disabled={isSeeding}
+   556→                          >
+   557→                            <Sparkles className="h-4 w-4" />
+   558→                            Seed Sample Data
+   559→                          </Button>
+   560→                          <Button
+   561→                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+   562→                            onClick={() => navigate("/proposals/new")}
+   563→                          >
+   564→                            <Plus className="h-4 w-4" />
+   565→                            Create Proposal
+   566→                          </Button>
+   567→                        </div>
+   568→                      )}
+   569→                    </div>
+   570→                  </CardContent>
+   571→                </Card>
+   572→              </motion.div>
+   573→            ) : (
+   574→              filteredProposals.map((proposal, idx) => (
+   575→                <ProposalCard
+   576→                  key={proposal._id}
+   577→                  proposal={proposal}
+   578→                  idx={idx}
+   579→                  isMock={isUsingMockData}
+   580→                  formatCurrency={formatCurrency}
+   581→                  formatDate={formatDate}
+   582→                  onSend={handleSend}
+   583→                  onDuplicate={handleDuplicate}
+   584→                  onDelete={canDeleteRecords ? setDeleteDialogId : () => {}}
+   585→                  onView={() => navigate(`/proposals/new?edit=${proposal._id}`)}
+   586→                  onShare={canShareRecords ? (id: string) => {
+   587→                    const p = proposals.find((p: any) => p._id === id);
+   588→                    if (canShareRecords) {
+   589→                      setSharingRecord({
+   590→                        id,
+   591→                        type: "proposal",
+   592→                        sharing: (p as any)?.sharing || [],
+   593→                      });
+   594→                      setShareProposalId(id);
+   595→                      setShowShareDialog(true);
+   596→                    }
+   597→                  } : () => {}}
+   598→                  canDelete={canDeleteRecords}
+   599→                  canShare={canShareRecords}
+   600→                />
+   601→              ))
+   602→            )}
+   603→          </AnimatePresence>
+   604→        </div>
+   605→        </>
+   606→        )}
+   607→      </div>
+   608→
+   609→      {/* Delete Confirmation Dialog */}
+   610→      <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>
+   611→        <DialogContent>
+   612→          <DialogHeader>
+   613→            <DialogTitle>Delete Proposal</DialogTitle>
+   614→            <DialogDescription>
+   615→              Are you sure you want to delete this proposal? This action cannot be undone. All associated follow-ups will also be removed.
+   616→            </DialogDescription>
+   617→          </DialogHeader>
+   618→          <DialogFooter className="gap-2">
+   619→            <Button variant="outline" onClick={() => setDeleteDialogId(null)}>
+   620→              Cancel
+   621→            </Button>
+   622→            <Button
+   623→              variant="destructive"
+   624→              onClick={() => deleteDialogId && handleDelete(deleteDialogId)}
+   625→            >
+   626→              Delete
+   627→            </Button>
+   628→          </DialogFooter>
+   629→        </DialogContent>
+   630→      </Dialog>
+   631→
+   632→      {/* Share Dialog */}
+   633→      <ShareDialog
+   634→        open={showShareDialog}
+   635→        onOpenChange={setShowShareDialog}
+   636→        recordId={sharingRecord?.id || shareProposalId || ""}
+   637→        recordType={sharingRecord?.type || "proposal"}
+   638→        currentSharing={sharingRecord?.sharing || []}
+   639→        onShare={async (args) => {
+   640→          try {
+   641→            if (shareRecordMutation) {
+   642→              await shareRecordMutation({
+   643→                recordId: sharingRecord?.id || shareProposalId,
+   644→                recordType: sharingRecord?.type || "proposal",
+   645→                ...args,
+   646→              });
+   647→            }
+   648→            toast.success("Record shared successfully");
+   649→          } catch (err: any) {
+   650→            toast.error(err?.message || "Failed to share record");
+   651→          }
+   652→        }}
+   653→        onUnshare={async (args) => {
+   654→          try {
+   655→            if (unshareRecordMutation) {
+   656→              await unshareRecordMutation({
+   657→                recordId: sharingRecord?.id || shareProposalId,
+   658→                recordType: sharingRecord?.type || "proposal",
+   659→                ...args,
+   660→              });
+   661→            }
+   662→            toast.success("Access removed");
+   663→          } catch (err: any) {
+   664→            toast.error(err?.message || "Failed to remove access");
+   665→          }
+   666→        }}
+   667→      />
+   668→    </motion.div>
+   669→  );
+   670→}
+   671→
+   672→// ─── Proposal Card Component ──────────────────────────────────────────────────
+   673→
+   674→function ProposalCard({
+   675→  proposal,
+   676→  idx,
+   677→  isMock,
+   678→  formatCurrency,
+   679→  formatDate,
+   680→  onSend,
+   681→  onDuplicate,
+   682→  onDelete,
+   683→  onView,
+   684→  onShare,
+   685→  canDelete,
+   686→  canShare,
+   687→}: {
+   688→  proposal: Proposal;
+   689→  idx: number;
+   690→  isMock: boolean;
+   691→  formatCurrency: (a: number) => string;
+   692→  formatDate: (t: number) => string;
+   693→  onSend: (id: string) => void;
+   694→  onDuplicate: (id: string) => void;
+   695→  onDelete: (id: string) => void;
+   696→  onView: () => void;
+   697→  onShare?: (id: string) => void;
+   698→  canDelete?: boolean;
+   699→  canShare?: boolean;
+   700→}) {
+   701→  const navigate = useNavigate();
+   702→  const config = statusConfig[proposal.status];
+   703→  const StatusIcon = config.icon;
+   704→
+   705→  // Fetch follow-ups for this proposal — skip when using mock data
+   706→  // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
+   707→  // and would cause useQuery to throw a server validation error.
+   708→  const followUps = useQuery(
+   709→    api.proposals.crud.getFollowUps,
+   710→    isMock ? "skip" : { proposalId: proposal._id as any }
+   711→  ) as FollowUp[] | undefined;
+   712→
+   713→  const scheduledFollowUps = useMemo(
+   714→    () => (followUps ? followUps.filter((f) => f.status === "scheduled") : []),
+   715→    [followUps]
+   716→  );
+   717→
+   718→  return (
+   719→    <motion.div
+   720→      initial={{ opacity: 0, y: 15 }}
+   721→      animate={{ opacity: 1, y: 0 }}
+   722→      exit={{ opacity: 0, scale: 0.95 }}
+   723→      transition={{ duration: 0.3, delay: idx * 0.04 }}
+   724→      layout
+   725→    >
+   726→      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden">
+   727→        <CardContent className="p-5">
+   728→          {/* Top Row: Status + Actions */}
+   729→          <div className="flex items-start justify-between mb-3">
+   730→            <Badge
+   731→              variant="outline"
+   732→              className={`text-[11px] px-2.5 py-0.5 h-6 font-medium ${config.className}`}
+   733→            >
+   734→              <StatusIcon className="h-3 w-3 mr-1" />
+   735→              {config.label}
+   736→            </Badge>
+   737→            <DropdownMenu>
+   738→              <DropdownMenuTrigger asChild>
+   739→                <Button
+   740→                  variant="ghost"
+   741→                  size="sm"
+   742→                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+   743→                >
+   744→                  <MoreVertical className="h-4 w-4" />
+   745→                </Button>
+   746→              </DropdownMenuTrigger>
+   747→              <DropdownMenuContent align="end" className="w-44">
+   748→                {proposal.status === "draft" && (
+   749→                  <DropdownMenuItem
+   750→                    onClick={() => onSend(proposal._id)}
+   751→                    className="gap-2 cursor-pointer"
+   752→                  >
+   753→                    <Send className="h-3.5 w-3.5" />
+   754→                    Send Proposal
+   755→                  </DropdownMenuItem>
+   756→                )}
+   757→                <DropdownMenuItem onClick={onView} className="gap-2 cursor-pointer">
+   758→                  <Eye className="h-3.5 w-3.5" />
+   759→                  {proposal.status === "draft" ? "Edit" : "View"}
+   760→                </DropdownMenuItem>
+   761→                <DropdownMenuItem
+   762→                  onClick={() => onDuplicate(proposal._id)}
+   763→                  className="gap-2 cursor-pointer"
+   764→                >
+   765→                  <Copy className="h-3.5 w-3.5" />
+   766→                  Duplicate
+   767→                </DropdownMenuItem>
+   768→                {canShare && (
+   769→                  <DropdownMenuItem
+   770→                    onClick={() => onShare?.(proposal._id)}
+   771→                    className="gap-2 cursor-pointer"
+   772→                  >
+   773→                    <Share2 className="h-3.5 w-3.5" />
+   774→                    Share
+   775→                  </DropdownMenuItem>
+   776→                )}
+   777→                {canDelete && (
+   778→                  <DropdownMenuItem
+   779→                    onClick={() => onDelete(proposal._id)}
+   780→                    className="gap-2 cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+   781→                  >
+   782→                    <Trash2 className="h-3.5 w-3.5" />
+   783→                    Delete
+   784→                  </DropdownMenuItem>
+   785→                )}
+   786→              </DropdownMenuContent>
+   787→            </DropdownMenu>
+   788→          </div>
+   789→
+   790→          {/* Title */}
+   791→          <h3
+   792→            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#8B5CF6] transition-colors"
+   793→            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+   794→            onClick={onView}
+   795→          >
+   796→            {proposal.title}
+   797→          </h3>
+   798→
+   799→          {/* Client */}
+   800→          {proposal.clientName && (
+   801→            <p className="text-[13px] text-muted-foreground mb-3 flex items-center gap-1.5">
+   802→              <Mail className="h-3 w-3" />
+   803→              {proposal.clientName}
+   804→            </p>
+   805→          )}
+   806→
+   807→          {/* Value */}
+   808→          <div className="flex items-baseline gap-1.5 mb-3">
+   809→            <span className="text-[22px] font-bold text-foreground">
+   810→              {formatCurrency(proposal.totalValue)}
+   811→            </span>
+   812→            {proposal.currency && proposal.currency !== "USD" && (
+   813→              <span className="text-[12px] text-muted-foreground">{proposal.currency}</span>
+   814→            )}
+   815→          </div>
+   816→
+   817→          {/* Dates Row */}
+   818→          <div className="flex items-center gap-3 text-[12px] text-muted-foreground mb-3">
+   819→            {proposal.sentAt && (
+   820→              <span className="flex items-center gap-1">
+   821→                <Send className="h-3 w-3" />
+   822→                Sent {formatDate(proposal.sentAt)}
+   823→              </span>
+   824→            )}
+   825→            {proposal.viewedAt && (
+   826→              <span className="flex items-center gap-1">
+   827→                <Eye className="h-3 w-3" />
+   828→                Viewed
+   829→              </span>
+   830→            )}
+   831→            {proposal.signedAt && (
+   832→              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+   833→                <CheckCircle2 className="h-3 w-3" />
+   834→                Signed {formatDate(proposal.signedAt)}
+   835→              </span>
+   836→            )}
+   837→          </div>
+   838→
+   839→          {/* Follow-up Badge */}
+   840→          {scheduledFollowUps.length > 0 && (
+   841→            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
+   842→              <Clock className="h-3 w-3" />
+   843→              <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
+   844→            </div>
+   845→          )}
+   846→
+   847→          {/* Quick Actions for Draft */}
+   848→          {proposal.status === "draft" && (
+   849→            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+   850→              <Button
+   851→                size="sm"
+   852→                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+   853→                onClick={() => onSend(proposal._id)}
+   854→              >
+   855→                <Send className="h-3 w-3" />
+   856→                Send
+   857→              </Button>
+   858→              <Button
+   859→                size="sm"
+   860→                variant="outline"
+   861→                className="gap-1.5 h-8 text-[12px]"
+   862→                onClick={onView}
+   863→              >
+   864→                <FilePenLine className="h-3 w-3" />
+   865→                Edit
+   866→              </Button>
+   867→            </div>
+   868→          )}
+   869→
+   870→          {/* Quick Actions for Signed — Convert to Project */}
+   871→          {proposal.status === "signed" && (
+   872→            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+   873→              <Button
+   874→                size="sm"
+   875→                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+   876→                onClick={(e) => {
+   877→                  e.stopPropagation();
+   878→                  navigate(`/projects?createFromProposal=${proposal._id}`);
+   879→                }}
+   880→              >
+   881→                <Briefcase className="h-3 w-3" />
+   882→                Convert to Project
+   883→              </Button>
+   884→              <Button
+   885→                size="sm"
+   886→                variant="outline"
+   887→                className="gap-1.5 h-8 text-[12px]"
+   888→                onClick={(e) => {
+   889→                  e.stopPropagation();
+   890→                  navigate(`/scope?proposal=${proposal._id}`);
+   891→                }}
+   892→              >
+   893→                <ShieldCheck className="h-3 w-3" />
+   894→                Define Scope
+   895→              </Button>
+   896→            </div>
+   897→          )}
+   898→        </CardContent>
+   899→      </Card>
+   900→    </motion.div>
+   901→  );
+   902→}
+   903→

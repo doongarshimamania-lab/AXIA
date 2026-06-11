@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -336,7 +336,7 @@ export default function EvidenceExport() {
   const [recentExports, setRecentExports] = useState<RecentExport[]>([]);
 
   // Auto-select all evidence types when they load
-  useMemo(() => {
+  useEffect(() => {
     if (evidenceTypes.length > 0 && selectedEvidenceTypes.length === 0) {
       setSelectedEvidenceTypes(evidenceTypes.map((t) => t.id));
     }

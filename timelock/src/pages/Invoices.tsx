@@ -223,8 +223,8 @@ export default function Invoices() {
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
+  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
 
   // ── Convex Queries ─────────────────────────────────────────────────────
   const invoices = useQuery(api.billing.crud.getInvoices, workspaceId ? { workspaceId } : {}) as Invoice[] | undefined;

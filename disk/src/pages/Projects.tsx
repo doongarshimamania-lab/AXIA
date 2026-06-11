@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Share2 } from "lucide-react";
+import { Loader2, Plus, Share2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { ShareDialog } from "@/components/ShareDialog";
@@ -55,28 +56,16 @@ export default function Projects() {
   const seedTestProjectsMutation = useMutation(api.seedProjects.seedTestProjects);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
+  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
   
   const handleUpgrade = () => navigate("/subscription");
 
   const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
-  const [queryTimeout, setQueryTimeout] = useState(false);
-
-  useEffect(() => {
-    if (projects === undefined) {
-      const timer = setTimeout(() => {
-        setQueryTimeout(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [projects]);
-
-  const isLoading = (projects === undefined && !queryTimeout);
+  const isLoading = projects === undefined;
+  const loadingTimedOut = useQueryTimeout(isLoading, 6000);
   const safeProjects = projects ?? [];
 
   // ── Selected project & its permissions (hooks MUST be called at top level) ──
@@ -166,11 +155,18 @@ export default function Projects() {
           </div>
 
           <div className="space-y-6">
-            {isLoading ? (
+            {isLoading && !loadingTimedOut ? (
               <div className="space-y-4">
                 <Skeleton className="h-[200px] w-full rounded-xl" />
                 <Skeleton className="h-[400px] w-full rounded-xl" />
               </div>
+            ) : loadingTimedOut && isLoading ? (
+              <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+                <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+                <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
+                <p className="text-sm text-muted-foreground mb-3">Could not load project data. The backend may not be running.</p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Refresh</Button>
+              </Card>
             ) : (
               <>
                 {/* Project List / Selection */}
