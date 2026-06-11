@@ -48,9 +48,11 @@ import {
   Sparkles,
   Lock,
   AlertCircle,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 // ─── Tier Definitions ────────────────────────────────────────────────────────
@@ -672,7 +674,9 @@ export default function Subscription() {
   };
 
   // ── Loading state ────────────────────────────────────────────────────────
-  if (isTierLoading) {
+  const tierTimedOut = useQueryTimeout(isTierLoading, 6000);
+
+  if (isTierLoading && !tierTimedOut) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -680,8 +684,29 @@ export default function Subscription() {
     );
   }
 
+  if (tierTimedOut && isTierLoading) {
+    return (
+      <div className="w-full min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+          <p className="text-sm text-muted-foreground max-w-md mb-6">
+            Unable to load data. This might be a connection issue.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Determine if Convex data is still loading ────────────────────────────
   const isInvoicesLoading = isAuthenticated && rawInvoices === undefined;
+  const invoicesTimedOut = useQueryTimeout(isInvoicesLoading, 6000);
 
   return (
     <motion.div
@@ -1102,7 +1127,7 @@ export default function Subscription() {
                   <p className="text-sm">Sign in to view your billing history</p>
                   <p className="text-xs mt-1">Your invoices will appear here once you're logged in</p>
                 </div>
-              ) : isInvoicesLoading ? (
+              ) : isInvoicesLoading && !invoicesTimedOut ? (
                 /* Loading skeleton for billing table */
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -1119,6 +1144,20 @@ export default function Subscription() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : invoicesTimedOut && isInvoicesLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mb-6">
+                    Unable to load data. This might be a connection issue.
+                  </p>
+                  <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Retry
+                  </Button>
                 </div>
               ) : tier === "free" && billingHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">

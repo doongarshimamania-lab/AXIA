@@ -18,6 +18,7 @@ import {
   Zap,
   Info,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -285,18 +286,9 @@ export default function Reports() {
   const isDemoMode = !authLoading && !isAuthenticated;
 
   // ─── Loading timeout ────────────────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
+  const timedOut = useQueryTimeout(!authLoading && reportsData === undefined && !isDemoMode, 6000);
 
-  useEffect(() => {
-    if (reportsData === undefined && !authLoading) {
-      const timer = setTimeout(() => setQueryTimeout(true), 3000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [reportsData, authLoading]);
-
-  const isLoading = !authLoading && reportsData === undefined && !queryTimeout && !isDemoMode;
+  const isLoading = !authLoading && reportsData === undefined && !timedOut && !isDemoMode;
 
   // ─── Map Convex data ────────────────────────────────────────────────────
   const reports: DisputeReport[] = isDemoMode ? MOCK_REPORTS : (reportsData ?? []) as any;
@@ -513,7 +505,7 @@ export default function Reports() {
         )}
 
         {/* Loading state */}
-        {isLoading ? (
+        {isLoading && !timedOut ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
@@ -533,6 +525,20 @@ export default function Reports() {
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-[100px] w-full rounded-xl" />
             ))}
+          </div>
+        ) : timedOut && !isDemoMode && reportsData === undefined ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+            <p className="text-sm text-muted-foreground max-w-md mb-6">
+              Unable to load data. This might be a connection issue.
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
           </div>
         ) : (
           <>

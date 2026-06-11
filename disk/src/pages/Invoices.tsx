@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
@@ -37,6 +37,7 @@ import {
   Receipt,
   ArrowUpRight,
   Hash,
+  RefreshCw,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
@@ -330,16 +331,11 @@ export default function Invoices() {
     }
   };
 
-  // ── Loading: Show skeleton briefly, then fall through to empty state ──
-  // If invoices is undefined for too long (Convex pending/error), we still render
-  // the page with safe fallbacks so the user can interact (seed data, etc.)
-  const [showSkeleton, setShowSkeleton] = useState(true);
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSkeleton(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
+  // ── Loading: useQueryTimeout for loading timeout ──
+  const isLoading = invoices === undefined || stats === undefined;
+  const timedOut = useQueryTimeout(isLoading, 6000);
 
-  if (invoices === undefined && showSkeleton) {
+  if (isLoading && !timedOut) {
     return (
       <motion.div
         className="w-full min-h-screen bg-background text-foreground flex items-center justify-center"
@@ -352,6 +348,26 @@ export default function Invoices() {
           <p className="mt-4 text-muted-foreground">Loading invoices...</p>
         </div>
       </motion.div>
+    );
+  }
+
+  if (timedOut && isLoading) {
+    return (
+      <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+          <p className="text-sm text-muted-foreground max-w-md mb-6">
+            Unable to load data. This might be a connection issue.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+      </div>
     );
   }
 

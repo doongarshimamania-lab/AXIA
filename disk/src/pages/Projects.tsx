@@ -62,9 +62,9 @@ export default function Projects() {
 
   const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  
+
   const [queryTimeout, setQueryTimeout] = useState(false);
-  
+
   useEffect(() => {
     if (projects === undefined) {
       const timer = setTimeout(() => {
@@ -78,6 +78,12 @@ export default function Projects() {
 
   const isLoading = (projects === undefined && !queryTimeout);
   const safeProjects = projects ?? [];
+
+  // ── Selected project & its permissions (hooks MUST be called at top level) ──
+  const selectedProject = selectedProjectId
+    ? safeProjects.find((p: any) => p._id === selectedProjectId) ?? null
+    : null;
+  const perms = usePermissions(selectedProject as any);
 
   useEffect(() => {
     if (!selectedProjectId && safeProjects.length > 0) {
@@ -139,28 +145,24 @@ export default function Projects() {
               )}
               Add Test Project
             </Button>
-            {selectedProjectId && (() => {
-              const selectedProject = safeProjects.find((p: any) => p._id === selectedProjectId);
-              const perms = usePermissions(selectedProject as any);
-              return (canShareRecords || perms.canShare) ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => {
-                    setSharingRecord({
-                      id: selectedProjectId,
-                      type: "project",
-                      sharing: selectedProject?.sharing || [],
-                    });
-                    setShowShareDialog(true);
-                  }}
-                >
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </Button>
-              ) : null;
-            })()}
+            {(canShareRecords || perms.canShare) && selectedProjectId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  setSharingRecord({
+                    id: selectedProjectId,
+                    type: "project",
+                    sharing: selectedProject?.sharing || [],
+                  });
+                  setShowShareDialog(true);
+                }}
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </Button>
+            )}
           </div>
 
           <div className="space-y-6">

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { initMonitoring, captureException } from "@/lib/monitoring";
 
 type SyncError = {
   error: string;
@@ -92,6 +94,7 @@ function ErrorDialog({
           <a
             href={`https://vly.ai/project/${import.meta.env.VITE_VLY_APP_ID}`}
             target="_blank"
+            rel="noopener noreferrer"
           >
             <Button>
               <ExternalLink /> Open editor
@@ -120,26 +123,20 @@ class ErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError() {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // logErrorToMyService(
-    //   error,
-    //   // Example "componentStack":
-    //   //   in ComponentThatThrows (created by App)
-    //   //   in ErrorBoundary (created by App)
-    //   //   in div (created by App)
-    //   //   in App
-    //   info.componentStack,
-    //   // Warning: `captureOwnerStack` is not available in production.
-    //   React.captureOwnerStack(),
-    // );
+    // Report to both Vly and Sentry
     reportErrorToVly({
       error: error.message,
       stackTrace: error.stack,
     });
+
+    captureException(error, {
+      componentStack: info.componentStack,
+    });
+
     this.setState({
       hasError: true,
       error: {
@@ -151,7 +148,6 @@ class ErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
         <ErrorDialog
           error={{
@@ -174,11 +170,24 @@ export function InstrumentationProvider({
 }) {
   const [error, setError] = useState<GenericError | null>(null);
 
+  // Initialize Sentry + PostHog on mount
+  useEffect(() => {
+    initMonitoring();
+  }, []);
+
   useEffect(() => {
     const handleError = async (event: ErrorEvent) => {
       try {
         console.error("Runtime error:", event.message, event.filename, event.lineno);
-        
+
+        // Report all errors to Sentry (it handles filtering internally)
+        captureException(new Error(event.message), {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          stack: event.error?.stack,
+        });
+
         // Skip showing error dialog for certain non-critical errors
         const skipErrors = [
           "ResizeObserver",
@@ -192,11 +201,11 @@ export function InstrumentationProvider({
           "user is not authenticated",
           "Not authenticated",
         ];
-        
-        const shouldSkip = skipErrors.some(err => 
+
+        const shouldSkip = skipErrors.some(err =>
           event.message?.includes(err) || event.filename?.includes(err)
         );
-        
+
         if (shouldSkip) {
           console.warn("Skipped showing error dialog for:", event.message);
           return;
@@ -230,7 +239,11 @@ export function InstrumentationProvider({
         const errorMessage = event.reason?.message || String(event.reason) || "Unknown error";
         console.error("Unhandled promise rejection:", errorMessage);
 
-        // Skip showing error dialog for certain non-critical errors
+        // Report to Sentry
+        captureException(event.reason instanceof Error ? event.reason : new Error(errorMessage), {
+          type: "unhandled_rejection",
+        });
+
         const skipErrors = [
           "ResizeObserver",
           "Network request failed",
@@ -245,11 +258,11 @@ export function InstrumentationProvider({
           "user is not authenticated",
           "Not authenticated",
         ];
-        
-        const shouldSkip = skipErrors.some(err => 
+
+        const shouldSkip = skipErrors.some(err =>
           errorMessage?.includes(err)
         );
-        
+
         if (shouldSkip) {
           console.warn("Skipped showing error dialog for rejection:", errorMessage);
           return;
@@ -281,6 +294,7 @@ export function InstrumentationProvider({
       window.removeEventListener("unhandledrejection", handleRejection);
     };
   }, []);
+
   return (
     <>
       <ErrorBoundary>{children}</ErrorBoundary>
@@ -291,10 +305,8 @@ export function InstrumentationProvider({
 
 export function trackConversion(eventName: string, payload: any) {
   console.log(`[Axia Conversion] ${eventName}:`, payload);
-  
-  // Future: Send to analytics service
-  // await fetch('/api/analytics', { 
-  //   method: 'POST', 
-  //   body: JSON.stringify({ event: eventName, ...payload }) 
-  // });
+  // Now integrated with PostHog via monitoring.ts
+  import("@/lib/monitoring").then(({ trackEvent }) => {
+    trackEvent(eventName, payload);
+  });
 }
