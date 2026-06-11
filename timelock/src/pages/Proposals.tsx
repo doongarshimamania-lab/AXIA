@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
@@ -46,8 +46,11 @@ import {
   Briefcase,
   ShieldCheck,
   Share2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -213,6 +216,9 @@ export default function Proposals() {
   // Track whether we're using mock data (mock IDs are not valid Convex IDs)
   const isUsingMockData = !convexProposals || convexProposals.length === 0;
 
+  const isLoading = convexProposals === undefined || convexStats === undefined;
+  const timedOut = useQueryTimeout(isLoading, 6000);
+
   // Use Convex data when available, fall back to mock data
   const proposals = useMemo(() => {
     if (convexProposals && convexProposals.length > 0) return convexProposals;
@@ -357,6 +363,45 @@ export default function Proposals() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && !timedOut ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <Skeleton className="h-6 w-12 mb-1" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <Skeleton className="h-10 rounded-lg" />
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-[100px] rounded-xl" />
+              ))}
+            </div>
+          </div>
+        ) : timedOut && isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+            <p className="text-sm text-muted-foreground max-w-md mb-6">
+              Unable to load data. This might be a connection issue.
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <>
         {/* Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {[
@@ -539,28 +584,26 @@ export default function Proposals() {
                   onDelete={canDeleteRecords ? setDeleteDialogId : () => {}}
                   onView={() => navigate(`/proposals/new?edit=${proposal._id}`)}
                   onShare={canShareRecords ? (id: string) => {
-                    const proposal = proposals.find((p: any) => p._id === id);
-                    const perms = usePermissions(proposal as any);
-                    if (canShareRecords || perms.canShare) {
+                    const p = proposals.find((p: any) => p._id === id);
+                    if (canShareRecords) {
                       setSharingRecord({
                         id,
                         type: "proposal",
-                        sharing: (proposal as any)?.sharing || [],
+                        sharing: (p as any)?.sharing || [],
                       });
                       setShareProposalId(id);
                       setShowShareDialog(true);
                     }
                   } : () => {}}
                   canDelete={canDeleteRecords}
-                  canShare={canShareRecords || (() => {
-                    // Check per-proposal permission lazily
-                    return true; // Fallback to workspace-level permission
-                  })()}
+                  canShare={canShareRecords}
                 />
               ))
             )}
           </AnimatePresence>
         </div>
+        </>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

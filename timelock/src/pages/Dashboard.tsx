@@ -23,7 +23,7 @@ import {
   DollarSign,
   Loader2,
 } from "lucide-react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -212,6 +212,7 @@ export default function Dashboard() {
     proposalStats === undefined ||
     invoiceStats === undefined ||
     scopeDefinitions === undefined;
+  const dashboardTimeout = useQueryTimeout(isLoading, 6000);
 
   const totalClients = clientsEnriched?.length ?? 0;
   const totalDeals = pipelineStats?.totalDeals ?? 0;
@@ -336,7 +337,7 @@ export default function Dashboard() {
 
         {/* ─── Stats Cards ──────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {isLoading ? (
+          {isLoading && !dashboardTimeout ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -344,6 +345,16 @@ export default function Dashboard() {
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
+            </>
+          ) : dashboardTimeout && isLoading ? (
+            <>
+              {/* Show zero-state cards on timeout instead of perpetual skeletons */}
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading clients...</CardContent></Card>
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading deals...</CardContent></Card>
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading proposals...</CardContent></Card>
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading invoices...</CardContent></Card>
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading scope...</CardContent></Card>
+              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Connecting...</CardContent></Card>
             </>
           ) : (
             <>
@@ -470,8 +481,12 @@ export default function Dashboard() {
                 )}
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isLoading && !dashboardTimeout ? (
                   <ActivitySkeleton />
+                ) : dashboardTimeout && isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    Waiting for data... <button onClick={() => window.location.reload()} className="text-primary underline ml-1">Retry</button>
+                  </div>
                 ) : activityItems.length === 0 ? (
                   <EmptyState
                     icon={Clock}

@@ -12,6 +12,8 @@ import {
   Palette,
   Info,
   Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -158,18 +160,9 @@ export default function Tags() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ─── Loading timeout pattern ────────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
+  const timedOut = useQueryTimeout(!authLoading && tagsData === undefined, 6000);
 
-  useEffect(() => {
-    if (tagsData === undefined) {
-      const timer = setTimeout(() => setQueryTimeout(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [tagsData]);
-
-  const isLoading = !authLoading && tagsData === undefined && !queryTimeout;
+  const isLoading = !authLoading && tagsData === undefined && !timedOut;
 
   // ─── Demo mode ──────────────────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -443,7 +436,7 @@ export default function Tags() {
         )}
 
         {/* ── Loading state ── */}
-        {isLoading ? (
+        {isLoading && !timedOut ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Skeleton className="h-[76px] rounded-xl" />
@@ -456,6 +449,20 @@ export default function Tags() {
                 <Skeleton key={i} className="h-[160px] rounded-xl" />
               ))}
             </div>
+          </div>
+        ) : timedOut && tagsData === undefined && !authLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+            <p className="text-sm text-muted-foreground max-w-md mb-6">
+              Unable to load data. This might be a connection issue.
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
           </div>
         ) : (
           <>

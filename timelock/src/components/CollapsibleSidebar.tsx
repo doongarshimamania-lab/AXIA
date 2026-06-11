@@ -50,6 +50,15 @@ export function CollapsibleSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Analytics: wrap toggleTheme to track theme changes
+  const handleToggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    toggleTheme();
+    import("@/lib/monitoring").then(({ trackEvent, AnalyticsEvents }) => {
+      trackEvent(AnalyticsEvents.THEME_TOGGLE, { from: theme, to: newTheme });
+    });
+  };
   
   const [isExpanded, setIsExpanded] = useState(() => {
     if (typeof localStorage !== "undefined") {
@@ -476,7 +485,7 @@ export function CollapsibleSidebar() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleTheme();
+                    handleToggleTheme();
                   }}
                   className="w-full text-left"
                 >
@@ -519,7 +528,7 @@ export function CollapsibleSidebar() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleTheme();
+                  handleToggleTheme();
                 }}
                 title={theme === "dark" ? "Light Mode" : "Dark Mode"}
                 className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
