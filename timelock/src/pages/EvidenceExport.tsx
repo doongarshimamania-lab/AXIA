@@ -23,7 +23,6 @@ import {
   Info,
   Database,
   Plus,
-  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportEvidence } from "@/lib/exportUtils";
 import { PageLoader } from "@/components/QueryState";
@@ -253,8 +252,10 @@ export default function EvidenceExport() {
   const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {}) as any[] | undefined;
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = evidenceData === undefined || clients === undefined;
-  const timedOut = useQueryTimeout(isLoading, 6000);
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   // ─── Derived Data ──────────────────────────────────────────────────────────
 
@@ -456,7 +457,7 @@ export default function EvidenceExport() {
         {!isAuthenticated && <DemoModeBanner />}
 
         {/* Loading / Timeout State */}
-        {isLoading && !timedOut ? (
+        {showLoading ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[0, 1, 2, 3].map((i) => <SummarySkeleton key={i} />)}
@@ -466,22 +467,6 @@ export default function EvidenceExport() {
               <div><Card><CardContent className="p-6"><Skeleton className="h-64 w-full" /></CardContent></Card></div>
             </div>
           </>
-        ) : isLoading && timedOut ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Data is taking longer than expected
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">
-              The evidence data could not be loaded. This might be due to a connection issue or the data not being available yet.
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Reload page
-            </Button>
-          </div>
         ) : !hasData ? (
           <EmptyEvidenceState />
         ) : (

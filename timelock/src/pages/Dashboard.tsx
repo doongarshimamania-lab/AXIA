@@ -23,7 +23,7 @@ import {
   DollarSign,
   Loader2,
 } from "lucide-react";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -185,34 +185,42 @@ export default function Dashboard() {
   const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const navigate = useNavigate();
+  const { isDisconnected } = useConvexConnectionState();
 
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [pricingHighlightSavings] = useState<number | undefined>(undefined);
 
   // ─── Convex queries ─────────────────────────────────────────────────────
+  // ROOT FIX: Pass "skip" when no workspace — never fire queries that can't resolve.
+  // When not authenticated, useQuery automatically skips (see safe-convex-react.ts).
+  // This means disconnected users see demo data IMMEDIATELY, no infinite spinners.
   const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
-  const clientsEnriched = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : {});
-  const pipelineStats = useQuery(api.pipeline.crud.getPipelineStats, wsId ? { workspaceId: wsId } : {});
-  const proposalStats = useQuery(api.proposals.crud.getProposalStats, wsId ? { workspaceId: wsId } : {});
-  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : {});
-  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, wsId ? { workspaceId: wsId } : {});
+  const queryArgs = wsId ? { workspaceId: wsId } : "skip";
+
+  const clientsEnriched = useQuery(api.clients.crud.getClientsEnriched, queryArgs);
+  const pipelineStats = useQuery(api.pipeline.crud.getPipelineStats, queryArgs);
+  const proposalStats = useQuery(api.proposals.crud.getProposalStats, queryArgs);
+  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, queryArgs);
+  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
 
   // Also fetch recent items for the activity feed
-  const deals = useQuery(api.pipeline.crud.getDeals, wsId ? { workspaceId: wsId } : {});
-  const proposals = useQuery(api.proposals.crud.getProposals, wsId ? { workspaceId: wsId } : {});
-  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : {});
+  const deals = useQuery(api.pipeline.crud.getDeals, queryArgs);
+  const proposals = useQuery(api.proposals.crud.getProposals, queryArgs);
+  const invoices = useQuery(api.billing.crud.getInvoices, queryArgs);
 
   // Seed mutation — uses autoSeed which seeds all business data (pipeline, clients, proposals, invoices)
   const seedAll = useMutation(api.autoSeed.autoSeed);
 
   // ─── Derived data ───────────────────────────────────────────────────────
-  const isLoading =
-    clientsEnriched === undefined ||
+  // ROOT FIX: Loading is ONLY true when we're authenticated + data is still fetching.
+  // Disconnected users (isDisconnected=true) skip straight to demo data.
+  const isQueryLoading =
+    isConvexConnected &&
+    (clientsEnriched === undefined ||
     pipelineStats === undefined ||
     proposalStats === undefined ||
     invoiceStats === undefined ||
-    scopeDefinitions === undefined;
-  const dashboardTimeout = useQueryTimeout(isLoading, 6000);
+    scopeDefinitions === undefined);
 
   const totalClients = clientsEnriched?.length ?? 0;
   const totalDeals = pipelineStats?.totalDeals ?? 0;
@@ -335,9 +343,23 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* Demo mode banner — shown when not connected to Convex */}
+        {isDisconnected && (
+          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-6">
+            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                Sign in
+              </a>{" "}
+              to manage your real data.
+            </div>
+          </div>
+        )}
+
         {/* ─── Stats Cards ──────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {isLoading && !dashboardTimeout ? (
+          {isQueryLoading ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -345,16 +367,6 @@ export default function Dashboard() {
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
-            </>
-          ) : dashboardTimeout && isLoading ? (
-            <>
-              {/* Show zero-state cards on timeout instead of perpetual skeletons */}
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading clients...</CardContent></Card>
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading deals...</CardContent></Card>
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading proposals...</CardContent></Card>
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading invoices...</CardContent></Card>
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading scope...</CardContent></Card>
-              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Connecting...</CardContent></Card>
             </>
           ) : (
             <>
@@ -456,7 +468,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Get Started / Seed Data (shown when no data exists) ───────── */}
-        {!isLoading && !hasAnyData && (
+        {!isQueryLoading && !hasAnyData && (
           <div className="mb-6">
             <GetStartedState onSeed={handleSeed} onAddClient={() => navigate("/clients")} />
           </div>
@@ -481,12 +493,8 @@ export default function Dashboard() {
                 )}
               </CardHeader>
               <CardContent>
-                {isLoading && !dashboardTimeout ? (
+                {isQueryLoading ? (
                   <ActivitySkeleton />
-                ) : dashboardTimeout && isLoading ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    Waiting for data... <button onClick={() => window.location.reload()} className="text-primary underline ml-1">Retry</button>
-                  </div>
                 ) : activityItems.length === 0 ? (
                   <EmptyState
                     icon={Clock}
@@ -577,7 +585,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Pipeline Breakdown */}
-            {!isLoading && pipelineStats?.byStage && pipelineStats.byStage.length > 0 && (
+            {!isQueryLoading && pipelineStats?.byStage && pipelineStats.byStage.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-[14px] font-semibold">Pipeline Breakdown</CardTitle>
@@ -609,7 +617,7 @@ export default function Dashboard() {
             )}
 
             {/* Proposal Stats Summary */}
-            {!isLoading && proposalTotal > 0 && (
+            {!isQueryLoading && proposalTotal > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-[14px] font-semibold">Proposal Stats</CardTitle>
@@ -634,7 +642,7 @@ export default function Dashboard() {
             )}
 
             {/* Invoice Stats Summary */}
-            {!isLoading && invoiceTotal > 0 && (
+            {!isQueryLoading && invoiceTotal > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-[14px] font-semibold">Invoice Summary</CardTitle>
@@ -662,7 +670,7 @@ export default function Dashboard() {
             )}
 
             {/* Scope Definitions */}
-            {!isLoading && scopeCount > 0 && (
+            {!isQueryLoading && scopeCount > 0 && (
               <Card
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => navigate("/scope")}
@@ -683,7 +691,7 @@ export default function Dashboard() {
             )}
 
             {/* Seed Data button (only if some data exists but not much — dev only) */}
-            {import.meta.env.DEV && !isLoading && hasAnyData && totalClients < 3 && (
+            {import.meta.env.DEV && !isQueryLoading && hasAnyData && totalClients < 3 && (
               <Button
                 variant="ghost"
                 size="sm"

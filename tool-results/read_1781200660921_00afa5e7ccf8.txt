@@ -1,0 +1,1306 @@
+     1→import { useState } from "react";
+     2→import { motion, AnimatePresence } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import jsPDF from "jspdf";
+     5→import {
+     6→  Card,
+     7→  CardContent,
+     8→  CardHeader,
+     9→  CardTitle,
+    10→  CardDescription,
+    11→  CardFooter,
+    12→} from "@/components/ui/card";
+    13→import { Button } from "@/components/ui/button";
+    14→import { Badge } from "@/components/ui/badge";
+    15→import { Separator } from "@/components/ui/separator";
+    16→import { Skeleton } from "@/components/ui/skeleton";
+    17→import {
+    18→  Dialog,
+    19→  DialogContent,
+    20→  DialogHeader,
+    21→  DialogTitle,
+    22→  DialogDescription,
+    23→  DialogFooter,
+    24→} from "@/components/ui/dialog";
+    25→import {
+    26→  Check,
+    27→  X,
+    28→  Zap,
+    29→  Shield,
+    30→  Crown,
+    31→  Rocket,
+    32→  ChevronDown,
+    33→  ChevronUp,
+    34→  FileText,
+    35→  CreditCard,
+    36→  BarChart3,
+    37→  HardDrive,
+    38→  Users,
+    39→  Brain,
+    40→  Globe,
+    41→  Star,
+    42→  MessageSquare,
+    43→  ArrowUpRight,
+    44→  ArrowDownRight,
+    45→  Clock,
+    46→  Download,
+    47→  HelpCircle,
+    48→  Sparkles,
+    49→  Lock,
+    50→  AlertCircle,
+    51→  AlertTriangle,
+    52→  RefreshCw,
+    53→} from "lucide-react";
+    54→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    55→import { useQuery, useConvexAuth, useQueryTimeout } from "@/lib/safe-convex-react";
+    56→import { api } from "@/convex/_generated/api";
+    57→
+    58→// ─── Tier Definitions ────────────────────────────────────────────────────────
+    59→
+    60→type TierKey = "free" | "starter" | "pro" | "expert";
+    61→
+    62→interface TierInfo {
+    63→  key: TierKey;
+    64→  name: string;
+    65→  price: number;
+    66→  description: string;
+    67→  icon: React.ReactNode;
+    68→  color: string;
+    69→  bgColor: string;
+    70→  borderColor: string;
+    71→  badge?: string;
+    72→  highlighted?: boolean;
+    73→}
+    74→
+    75→const TIERS: TierInfo[] = [
+    76→  {
+    77→    key: "free",
+    78→    name: "Free",
+    79→    price: 0,
+    80→    description: "Basic protection for getting started",
+    81→    icon: <Shield className="h-5 w-5" />,
+    82→    color: "text-muted-foreground",
+    83→    bgColor: "bg-muted/50",
+    84→    borderColor: "border-border",
+    85→  },
+    86→  {
+    87→    key: "starter",
+    88→    name: "Starter",
+    89→    price: 9,
+    90→    description: "Enhanced compliance & evidence tools",
+    91→    icon: <Rocket className="h-5 w-5" />,
+    92→    color: "text-sky-600 dark:text-sky-400",
+    93→    bgColor: "bg-sky-50 dark:bg-sky-950/30",
+    94→    borderColor: "border-sky-200 dark:border-sky-800",
+    95→  },
+    96→  {
+    97→    key: "pro",
+    98→    name: "Pro",
+    99→    price: 29,
+   100→    description: "Full AI-powered dispute protection",
+   101→    icon: <Zap className="h-5 w-5" />,
+   102→    color: "text-primary",
+   103→    bgColor: "bg-primary/5",
+   104→    borderColor: "border-primary",
+   105→    badge: "Most Popular",
+   106→    highlighted: true,
+   107→  },
+   108→  {
+   109→    key: "expert",
+   110→    name: "Expert",
+   111→    price: 79,
+   112→    description: "Enterprise-grade team protection",
+   113→    icon: <Crown className="h-5 w-5" />,
+   114→    color: "text-amber-600 dark:text-amber-400",
+   115→    bgColor: "bg-amber-50 dark:bg-amber-950/30",
+   116→    borderColor: "border-amber-200 dark:border-amber-800",
+   117→  },
+   118→];
+   119→
+   120→// ─── Feature Definitions ─────────────────────────────────────────────────────
+   121→
+   122→interface Feature {
+   123→  name: string;
+   124→  free: boolean | string;
+   125→  starter: boolean | string;
+   126→  pro: boolean | string;
+   127→  expert: boolean | string;
+   128→  category?: string;
+   129→}
+   130→
+   131→const FEATURES: Feature[] = [
+   132→  {
+   133→    name: "Dispute Reports / Month",
+   134→    free: "1",
+   135→    starter: "5",
+   136→    pro: "Unlimited",
+   137→    expert: "Unlimited",
+   138→    category: "Core",
+   139→  },
+   140→  {
+   141→    name: "Compliance Monitoring",
+   142→    free: "Basic",
+   143→    starter: "Enhanced",
+   144→    pro: "Advanced",
+   145→    expert: "Advanced",
+   146→    category: "Core",
+   147→  },
+   148→  {
+   149→    name: "Platform Connections",
+   150→    free: "1",
+   151→    starter: "2",
+   152→    pro: "5",
+   153→    expert: "Unlimited",
+   154→    category: "Core",
+   155→  },
+   156→  {
+   157→    name: "Evidence Export",
+   158→    free: false,
+   159→    starter: true,
+   160→    pro: true,
+   161→    expert: true,
+   162→    category: "Core",
+   163→  },
+   164→  {
+   165→    name: "AI Dispute Prediction",
+   166→    free: false,
+   167→    starter: false,
+   168→    pro: true,
+   169→    expert: true,
+   170→    category: "AI & Intelligence",
+   171→  },
+   172→  {
+   173→    name: "Cross-Platform Verification",
+   174→    free: false,
+   175→    starter: false,
+   176→    pro: true,
+   177→    expert: true,
+   178→    category: "AI & Intelligence",
+   179→  },
+   180→  {
+   181→    name: "WCVM Verification Badge",
+   182→    free: false,
+   183→    starter: false,
+   184→    pro: true,
+   185→    expert: true,
+   186→    category: "AI & Intelligence",
+   187→  },
+   188→  {
+   189→    name: "Priority Support",
+   190→    free: false,
+   191→    starter: false,
+   192→    pro: true,
+   193→    expert: true,
+   194→    category: "Support",
+   195→  },
+   196→  {
+   197→    name: "Team Features",
+   198→    free: false,
+   199→    starter: false,
+   200→    pro: false,
+   201→    expert: true,
+   202→    category: "Expert",
+   203→  },
+   204→  {
+   205→    name: "Custom Policy Analyzer",
+   206→    free: false,
+   207→    starter: false,
+   208→    pro: false,
+   209→    expert: true,
+   210→    category: "Expert",
+   211→  },
+   212→  {
+   213→    name: "Premium Network Access",
+   214→    free: false,
+   215→    starter: false,
+   216→    pro: false,
+   217→    expert: true,
+   218→    category: "Expert",
+   219→  },
+   220→  {
+   221→    name: "Dedicated Account Manager",
+   222→    free: false,
+   223→    starter: false,
+   224→    pro: false,
+   225→    expert: true,
+   226→    category: "Expert",
+   227→  },
+   228→];
+   229→
+   230→// ─── FAQ Data ────────────────────────────────────────────────────────────────
+   231→
+   232→interface FAQItem {
+   233→  question: string;
+   234→  answer: string;
+   235→}
+   236→
+   237→const FAQ_DATA: FAQItem[] = [
+   238→  {
+   239→    question: "Can I switch plans at any time?",
+   240→    answer:
+   241→      "Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features and be charged a prorated amount for the remainder of your billing cycle. When downgrading, the change takes effect at the end of your current billing period.",
+   242→  },
+   243→  {
+   244→    question: "What happens to my data if I downgrade?",
+   245→    answer:
+   246→      "Your data is always safe. If you downgrade, your existing evidence and reports remain accessible. However, features exclusive to higher tiers will become read-only, and you won't be able to create new items that exceed your new plan's limits (e.g., dispute reports beyond your monthly quota).",
+   247→  },
+   248→  {
+   249→    question: "Is there a free trial for paid plans?",
+   250→    answer:
+   251→      "Yes! Both Starter and Pro plans come with a 14-day free trial. You won't be charged until the trial ends, and you can cancel anytime before that with no obligation. The Expert plan includes a 30-day money-back guarantee.",
+   252→  },
+   253→  {
+   254→    question: "How does the AI Dispute Prediction work?",
+   255→    answer:
+   256→      "Our AI analyzes your work patterns, compliance data, platform metrics, and historical dispute outcomes to predict potential disputes before they happen. It provides actionable recommendations to strengthen your protection score and avoid common pitfalls. Available on Pro and Expert plans.",
+   257→  },
+   258→  {
+   259→    question: "What is WCVM Verification?",
+   260→    answer:
+   261→      "WCVM (Work Context Verification Model) is our proprietary technology that verifies work context relevance by analyzing browser activity, application usage, and work patterns. It generates a cryptographic verification signature that can be used as evidence in disputes. Available on Pro and Expert plans.",
+   262→  },
+   263→  {
+   264→    question: "Can I get a refund?",
+   265→    answer:
+   266→      "We offer a 30-day money-back guarantee on all paid plans. If you're not satisfied within the first 30 days, contact our support team for a full refund. After 30 days, refunds are handled on a case-by-case basis.",
+   267→  },
+   268→  {
+   269→    question: "Do you offer discounts for annual billing?",
+   270→    answer:
+   271→      "Yes! Annual billing saves you 20% compared to monthly billing. That means Starter for $7.20/mo, Pro for $23.20/mo, and Expert for $63.20/mo when billed annually. Contact our sales team for team or enterprise discounts.",
+   272→  },
+   273→];
+   274→
+   275→// ─── Invoice / Billing Types ─────────────────────────────────────────────────
+   276→
+   277→/** Shape returned by api.billing.crud.getInvoices */
+   278→interface ConvexInvoice {
+   279→  _id: string;
+   280→  _creationTime: number;
+   281→  userId: string;
+   282→  invoiceNumber: string;
+   283→  publicToken: string;
+   284→  status: "draft" | "sent" | "viewed" | "paid" | "partial" | "overdue" | "cancelled";
+   285→  issueDate: number;
+   286→  dueDate: number;
+   287→  paidDate?: number;
+   288→  clientName?: string;
+   289→  clientEmail?: string;
+   290→  lineItems: Array<{
+   291→    id: string;
+   292→    description: string;
+   293→    quantity: number;
+   294→    rate: number;
+   295→    amount: number;
+   296→    hasProof?: boolean;
+   297→  }>;
+   298→  subtotal: number;
+   299→  taxRate?: number;
+   300→  taxAmount?: number;
+   301→  total: number;
+   302→  currency?: string;
+   303→  notes?: string;
+   304→  proofCount?: number;
+   305→  hasValidatedBilling?: boolean;
+   306→  sentAt?: number;
+   307→  viewedAt?: number;
+   308→  createdAt: number;
+   309→  updatedAt: number;
+   310→}
+   311→
+   312→/** Shape used in the billing history table – maps from ConvexInvoice */
+   313→interface BillingRecord {
+   314→  id: string;
+   315→  date: string;            // ISO date string
+   316→  description: string;
+   317→  amount: number;
+   318→  status: ConvexInvoice["status"];
+   319→  invoice: ConvexInvoice;  // keep full invoice for receipt download
+   320→}
+   321→
+   322→function invoiceToBillingRecord(inv: ConvexInvoice): BillingRecord {
+   323→  // Build description from line items or default to client name
+   324→  const firstItem = inv.lineItems?.[0];
+   325→  const desc = firstItem
+   326→    ? inv.lineItems.length > 1
+   327→      ? `${firstItem.description} + ${inv.lineItems.length - 1} more`
+   328→      : firstItem.description
+   329→    : inv.clientName
+   330→    ? `Invoice for ${inv.clientName}`
+   331→    : "Invoice";
+   332→
+   333→  return {
+   334→    id: inv.invoiceNumber,
+   335→    date: new Date(inv.issueDate).toISOString(),
+   336→    description: desc,
+   337→    amount: inv.total,
+   338→    status: inv.status,
+   339→    invoice: inv,
+   340→  };
+   341→}
+   342→
+   343→// ─── Usage Stats ─────────────────────────────────────────────────────────────
+   344→
+   345→interface UsageStat {
+   346→  label: string;
+   347→  used: number;
+   348→  limit: number | null; // null = unlimited
+   349→  unit: string;
+   350→  icon: React.ReactNode;
+   351→}
+   352→
+   353→function getUsageForTier(tier: TierKey, invoiceStats?: { total: number; paid: number; pending: number; overdue: number } | null): UsageStat[] {
+   354→  const limits: Record<TierKey, { reports: number; platforms: number; evidence: number }> = {
+   355→    free: { reports: 1, platforms: 1, evidence: 50 },
+   356→    starter: { reports: 5, platforms: 2, evidence: 500 },
+   357→    pro: { reports: -1, platforms: 5, evidence: -1 }, // -1 = unlimited
+   358→    expert: { reports: -1, platforms: -1, evidence: -1 },
+   359→  };
+   360→  const usage = limits[tier];
+   361→
+   362→  // Use real invoice stats for reports usage if available
+   363→  const reportsUsed = invoiceStats ? invoiceStats.total : (tier === "free" ? 1 : tier === "starter" ? 3 : tier === "pro" ? 12 : 27);
+   364→  const platformsUsed = tier === "free" ? 1 : tier === "starter" ? 2 : tier === "pro" ? 3 : 5;
+   365→  const evidenceUsed = tier === "free" ? 38 : tier === "starter" ? 245 : tier === "pro" ? 1240 : 3890;
+   366→
+   367→  return [
+   368→    {
+   369→      label: "Dispute Reports",
+   370→      used: reportsUsed,
+   371→      limit: usage.reports === -1 ? null : usage.reports,
+   372→      unit: "this month",
+   373→      icon: <FileText className="h-4 w-4" />,
+   374→    },
+   375→    {
+   376→      label: "Platforms Connected",
+   377→      used: platformsUsed,
+   378→      limit: usage.platforms === -1 ? null : usage.platforms,
+   379→      unit: "active",
+   380→      icon: <Globe className="h-4 w-4" />,
+   381→    },
+   382→    {
+   383→      label: "Evidence Stored",
+   384→      used: evidenceUsed,
+   385→      limit: usage.evidence === -1 ? null : usage.evidence,
+   386→      unit: "items",
+   387→      icon: <HardDrive className="h-4 w-4" />,
+   388→    },
+   389→  ];
+   390→}
+   391→
+   392→// ─── Sub-Components ──────────────────────────────────────────────────────────
+   393→
+   394→function FeatureCell({ value }: { value: boolean | string }) {
+   395→  if (typeof value === "string") {
+   396→    return (
+   397→      <span className="text-sm font-medium text-foreground">{value}</span>
+   398→    );
+   399→  }
+   400→  return value ? (
+   401→    <Check className="h-4 w-4 text-emerald-500 mx-auto" />
+   402→  ) : (
+   403→    <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+   404→  );
+   405→}
+   406→
+   407→function downloadReceipt(record: BillingRecord) {
+   408→  const doc = new jsPDF({ unit: "mm", format: "a4" });
+   409→  const margin = 20;
+   410→  const pageWidth = doc.internal.pageSize.getWidth();
+   411→  const pageHeight = doc.internal.pageSize.getHeight();
+   412→
+   413→  // Title
+   414→  doc.setFont("helvetica", "bold");
+   415→  doc.setFontSize(20);
+   416→  doc.setTextColor(26, 26, 46);
+   417→  doc.text("Receipt", margin, 25);
+   418→
+   419→  // Invoice ID
+   420→  doc.setFont("helvetica", "normal");
+   421→  doc.setFontSize(10);
+   422→  doc.setTextColor(100, 116, 139);
+   423→  doc.text(record.id, margin, 32);
+   424→
+   425→  // Separator
+   426→  doc.setDrawColor(226, 232, 240);
+   427→  doc.line(margin, 37, pageWidth - margin, 37);
+   428→
+   429→  let y = 46;
+   430→  const addRow = (label: string, value: string) => {
+   431→    doc.setFont("helvetica", "normal");
+   432→    doc.setFontSize(9);
+   433→    doc.setTextColor(148, 163, 184);
+   434→    doc.text(label, margin, y);
+   435→    doc.setFont("helvetica", "bold");
+   436→    doc.setFontSize(11);
+   437→    doc.setTextColor(30, 41, 59);
+   438→    doc.text(value, margin + 50, y);
+   439→    y += 10;
+   440→  };
+   441→
+   442→  addRow("Description", record.description);
+   443→  addRow("Date", new Date(record.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
+   444→
+   445→  // Map invoice status to a display-friendly label
+   446→  const statusLabel = record.status.charAt(0).toUpperCase() + record.status.slice(1);
+   447→  addRow("Status", statusLabel);
+   448→
+   449→  const currency = record.invoice?.currency || "USD";
+   450→  addRow("Amount", `${currency} $${record.amount.toFixed(2)}`);
+   451→
+   452→  // Add client info if available
+   453→  if (record.invoice?.clientName) {
+   454→    addRow("Client", record.invoice.clientName);
+   455→  }
+   456→
+   457→  // Footer
+   458→  doc.setFont("helvetica", "normal");
+   459→  doc.setFontSize(7);
+   460→  doc.setTextColor(203, 213, 225);
+   461→  doc.text(`Generated by Axia \u2022 ${new Date().toLocaleString()}`, margin, pageHeight - 12);
+   462→
+   463→  doc.save(`${record.id}.pdf`);
+   464→  toast.success("Receipt downloaded");
+   465→}
+   466→
+   467→function InvoiceStatusBadge({ status }: { status: ConvexInvoice["status"] }) {
+   468→  const config: Record<string, { label: string; className: string }> = {
+   469→    paid: { label: "Paid", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" },
+   470→    sent: { label: "Sent", className: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400" },
+   471→    viewed: { label: "Viewed", className: "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400" },
+   472→    pending: { label: "Pending", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400" },
+   473→    draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
+   474→    partial: { label: "Partial", className: "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" },
+   475→    overdue: { label: "Overdue", className: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
+   476→    cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+   477→    failed: { label: "Failed", className: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
+   478→    refunded: { label: "Refunded", className: "bg-muted text-muted-foreground" },
+   479→  };
+   480→  const c = config[status] ?? config.draft;
+   481→  return (
+   482→    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${c.className}`}>
+   483→      {c.label}
+   484→    </span>
+   485→  );
+   486→}
+   487→
+   488→function UsageBar({ used, limit }: { used: number; limit: number | null }) {
+   489→  if (limit === null) {
+   490→    return (
+   491→      <div className="w-full h-2 rounded-full bg-emerald-100 dark:bg-emerald-950/40 overflow-hidden">
+   492→        <div className="h-full rounded-full bg-emerald-500 animate-pulse" style={{ width: "30%" }} />
+   493→      </div>
+   494→    );
+   495→  }
+   496→  const pct = Math.min((used / limit) * 100, 100);
+   497→  const isHigh = pct >= 80;
+   498→  const isFull = pct >= 100;
+   499→  return (
+   500→    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+   501→      <div
+   502→        className={`h-full rounded-full transition-all duration-500 ${
+   503→          isFull ? "bg-destructive" : isHigh ? "bg-amber-500" : "bg-emerald-500"
+   504→        }`}
+   505→        style={{ width: `${pct}%` }}
+   506→      />
+   507→    </div>
+   508→  );
+   509→}
+   510→
+   511→function FAQAccordion({ items }: { items: FAQItem[] }) {
+   512→  const [openIndex, setOpenIndex] = useState<number | null>(null);
+   513→  return (
+   514→    <div className="space-y-2">
+   515→      {items.map((item, idx) => {
+   516→        const isOpen = openIndex === idx;
+   517→        return (
+   518→          <motion.div
+   519→            key={idx}
+   520→            className="border border-border rounded-lg overflow-hidden"
+   521→            initial={false}
+   522→            animate={{ borderColor: isOpen ? "hsl(var(--primary))" : undefined }}
+   523→          >
+   524→            <button
+   525→              className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+   526→              onClick={() => setOpenIndex(isOpen ? null : idx)}
+   527→            >
+   528→              <span className="text-sm font-medium text-foreground pr-4">{item.question}</span>
+   529→              {isOpen ? (
+   530→                <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+   531→              ) : (
+   532→                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+   533→              )}
+   534→            </button>
+   535→            <AnimatePresence initial={false}>
+   536→              {isOpen && (
+   537→                <motion.div
+   538→                  initial={{ height: 0, opacity: 0 }}
+   539→                  animate={{ height: "auto", opacity: 1 }}
+   540→                  exit={{ height: 0, opacity: 0 }}
+   541→                  transition={{ duration: 0.2 }}
+   542→                  className="overflow-hidden"
+   543→                >
+   544→                  <div className="px-4 pb-4 text-sm text-muted-foreground leading-relaxed">
+   545→                    {item.answer}
+   546→                  </div>
+   547→                </motion.div>
+   548→              )}
+   549→            </AnimatePresence>
+   550→          </motion.div>
+   551→        );
+   552→      })}
+   553→    </div>
+   554→  );
+   555→}
+   556→
+   557→// ─── Confirm Dialog ──────────────────────────────────────────────────────────
+   558→
+   559→function ChangePlanDialog({
+   560→  isOpen,
+   561→  onClose,
+   562→  onConfirm,
+   563→  fromTier,
+   564→  toTier,
+   565→}: {
+   566→  isOpen: boolean;
+   567→  onClose: () => void;
+   568→  onConfirm: () => void;
+   569→  fromTier: TierKey;
+   570→  toTier: TierKey;
+   571→}) {
+   572→  const isUpgrade =
+   573→    TIERS.findIndex((t) => t.key === toTier) > TIERS.findIndex((t) => t.key === fromTier);
+   574→  const target = TIERS.find((t) => t.key === toTier)!;
+   575→
+   576→  return (
+   577→    <Dialog open={isOpen} onOpenChange={onClose}>
+   578→      <DialogContent className="sm:max-w-md">
+   579→        <DialogHeader>
+   580→          <DialogTitle className="flex items-center gap-2">
+   581→            {isUpgrade ? (
+   582→              <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+   583→            ) : (
+   584→              <ArrowDownRight className="h-5 w-5 text-amber-500" />
+   585→            )}
+   586→            {isUpgrade ? "Upgrade" : "Downgrade"} to {target.name}
+   587→          </DialogTitle>
+   588→          <DialogDescription>
+   589→            {isUpgrade
+   590→              ? `You're upgrading from ${fromTier.charAt(0).toUpperCase() + fromTier.slice(1)} to ${target.name} at $${target.price}/mo. You'll get immediate access to all ${target.name} features.`
+   591→              : `You're downgrading from ${fromTier.charAt(0).toUpperCase() + fromTier.slice(1)} to ${target.name}. The change takes effect at the end of your billing period.`}
+   592→          </DialogDescription>
+   593→        </DialogHeader>
+   594→        <DialogFooter className="flex gap-2 sm:gap-0">
+   595→          <Button variant="outline" onClick={onClose}>
+   596→            Cancel
+   597→          </Button>
+   598→          <Button
+   599→            onClick={onConfirm}
+   600→            className={
+   601→              isUpgrade
+   602→                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+   603→                : "bg-amber-600 hover:bg-amber-700 text-white"
+   604→            }
+   605→          >
+   606→            {isUpgrade ? "Upgrade Now" : "Confirm Downgrade"}
+   607→          </Button>
+   608→        </DialogFooter>
+   609→      </DialogContent>
+   610→    </Dialog>
+   611→  );
+   612→}
+   613→
+   614→// ─── Main Component ──────────────────────────────────────────────────────────
+   615→
+   616→export default function Subscription() {
+   617→  const { tier, setTier, isLoading: isTierLoading } = useSubscriptionTier();
+   618→  const { isAuthenticated } = useConvexAuth();
+   619→  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+   620→  const [confirmDialog, setConfirmDialog] = useState<{
+   621→    open: boolean;
+   622→    target: TierKey;
+   623→  }>({ open: false, target: "free" });
+   624→
+   625→  // ── Real data from Convex ────────────────────────────────────────────────
+   626→  const rawInvoices = useQuery(
+   627→    isAuthenticated ? api.billing.crud.getInvoices : "skip",
+   628→    {}
+   629→  );
+   630→
+   631→  const invoiceStats = useQuery(
+   632→    isAuthenticated ? api.billing.crud.getInvoiceStats : "skip",
+   633→    {}
+   634→  );
+   635→
+   636→  // Build billing records from Convex invoices
+   637→  const billingHistory: BillingRecord[] = (() => {
+   638→    if (!rawInvoices || !Array.isArray(rawInvoices)) return [];
+   639→    return (rawInvoices as ConvexInvoice[]).map(invoiceToBillingRecord);
+   640→  })();
+   641→
+   642→  const currentTierInfo = TIERS.find((t) => t.key === tier) ?? TIERS[0];
+   643→  const usageStats = getUsageForTier(tier as TierKey, invoiceStats ?? null);
+   644→
+   645→  const handlePlanChange = (targetTier: TierKey) => {
+   646→    if (targetTier === tier) return;
+   647→    setConfirmDialog({ open: true, target: targetTier });
+   648→  };
+   649→
+   650→  const confirmPlanChange = () => {
+   651→    const target = confirmDialog.target;
+   652→    const isUpgrade =
+   653→      TIERS.findIndex((t) => t.key === target) > TIERS.findIndex((t) => t.key === tier);
+   654→
+   655→    setTier(target);
+   656→    setConfirmDialog({ open: false, target: "free" });
+   657→
+   658→    toast.success(
+   659→      isUpgrade
+   660→        ? `Welcome to ${target.charAt(0).toUpperCase() + target.slice(1)}!`
+   661→        : `Plan changed to ${target.charAt(0).toUpperCase() + target.slice(1)}`,
+   662→      {
+   663→        description: isUpgrade
+   664→          ? "You now have access to all new features."
+   665→          : "Your plan will update at the end of the billing period.",
+   666→      }
+   667→    );
+   668→  };
+   669→
+   670→  const getPrice = (tierInfo: TierInfo) => {
+   671→    if (tierInfo.price === 0) return "$0";
+   672→    const price = billingPeriod === "annual" ? +(tierInfo.price * 0.8).toFixed(2) : tierInfo.price;
+   673→    return `$${price}`;
+   674→  };
+   675→
+   676→  // ── Loading state ────────────────────────────────────────────────────────
+   677→  const tierTimedOut = useQueryTimeout(isTierLoading, 6000);
+   678→
+   679→  if (isTierLoading && !tierTimedOut) {
+   680→    return (
+   681→      <div className="w-full min-h-screen bg-background flex items-center justify-center">
+   682→        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+   683→      </div>
+   684→    );
+   685→  }
+   686→
+   687→  if (tierTimedOut && isTierLoading) {
+   688→    return (
+   689→      <div className="w-full min-h-screen bg-background flex items-center justify-center">
+   690→        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+   691→          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+   692→            <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+   693→          </div>
+   694→          <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+   695→          <p className="text-sm text-muted-foreground max-w-md mb-6">
+   696→            Unable to load data. This might be a connection issue.
+   697→          </p>
+   698→          <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+   699→            <RefreshCw className="h-4 w-4" />
+   700→            Retry
+   701→          </Button>
+   702→        </div>
+   703→      </div>
+   704→    );
+   705→  }
+   706→
+   707→  // ── Determine if Convex data is still loading ────────────────────────────
+   708→  const isInvoicesLoading = isAuthenticated && rawInvoices === undefined;
+   709→  const invoicesTimedOut = useQueryTimeout(isInvoicesLoading, 6000);
+   710→
+   711→  return (
+   712→    <motion.div
+   713→      className="w-full min-h-screen bg-background text-foreground"
+   714→      initial={{ opacity: 0 }}
+   715→      animate={{ opacity: 1 }}
+   716→      transition={{ duration: 0.4 }}
+   717→    >
+   718→      <div className="container mx-auto px-4 py-6 max-w-6xl">
+   719→        {/* ── Header ─────────────────────────────────────────── */}
+   720→        <div className="mb-8">
+   721→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   722→            Subscription
+   723→          </h1>
+   724→          <p className="text-[16px] text-muted-foreground">
+   725→            Manage your Axia plan, view usage, and access billing history
+   726→          </p>
+   727→        </div>
+   728→
+   729→        {/* ── Current Plan Card ──────────────────────────────── */}
+   730→        <motion.div
+   731→          initial={{ opacity: 0, y: 12 }}
+   732→          animate={{ opacity: 1, y: 0 }}
+   733→          transition={{ delay: 0.05 }}
+   734→        >
+   735→          <Card className="mb-8 border-2" style={{ borderColor: currentTierInfo.highlighted ? "hsl(var(--primary))" : undefined }}>
+   736→            <CardContent className="p-6">
+   737→              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+   738→                <div className="flex items-center gap-4">
+   739→                  <div className={`h-14 w-14 rounded-xl flex items-center justify-center ${currentTierInfo.bgColor} ${currentTierInfo.color}`}>
+   740→                    {currentTierInfo.icon}
+   741→                  </div>
+   742→                  <div>
+   743→                    <div className="flex items-center gap-2 mb-1">
+   744→                      <h2 className="text-xl font-bold text-foreground">
+   745→                        {currentTierInfo.name} Plan
+   746→                      </h2>
+   747→                      {currentTierInfo.badge && (
+   748→                        <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
+   749→                          {currentTierInfo.badge}
+   750→                        </Badge>
+   751→                      )}
+   752→                    </div>
+   753→                    <p className="text-sm text-muted-foreground">
+   754→                      {currentTierInfo.description}
+   755→                    </p>
+   756→                  </div>
+   757→                </div>
+   758→                <div className="flex items-center gap-4">
+   759→                  <div className="text-right">
+   760→                    <div className="text-2xl font-bold text-foreground font-[Space_Grotesk]">
+   761→                      {getPrice(currentTierInfo)}
+   762→                      {currentTierInfo.price > 0 && (
+   763→                        <span className="text-sm font-normal text-muted-foreground">/mo</span>
+   764→                      )}
+   765→                    </div>
+   766→                    {billingPeriod === "annual" && currentTierInfo.price > 0 && (
+   767→                      <div className="text-xs text-emerald-600 dark:text-emerald-400">
+   768→                        Billed annually (save 20%)
+   769→                      </div>
+   770→                    )}
+   771→                  </div>
+   772→                  {tier !== "expert" && (
+   773→                    <Button
+   774→                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+   775→                      onClick={() => {
+   776→                        const nextTier =
+   777→                          tier === "free"
+   778→                            ? "starter"
+   779→                            : tier === "starter"
+   780→                            ? "pro"
+   781→                            : "expert";
+   782→                        handlePlanChange(nextTier);
+   783→                      }}
+   784→                    >
+   785→                      <ArrowUpRight className="mr-1 h-4 w-4" />
+   786→                      Upgrade
+   787→                    </Button>
+   788→                  )}
+   789→                </div>
+   790→              </div>
+   791→            </CardContent>
+   792→          </Card>
+   793→        </motion.div>
+   794→
+   795→        {/* ── Invoice Stats (from Convex) ─────────────────────── */}
+   796→        {isAuthenticated && invoiceStats && (
+   797→          <motion.div
+   798→            initial={{ opacity: 0, y: 12 }}
+   799→            animate={{ opacity: 1, y: 0 }}
+   800→            transition={{ delay: 0.07 }}
+   801→            className="mb-8"
+   802→          >
+   803→            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+   804→              <Card>
+   805→                <CardContent className="p-4 text-center">
+   806→                  <div className="text-2xl font-bold text-foreground font-[Space_Grotesk]">
+   807→                    {invoiceStats.totalRevenue > 0 ? `$${invoiceStats.totalRevenue.toLocaleString()}` : "$0"}
+   808→                  </div>
+   809→                  <p className="text-xs text-muted-foreground mt-1">Revenue</p>
+   810→                </CardContent>
+   811→              </Card>
+   812→              <Card>
+   813→                <CardContent className="p-4 text-center">
+   814→                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-[Space_Grotesk]">
+   815→                    {invoiceStats.paid ?? 0}
+   816→                  </div>
+   817→                  <p className="text-xs text-muted-foreground mt-1">Paid</p>
+   818→                </CardContent>
+   819→              </Card>
+   820→              <Card>
+   821→                <CardContent className="p-4 text-center">
+   822→                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 font-[Space_Grotesk]">
+   823→                    {invoiceStats.pending ?? 0}
+   824→                  </div>
+   825→                  <p className="text-xs text-muted-foreground mt-1">Pending</p>
+   826→                </CardContent>
+   827→              </Card>
+   828→              <Card>
+   829→                <CardContent className="p-4 text-center">
+   830→                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 font-[Space_Grotesk]">
+   831→                    {invoiceStats.overdue ?? 0}
+   832→                  </div>
+   833→                  <p className="text-xs text-muted-foreground mt-1">Overdue</p>
+   834→                </CardContent>
+   835→              </Card>
+   836→            </div>
+   837→          </motion.div>
+   838→        )}
+   839→
+   840→        {/* ── Usage Stats ────────────────────────────────────── */}
+   841→        <motion.div
+   842→          initial={{ opacity: 0, y: 12 }}
+   843→          animate={{ opacity: 1, y: 0 }}
+   844→          transition={{ delay: 0.1 }}
+   845→          className="mb-8"
+   846→        >
+   847→          <h2 className="text-lg font-semibold text-foreground mb-4">Current Usage</h2>
+   848→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   849→            {usageStats.map((stat) => (
+   850→              <Card key={stat.label}>
+   851→                <CardContent className="p-5">
+   852→                  <div className="flex items-center gap-2 mb-3">
+   853→                    <div className="text-muted-foreground">{stat.icon}</div>
+   854→                    <span className="text-sm font-medium text-muted-foreground">{stat.label}</span>
+   855→                  </div>
+   856→                  <div className="flex items-baseline gap-1 mb-2">
+   857→                    <span className="text-2xl font-bold text-foreground">{stat.used}</span>
+   858→                    {stat.limit !== null ? (
+   859→                      <span className="text-sm text-muted-foreground">/ {stat.limit}</span>
+   860→                    ) : (
+   861→                      <span className="text-sm text-emerald-600 dark:text-emerald-400">Unlimited</span>
+   862→                    )}
+   863→                  </div>
+   864→                  <UsageBar used={stat.used} limit={stat.limit} />
+   865→                  <p className="text-xs text-muted-foreground mt-1.5">{stat.unit}</p>
+   866→                </CardContent>
+   867→              </Card>
+   868→            ))}
+   869→          </div>
+   870→        </motion.div>
+   871→
+   872→        {/* ── Pricing Cards ──────────────────────────────────── */}
+   873→        <motion.div
+   874→          initial={{ opacity: 0, y: 12 }}
+   875→          animate={{ opacity: 1, y: 0 }}
+   876→          transition={{ delay: 0.15 }}
+   877→          className="mb-8"
+   878→        >
+   879→          <div className="flex items-center justify-between mb-4">
+   880→            <h2 className="text-lg font-semibold text-foreground">Choose Your Plan</h2>
+   881→            <div className="flex items-center gap-1 border border-border rounded-lg p-0.5">
+   882→              <button
+   883→                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+   884→                  billingPeriod === "monthly"
+   885→                    ? "bg-primary text-primary-foreground"
+   886→                    : "text-muted-foreground hover:text-foreground"
+   887→                }`}
+   888→                onClick={() => setBillingPeriod("monthly")}
+   889→              >
+   890→                Monthly
+   891→              </button>
+   892→              <button
+   893→                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+   894→                  billingPeriod === "annual"
+   895→                    ? "bg-primary text-primary-foreground"
+   896→                    : "text-muted-foreground hover:text-foreground"
+   897→                }`}
+   898→                onClick={() => setBillingPeriod("annual")}
+   899→              >
+   900→                Annual
+   901→                <span className="ml-1 text-[10px] text-emerald-500">-20%</span>
+   902→              </button>
+   903→            </div>
+   904→          </div>
+   905→
+   906→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   907→            {TIERS.map((t, idx) => {
+   908→              const isCurrent = t.key === tier;
+   909→              return (
+   910→                <motion.div
+   911→                  key={t.key}
+   912→                  initial={{ opacity: 0, y: 20 }}
+   913→                  animate={{ opacity: 1, y: 0 }}
+   914→                  transition={{ delay: 0.15 + idx * 0.05 }}
+   915→                >
+   916→                  <Card
+   917→                    className={`relative flex flex-col h-full transition-shadow ${
+   918→                      t.highlighted
+   919→                        ? "border-2 border-primary shadow-lg shadow-primary/10"
+   920→                        : "border border-border"
+   921→                    } ${isCurrent ? "ring-2 ring-primary/30" : ""}`}
+   922→                  >
+   923→                    {t.badge && (
+   924→                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+   925→                        <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 shadow-sm">
+   926→                          {t.badge}
+   927→                        </Badge>
+   928→                      </div>
+   929→                    )}
+   930→
+   931→                    <CardHeader className="pb-3 pt-5">
+   932→                      <div className="flex items-center gap-2 mb-1">
+   933→                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${t.bgColor} ${t.color}`}>
+   934→                          {t.icon}
+   935→                        </div>
+   936→                        <CardTitle className="text-base font-bold">{t.name}</CardTitle>
+   937→                      </div>
+   938→                      <CardDescription className="text-xs">{t.description}</CardDescription>
+   939→                    </CardHeader>
+   940→
+   941→                    <CardContent className="flex-1 pb-2">
+   942→                      <div className="mb-4">
+   943→                        <span className="text-3xl font-bold text-foreground font-[Space_Grotesk]">
+   944→                          {getPrice(t)}
+   945→                        </span>
+   946→                        {t.price > 0 && (
+   947→                          <span className="text-sm text-muted-foreground">/mo</span>
+   948→                        )}
+   949→                        {billingPeriod === "annual" && t.price > 0 && (
+   950→                          <div className="text-[11px] text-muted-foreground line-through">
+   951→                            ${t.price}/mo
+   952→                          </div>
+   953→                        )}
+   954→                      </div>
+   955→
+   956→                      <Separator className="mb-3" />
+   957→
+   958→                      <ul className="space-y-2">
+   959→                        {FEATURES.filter(
+   960→                          (f) =>
+   961→                            (t.key === "free") ||
+   962→                            (t.key === "starter" && (f.starter === true || typeof f.starter === "string")) ||
+   963→                            (t.key === "pro" && (f.pro === true || typeof f.pro === "string")) ||
+   964→                            (t.key === "expert" && (f.expert === true || typeof f.expert === "string"))
+   965→                        ).map((f) => {
+   966→                          const val =
+   967→                            t.key === "free"
+   968→                              ? f.free
+   969→                              : t.key === "starter"
+   970→                              ? f.starter
+   971→                              : t.key === "pro"
+   972→                              ? f.pro
+   973→                              : f.expert;
+   974→                          return (
+   975→                            <li key={f.name} className="flex items-start gap-2">
+   976→                              {typeof val === "boolean" && val ? (
+   977→                                <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+   978→                              ) : typeof val === "string" ? (
+   979→                                <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+   980→                              ) : (
+   981→                                <X className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0 mt-0.5" />
+   982→                              )}
+   983→                              <span className="text-xs text-foreground leading-tight">
+   984→                                {f.name}
+   985→                                {typeof val === "string" && (
+   986→                                  <span className="ml-1 font-medium text-foreground">
+   987→                                    — {val}
+   988→                                  </span>
+   989→                                )}
+   990→                              </span>
+   991→                            </li>
+   992→                          );
+   993→                        })}
+   994→                      </ul>
+   995→                    </CardContent>
+   996→
+   997→                    <CardFooter className="pt-2 pb-4">
+   998→                      {isCurrent ? (
+   999→                        <Button
+  1000→                          variant="outline"
+  1001→                          className="w-full"
+  1002→                          disabled
+  1003→                        >
+  1004→                          Current Plan
+  1005→                        </Button>
+  1006→                      ) : (
+  1007→                        <Button
+  1008→                          className={`w-full ${
+  1009→                            t.highlighted
+  1010→                              ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+  1011→                              : ""
+  1012→                          }`}
+  1013→                          variant={t.highlighted ? "default" : "outline"}
+  1014→                          onClick={() => handlePlanChange(t.key)}
+  1015→                        >
+  1016→                          {TIERS.findIndex((ti) => ti.key === t.key) >
+  1017→                          TIERS.findIndex((ti) => ti.key === tier)
+  1018→                            ? "Upgrade"
+  1019→                            : "Downgrade"}
+  1020→                        </Button>
+  1021→                      )}
+  1022→                    </CardFooter>
+  1023→                  </Card>
+  1024→                </motion.div>
+  1025→              );
+  1026→            })}
+  1027→          </div>
+  1028→        </motion.div>
+  1029→
+  1030→        {/* ── Feature Comparison Table ────────────────────────── */}
+  1031→        <motion.div
+  1032→          initial={{ opacity: 0, y: 12 }}
+  1033→          animate={{ opacity: 1, y: 0 }}
+  1034→          transition={{ delay: 0.25 }}
+  1035→          className="mb-8"
+  1036→        >
+  1037→          <h2 className="text-lg font-semibold text-foreground mb-4">
+  1038→            Feature Comparison
+  1039→          </h2>
+  1040→          <Card>
+  1041→            <CardContent className="p-0 overflow-x-auto">
+  1042→              <table className="w-full min-w-[640px]">
+  1043→                <thead>
+  1044→                  <tr className="border-b border-border">
+  1045→                    <th className="text-left text-xs font-medium text-muted-foreground p-3 w-[40%]">
+  1046→                      Feature
+  1047→                    </th>
+  1048→                    {TIERS.map((t) => (
+  1049→                      <th
+  1050→                        key={t.key}
+  1051→                        className={`text-center text-xs font-medium p-3 ${
+  1052→                          t.key === tier ? "text-primary" : "text-muted-foreground"
+  1053→                        }`}
+  1054→                      >
+  1055→                        <div className="flex flex-col items-center gap-0.5">
+  1056→                          <span>{t.name}</span>
+  1057→                          <span className="text-[10px] font-normal">
+  1058→                            {t.price === 0 ? "Free" : `$${t.price}/mo`}
+  1059→                          </span>
+  1060→                        </div>
+  1061→                      </th>
+  1062→                    ))}
+  1063→                  </tr>
+  1064→                </thead>
+  1065→                <tbody>
+  1066→                  {(() => {
+  1067→                    let lastCategory = "";
+  1068→                    return FEATURES.map((f, idx) => {
+  1069→                      const showCategory = f.category && f.category !== lastCategory;
+  1070→                      lastCategory = f.category ?? "";
+  1071→                      return (
+  1072→                        <tr key={idx} className="border-b border-border last:border-b-0">
+  1073→                          <td className="p-3">
+  1074→                            {showCategory && (
+  1075→                              <div className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
+  1076→                                {f.category}
+  1077→                              </div>
+  1078→                            )}
+  1079→                            <span className="text-sm text-foreground">{f.name}</span>
+  1080→                          </td>
+  1081→                          {(["free", "starter", "pro", "expert"] as TierKey[]).map((tierKey) => (
+  1082→                            <td
+  1083→                              key={tierKey}
+  1084→                              className={`p-3 text-center ${
+  1085→                                tierKey === tier ? "bg-primary/5" : ""
+  1086→                              }`}
+  1087→                            >
+  1088→                              <FeatureCell
+  1089→                                value={
+  1090→                                  f[tierKey as keyof Pick<Feature, "free" | "starter" | "pro" | "expert">]
+  1091→                                }
+  1092→                              />
+  1093→                            </td>
+  1094→                          ))}
+  1095→                        </tr>
+  1096→                      );
+  1097→                    });
+  1098→                  })()}
+  1099→                </tbody>
+  1100→              </table>
+  1101→            </CardContent>
+  1102→          </Card>
+  1103→        </motion.div>
+  1104→
+  1105→        {/* ── Billing History ─────────────────────────────────── */}
+  1106→        <motion.div
+  1107→          initial={{ opacity: 0, y: 12 }}
+  1108→          animate={{ opacity: 1, y: 0 }}
+  1109→          transition={{ delay: 0.3 }}
+  1110→          className="mb-8"
+  1111→        >
+  1112→          <div className="flex items-center justify-between mb-4">
+  1113→            <h2 className="text-lg font-semibold text-foreground">Billing History</h2>
+  1114→            {isAuthenticated && tier !== "free" && (
+  1115→              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+  1116→                <CreditCard className="h-3.5 w-3.5" />
+  1117→                <span>{billingHistory.length} invoice{billingHistory.length !== 1 ? "s" : ""}</span>
+  1118→              </div>
+  1119→            )}
+  1120→          </div>
+  1121→          <Card>
+  1122→            <CardContent className="p-0">
+  1123→              {/* Not authenticated → demo mode */}
+  1124→              {!isAuthenticated ? (
+  1125→                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+  1126→                  <Lock className="h-10 w-10 mb-3 opacity-40" />
+  1127→                  <p className="text-sm">Sign in to view your billing history</p>
+  1128→                  <p className="text-xs mt-1">Your invoices will appear here once you're logged in</p>
+  1129→                </div>
+  1130→              ) : isInvoicesLoading && !invoicesTimedOut ? (
+  1131→                /* Loading skeleton for billing table */
+  1132→                <div className="p-4 space-y-3">
+  1133→                  {[1, 2, 3].map((i) => (
+  1134→                    <div key={i} className="flex items-center justify-between">
+  1135→                      <div className="flex items-center gap-4 flex-1">
+  1136→                        <Skeleton className="h-4 w-20" />
+  1137→                        <Skeleton className="h-4 w-24" />
+  1138→                        <Skeleton className="h-4 w-32" />
+  1139→                      </div>
+  1140→                      <div className="flex items-center gap-4">
+  1141→                        <Skeleton className="h-4 w-16" />
+  1142→                        <Skeleton className="h-5 w-16 rounded-md" />
+  1143→                        <Skeleton className="h-7 w-7 rounded-md" />
+  1144→                      </div>
+  1145→                    </div>
+  1146→                  ))}
+  1147→                </div>
+  1148→              ) : invoicesTimedOut && isInvoicesLoading ? (
+  1149→                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+  1150→                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+  1151→                    <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+  1152→                  </div>
+  1153→                  <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
+  1154→                  <p className="text-sm text-muted-foreground max-w-md mb-6">
+  1155→                    Unable to load data. This might be a connection issue.
+  1156→                  </p>
+  1157→                  <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
+  1158→                    <RefreshCw className="h-4 w-4" />
+  1159→                    Retry
+  1160→                  </Button>
+  1161→                </div>
+  1162→              ) : tier === "free" && billingHistory.length === 0 ? (
+  1163→                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+  1164→                  <CreditCard className="h-10 w-10 mb-3 opacity-40" />
+  1165→                  <p className="text-sm">No billing history on the Free plan</p>
+  1166→                  <p className="text-xs mt-1">Upgrade to a paid plan to see invoices here</p>
+  1167→                </div>
+  1168→              ) : billingHistory.length === 0 ? (
+  1169→                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+  1170→                  <FileText className="h-10 w-10 mb-3 opacity-40" />
+  1171→                  <p className="text-sm">No invoices yet</p>
+  1172→                  <p className="text-xs mt-1">Create invoices to see them here</p>
+  1173→                </div>
+  1174→              ) : (
+  1175→                <div className="overflow-x-auto">
+  1176→                  <table className="w-full min-w-[500px]">
+  1177→                    <thead>
+  1178→                      <tr className="border-b border-border">
+  1179→                        <th className="text-left text-xs font-medium text-muted-foreground p-3">
+  1180→                          Invoice
+  1181→                        </th>
+  1182→                        <th className="text-left text-xs font-medium text-muted-foreground p-3">
+  1183→                          Date
+  1184→                        </th>
+  1185→                        <th className="text-left text-xs font-medium text-muted-foreground p-3">
+  1186→                          Description
+  1187→                        </th>
+  1188→                        <th className="text-right text-xs font-medium text-muted-foreground p-3">
+  1189→                          Amount
+  1190→                        </th>
+  1191→                        <th className="text-center text-xs font-medium text-muted-foreground p-3">
+  1192→                          Status
+  1193→                        </th>
+  1194→                        <th className="text-center text-xs font-medium text-muted-foreground p-3">
+  1195→                          Receipt
+  1196→                        </th>
+  1197→                      </tr>
+  1198→                    </thead>
+  1199→                    <tbody>
+  1200→                      {billingHistory.map((record) => (
+  1201→                        <tr
+  1202→                          key={record.id}
+  1203→                          className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
+  1204→                        >
+  1205→                          <td className="p-3 text-sm font-medium text-foreground">
+  1206→                            {record.id}
+  1207→                          </td>
+  1208→                          <td className="p-3 text-sm text-muted-foreground">
+  1209→                            <div className="flex items-center gap-1">
+  1210→                              <Clock className="h-3 w-3" />
+  1211→                              {new Date(record.date).toLocaleDateString("en-US", {
+  1212→                                year: "numeric",
+  1213→                                month: "short",
+  1214→                                day: "numeric",
+  1215→                              })}
+  1216→                            </div>
+  1217→                          </td>
+  1218→                          <td className="p-3 text-sm text-foreground max-w-[200px] truncate">
+  1219→                            {record.description}
+  1220→                          </td>
+  1221→                          <td className="p-3 text-sm font-medium text-foreground text-right">
+  1222→                            ${(record.amount ?? 0).toFixed(2)}
+  1223→                          </td>
+  1224→                          <td className="p-3 text-center">
+  1225→                            <InvoiceStatusBadge status={record.status} />
+  1226→                          </td>
+  1227→                          <td className="p-3 text-center">
+  1228→                            <Button
+  1229→                              variant="ghost"
+  1230→                              size="sm"
+  1231→                              className="h-7 w-7 p-0"
+  1232→                              onClick={() => downloadReceipt(record)}
+  1233→                              title="Download receipt PDF"
+  1234→                            >
+  1235→                              <Download className="h-3.5 w-3.5" />
+  1236→                            </Button>
+  1237→                          </td>
+  1238→                        </tr>
+  1239→                      ))}
+  1240→                    </tbody>
+  1241→                  </table>
+  1242→                </div>
+  1243→              )}
+  1244→            </CardContent>
+  1245→          </Card>
+  1246→        </motion.div>
+  1247→
+  1248→        {/* ── FAQ ─────────────────────────────────────────────── */}
+  1249→        <motion.div
+  1250→          initial={{ opacity: 0, y: 12 }}
+  1251→          animate={{ opacity: 1, y: 0 }}
+  1252→          transition={{ delay: 0.35 }}
+  1253→          className="mb-8"
+  1254→        >
+  1255→          <h2 className="text-lg font-semibold text-foreground mb-4">
+  1256→            Frequently Asked Questions
+  1257→          </h2>
+  1258→          <FAQAccordion items={FAQ_DATA} />
+  1259→        </motion.div>
+  1260→
+  1261→        {/* ── Upgrade CTA (for free/starter) ──────────────────── */}
+  1262→        {(tier === "free" || tier === "starter") && (
+  1263→          <motion.div
+  1264→            initial={{ opacity: 0, y: 12 }}
+  1265→            animate={{ opacity: 1, y: 0 }}
+  1266→            transition={{ delay: 0.4 }}
+  1267→            className="mb-8"
+  1268→          >
+  1269→            <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+  1270→              <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+  1271→                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+  1272→                  <Sparkles className="h-6 w-6 text-primary" />
+  1273→                </div>
+  1274→                <div className="flex-1">
+  1275→                  <h3 className="text-lg font-semibold text-foreground mb-1">
+  1276→                    Unlock Full Protection
+  1277→                  </h3>
+  1278→                  <p className="text-sm text-muted-foreground">
+  1279→                    Upgrade to Pro for AI-powered dispute prediction, cross-platform verification, and unlimited reports.
+  1280→                  </p>
+  1281→                </div>
+  1282→                <Button
+  1283→                  className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0"
+  1284→                  onClick={() => handlePlanChange("pro")}
+  1285→                >
+  1286→                  <ArrowUpRight className="mr-1 h-4 w-4" />
+  1287→                  Upgrade to Pro
+  1288→                </Button>
+  1289→              </CardContent>
+  1290→            </Card>
+  1291→          </motion.div>
+  1292→        )}
+  1293→      </div>
+  1294→
+  1295→      {/* ── Change Plan Dialog ────────────────────────────────── */}
+  1296→      <ChangePlanDialog
+  1297→        isOpen={confirmDialog.open}
+  1298→        onClose={() => setConfirmDialog({ open: false, target: "free" })}
+  1299→        onConfirm={confirmPlanChange}
+  1300→        fromTier={tier as TierKey}
+  1301→        toTier={confirmDialog.target}
+  1302→      />
+  1303→    </motion.div>
+  1304→  );
+  1305→}
+  1306→

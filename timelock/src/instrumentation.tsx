@@ -150,15 +150,13 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <ErrorDialog
-          error={{
-            error: "An error occurred",
-            stack: "",
+          error={this.state.error ?? { error: "An error occurred", stack: "" }}
+          setError={() => {
+            this.setState({ hasError: false, error: null });
           }}
-          setError={() => {}}
         />
       );
     }
-
     return this.props.children;
   }
 }
@@ -198,6 +196,7 @@ export function InstrumentationProvider({
           "convex",
           "WebSocket",
           "Cannot read properties",
+          "Cannot convert object",
           "user is not authenticated",
           "Not authenticated",
         ];
@@ -255,6 +254,7 @@ export function InstrumentationProvider({
           "convex",
           "WebSocket",
           "Cannot read properties",
+          "Cannot convert object",
           "user is not authenticated",
           "Not authenticated",
         ];

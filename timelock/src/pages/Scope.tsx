@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import {
   Shield,
@@ -33,7 +33,6 @@ import {
   GitBranch,
   DollarSign,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 
@@ -724,8 +723,10 @@ export default function Scope() {
   };
 
   // ─── Loading State ──────────────────────────────────────────────────────
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = scopes === undefined;
-  const timedOut = useQueryTimeout(isLoading, 6000);
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -763,27 +764,13 @@ export default function Scope() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {isLoading && !timedOut ? (
+          {showLoading ? (
             <>
               <SummaryCardSkeleton />
               <SummaryCardSkeleton />
               <SummaryCardSkeleton />
               <SummaryCardSkeleton />
             </>
-          ) : timedOut && isLoading ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-6">
-                Unable to load data. This might be a connection issue.
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Retry
-              </Button>
-            </div>
           ) : (
             <>
               <Card className="p-4 bg-card rounded-xl border border-border">
@@ -884,24 +871,10 @@ export default function Scope() {
 
           {/* ─── Scope Definitions Tab ────────────────────────────────── */}
           <TabsContent value="definitions" className="space-y-4">
-            {isLoading && !timedOut ? (
+            {showLoading ? (
               <div className="space-y-4">
                 <ScopeCardSkeleton />
                 <ScopeCardSkeleton />
-              </div>
-            ) : timedOut && isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-                <p className="text-sm text-muted-foreground max-w-md mb-6">
-                  Unable to load data. This might be a connection issue.
-                </p>
-                <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Retry
-                </Button>
               </div>
             ) : !scopes || scopes.length === 0 ? (
               <Card className="p-8 bg-card rounded-xl border border-border text-center">
@@ -934,24 +907,10 @@ export default function Scope() {
 
           {/* ─── Change Orders Tab ────────────────────────────────────── */}
           <TabsContent value="changes" className="space-y-4">
-            {isLoading && !timedOut ? (
+            {showLoading ? (
               <div className="space-y-3">
                 <ChangeOrderSkeleton />
                 <ChangeOrderSkeleton />
-              </div>
-            ) : timedOut && isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-                <p className="text-sm text-muted-foreground max-w-md mb-6">
-                  Unable to load data. This might be a connection issue.
-                </p>
-                <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Retry
-                </Button>
               </div>
             ) : (
               <>

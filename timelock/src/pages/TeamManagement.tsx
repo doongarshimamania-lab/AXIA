@@ -47,7 +47,7 @@ import {
   Plus, Pencil, Palette, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import {
   useWorkspaceContext,
@@ -262,9 +262,11 @@ export default function TeamManagement() {
     return [];
   }, [convexInvitations]);
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = hasRealWorkspaceId && (convexMembers === undefined);
   const isDemoMode = !hasRealWorkspaceId;
-  const loadingTimedOut = useQueryTimeout(isLoading, 6000);
+  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
   const handleInvite = async () => {
@@ -509,15 +511,8 @@ export default function TeamManagement() {
         {isDemoMode && <DemoModeBanner />}
 
         {/* Loading / Error State */}
-        {isLoading && !loadingTimedOut ? (
+        {showLoading ? (
           <StatsSkeleton />
-        ) : loadingTimedOut && isLoading ? (
-          <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
-            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
-            <p className="text-sm text-muted-foreground mb-3">Could not load team data. Showing demo data instead.</p>
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Refresh</Button>
-          </Card>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <Card className="p-5">
@@ -637,7 +632,7 @@ export default function TeamManagement() {
 
           {/* ─── Members Tab ──────────────────────────────────────────────────── */}
           <TabsContent value="members" className="space-y-6 mt-4">
-            {isLoading && !loadingTimedOut ? (
+            {showLoading ? (
               <MembersSkeleton />
             ) : (
               <Card className="p-6">

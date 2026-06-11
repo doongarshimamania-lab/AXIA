@@ -32,7 +32,7 @@ import {
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { useQuery, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 
@@ -890,7 +890,9 @@ function WaitlistEntriesSection({ client, title, envLabel }: { client: ConvexRea
 function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: string }) {
   const entries = useQuery(api.waitlist.getAllWaitlistEntries, {});
   const count = useQuery(api.waitlist.getWaitlistCount, {});
-  const loadingTimedOut = useQueryTimeout(entries === undefined, 6000);
+  const { isDisconnected } = useConvexConnectionState();
+  const loadingTimedOut = useQueryTimeout(entries === undefined, 3000);
+  const showLoading = entries === undefined && !loadingTimedOut && !isDisconnected;
 
   useEffect(() => {
     console.log(`[WAITLIST DASHBOARD ${envLabel}] Entries loaded:`, entries);
@@ -898,7 +900,7 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
   }, [entries, count, envLabel]);
 
   // Show loading state
-  if (entries === undefined && !loadingTimedOut) {
+  if (showLoading) {
     return (
       <Card className="col-span-12 mb-8">
         <CardHeader>

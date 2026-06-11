@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,10 +68,8 @@ import {
   Upload,
   Download,
   AlertCircle,
-  AlertTriangle,
   CheckCircle2,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -293,13 +291,13 @@ export default function Pipeline() {
   const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
 
   // ── Convex Queries & Mutations ──
-  const stages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : {}) as
+  const stages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as
     | Stage[]
     | undefined;
-  const deals = useQuery(api.pipeline.crud.getDeals, workspaceId ? { workspaceId } : {}) as
+  const deals = useQuery(api.pipeline.crud.getDeals, workspaceId ? { workspaceId } : "skip") as
     | Deal[]
     | undefined;
-  const stats = useQuery(api.pipeline.crud.getPipelineStats, workspaceId ? { workspaceId } : {}) as
+  const stats = useQuery(api.pipeline.crud.getPipelineStats, workspaceId ? { workspaceId } : "skip") as
     | PipelineStats
     | undefined;
 
@@ -408,8 +406,10 @@ export default function Pipeline() {
     },
     [stats, safeDeals, safeStages]
   );
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = stages === undefined || deals === undefined;
-  const timedOut = useQueryTimeout(isLoading, 6000);
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   const dealsByStage = useMemo(() => {
     const map = new Map<Id<"pipelineStages">, Deal[]>();
@@ -997,7 +997,7 @@ export default function Pipeline() {
         </div>
 
         {/* ── Kanban Board ── */}
-        {isLoading && !timedOut ? (
+        {showLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="space-y-3">
@@ -1006,20 +1006,6 @@ export default function Pipeline() {
                 <Skeleton className="h-28 w-full rounded-lg" />
               </div>
             ))}
-          </div>
-        ) : timedOut && isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">
-              Unable to load data. This might be a connection issue.
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </Button>
           </div>
         ) : safeStages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
@@ -46,8 +46,6 @@ import {
   Briefcase,
   ShieldCheck,
   Share2,
-  AlertTriangle,
-  RefreshCw,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -194,8 +192,8 @@ export default function Proposals() {
   const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
 
   // Convex queries
-  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : (activeFilter === "all" ? {} : { status: activeFilter })) as Proposal[] | undefined;
-  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : {}) as {
+  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : "skip") as Proposal[] | undefined;
+  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : "skip") as {
     total: number;
     sent: number;
     signed: number;
@@ -211,13 +209,15 @@ export default function Proposals() {
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
 
   // Filter counts (from all proposals for the tab badges)
-  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : {}) as Proposal[] | undefined;
+  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
 
   // Track whether we're using mock data (mock IDs are not valid Convex IDs)
   const isUsingMockData = !convexProposals || convexProposals.length === 0;
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = convexProposals === undefined || convexStats === undefined;
-  const timedOut = useQueryTimeout(isLoading, 6000);
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   // Use Convex data when available, fall back to mock data
   const proposals = useMemo(() => {
@@ -364,7 +364,7 @@ export default function Proposals() {
         </div>
 
         {/* Loading State */}
-        {isLoading && !timedOut ? (
+        {showLoading ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -385,20 +385,6 @@ export default function Proposals() {
                 <Skeleton key={i} className="h-[100px] rounded-xl" />
               ))}
             </div>
-          </div>
-        ) : timedOut && isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">
-              Unable to load data. This might be a connection issue.
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </Button>
           </div>
         ) : (
           <>

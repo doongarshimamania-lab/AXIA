@@ -21,7 +21,6 @@ import {
   Info,
   Plus,
   Search,
-  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportPaymentReport } from "@/lib/exportUtils";
 
@@ -166,12 +165,14 @@ export default function PaymentPatterns() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
-  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : {}) as any[] | undefined;
-  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : {}) as any | undefined;
-  const enrichedClients = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : {}) as any[] | undefined;
+  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
+  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : "skip") as any | undefined;
+  const enrichedClients = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = invoices === undefined || invoiceStats === undefined || enrichedClients === undefined;
-  const timedOut = useQueryTimeout(isLoading, 6000);
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   // ─── Derived Data ──────────────────────────────────────────────────────────
 
@@ -416,25 +417,11 @@ export default function PaymentPatterns() {
         {!isAuthenticated && <DemoModeBanner />}
 
         {/* Loading State */}
-        {isLoading && !timedOut ? (
+        {showLoading ? (
           <>
             <StatsSkeleton />
             <ChartSkeleton />
           </>
-        ) : timedOut && isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Data is taking longer than expected</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">
-              Unable to load data. This might be a connection issue.
-            </p>
-            <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </Button>
-          </div>
         ) : !hasData ? (
           <EmptyState />
         ) : (

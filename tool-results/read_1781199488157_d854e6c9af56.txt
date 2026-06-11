@@ -1,0 +1,715 @@
+     1→import { Button } from "@/components/ui/button";
+     2→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     3→import { Badge } from "@/components/ui/badge";
+     4→import { Skeleton } from "@/components/ui/skeleton";
+     5→import { useAuth } from "@/hooks/use-auth";
+     6→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+     7→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     8→import { motion } from "framer-motion";
+     9→import {
+    10→  Users,
+    11→  TrendingUp,
+    12→  FileText,
+    13→  Receipt,
+    14→  Ruler,
+    15→  LayoutList,
+    16→  Plus,
+    17→  Sparkles,
+    18→  ArrowRight,
+    19→  Clock,
+    20→  CheckCircle2,
+    21→  AlertCircle,
+    22→  Send,
+    23→  DollarSign,
+    24→  Loader2,
+    25→} from "lucide-react";
+    26→import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+    27→import { api } from "@/convex/_generated/api";
+    28→import { toast } from "sonner";
+    29→import { useNavigate } from "react-router";
+    30→import { useMemo } from "react";
+    31→import { PricingModal } from "@/components/PricingModal";
+    32→import { useState } from "react";
+    33→
+    34→// ─── Loading skeleton for a stat card ────────────────────────────────────
+    35→function StatCardSkeleton() {
+    36→  return (
+    37→    <Card>
+    38→      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    39→        <Skeleton className="h-4 w-24" />
+    40→        <Skeleton className="h-4 w-4 rounded" />
+    41→      </CardHeader>
+    42→      <CardContent>
+    43→        <Skeleton className="h-8 w-20 mb-1" />
+    44→        <Skeleton className="h-3 w-32" />
+    45→      </CardContent>
+    46→    </Card>
+    47→  );
+    48→}
+    49→
+    50→// ─── Loading skeleton for the activity feed ──────────────────────────────
+    51→function ActivitySkeleton() {
+    52→  return (
+    53→    <div className="space-y-3">
+    54→      {Array.from({ length: 4 }).map((_, i) => (
+    55→        <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+    56→          <Skeleton className="h-8 w-8 rounded-full" />
+    57→          <div className="flex-1 space-y-1">
+    58→            <Skeleton className="h-4 w-48" />
+    59→            <Skeleton className="h-3 w-32" />
+    60→          </div>
+    61→          <Skeleton className="h-5 w-16 rounded-full" />
+    62→        </div>
+    63→      ))}
+    64→    </div>
+    65→  );
+    66→}
+    67→
+    68→// ─── Empty state CTA ─────────────────────────────────────────────────────
+    69→function EmptyState({
+    70→  icon: Icon,
+    71→  title,
+    72→  description,
+    73→  actionLabel,
+    74→  onAction,
+    75→}: {
+    76→  icon: React.ElementType;
+    77→  title: string;
+    78→  description: string;
+    79→  actionLabel: string;
+    80→  onAction: () => void;
+    81→}) {
+    82→  return (
+    83→    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+    84→      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+    85→        <Icon className="h-6 w-6 text-muted-foreground" />
+    86→      </div>
+    87→      <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
+    88→      <p className="text-xs text-muted-foreground mb-4 max-w-[240px]">{description}</p>
+    89→      <Button size="sm" onClick={onAction}>
+    90→        <Plus className="mr-1 h-3 w-3" />
+    91→        {actionLabel}
+    92→      </Button>
+    93→    </div>
+    94→  );
+    95→}
+    96→
+    97→// ─── Get Started state when no data at all ───────────────────────────────
+    98→function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddClient: () => void }) {
+    99→  return (
+   100→    <Card className="border-dashed border-2">
+   101→      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+   102→        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+   103→          <Sparkles className="h-8 w-8 text-primary" />
+   104→        </div>
+   105→        <h3 className="text-lg font-semibold text-foreground mb-2">
+   106→          Welcome to Axia!
+   107→        </h3>
+   108→        <p className="text-sm text-muted-foreground mb-6 max-w-[360px]">
+   109→          Your dashboard is empty. Seed demo data to see how everything works, or start adding clients, deals, and proposals.
+   110→        </p>
+   111→        <div className="flex gap-3">
+   112→          {import.meta.env.DEV && (
+   113→            <Button onClick={onSeed}>
+   114→              <Sparkles className="mr-2 h-4 w-4" />
+   115→              Seed Demo Data
+   116→            </Button>
+   117→          )}
+   118→          <Button variant="outline" onClick={onAddClient}>
+   119→            <Plus className="mr-2 h-4 w-4" />
+   120→            Add Client
+   121→          </Button>
+   122→        </div>
+   123→      </CardContent>
+   124→    </Card>
+   125→  );
+   126→}
+   127→
+   128→// ─── Activity item type ──────────────────────────────────────────────────
+   129→interface ActivityItem {
+   130→  id: string;
+   131→  type: "deal" | "proposal" | "invoice";
+   132→  title: string;
+   133→  subtitle: string;
+   134→  status: string;
+   135→  timestamp: number;
+   136→  href: string;
+   137→}
+   138→
+   139→// ─── Status badge colors ─────────────────────────────────────────────────
+   140→function statusColor(status: string): "default" | "secondary" | "destructive" | "outline" {
+   141→  if (["won", "signed", "paid", "completed"].includes(status)) return "default";
+   142→  if (["lost", "declined", "overdue", "expired", "rejected"].includes(status)) return "destructive";
+   143→  return "secondary";
+   144→}
+   145→
+   146→function statusIcon(type: string, status: string) {
+   147→  if (type === "deal") {
+   148→    if (status === "won") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   149→    if (status === "lost") return <AlertCircle className="h-4 w-4 text-red-500" />;
+   150→    return <TrendingUp className="h-4 w-4 text-blue-500" />;
+   151→  }
+   152→  if (type === "proposal") {
+   153→    if (status === "signed") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   154→    if (status === "sent" || status === "viewed") return <Send className="h-4 w-4 text-blue-500" />;
+   155→    return <FileText className="h-4 w-4 text-muted-foreground" />;
+   156→  }
+   157→  // invoice
+   158→  if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   159→  if (status === "overdue") return <AlertCircle className="h-4 w-4 text-red-500" />;
+   160→  return <DollarSign className="h-4 w-4 text-amber-500" />;
+   161→}
+   162→
+   163→// ─── Format currency ─────────────────────────────────────────────────────
+   164→function fmtCurrency(n: number): string {
+   165→  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+   166→}
+   167→
+   168→function fmtRelative(ts: number): string {
+   169→  const diff = Date.now() - ts;
+   170→  const mins = Math.floor(diff / 60000);
+   171→  if (mins < 1) return "just now";
+   172→  if (mins < 60) return `${mins}m ago`;
+   173→  const hrs = Math.floor(mins / 60);
+   174→  if (hrs < 24) return `${hrs}h ago`;
+   175→  const days = Math.floor(hrs / 24);
+   176→  if (days < 30) return `${days}d ago`;
+   177→  return new Date(ts).toLocaleDateString();
+   178→}
+   179→
+   180→// ═════════════════════════════════════════════════════════════════════════
+   181→// MAIN DASHBOARD COMPONENT
+   182→// ═════════════════════════════════════════════════════════════════════════
+   183→export default function Dashboard() {
+   184→  const { isLoading: authLoading } = useAuth();
+   185→  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
+   186→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   187→  const navigate = useNavigate();
+   188→
+   189→  const [showPricingModal, setShowPricingModal] = useState(false);
+   190→  const [pricingHighlightSavings] = useState<number | undefined>(undefined);
+   191→
+   192→  // ─── Convex queries ─────────────────────────────────────────────────────
+   193→  const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
+   194→  const clientsEnriched = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : {});
+   195→  const pipelineStats = useQuery(api.pipeline.crud.getPipelineStats, wsId ? { workspaceId: wsId } : {});
+   196→  const proposalStats = useQuery(api.proposals.crud.getProposalStats, wsId ? { workspaceId: wsId } : {});
+   197→  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : {});
+   198→  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, wsId ? { workspaceId: wsId } : {});
+   199→
+   200→  // Also fetch recent items for the activity feed
+   201→  const deals = useQuery(api.pipeline.crud.getDeals, wsId ? { workspaceId: wsId } : {});
+   202→  const proposals = useQuery(api.proposals.crud.getProposals, wsId ? { workspaceId: wsId } : {});
+   203→  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : {});
+   204→
+   205→  // Seed mutation — uses autoSeed which seeds all business data (pipeline, clients, proposals, invoices)
+   206→  const seedAll = useMutation(api.autoSeed.autoSeed);
+   207→
+   208→  // ─── Derived data ───────────────────────────────────────────────────────
+   209→  const isLoading =
+   210→    clientsEnriched === undefined ||
+   211→    pipelineStats === undefined ||
+   212→    proposalStats === undefined ||
+   213→    invoiceStats === undefined ||
+   214→    scopeDefinitions === undefined;
+   215→  const dashboardTimeout = useQueryTimeout(isLoading, 6000);
+   216→
+   217→  const totalClients = clientsEnriched?.length ?? 0;
+   218→  const totalDeals = pipelineStats?.totalDeals ?? 0;
+   219→  const pipelineValue = pipelineStats?.totalValue ?? 0;
+   220→  const weightedValue = pipelineStats?.weightedValue ?? 0;
+   221→  const proposalTotal = proposalStats?.total ?? 0;
+   222→  const proposalSigned = proposalStats?.signed ?? 0;
+   223→  const proposalSignatureRate = proposalStats?.signatureRate ?? 0;
+   224→  const proposalTotalValue = proposalStats?.totalValue ?? 0;
+   225→  const invoiceTotal = invoiceStats?.total ?? 0;
+   226→  const invoicePaid = invoiceStats?.paid ?? 0;
+   227→  const invoiceOverdue = invoiceStats?.overdue ?? 0;
+   228→  const invoiceRevenue = invoiceStats?.totalRevenue ?? 0;
+   229→  const invoiceOutstanding = invoiceStats?.totalOutstanding ?? 0;
+   230→  const scopeCount = (scopeDefinitions as any[])?.length ?? 0;
+   231→
+   232→  const hasAnyData = totalClients > 0 || totalDeals > 0 || proposalTotal > 0 || invoiceTotal > 0;
+   233→
+   234→  // ─── Build activity feed ────────────────────────────────────────────────
+   235→  const activityItems: ActivityItem[] = useMemo(() => {
+   236→    const items: ActivityItem[] = [];
+   237→
+   238→    if (deals && Array.isArray(deals)) {
+   239→      for (const d of deals.slice(0, 10)) {
+   240→        // Determine a readable "stage name" for status
+   241→        const stageName = (d as any).stageName || "Pipeline";
+   242→        items.push({
+   243→          id: `deal-${(d as any)._id}`,
+   244→          type: "deal",
+   245→          title: d.title ?? "Untitled Deal",
+   246→          subtitle: `${fmtCurrency(d.value ?? 0)} · ${stageName}`,
+   247→          status: stageName.toLowerCase(),
+   248→          timestamp: d.updatedAt ?? d.createdAt ?? Date.now(),
+   249→          href: "/pipeline",
+   250→        });
+   251→      }
+   252→    }
+   253→
+   254→    if (proposals && Array.isArray(proposals)) {
+   255→      for (const p of proposals.slice(0, 10)) {
+   256→        items.push({
+   257→          id: `proposal-${(p as any)._id}`,
+   258→          type: "proposal",
+   259→          title: p.title ?? "Untitled Proposal",
+   260→          subtitle: `${fmtCurrency(p.totalValue ?? 0)} · ${p.clientName ?? "No client"}`,
+   261→          status: p.status ?? "draft",
+   262→          timestamp: p.updatedAt ?? p.createdAt ?? Date.now(),
+   263→          href: "/proposals",
+   264→        });
+   265→      }
+   266→    }
+   267→
+   268→    if (invoices && Array.isArray(invoices)) {
+   269→      for (const inv of invoices.slice(0, 10)) {
+   270→        items.push({
+   271→          id: `invoice-${(inv as any)._id}`,
+   272→          type: "invoice",
+   273→          title: `${(inv as any).invoiceNumber ?? "Invoice"} — ${inv.clientName ?? "No client"}`,
+   274→          subtitle: fmtCurrency(inv.total ?? 0),
+   275→          status: inv.status ?? "draft",
+   276→          timestamp: (inv as any).updatedAt ?? (inv as any).createdAt ?? Date.now(),
+   277→          href: "/invoices",
+   278→        });
+   279→      }
+   280→    }
+   281→
+   282→    // Sort by most recent first, cap at 15
+   283→    items.sort((a, b) => b.timestamp - a.timestamp);
+   284→    return items.slice(0, 15);
+   285→  }, [deals, proposals, invoices]);
+   286→
+   287→  // ─── Handlers ───────────────────────────────────────────────────────────
+   288→  const handleSeed = async () => {
+   289→    try {
+   290→      toast.info("Seeding demo data...", { description: "This may take a few seconds" });
+   291→      const result = await seedAll({});
+   292→      toast.success("Demo data seeded!", {
+   293→        description: "Your dashboard is now populated with sample data",
+   294→      });
+   295→    } catch (err: any) {
+   296→      console.error("Seed error:", err);
+   297→      toast.error("Failed to seed demo data", {
+   298→        description: err?.message ?? "Please try again",
+   299→      });
+   300→    }
+   301→  };
+   302→
+   303→  const handleUpgrade = (tier: string) => {
+   304→    toast.success(`Upgrading to ${tier}...`, {
+   305→      description: "You'll be redirected to Stripe checkout",
+   306→    });
+   307→    setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
+   308→    setShowPricingModal(false);
+   309→  };
+   310→
+   311→  // ─── Auth loading gate ──────────────────────────────────────────────────
+   312→  if (authLoading) {
+   313→    return (
+   314→      <div className="min-h-screen flex items-center justify-center bg-background">
+   315→        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+   316→      </div>
+   317→    );
+   318→  }
+   319→
+   320→  return (
+   321→    <motion.div
+   322→      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+   323→      initial={{ opacity: 0 }}
+   324→      animate={{ opacity: 1 }}
+   325→      transition={{ duration: 0.5 }}
+   326→    >
+   327→      <div className="container mx-auto px-4 py-6">
+   328→        {/* Header */}
+   329→        <div className="mb-6">
+   330→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   331→            Dashboard
+   332→          </h1>
+   333→          <p className="text-[16px] text-muted-foreground">
+   334→            Your business at a glance — clients, deals, proposals, and invoices
+   335→          </p>
+   336→        </div>
+   337→
+   338→        {/* ─── Stats Cards ──────────────────────────────────────────────── */}
+   339→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+   340→          {isLoading && !dashboardTimeout ? (
+   341→            <>
+   342→              <StatCardSkeleton />
+   343→              <StatCardSkeleton />
+   344→              <StatCardSkeleton />
+   345→              <StatCardSkeleton />
+   346→              <StatCardSkeleton />
+   347→              <StatCardSkeleton />
+   348→            </>
+   349→          ) : dashboardTimeout && isLoading ? (
+   350→            <>
+   351→              {/* Show zero-state cards on timeout instead of perpetual skeletons */}
+   352→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading clients...</CardContent></Card>
+   353→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading deals...</CardContent></Card>
+   354→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading proposals...</CardContent></Card>
+   355→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading invoices...</CardContent></Card>
+   356→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Loading scope...</CardContent></Card>
+   357→              <Card><CardContent className="pt-6 text-center text-muted-foreground text-sm">Connecting...</CardContent></Card>
+   358→            </>
+   359→          ) : (
+   360→            <>
+   361→              {/* Total Clients */}
+   362→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
+   363→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   364→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Clients</CardTitle>
+   365→                  <Users className="h-4 w-4 text-muted-foreground" />
+   366→                </CardHeader>
+   367→                <CardContent>
+   368→                  <div className="text-[24px] font-bold text-foreground">{totalClients}</div>
+   369→                  <p className="text-[12px] text-muted-foreground">
+   370→                    {totalClients === 0 ? "Add your first client" : `${totalClients} client${totalClients !== 1 ? "s" : ""} in your roster`}
+   371→                  </p>
+   372→                </CardContent>
+   373→              </Card>
+   374→
+   375→              {/* Active Deals */}
+   376→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+   377→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   378→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Active Deals</CardTitle>
+   379→                  <LayoutList className="h-4 w-4 text-muted-foreground" />
+   380→                </CardHeader>
+   381→                <CardContent>
+   382→                  <div className="text-[24px] font-bold text-foreground">{totalDeals}</div>
+   383→                  <p className="text-[12px] text-muted-foreground">
+   384→                    {totalDeals === 0 ? "No deals yet" : `Total value: ${fmtCurrency(pipelineValue)}`}
+   385→                  </p>
+   386→                </CardContent>
+   387→              </Card>
+   388→
+   389→              {/* Pipeline Value */}
+   390→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+   391→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   392→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Pipeline Value</CardTitle>
+   393→                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+   394→                </CardHeader>
+   395→                <CardContent>
+   396→                  <div className="text-[24px] font-bold text-foreground">{fmtCurrency(weightedValue)}</div>
+   397→                  <p className="text-[12px] text-muted-foreground">
+   398→                    Weighted · {fmtCurrency(pipelineValue)} total
+   399→                  </p>
+   400→                </CardContent>
+   401→              </Card>
+   402→
+   403→              {/* Proposals */}
+   404→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
+   405→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   406→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Proposals</CardTitle>
+   407→                  <FileText className="h-4 w-4 text-muted-foreground" />
+   408→                </CardHeader>
+   409→                <CardContent>
+   410→                  <div className="text-[24px] font-bold text-foreground">{proposalTotal}</div>
+   411→                  <p className="text-[12px] text-muted-foreground">
+   412→                    {proposalTotal === 0
+   413→                      ? "Create your first proposal"
+   414→                      : `${proposalSigned} signed · ${proposalSignatureRate}% close rate`}
+   415→                  </p>
+   416→                </CardContent>
+   417→              </Card>
+   418→
+   419→              {/* Invoices */}
+   420→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
+   421→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   422→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Invoices</CardTitle>
+   423→                  <Receipt className="h-4 w-4 text-muted-foreground" />
+   424→                </CardHeader>
+   425→                <CardContent>
+   426→                  <div className="text-[24px] font-bold text-foreground">{invoiceTotal}</div>
+   427→                  <p className="text-[12px] text-muted-foreground">
+   428→                    {invoiceTotal === 0
+   429→                      ? "Create your first invoice"
+   430→                      : `${invoicePaid} paid · ${invoiceOverdue > 0 ? `${invoiceOverdue} overdue` : "none overdue"}`}
+   431→                  </p>
+   432→                </CardContent>
+   433→              </Card>
+   434→
+   435→              {/* Revenue & Scope */}
+   436→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/scope")}>
+   437→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   438→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">
+   439→                    {invoiceOutstanding > 0 ? "Outstanding" : "Revenue"}
+   440→                  </CardTitle>
+   441→                  <Ruler className="h-4 w-4 text-muted-foreground" />
+   442→                </CardHeader>
+   443→                <CardContent>
+   444→                  <div className="text-[24px] font-bold text-foreground">
+   445→                    {fmtCurrency(invoiceOutstanding > 0 ? invoiceOutstanding : invoiceRevenue)}
+   446→                  </div>
+   447→                  <p className="text-[12px] text-muted-foreground">
+   448→                    {invoiceOutstanding > 0
+   449→                      ? `${fmtCurrency(invoiceRevenue)} collected`
+   450→                      : `${scopeCount} scope definition${scopeCount !== 1 ? "s" : ""}`}
+   451→                  </p>
+   452→                </CardContent>
+   453→              </Card>
+   454→            </>
+   455→          )}
+   456→        </div>
+   457→
+   458→        {/* ─── Get Started / Seed Data (shown when no data exists) ───────── */}
+   459→        {!isLoading && !hasAnyData && (
+   460→          <div className="mb-6">
+   461→            <GetStartedState onSeed={handleSeed} onAddClient={() => navigate("/clients")} />
+   462→          </div>
+   463→        )}
+   464→
+   465→        {/* ─── Recent Activity + Quick Actions ──────────────────────────── */}
+   466→        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   467→          {/* Activity Feed — takes 2 cols */}
+   468→          <div className="lg:col-span-2">
+   469→            <Card>
+   470→              <CardHeader className="flex flex-row items-center justify-between pb-2">
+   471→                <CardTitle className="text-[16px] font-semibold">Recent Activity</CardTitle>
+   472→                {activityItems.length > 0 && (
+   473→                  <Button
+   474→                    variant="ghost"
+   475→                    size="sm"
+   476→                    className="text-xs text-muted-foreground"
+   477→                    onClick={() => navigate("/pipeline")}
+   478→                  >
+   479→                    View all <ArrowRight className="ml-1 h-3 w-3" />
+   480→                  </Button>
+   481→                )}
+   482→              </CardHeader>
+   483→              <CardContent>
+   484→                {isLoading && !dashboardTimeout ? (
+   485→                  <ActivitySkeleton />
+   486→                ) : dashboardTimeout && isLoading ? (
+   487→                  <div className="text-center py-8 text-muted-foreground text-sm">
+   488→                    Waiting for data... <button onClick={() => window.location.reload()} className="text-primary underline ml-1">Retry</button>
+   489→                  </div>
+   490→                ) : activityItems.length === 0 ? (
+   491→                  <EmptyState
+   492→                    icon={Clock}
+   493→                    title="No activity yet"
+   494→                    description="Activity will appear here as you create deals, proposals, and invoices."
+   495→                    actionLabel="Add Deal"
+   496→                    onAction={() => navigate("/pipeline")}
+   497→                  />
+   498→                ) : (
+   499→                  <div className="space-y-2 max-h-96 overflow-y-auto">
+   500→                    {activityItems.map((item) => (
+   501→                      <div
+   502→                        key={item.id}
+   503→                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer"
+   504→                        onClick={() => navigate(item.href)}
+   505→                      >
+   506→                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+   507→                          {statusIcon(item.type, item.status)}
+   508→                        </div>
+   509→                        <div className="flex-1 min-w-0">
+   510→                          <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+   511→                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+   512→                        </div>
+   513→                        <div className="flex items-center gap-2 flex-shrink-0">
+   514→                          <Badge variant={statusColor(item.status)} className="text-[10px] capitalize">
+   515→                            {item.status}
+   516→                          </Badge>
+   517→                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+   518→                            {fmtRelative(item.timestamp)}
+   519→                          </span>
+   520→                        </div>
+   521→                      </div>
+   522→                    ))}
+   523→                  </div>
+   524→                )}
+   525→              </CardContent>
+   526→            </Card>
+   527→          </div>
+   528→
+   529→          {/* Quick Actions — takes 1 col */}
+   530→          <div className="space-y-4">
+   531→            <Card>
+   532→              <CardHeader className="pb-2">
+   533→                <CardTitle className="text-[16px] font-semibold">Quick Actions</CardTitle>
+   534→              </CardHeader>
+   535→              <CardContent className="space-y-2">
+   536→                <Button
+   537→                  className="w-full justify-start"
+   538→                  variant="outline"
+   539→                  onClick={() => navigate("/pipeline")}
+   540→                >
+   541→                  <Plus className="mr-2 h-4 w-4" />
+   542→                  Create Deal
+   543→                </Button>
+   544→                <Button
+   545→                  className="w-full justify-start"
+   546→                  variant="outline"
+   547→                  onClick={() => navigate("/proposals/new")}
+   548→                >
+   549→                  <Plus className="mr-2 h-4 w-4" />
+   550→                  Create Proposal
+   551→                </Button>
+   552→                <Button
+   553→                  className="w-full justify-start"
+   554→                  variant="outline"
+   555→                  onClick={() => navigate("/invoices/new")}
+   556→                >
+   557→                  <Plus className="mr-2 h-4 w-4" />
+   558→                  Create Invoice
+   559→                </Button>
+   560→                <Button
+   561→                  className="w-full justify-start"
+   562→                  variant="outline"
+   563→                  onClick={() => navigate("/clients")}
+   564→                >
+   565→                  <Plus className="mr-2 h-4 w-4" />
+   566→                  Add Client
+   567→                </Button>
+   568→                <Button
+   569→                  className="w-full justify-start"
+   570→                  variant="outline"
+   571→                  onClick={() => navigate("/scope")}
+   572→                >
+   573→                  <Ruler className="mr-2 h-4 w-4" />
+   574→                  Define Scope
+   575→                </Button>
+   576→              </CardContent>
+   577→            </Card>
+   578→
+   579→            {/* Pipeline Breakdown */}
+   580→            {!isLoading && pipelineStats?.byStage && pipelineStats.byStage.length > 0 && (
+   581→              <Card>
+   582→                <CardHeader className="pb-2">
+   583→                  <CardTitle className="text-[14px] font-semibold">Pipeline Breakdown</CardTitle>
+   584→                </CardHeader>
+   585→                <CardContent>
+   586→                  <div className="space-y-2">
+   587→                    {(pipelineStats.byStage as any[]).map((stage: any) => (
+   588→                      <div key={stage.stageId} className="flex items-center justify-between">
+   589→                        <div className="flex items-center gap-2">
+   590→                          <div
+   591→                            className="h-2.5 w-2.5 rounded-full"
+   592→                            style={{ backgroundColor: stage.color ?? "#888" }}
+   593→                          />
+   594→                          <span className="text-sm text-foreground">{stage.stageName}</span>
+   595→                        </div>
+   596→                        <div className="flex items-center gap-2">
+   597→                          <span className="text-xs text-muted-foreground">
+   598→                            {stage.dealCount} deal{stage.dealCount !== 1 ? "s" : ""}
+   599→                          </span>
+   600→                          <span className="text-xs font-medium text-foreground">
+   601→                            {fmtCurrency(stage.totalValue)}
+   602→                          </span>
+   603→                        </div>
+   604→                      </div>
+   605→                    ))}
+   606→                  </div>
+   607→                </CardContent>
+   608→              </Card>
+   609→            )}
+   610→
+   611→            {/* Proposal Stats Summary */}
+   612→            {!isLoading && proposalTotal > 0 && (
+   613→              <Card>
+   614→                <CardHeader className="pb-2">
+   615→                  <CardTitle className="text-[14px] font-semibold">Proposal Stats</CardTitle>
+   616→                </CardHeader>
+   617→                <CardContent>
+   618→                  <div className="grid grid-cols-2 gap-3">
+   619→                    <div>
+   620→                      <p className="text-lg font-bold text-foreground">{proposalSigned}</p>
+   621→                      <p className="text-xs text-muted-foreground">Signed</p>
+   622→                    </div>
+   623→                    <div>
+   624→                      <p className="text-lg font-bold text-foreground">{proposalSignatureRate}%</p>
+   625→                      <p className="text-xs text-muted-foreground">Close Rate</p>
+   626→                    </div>
+   627→                    <div className="col-span-2">
+   628→                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(proposalTotalValue)}</p>
+   629→                      <p className="text-xs text-muted-foreground">Signed Value</p>
+   630→                    </div>
+   631→                  </div>
+   632→                </CardContent>
+   633→              </Card>
+   634→            )}
+   635→
+   636→            {/* Invoice Stats Summary */}
+   637→            {!isLoading && invoiceTotal > 0 && (
+   638→              <Card>
+   639→                <CardHeader className="pb-2">
+   640→                  <CardTitle className="text-[14px] font-semibold">Invoice Summary</CardTitle>
+   641→                </CardHeader>
+   642→                <CardContent>
+   643→                  <div className="grid grid-cols-2 gap-3">
+   644→                    <div>
+   645→                      <p className="text-lg font-bold text-emerald-600">{fmtCurrency(invoiceRevenue)}</p>
+   646→                      <p className="text-xs text-muted-foreground">Collected</p>
+   647→                    </div>
+   648→                    <div>
+   649→                      <p className="text-lg font-bold text-foreground">{fmtCurrency(invoiceOutstanding)}</p>
+   650→                      <p className="text-xs text-muted-foreground">Outstanding</p>
+   651→                    </div>
+   652→                    {invoiceOverdue > 0 && (
+   653→                      <div className="col-span-2 bg-red-500/10 rounded-md p-2">
+   654→                        <p className="text-sm font-medium text-red-600">
+   655→                          {invoiceOverdue} invoice{invoiceOverdue !== 1 ? "s" : ""} overdue
+   656→                        </p>
+   657→                      </div>
+   658→                    )}
+   659→                  </div>
+   660→                </CardContent>
+   661→              </Card>
+   662→            )}
+   663→
+   664→            {/* Scope Definitions */}
+   665→            {!isLoading && scopeCount > 0 && (
+   666→              <Card
+   667→                className="cursor-pointer hover:shadow-md transition-shadow"
+   668→                onClick={() => navigate("/scope")}
+   669→              >
+   670→                <CardHeader className="pb-2">
+   671→                  <CardTitle className="text-[14px] font-semibold">Scope Definitions</CardTitle>
+   672→                </CardHeader>
+   673→                <CardContent>
+   674→                  <div className="flex items-center justify-between">
+   675→                    <p className="text-lg font-bold text-foreground">{scopeCount}</p>
+   676→                    <Badge variant="outline" className="text-xs">Active</Badge>
+   677→                  </div>
+   678→                  <p className="text-xs text-muted-foreground mt-1">
+   679→                    Protect against scope creep
+   680→                  </p>
+   681→                </CardContent>
+   682→              </Card>
+   683→            )}
+   684→
+   685→            {/* Seed Data button (only if some data exists but not much — dev only) */}
+   686→            {import.meta.env.DEV && !isLoading && hasAnyData && totalClients < 3 && (
+   687→              <Button
+   688→                variant="ghost"
+   689→                size="sm"
+   690→                className="w-full text-xs text-muted-foreground"
+   691→                onClick={handleSeed}
+   692→              >
+   693→                <Sparkles className="mr-1 h-3 w-3" />
+   694→                Load more demo data
+   695→              </Button>
+   696→            )}
+   697→          </div>
+   698→        </div>
+   699→      </div>
+   700→
+   701→      {/* Pricing Modal */}
+   702→      <PricingModal
+   703→        isOpen={showPricingModal}
+   704→        onClose={() => setShowPricingModal(false)}
+   705→        onUpgrade={handleUpgrade}
+   706→        currentTier={subscriptionTier}
+   707→        currentLoss={0}
+   708→        potentialSavings={0}
+   709→        highlightSavings={pricingHighlightSavings}
+   710→        vulnerabilityScore={0}
+   711→      />
+   712→    </motion.div>
+   713→  );
+   714→}
+   715→

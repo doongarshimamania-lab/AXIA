@@ -1,4 +1,4 @@
-import { useQuery, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
@@ -19,8 +19,10 @@ export default function WaitlistSuccess() {
     api.waitlist.getReferralStats,
     referralCode ? { referralCode } : "skip"
   );
+  const { isDisconnected } = useConvexConnectionState();
   const statsLoading = !stats && !!referralCode;
-  const loadingTimedOut = useQueryTimeout(statsLoading, 6000);
+  const loadingTimedOut = useQueryTimeout(statsLoading, 3000);
+  const showLoading = statsLoading && !loadingTimedOut && !isDisconnected;
 
   useEffect(() => {
     if (!referralCode) {
@@ -36,7 +38,7 @@ export default function WaitlistSuccess() {
     );
   }
 
-  if (statsLoading && !loadingTimedOut) {
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
@@ -44,19 +46,7 @@ export default function WaitlistSuccess() {
     );
   }
 
-  if (loadingTimedOut && statsLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] flex items-center justify-center p-6">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center border border-white/20 max-w-md">
-          <h2 className="text-xl font-bold text-white mb-3">Loading Timed Out</h2>
-          <p className="text-blue-200 text-sm mb-4">Could not load your waitlist data. Please try refreshing.</p>
-          <Button variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={() => window.location.reload()}>Refresh</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const { entry, referralCount, position } = stats;
+  const { entry, referralCount, position } = stats ?? { entry: { email: "" }, referralCount: 0, position: 0 };
   const referralLink = `${window.location.origin}/?ref=${referralCode}`;
 
   const copyToClipboard = () => {

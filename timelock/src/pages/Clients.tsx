@@ -13,7 +13,7 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Info, Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
@@ -115,7 +115,7 @@ export default function Clients() {
   const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
 
   // ─── Convex queries ────────────────────────────────────────────────────
-  const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : {});
+  const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip");
 
   // ─── Convex mutations ──────────────────────────────────────────────────
   const createClientMutation = useMutation(api.clients.crud.createClient);
@@ -139,8 +139,10 @@ export default function Clients() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = !authLoading && clientsData === undefined;
-  const loadingTimedOut = useQueryTimeout(isLoading, 6000);
+  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
 
   // ─── Determine demo mode ───────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -301,18 +303,11 @@ export default function Clients() {
         )}
 
         {/* Loading state */}
-        {isLoading && !loadingTimedOut ? (
+        {showLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-[280px] w-full rounded-xl" />
             <Skeleton className="h-[300px] w-full rounded-xl" />
           </div>
-        ) : loadingTimedOut && isLoading ? (
-          <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
-            <Info className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
-            <p className="text-sm text-muted-foreground mb-3">Could not load client data. The backend may not be running.</p>
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Refresh</Button>
-          </Card>
         ) : (
           <>
             {/* Client List */}

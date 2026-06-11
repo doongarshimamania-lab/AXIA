@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryTimeout } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +59,6 @@ import {
   Receipt,
   DollarSign,
   Upload,
-  AlertCircle,
 } from "lucide-react";
 import { InvoiceTemplateImportDialog } from "@/components/billing/InvoiceTemplateImportDialog";
 import type { InvoiceSection } from "@/lib/template-parser";
@@ -183,12 +182,12 @@ export default function InvoiceBuilder() {
   // ── Convex Queries ─────────────────────────────────────────────────────
   const existingInvoice = useQuery(
     editId ? api.billing.crud.getInvoice : "skip",
-    editId ? { invoiceId: editId } : {}
+    editId ? { invoiceId: editId } : "skip"
   );
 
   const workLinks = useQuery(
     editId ? api.billing.crud.getWorkLinks : "skip",
-    editId ? { invoiceId: editId } : {}
+    editId ? { invoiceId: editId } : "skip"
   );
 
   // ── Convex Mutations ───────────────────────────────────────────────────
@@ -545,28 +544,17 @@ export default function InvoiceBuilder() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
+  const { isDisconnected } = useConvexConnectionState();
   const editLoading = !!(editId && existingInvoice === undefined);
-  const editLoadTimedOut = useQueryTimeout(editLoading, 6000);
+  const editLoadTimedOut = useQueryTimeout(editLoading, 3000);
+  const showEditLoading = editLoading && !editLoadTimedOut && !isDisconnected;
 
-  if (editLoading && !editLoadTimedOut) {
+  if (showEditLoading) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading invoice...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (editLoadTimedOut && editLoading) {
-    return (
-      <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h3 className="font-semibold text-foreground mb-1">Loading Timed Out</h3>
-          <p className="text-sm text-muted-foreground mb-3">Could not load invoice data. Please try again.</p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/invoices')}>Back to Invoices</Button>
         </div>
       </div>
     );

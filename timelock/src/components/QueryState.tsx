@@ -1,25 +1,30 @@
 /**
  * Reusable page-level loading, error, and empty state wrappers.
  *
- * Every data-fetching page should wrap its content in <PageLoader>
- * to get consistent loading skeletons, timeout-based error states,
- * and empty state handling — no more perpetual spinners.
+ * ROOT ARCHITECTURE FIX: Pages never show "Loading Timed Out" error cards.
+ * Instead, when data isn't available (either because Convex is disconnected
+ * or because queries timed out), the page content renders immediately with
+ * whatever data is available — empty states, demo data, or partial data.
+ *
+ * Key principles:
+ * 1. Not authenticated = queries skip = data is undefined immediately = show content NOW
+ * 2. Authenticated but slow = brief skeleton (3s max), then show content anyway
+ * 3. Explicit errors = show inline error (not a blocking dialog)
+ * 4. Pages are ALWAYS functional — no infinite spinners or blocking error cards
  */
 
 import { ReactNode } from "react";
-import { AlertTriangle, RefreshCw, Inbox } from "lucide-react";
+import { AlertTriangle, RefreshCw, Inbox, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQueryTimeout } from "@/lib/safe-convex-react";
-import { captureException, trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+import { useConvexConnectionState, useQueryTimeout } from "@/lib/safe-convex-react";
+import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
 
 // ── Page Loader ─────────────────────────────────────────────────────────────────
 
 interface PageLoaderProps {
   /** Is the page currently loading? */
   isLoading: boolean;
-  /** Has the query timed out? (from useQueryTimeout) */
-  timedOut?: boolean;
   /** Error message to display */
   error?: string | null;
   /** Does the data exist? (for empty state) */
@@ -28,11 +33,11 @@ interface PageLoaderProps {
   emptyMessage?: string;
   /** Custom empty state icon */
   emptyIcon?: ReactNode;
-  /** Timeout in ms before showing error (default: 5000) */
+  /** Timeout in ms before giving up on loading (default: 3000) */
   timeoutMs?: number;
   /** Page name for analytics tracking */
   pageName?: string;
-  /** Content to render when loaded */
+  /** Content to render when loaded (or when we give up waiting) */
   children: ReactNode;
   /** Custom loading skeleton (defaults to standard 3-bar skeleton) */
   loadingSkeleton?: ReactNode;
@@ -42,44 +47,62 @@ interface PageLoaderProps {
 
 export function PageLoader({
   isLoading,
-  timedOut,
   error,
   hasData = true,
   emptyMessage = "No data found",
   emptyIcon,
-  timeoutMs = 5000,
+  timeoutMs = 3000,
   pageName,
   children,
   loadingSkeleton,
   onRetry,
 }: PageLoaderProps) {
-  // Auto-track timeout events
-  const autoTimedOut = useQueryTimeout(isLoading, timeoutMs);
-  const isTimedOut = timedOut ?? autoTimedOut;
+  const { isDisconnected } = useConvexConnectionState();
 
-  // Show error state if: explicit error, or timed out while still loading
-  if ((isLoading && isTimedOut) || error) {
-    const errorMessage = error || `Data is taking longer than expected to load.`;
+  // Safety net timeout for authenticated users with slow/unavailable backend
+  // After this timeout, we stop showing the skeleton and render content anyway
+  const timedOut = useQueryTimeout(isLoading, timeoutMs);
 
-    // Report to monitoring (once per mount)
+  // ── Not authenticated → skip loading entirely, show content immediately ──
+  // When disconnected, queries return undefined immediately (skipped).
+  // The page content should handle undefined data with demo/empty states.
+  if (isDisconnected) {
+    return <>{children}</>;
+  }
+
+  // ── Authenticated but timed out → show content anyway ──
+  // Instead of a blocking error card, render the page content.
+  // The page itself handles undefined data with empty/demo states.
+  if (isLoading && timedOut) {
+    // Track the timeout for monitoring
     if (pageName) {
-      captureException(new Error(`Page load timeout: ${pageName}`), {
+      trackEvent(AnalyticsEvents.PAGE_LOAD_TIMEOUT, {
         pageName,
-        errorMessage,
+        action: "fallback_to_content",
       });
-      trackEvent(AnalyticsEvents.PAGE_LOAD_TIMEOUT, { pageName, errorMessage });
     }
 
+    // Show a subtle offline indicator + the page content
+    return (
+      <>
+        <OfflineIndicator onRetry={onRetry} />
+        {children}
+      </>
+    );
+  }
+
+  // ── Explicit error → show inline error, not blocking ──
+  if (error) {
     return (
       <QueryErrorState
-        message={errorMessage}
+        message={error}
         onRetry={onRetry}
         pageName={pageName}
       />
     );
   }
 
-  // Show loading skeleton
+  // ── Still loading (authenticated, within timeout) → show skeleton ──
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -97,7 +120,7 @@ export function PageLoader({
     );
   }
 
-  // Show empty state
+  // ── Loaded but no data → show empty state ──
   if (!hasData) {
     return (
       <EmptyState
@@ -107,8 +130,31 @@ export function PageLoader({
     );
   }
 
-  // Show content
+  // ── Data loaded successfully → show content ──
   return <>{children}</>;
+}
+
+// ── Offline Indicator (non-blocking) ──────────────────────────────────────────
+
+/**
+ * A subtle banner shown at the top of the page when queries time out,
+ * indicating that data may be stale or unavailable. Non-blocking — the
+ * page content is still visible below.
+ */
+function OfflineIndicator({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-300 text-sm">
+      <WifiOff className="h-4 w-4 flex-shrink-0" />
+      <span>Connection slow or unavailable. Showing cached data.</span>
+      <button
+        onClick={onRetry || (() => window.location.reload())}
+        className="ml-auto flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 font-medium underline underline-offset-2"
+      >
+        <RefreshCw className="h-3 w-3" />
+        Retry
+      </button>
+    </div>
+  );
 }
 
 // ── Error State ─────────────────────────────────────────────────────────────────
