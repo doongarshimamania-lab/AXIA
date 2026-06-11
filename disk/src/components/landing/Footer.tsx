@@ -24,7 +24,7 @@ export function Footer() {
                   <li key={link}>
                     <button
                       onClick={() => {}}
-                      className="text-base text-muted-foreground hover:text-[#00246B] dark:hover:text-white transition-colors font-medium"
+                      className="text-base text-muted-foreground hover:text-primary dark:hover:text-white transition-colors font-medium"
                       style={{ fontFamily: "Space Grotesk" }}
                     >
                       {link}

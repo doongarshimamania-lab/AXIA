@@ -25,13 +25,13 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
       {/* Header */}
       <div className="flex justify-between items-start p-6 border-b border-slate-100">
         <div>
-          <h3 className="font-bold text-xl text-[#0A192F]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-foreground">
             Project Risk Timeline
           </h3>
           <p className="text-sm text-slate-500 mt-1">Basic timeline monitoring</p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-[#0A192F]">${totalProtectedWeekly}</div>
+          <div className="text-2xl font-bold text-foreground">${totalProtectedWeekly}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">Protected this week</div>
         </div>
       </div>
@@ -49,12 +49,12 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
             <div className="flex justify-between items-start mb-2">
               <span className="text-xs font-medium text-slate-500">{pillar.label}</span>
               {pillar.status === 'protected' ? (
-                <CheckCircle className="w-4 h-4 text-[#22C55E]" />
+                <CheckCircle className="w-4 h-4 text-success" />
               ) : (
-                <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
+                <AlertTriangle className="w-4 h-4 text-warning" />
               )}
             </div>
-            <div className="text-xl font-bold text-[#0A192F] mb-1">{pillar.displayValue}</div>
+            <div className="text-xl font-bold text-foreground mb-1">{pillar.displayValue}</div>
             <p className="text-xs text-slate-400">{pillar.description}</p>
           </motion.div>
         ))}
@@ -86,7 +86,7 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
                   </span>
                   
                   {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap">
+                  <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-white text-xs p-2 rounded shadow-lg z-10 whitespace-nowrap">
                     {event.description}
                   </div>
                 </motion.div>
@@ -115,7 +115,7 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
         </div>
         
         {persuasion.socialProof && (
-          <div className="flex items-center gap-2 mb-4 text-sm text-[#0087A6]">
+          <div className="flex items-center gap-2 mb-4 text-sm text-primary">
             <Shield className="w-4 h-4" />
             <span className="font-medium">{persuasion.socialProofMessage}</span>
           </div>
@@ -124,15 +124,15 @@ export function ProjectRiskTimelineFree({ data, onUpgrade }: ProjectRiskTimeline
         {upgradePrompt && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-[#0A192F]">Upgrade to Starter</span>
-              <Badge variant="outline" className="bg-white text-[#00C9B7] border-[#00C9B7]">
+              <span className="text-sm font-medium text-foreground">Upgrade to Starter</span>
+              <Badge variant="outline" className="bg-white text-primary border-primary">
                 Recommended
               </Badge>
             </div>
             <p className="text-sm text-slate-600">{upgradePrompt.message}</p>
             <Button 
               onClick={onUpgrade}
-              className="w-full bg-gradient-to-r from-[#00C9B7] to-[#0087A6] hover:opacity-90 text-white shadow-md"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
             >
               Upgrade to Starter
             </Button>

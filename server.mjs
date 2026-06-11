@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const distDir = '/home/z/my-project/timelock/dist';
+const distDir = '/home/z/my-project/dist';
 const port = 3000;
 
 const mimeTypes = {

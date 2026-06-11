@@ -202,6 +202,7 @@ export const createWorkspace = mutation({
     });
 
     // Create default pipeline stages for the workspace
+    // NOTE: Stage colors should match STAGE_COLORS in src/lib/tokens.ts
     const defaultStages = [
       { name: "Lead", color: "#94a3b8", order: 0 },
       { name: "Qualified", color: "#60a5fa", order: 1 },
@@ -380,6 +381,7 @@ export const seedPersonalWorkspace = mutation({
     });
 
     // Create default pipeline stages
+    // NOTE: Stage colors should match STAGE_COLORS in src/lib/tokens.ts
     const defaultStages = [
       { name: "Lead", color: "#94a3b8", order: 0 },
       { name: "Qualified", color: "#60a5fa", order: 1 },

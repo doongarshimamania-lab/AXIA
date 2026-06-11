@@ -139,6 +139,7 @@ export const createClient = mutation({
       createdBy: userId,
       teamId: args.teamId,
       clientName: args.clientName,
+      name: args.clientName, // keep CRM alias in sync
       platform: args.platform,
       hourlyRate: args.hourlyRate,
       contractType: args.contractType,

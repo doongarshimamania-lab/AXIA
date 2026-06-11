@@ -31,12 +31,12 @@ export function ValueMetricCard({ label, amount, period, description, tier }: Va
 
   const isExpert = tier.toLowerCase() === 'expert';
   const bgClass = isExpert 
-    ? "bg-gradient-to-r from-[#0A192F] to-[#1e293b] text-white" 
+    ? "bg-gradient-to-r from-navy-950 to-slate-900 text-white" 
     : "bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800";
 
-  const textClass = isExpert ? "text-white" : "text-[#0A192F] dark:text-white";
+  const textClass = isExpert ? "text-white" : "text-navy-900 dark:text-white";
   const subTextClass = isExpert ? "text-slate-300" : "text-slate-500 dark:text-slate-400";
-  const accentClass = isExpert ? "text-[#FFD700]" : "text-[#0087A6]";
+  const accentClass = isExpert ? "text-platinum-400" : "text-axia-teal-500";
 
   return (
     <motion.div 
@@ -47,8 +47,8 @@ export function ValueMetricCard({ label, amount, period, description, tier }: Va
     >
       {isExpert && (
         <>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD700] opacity-5 rounded-full -mr-10 -mt-10 blur-2xl group-hover:opacity-10 transition-opacity duration-700"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500 opacity-5 rounded-full -ml-10 -mb-10 blur-2xl group-hover:opacity-10 transition-opacity duration-700"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-platinum-400 opacity-5 rounded-full -mr-10 -mt-10 blur-2xl group-hover:opacity-10 transition-opacity duration-700"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-axia-teal-500 opacity-5 rounded-full -ml-10 -mb-10 blur-2xl group-hover:opacity-10 transition-opacity duration-700"></div>
         </>
       )}
       
@@ -57,13 +57,12 @@ export function ValueMetricCard({ label, amount, period, description, tier }: Va
           {label}
         </div>
         <div className={`text-4xl font-bold mb-2 tracking-tight ${textClass} flex items-baseline`}>
-          {/* We render the currency symbol separately to animate the number */}
           <span>$</span>
           <Counter value={amount} />
           <span className="text-lg font-normal opacity-70 ml-1">/{period}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`p-1 rounded-full ${isExpert ? 'bg-[#FFD700]/10' : 'bg-[#0087A6]/10'}`}>
+          <div className={`p-1 rounded-full ${isExpert ? 'bg-amber-500/10' : 'bg-axia-teal-500/10'}`}>
             <TrendingUp className={`w-3 h-3 ${accentClass}`} />
           </div>
           <span className={`text-sm ${subTextClass}`}>

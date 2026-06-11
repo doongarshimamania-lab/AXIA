@@ -1101,7 +1101,7 @@ export default function Pipeline() {
                     transition-colors duration-200
                     ${
                       isDragOver
-                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-lg"
                         : "border-border bg-muted/30"
                     }
                   `}

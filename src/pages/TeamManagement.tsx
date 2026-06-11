@@ -110,8 +110,8 @@ function MembersSkeleton() {
 
 // ─── Team Color Options ──────────────────────────────────────
 const TEAM_COLORS = [
-  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
-  "#EC4899", "#6366F1", "#14B8A6", "#F97316", "#06B6D4",
+  "hsl(var(--primary))", "#0D9488", "#10B981", "#F59E0B", "#EF4444",
+  "#475993", "#14B8A6", "#94A3B8", "#7DD3FC", "#475569",
 ];
 
 export default function TeamManagement() {
@@ -487,7 +487,7 @@ export default function TeamManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-purple-500" />
+              <Building2 className="w-8 h-8 text-platinum-400" />
               {activeWorkspace?.name || "Team Workspace"}
             </h1>
             <p className="text-muted-foreground">
@@ -514,7 +514,7 @@ export default function TeamManagement() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-purple-500/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
+                <div className="p-2.5 bg-platinum-500/10 rounded-lg"><Users className="w-5 h-5 text-platinum-400" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Members</p>
                   <p className="text-2xl font-bold">{stats?.memberCount ?? activeMembers.length}</p>
@@ -559,7 +559,7 @@ export default function TeamManagement() {
             </Card>
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-violet-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-violet-500" /></div>
+                <div className="p-2.5 bg-axia-teal-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-axia-teal-700" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
                   <p className="text-2xl font-bold">${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k</p>
@@ -574,10 +574,10 @@ export default function TeamManagement() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-purple-500" />
+                <Shield className="w-5 h-5 text-platinum-400" />
                 <h2 className="text-lg font-bold">Team Protection Score</h2>
               </div>
-              <span className="text-2xl font-bold text-purple-600">{stats?.protectionScore ?? 0}%</span>
+              <span className="text-2xl font-bold text-platinum-400">{stats?.protectionScore ?? 0}%</span>
             </div>
             <Progress value={stats?.protectionScore ?? 0} className="h-3" />
             <p className="text-sm text-muted-foreground mt-2">
@@ -635,7 +635,7 @@ export default function TeamManagement() {
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Users className="w-5 h-5 text-purple-500" />
+                    <Users className="w-5 h-5 text-platinum-400" />
                     Active Members
                   </h2>
                   <Badge variant="outline" className="text-xs">{activeMembers.length} seats</Badge>
@@ -1343,7 +1343,7 @@ function TeamCard({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ backgroundColor: team.color || "#8B5CF6" }}
+            style={{ backgroundColor: team.color || "hsl(var(--primary))" }}
           >
             {team.name.charAt(0).toUpperCase()}
           </div>
@@ -1351,7 +1351,7 @@ function TeamCard({
             <div className="font-semibold flex items-center gap-2">
               {team.name}
               {team.isCrossTeam && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-500/10 text-purple-600 border-purple-500/20">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-platinum-500/10 text-platinum-400 border-platinum-500/20">
                   Cross-team
                 </Badge>
               )}
@@ -1495,10 +1495,10 @@ function SoloModePrompt() {
           </p>
         </div>
 
-        <Card className="p-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800">
+        <Card className="p-8 bg-gradient-to-br from-platinum-50 to-axia-teal-50 dark:from-platinum-950/30 dark:to-axia-teal-950/30 border-platinum-200 dark:border-platinum-800">
           <div className="text-center max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8 text-purple-500" />
+            <div className="w-16 h-16 bg-platinum-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-8 h-8 text-platinum-400" />
             </div>
             <h2 className="text-2xl font-bold mb-3">Upgrade to Team Workspace</h2>
             <p className="text-muted-foreground mb-6">
@@ -1508,7 +1508,7 @@ function SoloModePrompt() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-left">
               <div className="p-3 bg-white/50 dark:bg-white/5 rounded-lg">
-                <Users className="w-5 h-5 text-purple-500 mb-2" />
+                <Users className="w-5 h-5 text-platinum-400 mb-2" />
                 <div className="text-sm font-medium">Multi-User</div>
                 <div className="text-xs text-muted-foreground">Add team members with role-based access</div>
               </div>

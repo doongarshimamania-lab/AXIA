@@ -49,7 +49,7 @@ export function ValueProposition() {
               whileHover={{ y: -8 }}
               className="bg-card rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all border border-border"
             >
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-[#00246B]">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-primary">
                 <value.icon className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-[24px] font-bold text-foreground text-center mb-4" style={{ fontFamily: "Space Grotesk" }}>

@@ -276,7 +276,7 @@ export function CustomFieldManager({ workspaceId, tableName }: CustomFieldManage
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-purple-500" />
+            <Settings2 className="w-5 h-5 text-platinum-400" />
             Custom Fields
           </h3>
           <p className="text-sm text-muted-foreground">

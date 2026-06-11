@@ -227,15 +227,15 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
   const needleAngle = -90 + (SAFE_MRR / 500) * 180;
 
   const getZoneColor = () => {
-    if (SAFE_MRR < 400) return "#DC2626";
-    if (SAFE_MRR < 475) return "#D97706";
-    return "#16A34A";
+    if (SAFE_MRR < 400) return "var(--danger)";
+    if (SAFE_MRR < 475) return "var(--warning)";
+    return "var(--success)";
   };
 
   const getUsersNeededColor = () => {
-    if (usersNeeded > 10) return "#DC2626";
-    if (usersNeeded >= 6) return "#D97706";
-    return "#16A34A";
+    if (usersNeeded > 10) return "var(--danger)";
+    if (usersNeeded >= 6) return "var(--warning)";
+    return "var(--success)";
   };
 
   return (
@@ -266,7 +266,7 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
             <path d={`M 640 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="url(#greenZone)" stroke="none" />
 
             {/* Arc outline */}
-            <path d={`M 100 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="none" stroke="#E2E8F0" strokeWidth="2" />
+            <path d={`M 100 ${CENTER_Y} A ${R} ${R} 0 0 1 700 ${CENTER_Y}`} fill="none" stroke="var(--platinum-200)" strokeWidth="2" />
 
             {/* Tick marks and labels */}
             {[0, 100, 200, 300, 400, 500].map((value) => {
@@ -283,7 +283,7 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
 
               return (
                 <g key={value}>
-                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#64748B" strokeWidth="2" />
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--platinum-500)" strokeWidth="2" />
                   <text
                     x={labelX}
                     y={labelY}
@@ -304,28 +304,28 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
                 y1={0}
                 x2={0}
                 y2={-NEEDLE_LEN}
-                stroke="#DC2626"
+                stroke="var(--danger)"
                 strokeWidth="4"
                 strokeLinecap="round"
               />
-              <circle cx={0} cy={0} r="8" fill="#DC2626" />
+              <circle cx={0} cy={0} r="8" fill="var(--danger)" />
             </g>
           </svg>
 
           {/* Status text */}
           <div className="text-center space-y-2">
-            <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk' }}>
+            <div className="text-2xl font-medium">
               <span className="text-foreground">${SAFE_MRR.toFixed(2)}</span>
               <span className="text-muted-foreground"> of $500 target (</span>
               <span className="text-emerald-600">{percentage}%</span>
               <span className="text-muted-foreground">)</span>
             </div>
 
-            <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk', color: getUsersNeededColor() }}>
+            <div className="text-2xl font-medium" style={{ color: getUsersNeededColor() }}>
               {usersNeeded} users needed to hit goal
             </div>
 
-            <div className="text-2xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+            <div className="text-2xl font-medium text-emerald-600">
               Profitability in {daysRemaining} days
             </div>
           </div>
@@ -396,11 +396,11 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
                     <Badge variant="destructive" className="mb-2">🚨 CRITICAL</Badge>
                     <h3 className="text-lg font-semibold text-foreground">Message High-Value Users</h3>
                     <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-xl font-medium text-emerald-600">
                         +$72 MRR
                       </span>
                       <span className="text-sm text-slate-600">15 minutes</span>
-                      <span className="text-base font-medium" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-base font-medium">
                         $4.80/min
                       </span>
                     </div>
@@ -423,11 +423,11 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
                     <Badge className="mb-2 bg-orange-600">✏️ IMPORTANT</Badge>
                     <h3 className="text-lg font-semibold text-foreground">Update Compliance Rules</h3>
                     <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-xl font-medium text-emerald-600">
                         +$45 MRR
                       </span>
                       <span className="text-sm text-slate-600">20 minutes</span>
-                      <span className="text-base font-medium" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-base font-medium">
                         $2.25/min
                       </span>
                     </div>
@@ -454,11 +454,11 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
                     <Badge className="mb-2 bg-emerald-600">📈 GROWTH</Badge>
                     <h3 className="text-lg font-semibold text-foreground">Launch Referral Program</h3>
                     <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-xl font-medium text-emerald-600">
                         +$28 MRR
                       </span>
                       <span className="text-sm text-slate-600">45 minutes</span>
-                      <span className="text-base font-medium" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="text-base font-medium">
                         $0.62/min
                       </span>
                     </div>
@@ -499,7 +499,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                      <span className="font-medium text-emerald-600">
                         ${user.potentialSavings}
                       </span>
                       <div className="text-sm text-slate-600">potential savings</div>
@@ -688,10 +688,10 @@ function SystemHealthMonitor() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Healthy": return "#16A34A";
-      case "Warning": return "#D97706";
-      case "Critical": return "#DC2626";
-      default: return "#64748B";
+      case "Healthy": return "var(--success)";
+      case "Warning": return "var(--warning)";
+      case "Critical": return "var(--danger)";
+      default: return "var(--platinum-500)";
     }
   };
 
@@ -846,12 +846,12 @@ function ConvexLogsSection() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 max-h-[400px] overflow-y-auto bg-slate-950 p-4 rounded-lg font-mono text-sm">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto bg-white dark:bg-slate-950 p-4 rounded-lg font-mono text-sm">
           {logs.length === 0 ? (
-            <p className="text-slate-400">No logs yet. Logs will appear here in real-time.</p>
+            <p className="text-slate-500 dark:text-slate-400">No logs yet. Logs will appear here in real-time.</p>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="flex gap-3 border-b border-slate-800 pb-2">
+              <div key={index} className="flex gap-3 border-b border-slate-200 dark:border-slate-800 pb-2">
                 <span className="text-slate-500 whitespace-nowrap">{log.time}</span>
                 <span className={`font-semibold whitespace-nowrap ${
                   log.level === 'error' ? 'text-red-400' :
@@ -865,7 +865,7 @@ function ConvexLogsSection() {
                     {log.env.toUpperCase()}
                   </Badge>
                 )}
-                <span className="text-slate-200 break-all">{log.message}</span>
+                <span className="text-foreground dark:text-slate-200 break-all">{log.message}</span>
               </div>
             ))
           )}
@@ -1033,7 +1033,7 @@ function OwnerLogin({ onLogin, showError, password, setPassword }: {
             <ThemeToggle />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-semibold" style={{ fontFamily: 'Inter' }}>
+            <h1 className="text-2xl font-semibold font-sans">
               Axia Owner
             </h1>
           </div>
@@ -1207,10 +1207,10 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                 <div>
                   <Progress value={userPercentage} className="h-2" />
                   <div className="mt-2 text-center">
-                    <span className="text-2xl font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                    <span className="text-2xl font-medium text-foreground">
                       {currentUsers}/{targetUsers}
                     </span>
-                    <span className="text-2xl font-medium text-emerald-600 ml-2" style={{ fontFamily: 'Space Grotesk' }}>
+                    <span className="text-2xl font-medium text-emerald-600 ml-2">
                       ({userPercentage}%)
                     </span>
                   </div>
@@ -1284,10 +1284,10 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                       
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-2xl font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                          <span className="text-2xl font-medium text-foreground">
                             ${metric.current.toFixed(0)}
                           </span>
-                          <span className="text-xl font-medium text-muted-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                          <span className="text-xl font-medium text-muted-foreground">
                             ${metric.target}
                           </span>
                         </div>
@@ -1296,14 +1296,14 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                         
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">To target</span>
-                          <span className="font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                          <span className="font-medium text-foreground">
                             ${(metric.target - metric.current).toFixed(0)}
                           </span>
                         </div>
                         
                         {metric.label === "Net" && (
                           <div className="mt-2 pt-2 border-t">
-                            <span className="text-lg font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                            <span className="text-lg font-medium text-emerald-600">
                               Profitability Date: {profitabilityDate.toLocaleDateString()}
                             </span>
                           </div>
@@ -1409,11 +1409,11 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                         </Badge>
                         <h3 className="text-lg font-semibold text-foreground">{action.title}</h3>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                          <span className="text-xl font-medium text-emerald-600">
                             +${action.revenue} MRR
                           </span>
                           <span className="text-sm text-muted-foreground">{action.time} minutes</span>
-                          <span className="text-base font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                          <span className="text-base font-medium text-foreground">
                             ${action.roi}/min
                           </span>
                         </div>

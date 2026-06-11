@@ -179,7 +179,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar gradient-teal-veil border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
         animate={{ width: isExpanded ? 320 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -214,7 +214,7 @@ export function CollapsibleSidebar() {
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="hsl(var(--primary))"/>
                 <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
@@ -225,7 +225,7 @@ export function CollapsibleSidebar() {
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="font-[Space_Grotesk] font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
+                  className="font-sans font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
                 >
                   Axia
                 </motion.span>
@@ -275,6 +275,8 @@ export function CollapsibleSidebar() {
             div::-webkit-scrollbar-track { background: transparent; }
             div::-webkit-scrollbar-thumb { background: oklch(0.4 0.02 240); border-radius: 2px; }
             div::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0.02 240); }
+            :root:not(.dark) div::-webkit-scrollbar-thumb { background: oklch(0.75 0.02 240); }
+            :root:not(.dark) div::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.02 240); }
           `}</style>
           <AnimatePresence>
             {isExpanded ? (
@@ -556,11 +558,11 @@ function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
     <div
       className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
         isActive
-          ? "bg-primary/20 text-primary"
-          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          ? "accent-tint text-axia-teal-600 dark:text-axia-teal-400"
+          : "text-platinum-600 dark:text-platinum-400 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-axia-teal-600 dark:text-axia-teal-400" : "text-platinum-500 dark:text-platinum-400"}`} />
       {isExpanded && (
         <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
           {label}

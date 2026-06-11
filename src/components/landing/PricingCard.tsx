@@ -49,7 +49,7 @@ export function PricingCard({
             {price}
           </div>
           {priceNote && (
-            <div className="text-[14px] text-[#16A34A] font-semibold mb-6">
+            <div className="text-[14px] text-success font-semibold mb-6">
               {priceNote}
             </div>
           )}
@@ -61,12 +61,12 @@ export function PricingCard({
                 className={`flex items-center gap-2 ${feature.disabled ? "opacity-50" : ""}`}
               >
                 {feature.disabled ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-[#E2E8F0]" />
+                  <div className="h-5 w-5 rounded-full border-2 border-platinum-200" />
                 ) : (
-                  <CheckCircle className="h-5 w-5 text-[#16A34A] flex-shrink-0" />
+                  <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                 )}
                 <span
-                  className={feature.highlighted ? "text-[#16A34A]" : ""}
+                  className={feature.highlighted ? "text-success" : ""}
                   dangerouslySetInnerHTML={{ __html: feature.text }}
                 />
               </li>

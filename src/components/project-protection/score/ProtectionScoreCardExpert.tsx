@@ -62,9 +62,9 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <Card className="relative overflow-hidden bg-slate-950 border-2 border-amber-500/50 shadow-2xl text-white">
+      <Card className="relative overflow-hidden bg-white dark:bg-slate-950 border-2 border-amber-500/50 shadow-2xl text-foreground dark:text-white">
         {/* Background Effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-950 to-slate-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-50/20 via-white to-slate-50 dark:from-amber-900/20 dark:via-slate-950 dark:to-slate-950" />
         
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-0">
           {/* Left: Authority & Score */}
@@ -75,7 +75,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                   <Crown className="w-6 h-6 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl text-white">Expert Protection</h3>
+                  <h3 className="font-bold text-xl text-foreground dark:text-white">Expert Protection</h3>
                   <p className="text-xs text-amber-200">Business-wide coverage</p>
                 </div>
               </div>
@@ -96,7 +96,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
               {/* Pro: Scope Creep Status - Clickable */}
               <button
                 onClick={() => setScopeModalOpen(true)}
-                className="w-full p-3 text-left hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-900/50 border border-amber-500/10"
+                className="w-full p-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-amber-500/20 dark:border-amber-500/10"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-xs text-amber-100">
@@ -108,7 +108,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                     <ChevronRight className="w-3 h-3" />
                   </div>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden flex">
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
                   {data.timelineSegments?.map(seg => (
                     <div key={seg.id} style={{ width: `${seg.end - seg.start}%` }} className={`h-full ${
                       seg.riskLevel === 'high' ? 'bg-red-500/50' : 'bg-amber-500/50'
@@ -120,7 +120,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
               {/* Starter: Requirements - Clickable */}
               <button
                 onClick={() => setRequirementsModalOpen(true)}
-                className="w-full p-3 text-left hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-900/50 border border-amber-500/10"
+                className="w-full p-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-amber-500/20 dark:border-amber-500/10"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-xs text-amber-100">
@@ -145,7 +145,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
               {/* Free: Evidence - Clickable */}
               <button
                 onClick={() => setEvidenceModalOpen(true)}
-                className="w-full p-3 text-left hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-900/50 border border-amber-500/10"
+                className="w-full p-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-amber-500/20 dark:border-amber-500/10"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-xs text-amber-100">
@@ -160,7 +160,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                 <div className="flex gap-1">
                   {data.evidenceTimeline?.slice(0, 8).map((entry) => (
                     <div key={entry.id} className={`h-1 flex-1 rounded-full ${
-                      entry.status === 'verified' ? 'bg-amber-500' : 'bg-slate-800'
+                      entry.status === 'verified' ? 'bg-amber-500' : 'bg-slate-100 dark:bg-slate-800'
                     }`} />
                   ))}
                 </div>
@@ -184,7 +184,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                   <TooltipTrigger>
                     <Info className="w-3 h-3 text-amber-400" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                  <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none">
                     <p className="text-xs">Visual network of income sources, client relationships, platform connections, and risk concentration</p>
                   </TooltipContent>
                 </Tooltip>
@@ -192,7 +192,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
             </div>
             
             {/* Dynamic Node Map */}
-            <div className="relative w-full h-64 bg-slate-900/50 rounded-xl border border-slate-800 p-4 overflow-hidden">
+            <div className="relative w-full h-64 bg-slate-50/95 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4 overflow-hidden">
               {/* Use real business map nodes from backend */}
               {(() => {
                 const nodes = data.businessMapNodes || [];
@@ -234,8 +234,8 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                                   node.type === 'income' 
                                     ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-2 border-amber-300 shadow-lg shadow-amber-500/50' 
                                     : node.status === 'vulnerable'
-                                    ? 'bg-slate-800 border-2 border-red-500/50'
-                                    : 'bg-slate-800 border-2 border-amber-500/30'
+                                    ? 'bg-slate-100 dark:bg-slate-800 border-2 border-red-500/50'
+                                    : 'bg-slate-100 dark:bg-slate-800 border-2 border-amber-500/30'
                                 }`}
                                 style={{ left: `${node.x}%`, top: `${node.y}%` }}
                                 initial={{ scale: 0, opacity: 0 }}
@@ -246,12 +246,12 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                                 {node.type === 'income' && <Crown className={`${iconSize[nodeSize]} text-white mb-0.5`} />}
                                 {node.type === 'client' && <div className={`${iconSize[nodeSize]} rounded-full ${node.status === 'vulnerable' ? 'bg-red-500' : 'bg-green-500'}`} />}
                                 {node.type === 'platform' && <Globe className={`${iconSize[nodeSize]} text-amber-400`} />}
-                                <div className={`${textSize[nodeSize]} font-bold text-white text-center leading-tight px-1`}>
+                                <div className={`${textSize[nodeSize]} font-bold text-foreground dark:text-white text-center leading-tight px-1`}>
                                   {node.label}
                                 </div>
                               </motion.div>
                             </TooltipTrigger>
-                            <TooltipContent className="bg-slate-900 text-white border border-amber-500/30">
+                            <TooltipContent className="bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none border border-amber-500/30">
                               <p className="text-xs font-bold mb-1">{node.label}</p>
                               <p className="text-xs text-slate-300">Type: <span className="text-amber-400">{node.type}</span></p>
                               <p className="text-xs text-slate-300">Status: <span className={node.status === 'vulnerable' ? 'text-red-400' : 'text-green-400'}>{node.status}</span></p>
@@ -273,13 +273,13 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
 
             {/* Dynamic Business Insights Summary */}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="p-2 rounded-lg bg-slate-900/50 border border-slate-800">
+              <div className="p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 mb-0.5">Income Diversity</div>
                 <div className="text-sm font-bold text-amber-400">
                   {(data.businessMapNodes || []).filter(n => n.type === 'platform').length} Platform{(data.businessMapNodes || []).filter(n => n.type === 'platform').length !== 1 ? 's' : ''}
                 </div>
               </div>
-              <div className="p-2 rounded-lg bg-slate-900/50 border border-slate-800">
+              <div className="p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 mb-0.5">Client Risk</div>
                 <div className={`text-sm font-bold ${(() => {
                   const vulnCount = (data.businessMapNodes || []).filter(n => n.type === 'client' && n.status === 'vulnerable').length;
@@ -339,7 +339,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                 <TooltipProvider key={pillar.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className={`w-4 h-4 ${
                             pillar.statusLevel === 'high' ? 'text-green-500' :
@@ -347,14 +347,14 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                             'text-red-500'
                           }`} />
                           <div>
-                            <span className="text-xs font-bold text-white block">{pillar.label}</span>
+                            <span className="text-xs font-bold text-foreground dark:text-white block">{pillar.label}</span>
                             <span className="text-[10px] text-slate-400">Score: {pillar.score}</span>
                           </div>
                         </div>
                         <span className="text-xs font-mono text-amber-400">${pillar.valueDollar.toLocaleString()}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none">
                       <p className="text-xs font-bold mb-1">{pillar.label}</p>
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
@@ -367,12 +367,12 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
             {/* Inherited Metrics - Scrollable */}
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {/* Pro Tier Metrics */}
-              <h4 className="text-xs font-bold text-purple-400/70 uppercase tracking-wider mb-2 sticky top-0 bg-amber-950/5 py-2 z-10">Inherited: Pro Tier</h4>
+              <h4 className="text-xs font-bold text-platinum-400 uppercase tracking-wider mb-2 sticky top-0 bg-amber-950/5 py-2 z-10">Inherited: Pro Tier</h4>
               {data.pillars.filter(p => ['scope_adherence', 'change_detection', 'dispute_readiness', 'vuln_shield'].includes(p.id)).map((pillar) => (
                 <TooltipProvider key={pillar.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className={`w-4 h-4 ${
                             pillar.statusLevel === 'high' ? 'text-green-500' :
@@ -380,14 +380,14 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                             'text-red-500'
                           }`} />
                           <div>
-                            <span className="text-xs font-bold text-white block">{pillar.label}</span>
+                            <span className="text-xs font-bold text-foreground dark:text-white block">{pillar.label}</span>
                             <span className="text-[10px] text-slate-400">Score: {pillar.score}</span>
                           </div>
                         </div>
                         <span className="text-xs font-mono text-amber-400">${pillar.valueDollar.toLocaleString()}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none">
                       <p className="text-xs font-bold mb-1">{pillar.label}</p>
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
@@ -401,7 +401,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                 <TooltipProvider key={pillar.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className={`w-4 h-4 ${
                             pillar.statusLevel === 'high' ? 'text-green-500' :
@@ -409,14 +409,14 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                             'text-red-500'
                           }`} />
                           <div>
-                            <span className="text-xs font-bold text-white block">{pillar.label}</span>
+                            <span className="text-xs font-bold text-foreground dark:text-white block">{pillar.label}</span>
                             <span className="text-[10px] text-slate-400">Score: {pillar.score}</span>
                           </div>
                         </div>
                         <span className="text-xs font-mono text-amber-400">${pillar.valueDollar.toLocaleString()}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none">
                       <p className="text-xs font-bold mb-1">{pillar.label}</p>
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
@@ -430,7 +430,7 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                 <TooltipProvider key={pillar.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/95 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 transition-colors cursor-help">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className={`w-4 h-4 ${
                             pillar.statusLevel === 'high' ? 'text-green-500' :
@@ -438,14 +438,14 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
                             'text-red-500'
                           }`} />
                           <div>
-                            <span className="text-xs font-bold text-white block">{pillar.label}</span>
+                            <span className="text-xs font-bold text-foreground dark:text-white block">{pillar.label}</span>
                             <span className="text-[10px] text-slate-400">Score: {pillar.score}</span>
                           </div>
                         </div>
                         <span className="text-xs font-mono text-amber-400">${pillar.valueDollar.toLocaleString()}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white shadow-lg dark:shadow-none">
                       <p className="text-xs font-bold mb-1">{pillar.label}</p>
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>

@@ -79,12 +79,12 @@ export function FeatureComparison() {
 
   const renderValue = (value: boolean | string) => {
     if (value === false) {
-      return <X className="w-5 h-5 text-[#DC143C] mx-auto" />;
+      return <X className="w-5 h-5 text-danger mx-auto" />;
     }
     if (value === true) {
-      return <Check className="w-5 h-5 text-[#00C9B7] mx-auto" />;
+      return <Check className="w-5 h-5 text-primary mx-auto" />;
     }
-    return <span className="text-sm text-foreground" style={{ fontFamily: "Space Grotesk" }}>{value}</span>;
+    return <span className="text-sm text-foreground">{value}</span>;
   };
 
   return (
@@ -97,10 +97,10 @@ export function FeatureComparison() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-[32px] font-bold text-foreground mb-4">
             Choose Your Protection Level
           </h2>
-          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto">
             Each tier builds on the previous with stronger dispute success rates
           </p>
         </motion.div>
@@ -118,17 +118,17 @@ export function FeatureComparison() {
                     } ${index === tiers.length - 1 ? "rounded-tr-2xl" : ""}`}
                   >
                     {tier.popular && (
-                      <div className="absolute top-0 right-0 bg-[#FFD700] text-[#0A192F] text-xs font-semibold px-2 py-1 rounded-tr-lg rounded-bl-lg" style={{ fontFamily: "Space Grotesk" }}>
+                      <div className="absolute top-0 right-0 bg-premium text-foreground text-xs font-semibold px-2 py-1 rounded-tr-lg rounded-bl-lg">
                         POPULAR
                       </div>
                     )}
-                    <div className="text-xl font-bold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                    <div className="text-xl font-bold text-foreground mb-2">
                       {tier.name}
                     </div>
-                    <div className="text-base font-semibold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                    <div className="text-base font-semibold text-foreground mb-2">
                       {tier.price}
                     </div>
-                    <div className="text-sm text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
+                    <div className="text-sm text-muted-foreground">
                       {tier.description}
                     </div>
                   </th>
@@ -139,13 +139,13 @@ export function FeatureComparison() {
               {features.map((category, catIndex) => (
                 <>
                   <tr key={`cat-${catIndex}`}>
-                    <td colSpan={5} className="pt-6 pb-2 px-6 text-lg font-bold text-foreground" style={{ fontFamily: "Space Grotesk" }}>
+                    <td colSpan={5} className="pt-6 pb-2 px-6 text-lg font-bold text-foreground">
                       {category.category}
                     </td>
                   </tr>
                   {category.items.map((item, itemIndex) => (
                     <tr key={`item-${catIndex}-${itemIndex}`} className="border-b border-border">
-                      <td className="p-5 text-base font-medium text-foreground" style={{ fontFamily: "Space Grotesk" }}>
+                      <td className="p-5 text-base font-medium text-foreground">
                         {item.name}
                       </td>
                       {item.values.map((value, valIndex) => (
@@ -164,8 +164,8 @@ export function FeatureComparison() {
                     <Button
                       onClick={() => handleTierClick(tier.name)}
                       disabled={loadingTier === tier.name}
-                      className="w-full max-w-[180px] h-14 rounded-xl font-bold text-base bg-[#00246B] text-white hover:bg-[#00246B]/90 shadow-lg transition-all hover:scale-105"
-                      style={{ fontFamily: "Space Grotesk" }}
+                      className="w-full max-w-[180px] h-14 rounded-xl font-bold text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg transition-all hover:scale-105"
+                     
                     >
                       {tier.name === "Free" ? "Get Started" : `Get ${tier.name}`}
                     </Button>

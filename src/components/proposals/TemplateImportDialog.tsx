@@ -69,16 +69,16 @@ const sectionTypeConfig: Record<
   SectionType,
   { label: string; icon: React.ElementType; color: string }
 > = {
-  heading: { label: "Heading", icon: Heading, color: "#8B5CF6" },
+  heading: { label: "Heading", icon: Heading, color: "hsl(var(--primary))" },
   text: { label: "Text", icon: Type, color: "#6366f1" },
-  pricing: { label: "Pricing", icon: DollarSign, color: "#22c55e" },
-  terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
-  milestone: { label: "Milestone", icon: Milestone, color: "#3b82f6" },
+  pricing: { label: "Pricing", icon: DollarSign, color: "var(--success)" },
+  terms: { label: "Terms", icon: FileCheck, color: "var(--warning)" },
+  milestone: { label: "Milestone", icon: Milestone, color: "var(--primary)" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
   client_info: { label: "Client Info", icon: User, color: "#ec4899" },
-  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#64748B" },
   summary: { label: "Summary", icon: ClipboardList, color: "#f97316" },
-  scope_of_work: { label: "Scope", icon: FileText, color: "#06b6d4" },
+  scope_of_work: { label: "Scope", icon: FileText, color: "#475569" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ export function TemplateImportDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-[#8B5CF6]" />
+            <Upload className="h-5 w-5 text-primary" />
             Import Template
           </DialogTitle>
           <DialogDescription>
@@ -251,8 +251,8 @@ export function TemplateImportDialog({
                   transition-all duration-200
                   ${
                     isDragOver
-                      ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
-                      : "border-border hover:border-[#8B5CF6]/50 hover:bg-muted/30"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50 hover:bg-muted/30"
                   }
                 `}
                 onDrop={handleDrop}
@@ -295,7 +295,7 @@ export function TemplateImportDialog({
             >
               {/* File info */}
               <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                <File className="h-4 w-4 text-[#8B5CF6]" />
+                <File className="h-4 w-4 text-primary" />
                 <span className="text-[13px] font-medium">{fileName}</span>
                 <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
                   {parsedSections.length} sections
@@ -304,7 +304,7 @@ export function TemplateImportDialog({
 
               {isParsing ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 text-[#8B5CF6] animate-spin mb-3" />
+                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
                   <p className="text-[14px] text-muted-foreground">Parsing document structure...</p>
                 </div>
               ) : (
@@ -402,7 +402,7 @@ export function TemplateImportDialog({
               <Button
                 onClick={handleApply}
                 disabled={parsedSections.length === 0}
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Check className="h-3.5 w-3.5" />
                 Apply to Proposal
@@ -421,7 +421,7 @@ export function TemplateImportDialog({
               </Button>
               <Button
                 onClick={handleSaveAsTemplate}
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Template

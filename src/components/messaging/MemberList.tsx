@@ -60,7 +60,7 @@ export function MemberList({ members }: MemberListProps) {
                   <div className="relative">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={member.avatar} />
-                      <AvatarFallback className="text-[9px] bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
+                      <AvatarFallback className="text-[9px] bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 text-white">
                         {member.name
                           .split(" ")
                           .map((n) => n[0])

@@ -72,7 +72,7 @@ const ClientGapPredictionFree = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
             Basic Gap Prediction
           </h3>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -85,7 +85,7 @@ const ClientGapPredictionFree = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-slate-600 dark:text-slate-400 font-medium text-base">evidence gap predicted</div>
@@ -116,7 +116,7 @@ const ClientGapPredictionFree = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for context-specific gap prevention
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Starter → $4/mo
         </Button>
       </div>
@@ -137,7 +137,7 @@ const ClientGapPredictionStarter = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100">
             Contextual Gap Prevention
           </h3>
           <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
@@ -150,7 +150,7 @@ const ClientGapPredictionStarter = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-blue-700 dark:text-blue-300 font-medium text-base">contextual evidence gap predicted</div>
@@ -199,7 +199,7 @@ const ClientGapPredictionStarter = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for platform-specific gap prevention
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Pro → $7/mo
         </Button>
       </div>
@@ -220,7 +220,7 @@ const ClientGapPredictionPro = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 rounded-2xl border-2 border-amber-200 dark:border-amber-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100">
             Platform-Specific Gap Prevention
           </h3>
           <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
@@ -233,7 +233,7 @@ const ClientGapPredictionPro = ({ clientData }: { clientData: any }) => {
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-amber-900 dark:text-amber-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-amber-900 dark:text-amber-100 mb-2">
           {timePrediction}
         </div>
         <div className="text-amber-700 dark:text-amber-300 font-medium text-base">platform-specific evidence gap predicted</div>
@@ -297,14 +297,14 @@ const ClientGapPredictionPro = ({ clientData }: { clientData: any }) => {
         </Button>
       </div>
       
-      <div className="mt-5 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800">
-        <p className="text-purple-900 dark:text-purple-100 text-sm font-semibold mb-2">
+      <div className="mt-5 p-4 bg-platinum-50 dark:bg-platinum-900/20 rounded-xl border-2 border-platinum-200 dark:border-platinum-800">
+        <p className="text-platinum-400 dark:text-platinum-400 text-sm font-semibold mb-2">
           You're preventing ${protectedValue}/week through platform-specific gap prevention
         </p>
-        <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">
+        <p className="text-platinum-400 dark:text-platinum-400 text-sm mb-3">
           Upgrade for business-wide gap prevention
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Expert → $12/mo
         </Button>
       </div>
@@ -321,100 +321,100 @@ const ClientGapPredictionExpert = ({ clientData }: { clientData: any }) => {
   const protectedValue = Math.round((clientData.weeklyHours || 20) * (clientData.hourlyRate || 25) * 4.33 * 0.95 * 0.12);
   
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
+    <Card className="p-6 bg-gradient-to-br from-platinum-50 to-platinum-100 dark:from-platinum-900 dark:to-platinum-800 rounded-2xl border-2 border-platinum-200 dark:border-platinum-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-platinum-400 dark:text-platinum-400">
             Business-Wide Gap Prevention
           </h3>
-          <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
+          <p className="text-platinum-400 dark:text-platinum-400 text-sm mt-1">
             Cross-platform strategic evidence gap prediction
           </p>
         </div>
-        <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+        <span className="bg-platinum-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
           Expert
         </span>
       </div>
       
       <div className="text-center mb-6">
-        <div className="text-4xl font-bold text-purple-900 dark:text-purple-100 mb-2" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="text-4xl font-bold text-platinum-400 dark:text-platinum-400 mb-2">
           {timePrediction}
         </div>
-        <div className="text-purple-700 dark:text-purple-300 font-medium text-base">business-level evidence gap predicted</div>
+        <div className="text-platinum-400 dark:text-platinum-400 font-medium text-base">business-level evidence gap predicted</div>
       </div>
       
-      <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700 mb-6">
+      <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700 mb-6">
         <div className="flex items-start mb-3">
-          <AlertTriangle className="text-purple-500 mr-2 w-5 h-5 flex-shrink-0 mt-0.5" />
-          <span className="text-purple-800 dark:text-purple-200 text-sm">
+          <AlertTriangle className="text-platinum-400 mr-2 w-5 h-5 flex-shrink-0 mt-0.5" />
+          <span className="text-platinum-400 dark:text-platinum-400 text-sm">
             Based on your work pattern, you typically have a {clientData.gapDuration || 3} hour gap on {clientData.gapDay || "Thursdays"}
           </span>
         </div>
         
-        <div className="border-t border-purple-200 dark:border-purple-700 pt-3 mt-3">
-          <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-2 text-sm">Platform-Specific Gap Analysis</h5>
+        <div className="border-t border-platinum-200 dark:border-platinum-700 pt-3 mt-3">
+          <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-2 text-sm">Platform-Specific Gap Analysis</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Upwork compliance: {clientData.upworkCompliance || 95}%</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Upwork compliance: {clientData.upworkCompliance || 95}%</span>
             </div>
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Fiverr compliance: {clientData.fiverrCompliance || 90}%</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Fiverr compliance: {clientData.fiverrCompliance || 90}%</span>
             </div>
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Toptal compliance: {clientData.toptalCompliance || 85}%</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Toptal compliance: {clientData.toptalCompliance || 85}%</span>
             </div>
           </div>
         </div>
         
-        <div className="border-t border-purple-200 dark:border-purple-700 pt-3 mt-3">
-          <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-2 text-sm">Business Pattern Gap Detection</h5>
+        <div className="border-t border-platinum-200 dark:border-platinum-700 pt-3 mt-3">
+          <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-2 text-sm">Business Pattern Gap Detection</h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Cross-client pattern: {clientData.businessPattern || 85}%</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Cross-client pattern: {clientData.businessPattern || 85}%</span>
             </div>
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Payment pattern risk: {clientData.paymentPatternRisk || 15}%</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Payment pattern risk: {clientData.paymentPatternRisk || 15}%</span>
             </div>
             <div className="flex items-center">
-              <span className="text-purple-500 mr-2">•</span>
-              <span className="text-purple-800 dark:text-purple-200 text-sm">Dispute trend: {clientData.disputeTrend || "Low"}</span>
+              <span className="text-platinum-400 mr-2">•</span>
+              <span className="text-platinum-400 dark:text-platinum-400 text-sm">Dispute trend: {clientData.disputeTrend || "Low"}</span>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700 mb-6">
-        <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-2 text-sm">Strategic Gap Prevention Plan</h5>
+      <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700 mb-6">
+        <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-2 text-sm">Strategic Gap Prevention Plan</h5>
         <ul className="space-y-2">
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Standardize client templates across 3 platforms → <span className="font-semibold text-purple-900 dark:text-purple-100">+45% protection value</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Standardize client templates across 3 platforms → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+45% protection value</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Implement automated gap detection for new clients → <span className="font-semibold text-purple-900 dark:text-purple-100">+35% evidence quality</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Implement automated gap detection for new clients → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+35% evidence quality</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Optimize evidence collection for end-of-month payments → <span className="font-semibold text-purple-900 dark:text-purple-100">+28% payment success</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Optimize evidence collection for end-of-month payments → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+28% payment success</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Cross-platform dispute prevention protocol → <span className="font-semibold text-purple-900 dark:text-purple-100">+32% business protection</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Cross-platform dispute prevention protocol → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+32% business protection</span></span>
           </li>
         </ul>
       </div>
       
       <div className="flex gap-3 mb-6">
-        <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold">
+        <Button className="flex-1 bg-platinum-600 hover:bg-platinum-700 text-white font-semibold">
           Set Reminder
         </Button>
-        <Button variant="outline" className="flex-1 border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-800 font-semibold">
+        <Button variant="outline" className="flex-1 border-platinum-300 text-platinum-400 dark:text-platinum-400 hover:bg-platinum-100 dark:hover:bg-platinum-800 font-semibold">
           Add Evidence Now
         </Button>
       </div>
@@ -428,7 +428,7 @@ const ClientGapPredictionExpert = ({ clientData }: { clientData: any }) => {
         </div>
       </div>
       
-      <div className="mt-5 text-purple-600 dark:text-purple-400 text-xs">
+      <div className="mt-5 text-platinum-400 dark:text-platinum-400 text-xs">
         <p>Comprehensive business analysis across platforms and clients. Identifies strategic patterns and provides enterprise-grade gap prevention with automated implementation.</p>
       </div>
     </Card>

@@ -484,7 +484,7 @@ function ReminderManagerContent({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "scheduled":
-        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25"><Clock className="h-2.5 w-2.5 mr-0.5" />Scheduled</Badge>;
+        return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-primary/15 text-primary border-primary/25"><Clock className="h-2.5 w-2.5 mr-0.5" />Scheduled</Badge>;
       case "sent":
         return <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-emerald-500/15 text-emerald-600 border-emerald-500/25"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />Sent</Badge>;
       case "skipped":
@@ -500,7 +500,7 @@ function ReminderManagerContent({
     <div className="space-y-4">
       {/* ── Status Badge ─────────────────────────────────────────── */}
       <div className="flex items-center gap-2">
-        <Badge className={`text-[11px] px-2.5 py-0.5 h-6 ${hasScheduled ? "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25" : "bg-slate-500/15 text-slate-600 border-slate-500/25"}`}>
+        <Badge className={`text-[11px] px-2.5 py-0.5 h-6 ${hasScheduled ? "bg-primary/15 text-primary border-primary/25" : "bg-slate-500/15 text-slate-600 border-slate-500/25"}`}>
           {hasScheduled ? <><BellRing className="h-3 w-3 mr-1" />Active</> : <><Bell className="h-3 w-3 mr-1" />Inactive</>}
         </Badge>
         <span className="text-[11px] text-muted-foreground">
@@ -513,7 +513,7 @@ function ReminderManagerContent({
         {!hasScheduled && (
           <Button
             size="sm"
-            className="h-8 px-3 gap-1.5 text-[12px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+            className="h-8 px-3 gap-1.5 text-[12px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => onShowIntervalConfig(!showIntervalConfig)}
             disabled={starting}
           >
@@ -543,8 +543,8 @@ function ReminderManagerContent({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20">
-              <p className="text-[11px] font-semibold text-[#8B5CF6] mb-2">Configure Reminder Intervals (days after sending)</p>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-[11px] font-semibold text-primary mb-2">Configure Reminder Intervals (days after sending)</p>
               <div className="flex flex-wrap gap-2 mb-3">
                 {intervals.map((day, idx) => (
                   <div key={idx} className="flex items-center gap-1">
@@ -580,7 +580,7 @@ function ReminderManagerContent({
                 ))}
                 <button
                   onClick={handleAddInterval}
-                  className="h-7 px-2 rounded-md border border-dashed border-[#8B5CF6]/30 flex items-center gap-1 text-[10px] text-[#8B5CF6] hover:bg-[#8B5CF6]/10 transition-colors"
+                  className="h-7 px-2 rounded-md border border-dashed border-primary/30 flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 transition-colors"
                 >
                   <Plus className="h-3 w-3" />
                   Add
@@ -588,7 +588,7 @@ function ReminderManagerContent({
               </div>
               <Button
                 size="sm"
-                className="h-7 px-3 text-[10px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+                className="h-7 px-3 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
                 onClick={handleStart}
                 disabled={starting}
               >
@@ -601,8 +601,8 @@ function ReminderManagerContent({
 
       {/* ── Summary Stats ────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="p-2 rounded-md bg-[#8B5CF6]/5 border border-[#8B5CF6]/10 text-center">
-          <p className="text-[14px] font-bold text-[#8B5CF6]">{scheduledReminders.length}</p>
+        <div className="p-2 rounded-md bg-primary/5 border border-primary/10 text-center">
+          <p className="text-[14px] font-bold text-primary">{scheduledReminders.length}</p>
           <p className="text-[9px] text-muted-foreground">Scheduled</p>
         </div>
         <div className="p-2 rounded-md bg-emerald-500/5 border border-emerald-500/10 text-center">
@@ -873,7 +873,7 @@ export default function Invoices() {
         transition={{ duration: 0.4 }}
       >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5CF6] mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading invoices...</p>
         </div>
       </motion.div>
@@ -893,7 +893,7 @@ export default function Invoices() {
         <div className="mb-6">
           <h1
             className="text-[32px] font-bold text-foreground tracking-tight mb-2"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+           
           >
             Invoices
           </h1>
@@ -922,8 +922,8 @@ export default function Invoices() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-[13px] font-medium text-muted-foreground">Total</CardTitle>
-                <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center">
-                  <Receipt className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                  <Receipt className="h-3.5 w-3.5 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -981,7 +981,7 @@ export default function Invoices() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-[22px] font-bold text-[#DC2626]">{safeStats.overdue}</div>
+                <div className="text-[22px] font-bold text-danger">{safeStats.overdue}</div>
                 <p className="text-[11px] text-red-600">Overdue invoices</p>
               </CardContent>
             </Card>
@@ -991,12 +991,12 @@ export default function Invoices() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-[13px] font-medium text-muted-foreground">With Proof</CardTitle>
-                <div className="h-7 w-7 rounded-md bg-[#22c55e]/10 flex items-center justify-center">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#22c55e]" />
+                <div className="h-7 w-7 rounded-md bg-success/10 flex items-center justify-center">
+                  <ShieldCheck className="h-3.5 w-3.5 text-success" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-[22px] font-bold text-[#22c55e]">{safeStats.withProof}</div>
+                <div className="text-[22px] font-bold text-success">{safeStats.withProof}</div>
                 <p className="text-[11px] text-muted-foreground">Validated billing</p>
               </CardContent>
             </Card>
@@ -1057,7 +1057,7 @@ export default function Invoices() {
               Bulk Import
             </Button>
             <Button
-              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-primary-foreground gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
               onClick={() => navigate("/invoices/new")}
             >
               <Plus className="h-4 w-4" />
@@ -1076,7 +1076,7 @@ export default function Invoices() {
                 onClick={() => setActiveFilter(tab.key)}
                 className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
                   isActive
-                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+                    ? "font-semibold text-foreground bg-primary/10 ring-1 ring-primary/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
@@ -1084,7 +1084,7 @@ export default function Invoices() {
                 <span
                   className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+                      ? "bg-primary/20 text-primary"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -1092,7 +1092,7 @@ export default function Invoices() {
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+                    isActive ? "bg-primary" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -1108,8 +1108,8 @@ export default function Invoices() {
               onClick={() => setShowRecurringSection(!showRecurringSection)}
             >
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center">
-                  <RefreshCw className="h-4 w-4 text-[#8B5CF6]" />
+                <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                  <RefreshCw className="h-4 w-4 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-[14px] font-semibold text-foreground">Recurring Invoices</h3>
@@ -1120,7 +1120,7 @@ export default function Invoices() {
               </div>
               <div className="flex items-center gap-2">
                 {recurringInvoices && recurringInvoices.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/25">
                     {recurringInvoices.length}
                   </Badge>
                 )}
@@ -1147,7 +1147,7 @@ export default function Invoices() {
                       </p>
                       <Button
                         size="sm"
-                        className="h-8 px-3 gap-1.5 text-[12px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                        className="h-8 px-3 gap-1.5 text-[12px] bg-primary hover:bg-primary/90 text-primary-foreground"
                         onClick={() => setShowSetupRecurring(true)}
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -1171,8 +1171,8 @@ export default function Invoices() {
                             className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/20 transition-colors"
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={`h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0 ${rec.active ? "bg-[#8B5CF6]/10" : "bg-slate-500/10"}`}>
-                                <RefreshCw className={`h-4 w-4 ${rec.active ? "text-[#8B5CF6]" : "text-slate-400"}`} />
+                              <div className={`h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0 ${rec.active ? "bg-primary/10" : "bg-slate-500/10"}`}>
+                                <RefreshCw className={`h-4 w-4 ${rec.active ? "text-primary" : "text-slate-400"}`} />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -1273,7 +1273,7 @@ export default function Invoices() {
                       </p>
                       {safeInvoices.length === 0 && (
                         <Button
-                          className="mt-4 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-2"
+                          className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                           onClick={handleSeedData}
                           disabled={seeding}
                         >
@@ -1302,7 +1302,7 @@ export default function Invoices() {
                     transition={{ duration: 0.25, delay: idx * 0.03 }}
                     layout
                   >
-                    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${hasProofs ? "border-[#22c55e]/20" : ""}`}>
+                    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${hasProofs ? "border-success/20" : ""}`}>
                       {/* ── Invoice Row ──────────────────────────────────────── */}
                       <div
                         className="cursor-pointer"
@@ -1347,7 +1347,7 @@ export default function Invoices() {
                                     {config.label}
                                   </Badge>
                                   {hasProofs && (
-                                    <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[11px] px-2 py-0 h-5">
+                                    <Badge className="bg-success/15 text-success border-success/25 text-[11px] px-2 py-0 h-5">
                                       <ShieldCheck className="h-3 w-3 mr-0.5" />
                                       Validated
                                     </Badge>
@@ -1370,7 +1370,7 @@ export default function Invoices() {
                                   {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
                                     <Badge
                                       variant="outline"
-                                      className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25 cursor-pointer hover:bg-[#8B5CF6]/20"
+                                      className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/25 cursor-pointer hover:bg-primary/20"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setReminderManagerInvoiceId(invoice._id);
@@ -1390,7 +1390,7 @@ export default function Invoices() {
                                     {invoice.clientName || "No client"}
                                   </span>
                                   {(invoice.proofCount ?? 0) > 0 && (
-                                    <span className="flex items-center gap-1 text-[#22c55e]">
+                                    <span className="flex items-center gap-1 text-success">
                                       <Paperclip className="h-3 w-3" />
                                       {invoice.proofCount} proof{(invoice.proofCount ?? 0) !== 1 ? "s" : ""}
                                     </span>
@@ -1429,7 +1429,7 @@ export default function Invoices() {
                                       handleSendInvoice(invoice._id);
                                     }}
                                   >
-                                    <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                    <Send className="h-3.5 w-3.5 text-primary" />
                                   </Button>
                                 )}
                                 {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
@@ -1445,7 +1445,7 @@ export default function Invoices() {
                                       setReminderIntervals([3, 7, 14]);
                                     }}
                                   >
-                                    <Bell className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                    <Bell className="h-3.5 w-3.5 text-primary" />
                                   </Button>
                                 )}
                                 {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
@@ -1571,7 +1571,7 @@ export default function Invoices() {
                                               <div className="flex items-center gap-2">
                                                 {item.description}
                                                 {item.hasProof && (
-                                                  <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
+                                                  <Badge className="bg-success/15 text-success border-success/25 text-[10px] h-4 px-1.5">
                                                     <Paperclip className="h-2.5 w-2.5 mr-0.5" />
                                                     Proof
                                                   </Badge>
@@ -1666,7 +1666,7 @@ export default function Invoices() {
                                       <p className="text-[11px] text-muted-foreground">Validation</p>
                                       <p className="text-[13px] font-medium">
                                         {hasProofs ? (
-                                          <span className="text-[#22c55e]">
+                                          <span className="text-success">
                                             {invoice.proofCount} proof{(invoice.proofCount ?? 0) !== 1 ? "s" : ""} attached
                                           </span>
                                         ) : (
@@ -1694,7 +1694,7 @@ export default function Invoices() {
                                   {invoice.status === "draft" && (
                                     <Button
                                       size="sm"
-                                      className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleSendInvoice(invoice._id);
@@ -1832,10 +1832,10 @@ export default function Invoices() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BellRing className="h-5 w-5 text-[#8B5CF6]" />
+              <BellRing className="h-5 w-5 text-primary" />
               Manage Reminders
               {reminderManagerInvoiceId && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/25">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-primary/25">
                   {safeInvoices.find((inv) => inv._id === reminderManagerInvoiceId)?.invoiceNumber || ""}
                 </Badge>
               )}
@@ -1861,7 +1861,7 @@ export default function Invoices() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-[#8B5CF6]" />
+              <RefreshCw className="h-5 w-5 text-primary" />
               Setup Recurring Invoice
             </DialogTitle>
           </DialogHeader>
@@ -1920,10 +1920,10 @@ export default function Invoices() {
             </div>
 
             {recurringFrequency && (
-              <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <p className="text-[11px] text-muted-foreground">
                   A new draft invoice will be created{" "}
-                  <span className="font-medium text-[#8B5CF6]">
+                  <span className="font-medium text-primary">
                     {recurringFrequency === "weekly" ? "every week" : recurringFrequency === "monthly" ? "every month" : "every quarter"}
                   </span>{" "}
                   based on the template invoice. The first invoice will be generated on{" "}
@@ -1939,7 +1939,7 @@ export default function Invoices() {
               Cancel
             </Button>
             <Button
-              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
               disabled={!recurringClientId || !recurringTemplateInvoiceId || settingUpRecurring}
               onClick={async () => {
                 setSettingUpRecurring(true);

@@ -28,18 +28,18 @@ export function WorkDiarySimulator({ timeBlocks, onBlockHover, selectedPlatform 
 
   const getFillClasses = (platform: TimeBlock["platform"], status: TimeBlock["complianceStatus"]) => {
     if (status === "rejected") {
-      return "bg-[#DC2626] border border-[#B91C1C] rounded";
+      return "bg-danger border border-danger rounded";
     }
     switch (platform) {
       case "upwork":
-        return "bg-[#2563EB] rounded"; // blue
+        return "bg-info rounded"; // blue
       case "fiverr":
-        return "bg-[#059669] rounded"; // green
+        return "bg-success rounded"; // green
       case "toptal":
-        return "bg-[#7E3AF2] rounded"; // purple
+        return "bg-axia-teal-600 rounded"; // teal (V2 brand)
       case "client":
       default:
-        return "bg-[#D97706] rounded"; // yellow
+        return "bg-warning rounded"; // yellow
     }
   };
 

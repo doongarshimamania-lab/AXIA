@@ -15,11 +15,11 @@ interface EvidenceTimelineProps {
 
 export function EvidenceTimeline({ timeline }: EvidenceTimelineProps) {
   return (
-    <Card className="p-6 bg-[#1E293B] border-[#334155]">
+    <Card className="p-6 bg-card border-border">
       <div className="space-y-4">
         <div>
-          <h3 className="font-bold text-lg text-white">Evidence Timeline</h3>
-          <p className="text-sm text-slate-400 mt-1">Visual evidence density and protection zones</p>
+          <h3 className="font-bold text-lg text-foreground">Evidence Timeline</h3>
+          <p className="text-sm text-muted-foreground mt-1">Visual evidence density and protection zones</p>
         </div>
         
         <div className="flex items-end gap-1 h-32">

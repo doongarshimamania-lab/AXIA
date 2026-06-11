@@ -110,7 +110,7 @@ export function ProtectionScoreCardFree({ data, onUpgrade }: Props) {
                         <div className="text-xs text-slate-500 dark:text-slate-400">{pillar.description}</div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-slate-900 dark:bg-slate-800 text-white border-slate-700">
+                    <TooltipContent className="max-w-xs bg-white dark:bg-slate-800 text-foreground dark:text-white border-border dark:border-slate-700">
                       <p className="text-xs">{metricDescriptions[pillar.id] || pillar.description}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -128,7 +128,7 @@ export function ProtectionScoreCardFree({ data, onUpgrade }: Props) {
                       <TooltipTrigger>
                         <Info className="w-3 h-3 text-slate-400" />
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs bg-slate-900 text-white">
+                      <TooltipContent className="max-w-xs bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                         <p className="text-xs">Visual representation of your recent work sessions and their evidence status</p>
                       </TooltipContent>
                     </Tooltip>
@@ -149,7 +149,7 @@ export function ProtectionScoreCardFree({ data, onUpgrade }: Props) {
                           <span className="text-[10px] text-slate-400 text-center truncate">{entry.time}</span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 text-white">
+                      <TooltipContent className="bg-white dark:bg-slate-900 text-foreground dark:text-white border border-border">
                         <p className="text-xs">Status: {entry.status}</p>
                         {entry.valueAtRisk > 0 && <p className="text-xs text-red-400">At risk: ${entry.valueAtRisk}</p>}
                       </TooltipContent>

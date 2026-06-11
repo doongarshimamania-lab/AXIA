@@ -1,17 +1,25 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/600.css";
-@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   V2 DESIGN SYSTEM — AXIA Brand Tokens
+   Source: axia_brand_identity_system_v2.pdf
+   85/10/5 rule: 85% neutral, 10% teal brand, 5% accent
+   ============================================================ */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Space Grotesk", system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,95 +53,616 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* ── Brand Primary: Deep Teal Scale (10% of visible area) ── */
+  --color-axia-teal-50: var(--axia-teal-50);
+  --color-axia-teal-100: var(--axia-teal-100);
+  --color-axia-teal-200: var(--axia-teal-200);
+  --color-axia-teal-300: var(--axia-teal-300);
+  --color-axia-teal-400: var(--axia-teal-400);
+  --color-axia-teal-500: var(--axia-teal-500);
+  --color-axia-teal-600: var(--axia-teal-600);
+  --color-axia-teal-700: var(--axia-teal-700);
+  --color-axia-teal-800: var(--axia-teal-800);
+  --color-axia-teal-900: var(--axia-teal-900);
+
+  /* ── Brand Secondary: Platinum Silver Scale (5% accent) ── */
+  --color-platinum-50: var(--platinum-50);
+  --color-platinum-100: var(--platinum-100);
+  --color-platinum-200: var(--platinum-200);
+  --color-platinum-300: var(--platinum-300);
+  --color-platinum-400: var(--platinum-400);
+  --color-platinum-500: var(--platinum-500);
+  --color-platinum-600: var(--platinum-600);
+  --color-platinum-700: var(--platinum-700);
+  --color-platinum-800: var(--platinum-800);
+  --color-platinum-900: var(--platinum-900);
+  --color-platinum-950: var(--platinum-950);
+
+  /* ── Semantic: Status Colors (5% accent tier) ── */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-protected: var(--protected);
+  --color-info: var(--info);
+
+  /* ── Semantic: Brand & Surface ── */
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--primary-foreground);
+  --color-surface-dark: var(--bg-page);
+  --color-surface-card: var(--card);
+  --color-surface-elevated: var(--bg-surface-3);
+
+  /* ── Stage / Pipeline Colors (V2 Section 9 compliant — no indigo/purple) ── */
+  --color-stage-lead: var(--stage-lead);
+  --color-stage-qualified: var(--stage-qualified);
+  --color-stage-proposal: var(--stage-proposal);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-won: var(--stage-won);
+  --color-stage-lost: var(--stage-lost);
+
+  /* ── Extended Semantic (indigo REMOVED — forbidden per V2 Section 9) ── */
+  --color-border-muted: var(--border-muted);
+  --color-icon-blue: var(--icon-blue);
+  --color-page-bg-from: var(--page-bg-from);
+  --color-page-bg-to: var(--page-bg-to);
+  --color-navy-accent: var(--navy-accent);
+  --color-chart-primary: var(--chart-primary);
+  --color-chart-frost: var(--chart-frost);
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.25 0.08 250);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.45 0.12 45);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.25 0.08 250);
-  --chart-2: oklch(0.45 0.12 45);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.25 0.08 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ═══════════════════════════════════════════════════════════
+     85% NEUTRAL — Light mode defaults (Tailwind .dark strategy)
+     :root = LIGHT mode, .dark = DARK mode overrides
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Light Mode Background System */
+  --bg-page: #F8FAFC;           /* Page background */
+  --bg-surface-1: #FFFFFF;      /* Cards, modals, sidebar */
+  --bg-surface-2: #F1F5F9;      /* Elevated surfaces, dropdowns */
+  --bg-surface-3: #E2E8F0;      /* Highest elevation, overlays */
+
+  /* Borders — light mode */
+  --border-subtle: #E2E8F0;              /* Barely visible */
+  --border-default: #CBD5E1;             /* Visible */
+  --border-strong: #94A3B8;              /* Focus, active, hover */
+
+  /* Spacing Tokens (PDF Section 4.1) */
+  --space-1: 4px;    /* Micro gaps: icon-to-label */
+  --space-2: 8px;    /* Small: button padding */
+  --space-3: 12px;   /* Medium: card internal padding */
+  --space-4: 16px;   /* Large: card padding */
+  --space-5: 24px;   /* Extra: section gaps */
+  --space-6: 32px;   /* 2X: major section breaks */
+  --space-7: 48px;   /* 3X: page-level spacing */
+
+  /* Type Scale (PDF Section 3.4) */
+  --text-xs: 12px;       /* Captions, timestamps, badges */
+  --text-sm: 14px;       /* Labels, secondary text */
+  --text-base: 16px;     /* Body text */
+  --text-lg: 18px;       /* Card titles */
+  --text-xl: 20px;       /* Section headings */
+  --text-2xl: 24px;      /* Page subtitles */
+  --text-3xl: 30px;      /* Page titles (H1) */
+  --text-4xl: 36px;      /* Hero stats, dashboard metrics */
+  --text-display: 48px;  /* Marketing hero headings only */
+
+  /* Text System — Light mode defaults */
+  --text-primary: #1E293B;      /* Body text */
+  --text-secondary: #64748B;    /* Labels, descriptions */
+  --text-tertiary: #94A3B8;     /* Timestamps, placeholders */
+  --text-inverse: #F1F5F9;      /* On accent backgrounds */
+
+  /* Light mode shadcn bridge */
+  --background: #F8FAFC;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+
+  /* Primary: Teal is brand primary even in light mode per PDF */
+  --primary: #0D9488;
+  --primary-foreground: #F1F5F9;
+
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1E293B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+
+  /* Accent → Teal brand (PDF: --accent-primary) */
+  --accent: #0D9488;
+  --accent-foreground: #F1F5F9;
+
+  /* V2 Accent Tokens (PDF Section 11) */
+  --accent-primary: var(--axia-teal-600);
+  --accent-hover: var(--axia-teal-500);
+  --accent-muted: rgba(13,148,136,0.15);
+  --accent-secondary: var(--platinum-400);
+
+  --destructive: #EF4444;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0D9488;
+
+  --chart-1: #475993;   /* Steel Blue — data viz primary (PDF Section 11) */
+  --chart-2: #0D9488;   /* Teal */
+  --chart-3: #94A3B8;   /* Platinum */
+  --chart-4: #7DD3FC;   /* Frost (PDF Section 11) */
+  --chart-5: #64748B;   /* Slate */
+
+  /* Sidebar */
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #1E293B;
+  --sidebar-primary: #0D9488;
+  --sidebar-primary-foreground: #F1F5F9;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #1E293B;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #0D9488;
+
+  /* ═══════════════════════════════════════════════════════════
+     10% BRAND PRIMARY — Deep Teal (PDF Section 4.1)
+     The color of protection. Bridges blue/trust + green/safety.
+     ═══════════════════════════════════════════════════════════ */
+  --axia-teal-50: #F0FDFA;
+  --axia-teal-100: #CCFBF1;
+  --axia-teal-200: #99F6E4;
+  --axia-teal-300: #5EEAD4;
+  --axia-teal-400: #2DD4BF;
+  --axia-teal-500: #14B8A6;     /* Light mode brand primary */
+  --axia-teal-600: #0D9488;     /* Dark mode brand primary */
+  --axia-teal-700: #0F766E;     /* Interactive hover */
+  --axia-teal-800: #115E59;     /* Active/pressed */
+  --axia-teal-900: #134E4A;     /* Deep accent */
+
+  /* ═══════════════════════════════════════════════════════════
+     5% ACCENT — Platinum + Semantic (PDF Sections 4.4, 7.4)
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Platinum Silver Scale (PDF Section 4.1 — Brand Secondary) */
+  --platinum-50: #F8FAFC;
+  --platinum-100: #F1F5F9;
+  --platinum-200: #E2E8F0;
+  --platinum-300: #CBD5E1;
+  --platinum-400: #94A3B8;      /* ← Secondary accent (replaces #B5953C) */
+  --platinum-500: #64748B;
+  --platinum-600: #475569;
+  --platinum-700: #334155;
+  --platinum-800: #1E293B;
+  --platinum-900: #0F172A;
+  --platinum-950: #020617;
+
+  /* Semantic State Colors (PDF Section 4.4) */
+  --protected: #10B981;         /* Emerald — PROTECTED state ONLY (PDF: Pavlovian safety) */
+  --warning: #F59E0B;          /* Amber — attention, premium features */
+  --danger: #EF4444;           /* Red — unprotected, errors, disputes */
+  --success: #14B8A6;          /* Teal — generic success (PDF: use teal, NOT emerald for generic) */
+  --info: #3B82F6;             /* Blue — informational, links */
+
+  /* Data Visualization (PDF Section 11) */
+  --chart-primary: #475993;     /* Steel Blue */
+  --chart-frost: #7DD3FC;       /* Ice Frost */
+
+  /* Matte Gradient Recipes — Light mode defaults */
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+
+  /* Stage / Pipeline Colors (V2 Section 9 — indigo/purple FORBIDDEN) */
+  --stage-lead: #0D9488;         /* Teal-600: brand primary */
+  --stage-qualified: #0F766E;    /* Teal-700: deeper engagement */
+  --stage-proposal: #475993;     /* Steel blue: formal stage */
+  --stage-negotiation: #94A3B8;  /* Platinum: secondary accent */
+  --stage-won: #10B981;          /* Emerald: "protected" signal per PDF */
+  --stage-lost: #EF4444;         /* Red: danger (correct) */
+
+  /* Extended semantic — Light mode defaults */
+  --border-muted: #CBD5E1;
+  --icon-blue: #3B82F6;
+  --page-bg-from: #F0F9FF;
+  --page-bg-to: #F8FAFC;
+  --navy-accent: #F1F5F9;
+  --accent-highlight: var(--platinum-400);
 }
 
 .dark {
-  --background: oklch(0.04 0 0);
-  --foreground: oklch(0.98 0.005 240);
-  --card: oklch(0.14 0.02 240);
-  --card-foreground: oklch(0.96 0.005 240);
-  --popover: oklch(0.14 0.02 240);
-  --popover-foreground: oklch(0.96 0.005 240);
-  --primary: oklch(0.25 0.08 250);
-  --primary-foreground: oklch(0.98 0.005 240);
-  --secondary: oklch(0.18 0.025 240);
-  --secondary-foreground: oklch(0.96 0.005 240);
-  --muted: oklch(0.18 0.025 240);
-  --muted-foreground: oklch(0.70 0.015 240);
-  --accent: oklch(0.45 0.12 45);
-  --accent-foreground: oklch(0.98 0.005 240);
-  --destructive: oklch(0.58 0.18 25);
-  --border: oklch(0.25 0.03 240);
-  --input: oklch(0.20 0.025 240);
-  --ring: oklch(0.25 0.08 250);
-  --chart-1: oklch(0.25 0.08 250);
-  --chart-2: oklch(0.45 0.12 45);
-  --chart-3: oklch(0.72 0.15 140);
-  --chart-4: oklch(0.62 0.20 280);
-  --chart-5: oklch(0.70 0.17 60);
-  --sidebar: oklch(0.14 0.02 240);
-  --sidebar-foreground: oklch(0.96 0.005 240);
-  --sidebar-primary: oklch(0.25 0.08 250);
-  --sidebar-primary-foreground: oklch(0.98 0.005 240);
-  --sidebar-accent: oklch(0.18 0.025 240);
-  --sidebar-accent-foreground: oklch(0.96 0.005 240);
-  --sidebar-border: oklch(0.25 0.03 240);
-  --sidebar-ring: oklch(0.25 0.08 250);
+  /* ═══════════════════════════════════════════════════════════
+     DARK MODE — Navy-tinted backgrounds (PDF Section 4.2)
+     Pure black forbidden. Use #0A0F1C navy-tinted instead.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Dark Mode Background System */
+  --bg-page: #0A0F1C;           /* Deepest background */
+  --bg-surface-1: #0C1322;      /* Cards, modals, sidebar */
+  --bg-surface-2: #111827;      /* Elevated surfaces, dropdowns */
+  --bg-surface-3: #1A2035;      /* Highest elevation, overlays */
+
+  /* Borders — dark mode opacity-based */
+  --border-subtle: rgba(255,255,255,0.04);
+  --border-default: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.12);
+
+  /* Text System — Dark mode */
+  --text-primary: #F1F5F9;      /* Body text — never pure #FFFFFF */
+  --text-secondary: #94A3B8;    /* Labels, descriptions */
+  --text-tertiary: #64748B;     /* Timestamps, placeholders */
+  --text-inverse: #1E293B;      /* On accent backgrounds */
+
+  --background: #0A0F1C;       /* --bg-page */
+  --foreground: #F1F5F9;       /* --text-primary (never pure white) */
+  --card: #0C1322;             /* --bg-surface-1 */
+  --card-foreground: #F1F5F9;
+  --popover: #0C1322;
+  --popover-foreground: #F1F5F9;
+
+  --primary: #0D9488;          /* ── TEAL = brand primary in dark mode ── */
+  --primary-foreground: #F1F5F9;
+
+  --secondary: #111827;        /* --bg-surface-2 */
+  --secondary-foreground: #F1F5F9;
+  --muted: #111827;
+  --muted-foreground: #94A3B8;  /* --text-secondary */
+
+  --accent: #0D9488;           /* Teal accent (PDF: --accent-primary) */
+  --accent-foreground: #F1F5F9;
+
+  --destructive: #EF4444;
+  --border: rgba(255,255,255,0.08);  /* --border-default */
+  --input: rgba(255,255,255,0.08);
+  --ring: #0D9488;             /* Teal ring for focus */
+
+  --chart-1: #475993;
+  --chart-2: #0D9488;
+  --chart-3: #94A3B8;
+  --chart-4: #7DD3FC;
+  --chart-5: #64748B;
+
+  --sidebar: #0C1322;
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #0D9488;
+  --sidebar-primary-foreground: #F1F5F9;
+  --sidebar-accent: #111827;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #0D9488;
+
+  /* Teal Scale — same in dark mode */
+  --axia-teal-50: #F0FDFA;
+  --axia-teal-100: #CCFBF1;
+  --axia-teal-200: #99F6E4;
+  --axia-teal-300: #5EEAD4;
+  --axia-teal-400: #2DD4BF;
+  --axia-teal-500: #14B8A6;
+  --axia-teal-600: #0D9488;
+  --axia-teal-700: #0F766E;
+  --axia-teal-800: #115E59;
+  --axia-teal-900: #134E4A;
+
+  /* Platinum Scale — same */
+  --platinum-50: #F8FAFC;
+  --platinum-100: #F1F5F9;
+  --platinum-200: #E2E8F0;
+  --platinum-300: #CBD5E1;
+  --platinum-400: #94A3B8;
+  --platinum-500: #64748B;
+  --platinum-600: #475569;
+  --platinum-700: #334155;
+  --platinum-800: #1E293B;
+  --platinum-900: #0F172A;
+  --platinum-950: #020617;
+
+  /* Gradients — Dark mode (PDF recipes) */
+  --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
+
+  /* Semantic — dark mode brighter variants */
+  --protected: #34D399;         /* Emerald-400 — brighter for dark */
+  --warning: #FBBF24;          /* Amber-400 */
+  --danger: #F87171;           /* Red-400 */
+  --success: #2DD4BF;          /* Teal-400 — generic success */
+  --info: #60A5FA;             /* Blue-400 */
+
+  --chart-primary: #475993;
+  --chart-frost: #7DD3FC;
+
+  /* Stage colors — brighter for dark (V2 Section 9 compliant — no indigo/purple) */
+  --stage-lead: #14B8A6;         /* Teal-500 brighter */
+  --stage-qualified: #2DD4BF;    /* Teal-400 brighter */
+  --stage-proposal: #7DD3FC;     /* Frost brighter */
+  --stage-negotiation: #CBD5E1;  /* Platinum-300 brighter */
+  --stage-won: #34D399;          /* Emerald-400 brighter */
+  --stage-lost: #F87171;         /* Red: danger (correct) */
+
+  /* Extended semantic (indigo REMOVED — forbidden per V2 Section 9) */
+  --border-muted: #4B5563;
+  --icon-blue: #93C5FD;
+  --page-bg-from: #0A0F1C;
+  --page-bg-to: #0C1322;
+  --navy-accent: #112240;
+  --accent-highlight: var(--platinum-400);
 }
+
+/* ── V2: Light Mode Override (now redundant since :root has light defaults) ── */
+:root:not(.dark) {
+  --bg-page: #F8FAFC;
+  --bg-surface-1: #FFFFFF;
+  --bg-surface-2: #F1F5F9;
+  --bg-surface-3: #E2E8F0;
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #94A3B8;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #F1F5F9;
+  --accent-primary: var(--axia-teal-500);
+  --accent-hover: var(--axia-teal-400);
+  --accent-secondary: var(--platinum-500);
+
+  /* Light mode gradient overrides */
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* Keep [data-theme="light"] as fallback alias */
+[data-theme="light"] {
+  --bg-page: #F8FAFC;
+  --bg-surface-1: #FFFFFF;
+  --bg-surface-2: #F1F5F9;
+  --bg-surface-3: #E2E8F0;
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #94A3B8;
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #F1F5F9;
+  --accent-primary: var(--axia-teal-500);
+  --accent-hover: var(--axia-teal-400);
+  --accent-secondary: var(--platinum-500);
+  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* ── Light mode: Global text-white override ── */
+/* In light mode, text-white is invisible on light surfaces — override to dark text
+   EXCEPT: elements on colored/accent backgrounds (buttons, badges, icons inside teal/emerald/red bg) */
+:root:not(.dark) .text-white {
+  color: var(--foreground) !important;
+}
+/* Restore white text on actual colored backgrounds */
+:root:not(.dark) button.text-white,
+:root:not(.dark) .btn.text-white,
+:root:not(.dark) [class*="bg-axia-teal"] .text-white,
+:root:not(.dark) [class*="bg-primary"] .text-white,
+:root:not(.dark) [class*="bg-emerald"] .text-white,
+:root:not(.dark) [class*="bg-red-"] .text-white,
+:root:not(.dark) [class*="bg-destructive"] .text-white,
+:root:not(.dark) [class*="bg-amber-"] .text-white,
+:root:not(.dark) [class*="bg-blue-600"] .text-white,
+:root:not(.dark) [class*="bg-blue-700"] .text-white,
+:root:not(.dark) [class*="bg-green-"] .text-white,
+:root:not(.dark) [class*="bg-\\[\\#"] .text-white,
+:root:not(.dark) .bg-axia-teal-600.text-white,
+:root:not(.dark) .bg-primary.text-white {
+  color: #FFFFFF !important;
+}
+
+/* Light mode: bg-slate-950/900/800 → proper light surfaces */
+:root:not(.dark) .bg-slate-950 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-slate-900 { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-slate-800 { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-slate-950\/50 { background-color: rgba(255,255,255,0.95) !important; }
+:root:not(.dark) .bg-slate-900\/50 { background-color: rgba(248,250,252,0.95) !important; }
+:root:not(.dark) .bg-slate-900\/80 { background-color: rgba(248,250,252,0.97) !important; }
+:root:not(.dark) .bg-slate-800\/50 { background-color: rgba(241,245,249,0.95) !important; }
+
+/* Light mode: border fixes */
+:root:not(.dark) .border-slate-800 { border-color: #E2E8F0 !important; }
+:root:not(.dark) .border-slate-700 { border-color: #CBD5E1 !important; }
+:root:not(.dark) .border-slate-700\/50 { border-color: rgba(203,213,225,0.5) !important; }
+:root:not(.dark) .border-slate-700\/30 { border-color: rgba(203,213,225,0.3) !important; }
+:root:not(.dark) .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .border-white\/20 { border-color: rgba(0,0,0,0.08) !important; }
+
+/* Light mode: text-slate fixes for contrast */
+:root:not(.dark) .text-slate-200 { color: #334155 !important; }
+:root:not(.dark) .text-slate-300 { color: #475569 !important; }
+:root:not(.dark) .text-slate-400 { color: #64748B !important; }
+:root:not(.dark) .text-slate-500 { color: #64748B !important; }
+:root:not(.dark) .text-slate-600 { color: #475569 !important; }
+
+/* Light mode: bg-white/5, bg-white/10 fixes */
+:root:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+:root:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+
+/* Light mode: hover states */
+:root:not(.dark) .hover\:bg-slate-800:hover { background-color: #E2E8F0 !important; }
+:root:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: rgba(226,232,240,0.7) !important; }
+:root:not(.dark) .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.05) !important; }
+:root:not(.dark) .hover\:text-white:hover { color: var(--foreground) !important; }
+
+/* Light mode: gradient-to-br from-slate-900 etc. */
+:root:not(.dark) .from-slate-900 { --tw-gradient-from: #F8FAFC !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(248,250,252,0)) !important; }
+:root:not(.dark) .via-slate-800 { --tw-gradient-via: #F1F5F9 !important; }
+:root:not(.dark) .to-slate-900 { --tw-gradient-to: #F8FAFC !important; }
+:root:not(.dark) .to-slate-950 { --tw-gradient-to: #FFFFFF !important; }
+:root:not(.dark) .from-slate-800 { --tw-gradient-from: #F1F5F9 !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(241,245,249,0)) !important; }
+
+/* ── Light mode: Platinum scale overrides (bg-platinum-800/900 are dark-only) ── */
+:root:not(.dark) .bg-platinum-900 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-platinum-800 { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-platinum-700 { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-platinum-950 { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-platinum-900\/50 { background-color: rgba(255,255,255,0.95) !important; }
+:root:not(.dark) .bg-platinum-800\/50 { background-color: rgba(248,250,252,0.95) !important; }
+
+/* ── Light mode: Teal scale overrides (bg-axia-teal-950/900/800 are dark-only) ── */
+:root:not(.dark) .bg-axia-teal-950 { background-color: #F0FDFA !important; }
+:root:not(.dark) .bg-axia-teal-900 { background-color: #CCFBF1 !important; }
+:root:not(.dark) .bg-axia-teal-800 { background-color: #99F6E4 !important; }
+:root:not(.dark) .bg-axia-teal-950\/30 { background-color: rgba(240,253,250,0.6) !important; }
+:root:not(.dark) .bg-axia-teal-900\/50 { background-color: rgba(204,251,241,0.5) !important; }
+:root:not(.dark) .border-axia-teal-900\/50 { border-color: rgba(13,148,136,0.15) !important; }
+:root:not(.dark) .border-axia-teal-900\/30 { border-color: rgba(13,148,136,0.1) !important; }
+
+/* ── Light mode: bg-slate-700 (dark-only) ── */
+:root:not(.dark) .bg-slate-700 { background-color: #E2E8F0 !important; }
+:root:not(.dark) .bg-slate-700\/50 { background-color: rgba(226,232,240,0.5) !important; }
+:root:not(.dark) .border-slate-600 { border-color: #CBD5E1 !important; }
+
+/* ── Light mode: text-blue-100/200 (light blue — invisible on white) ── */
+:root:not(.dark) .text-blue-100 { color: #1E40AF !important; }
+:root:not(.dark) .text-blue-200 { color: #1D4ED8 !important; }
+:root:not(.dark) .text-blue-200\/60 { color: rgba(29,78,216,0.6) !important; }
+:root:not(.dark) .text-blue-200\/80 { color: rgba(29,78,216,0.8) !important; }
+:root:not(.dark) .text-blue-300 { color: #2563EB !important; }
+:root:not(.dark) .text-blue-400 { color: #3B82F6 !important; }
+
+/* ── Light mode: text-red-400 (low contrast on light) ── */
+:root:not(.dark) .text-red-400 { color: #DC2626 !important; }
+
+/* ── Light mode: text-white/80 and text-white/60 on non-accent surfaces ── */
+:root:not(.dark) .text-white\/80:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.8) !important; }
+:root:not(.dark) .text-white\/60:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.6) !important; }
+:root:not(.dark) .text-white\/90:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.9) !important; }
+
+/* ── Light mode: bg-white/20 on non-accent (translucent white = invisible on light bg) ── */
+:root:not(.dark) .bg-white\/20:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .bg-white\/30:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.1) !important; }
+
+/* ── Light mode: border-white/30 (translucent white border = invisible on light) ── */
+:root:not(.dark) .border-white\/30 { border-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .border-white\/15 { border-color: rgba(0,0,0,0.06) !important; }
+
+/* ── Light mode: Hardcoded hex backgrounds ── */
+:root:not(.dark) .bg-\[\#0A0F1C\] { background-color: #F8FAFC !important; }
+:root:not(.dark) .bg-\[\#0C1322\] { background-color: #FFFFFF !important; }
+:root:not(.dark) .bg-\[\#111827\] { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-\[\#1A2035\] { background-color: #E2E8F0 !important; }
+:root:not(.dark) .bg-\[\#1E293B\] { background-color: #F1F5F9 !important; }
+:root:not(.dark) .bg-\[\#0F172A\] { background-color: #F8FAFC !important; }
+
+/* ── Light mode: TooltipContent overrides ── */
+:root:not(.dark) [data-radix-popper-content-wrapper] > div,
+:root:not(.dark) [role="dialog"] > div {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #E2E8F0 !important;
+}
+
+/* ── Light mode: bg-slate-900 tooltips (used in ProtectionScoreCard Free/Starter) ── */
+:root:not(.dark) .bg-slate-900.text-white,
+:root:not(.dark) .bg-slate-800.text-white {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* ── Light mode: hover:white on buttons ── */
+:root:not(.dark) .hover\:bg-white\/20:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.08) !important; }
+:root:not(.dark) .hover\:bg-white\/30:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.1) !important; }
+:root:not(.dark) .hover\:text-white\/60:hover { color: rgba(30,41,59,0.6) !important; }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
     letter-spacing: -0.01em;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600; /* SemiBold max per PDF Section 3.5 — no 700+ */
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-family: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   .font-sans {
-    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-family: "Geist Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   .font-serif {
     font-family: Georgia, Georgia, serif;
   }
   .font-mono {
-    font-family: Menlo, "Courier New", monospace;
+    font-family: "Geist Mono", Menlo, "Courier New", monospace;
   }
+}
+
+/* ── V2: Gradient utility classes (light/dark adaptive) ── */
+.gradient-institutional { background: var(--gradient-institutional); }
+.gradient-teal-veil { background: var(--gradient-teal-veil); }
+.gradient-card-elevate { background: var(--gradient-card-elevate); }
+.gradient-hero-accent { background: var(--gradient-hero-accent); }
+.gradient-steel-horizon { background: var(--gradient-steel-horizon); }
+.gradient-hero { background: var(--gradient-hero-accent); } /* Legacy alias */
+.gradient-sidebar { background: var(--gradient-institutional); } /* Legacy alias */
+.gradient-subtle { background: var(--gradient-card-elevate); } /* Legacy alias */
+
+/* Light mode gradient overrides — clean white/slate, no navy */
+:root:not(.dark) .gradient-institutional,
+:root:not(.dark) .gradient-sidebar {
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+}
+:root:not(.dark) .gradient-teal-veil {
+  background: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+}
+:root:not(.dark) .gradient-card-elevate,
+:root:not(.dark) .gradient-subtle {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+:root:not(.dark) .gradient-hero-accent,
+:root:not(.dark) .gradient-hero {
+  background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+}
+:root:not(.dark) .gradient-steel-horizon {
+  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+}
+
+/* ── V2: Accent tint utility classes (PDF Section 11) — light/dark adaptive ── */
+.accent-tint { background: rgba(13,148,136,0.15); }
+.accent-tint-subtle { background: rgba(13,148,136,0.08); }
+:root:not(.dark) .accent-tint { background: rgba(13,148,136,0.10); }
+:root:not(.dark) .accent-tint-subtle { background: rgba(13,148,136,0.05); }
+
+/* ── V2: Accessibility focus indicators (WCAG 2.1 AA) ── */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-to-content for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+  z-index: 99999;
+  font-weight: 600;
+  transition: top 0.2s;
+}
+.skip-to-content:focus {
+  top: 0.5rem;
 }
 
 /* Custom scrollbar for dark sidebar */
@@ -145,31 +674,45 @@
   display: none;
 }
 
-/* Smooth animations for TIMELock */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* V2 Motion System (PDF Section 6) */
+.transition-v2-hover { transition: all 150ms ease-out; }
+.transition-v2-page { transition: all 200ms ease-in-out; }
+.transition-v2-modal { transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.transition-v2-sidebar { transition: all 300ms ease-in-out; }
+.transition-v2-toast { transition: all 300ms ease-out; }
+
+/* V2 Crypto-Distancing Rules */
+/* Forbidden: neon glow, saturated green on pure black, glowing effects */
+.no-glow {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+/* Safe dark: warm-tinted navy, never pure black */
+.bg-safe-dark {
+  background-color: #0A0F1C; /* Navy-tinted, not #000000 */
+}
+:root:not(.dark) .bg-safe-dark {
+  background-color: #F8FAFC; /* Light mode: use page background */
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(0, 36, 107, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(0, 36, 107, 0.6);
-  }
+/* Smooth animations — V2: no glow effects (crypto-distancing) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* V2: pulse-subtle — matte, no glow (crypto-distancing) */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
 }
-
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: pulse-subtle 2s ease-in-out infinite;
 }

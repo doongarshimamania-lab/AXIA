@@ -8,7 +8,7 @@ const features = [
     description: "Live monitoring of your work context against platform requirements. Know your protection level before submission.",
     stat: "95%",
     statLabel: "Average protection score",
-    color: "from-[#00246B] to-[#003A8C]",
+    color: "from-primary to-primary/80",
   },
   {
     icon: FileCheck,
@@ -16,7 +16,7 @@ const features = [
     description: "AI-powered analysis identifies missing evidence before disputes happen. Never submit incomplete work context again.",
     stat: "87%",
     statLabel: "Gaps caught early",
-    color: "from-[#00246B] to-[#4F46E5]",
+    color: "from-primary to-indigo-600",
   },
   {
     icon: TrendingUp,
@@ -48,7 +48,7 @@ const features = [
     description: "Verify work consistency across multiple platforms. Ensure your evidence aligns everywhere.",
     stat: "4+",
     statLabel: "Platforms supported",
-    color: "from-[#00246B] to-[#00246B]",
+    color: "from-primary to-primary/80",
   },
   {
     icon: Zap,
@@ -64,7 +64,7 @@ const features = [
     description: "Understand specific client requirements and get personalized recommendations for each project.",
     stat: "$1,028",
     statLabel: "Avg. loss prevented",
-    color: "from-[#00246B] to-[#00246B]",
+    color: "from-primary to-primary/80",
   },
 ];
 
@@ -150,7 +150,7 @@ export function Features() {
                 waitlistSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
             }}
-            className="px-8 py-4 text-[18px] font-semibold rounded-lg bg-[#00246B] hover:bg-[#00246B]/90 text-white shadow-lg transition-transform hover:scale-105"
+            className="px-8 py-4 text-[18px] font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-transform hover:scale-105"
             style={{ fontFamily: "Space Grotesk" }}
           >
             Start Protecting Your Income →

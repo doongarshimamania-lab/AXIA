@@ -291,7 +291,7 @@ export function ExtensionTokenSection() {
               value={`${import.meta.env.VITE_CONVEX_URL}::${token ?? ""}`}
               readOnly
               className="font-mono bg-muted pr-20 text-sm"
-              style={{ fontFamily: "Space Grotesk, monospace" }}
+             
             />
             <Button
               variant="ghost"

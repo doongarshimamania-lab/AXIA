@@ -200,8 +200,9 @@ export const createInvoice = mutation({
     // Fetch client and derive clientName/clientEmail
     const client = await ctx.db.get(args.clientId);
     if (!client) throw new Error("Client not found");
-    const clientName = (client as any).name;
-    const clientEmail = (client as any).email ?? undefined;
+    // clientName is the canonical field; name is a CRM alias — try both
+    const clientName = client.clientName || client.name;
+    const clientEmail = client.email ?? client.contactEmail ?? undefined;
 
     const { workspaceId, teamId, customFields, ...invoiceArgs } = args;
 

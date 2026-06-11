@@ -220,16 +220,16 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                           key={idx} 
                           className={`p-3 rounded-xl transition-all cursor-pointer group border ${
                             isCurrent 
-                              ? 'bg-yellow-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                              ? 'bg-yellow-500/10 border-yellow-500/30 shadow-sm' 
                               : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${
-                                project.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
-                                project.status === 'warning' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 
-                                'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                                project.status === 'healthy' ? 'bg-emerald-500' : 
+                                project.status === 'warning' ? 'bg-yellow-500' : 
+                                'bg-red-500'
                               }`} />
                               <span className={`font-medium text-sm ${isCurrent ? 'text-yellow-400' : 'text-slate-200'}`}>
                                 {project.projectName}
@@ -327,18 +327,18 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
             {starterData.workPatterns && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="bg-slate-950/50 rounded-xl p-4 border border-teal-500/20 hover:bg-teal-950/20 transition-all cursor-pointer group">
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-platinum-500/20 hover:bg-platinum-950/20 transition-all cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-teal-500/10 rounded-lg">
-                          <Zap className="w-4 h-4 text-teal-400" />
+                        <div className="p-2 bg-platinum-500/10 rounded-lg">
+                          <Zap className="w-4 h-4 text-platinum-400" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-teal-100">Productivity</h4>
-                          <p className="text-[10px] text-teal-400">Starter Module</p>
+                          <h4 className="text-sm font-bold text-platinum-100">Productivity</h4>
+                          <p className="text-[10px] text-platinum-400">Starter Module</p>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-teal-400 transition-colors" />
+                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-platinum-400 transition-colors" />
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-slate-400">
@@ -347,9 +347,9 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-950 border-teal-500/30 text-white sm:max-w-lg">
+                <DialogContent className="bg-slate-950 border-platinum-500/30 text-white sm:max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="font-bold text-teal-400 flex items-center gap-2">
+                    <DialogTitle className="font-bold text-platinum-400 flex items-center gap-2">
                       <Zap className="w-4 h-4" />
                       Productivity Engine Analysis
                     </DialogTitle>
@@ -364,8 +364,8 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {starterData.pillars?.map((p: any, i: number) => (
-                      <div key={i} className="bg-teal-950/30 p-3 rounded-lg border border-teal-500/10 text-center">
-                        <div className="text-[10px] text-teal-400 uppercase mb-1">{p.name}</div>
+                      <div key={i} className="bg-platinum-950/30 p-3 rounded-lg border border-platinum-500/10 text-center">
+                        <div className="text-[10px] text-platinum-400 uppercase mb-1">{p.name}</div>
                         <div className="text-xl font-bold text-white">{p.value}{p.unit}</div>
                       </div>
                     ))}

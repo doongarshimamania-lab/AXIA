@@ -58,7 +58,7 @@ export function ThreadPanel({
           {/* Parent Message */}
           <div className="flex gap-3 pb-3 border-b border-border">
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback className="text-xs bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
+              <AvatarFallback className="text-xs bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 text-white">
                 {parentMessage.authorName
                   .split(" ")
                   .map((n) => n[0])
@@ -92,7 +92,7 @@ export function ThreadPanel({
             {replies.map((reply) => (
               <div key={reply.id} className="flex gap-3">
                 <Avatar className="h-6 w-6 flex-shrink-0 mt-0.5">
-                  <AvatarFallback className="text-[9px] bg-gradient-to-br from-blue-400 to-cyan-500 text-white">
+                  <AvatarFallback className="text-[9px] bg-gradient-to-br from-blue-400 to-primary text-white">
                     {reply.authorName
                       .split(" ")
                       .map((n) => n[0])

@@ -24,33 +24,33 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
   return (
     <div className="flex gap-6">
       {/* Filter Sidebar */}
-      <Card className="w-64 p-4 bg-[#1E293B] border-[#334155] h-fit">
-        <h3 className="font-bold text-white mb-3">Filter Evidence</h3>
+      <Card className="w-64 p-4 bg-slate-100 dark:bg-platinum-800 border-border h-fit">
+        <h3 className="font-bold text-foreground dark:text-white mb-3">Filter Evidence</h3>
         <div className="space-y-1">
           <Button 
             variant={viewMode === "date" ? "default" : "ghost"} 
-            className={`w-full justify-start ${viewMode === "date" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
+            className={`w-full justify-start ${viewMode === "date" ? "bg-blue-600 text-white" : "text-slate-600 dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"}`}
             onClick={() => setViewMode("date")}
           >
             Date-Wise (Default)
           </Button>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+            className="w-full justify-start text-slate-600 dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setViewMode("project")}
           >
             Project-Wise
           </Button>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+            className="w-full justify-start text-slate-600 dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setViewMode("client")}
           >
             Client-Wise
           </Button>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+            className="w-full justify-start text-slate-600 dark:text-slate-400 hover:text-foreground dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setViewMode("type")}
           >
             Evidence Type
@@ -59,16 +59,16 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
       </Card>
 
       {/* Evidence List */}
-      <Card className="flex-1 p-6 bg-[#1E293B] border-[#334155]">
+      <Card className="flex-1 p-6 bg-slate-100 dark:bg-platinum-800 border-border">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-2xl text-white">Evidence Library</h3>
+          <h3 className="font-bold text-2xl text-foreground dark:text-white">Evidence Library</h3>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-400">Nov 2025</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Nov 2025</span>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-foreground dark:hover:text-white">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-foreground dark:hover:text-white">
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -77,37 +77,37 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
 
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-white font-semibold">Invalid Date</h4>
+            <h4 className="text-foreground dark:text-white font-semibold">Invalid Date</h4>
             <Badge variant="outline" className="text-blue-400 border-blue-400">3 items</Badge>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
-              <div className="w-full h-24 bg-slate-900 rounded flex items-center justify-center">
+            <div className="bg-slate-100/95 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-4 space-y-2">
+              <div className="w-full h-24 bg-slate-50 dark:bg-slate-900 rounded flex items-center justify-center">
                 <Camera className="w-8 h-8 text-slate-600" />
               </div>
               <Badge className="bg-blue-600 text-white text-xs">Screenshot</Badge>
-              <div className="text-sm font-semibold text-white">9:58 PM</div>
+              <div className="text-sm font-semibold text-foreground dark:text-white">9:58 PM</div>
               <div className="text-xs text-blue-400">Upwork</div>
             </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
+            <div className="bg-slate-100/95 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-center h-24">
                 <div className="text-center">
                   <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">Client requested design changes for the login page...</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Client requested design changes for the login page...</p>
                 </div>
               </div>
               <Badge className="bg-amber-500 text-white text-xs">Memo</Badge>
-              <div className="text-sm font-semibold text-white">10:58 PM</div>
+              <div className="text-sm font-semibold text-foreground dark:text-white">10:58 PM</div>
             </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
-              <div className="w-full h-24 bg-slate-900 rounded flex items-center justify-center">
+            <div className="bg-slate-100/95 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg p-4 space-y-2">
+              <div className="w-full h-24 bg-slate-50 dark:bg-slate-900 rounded flex items-center justify-center">
                 <Camera className="w-8 h-8 text-slate-600" />
               </div>
               <Badge className="bg-blue-600 text-white text-xs">Screenshot</Badge>
-              <div className="text-sm font-semibold text-white">11:28 PM</div>
+              <div className="text-sm font-semibold text-foreground dark:text-white">11:28 PM</div>
               <div className="text-xs text-blue-400">Toptal</div>
             </div>
           </div>

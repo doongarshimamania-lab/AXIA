@@ -391,7 +391,7 @@ export default function Proposals() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-1">
               Proposals
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -414,7 +414,7 @@ export default function Proposals() {
               Seed Data
             </Button>
             <Button
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
               onClick={() => navigate("/proposals/new")}
             >
               <Plus className="h-4 w-4" />
@@ -430,8 +430,8 @@ export default function Proposals() {
               title: "Total",
               value: stats?.total ?? 0,
               icon: FileText,
-              color: "text-[#8B5CF6]",
-              bgColor: "bg-[#8B5CF6]/10",
+              color: "text-primary",
+              bgColor: "bg-primary/10",
               format: (v: number) => String(v),
             },
             {
@@ -523,7 +523,7 @@ export default function Proposals() {
                 onClick={() => setActiveFilter(tab.key)}
                 className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
                   isActive
-                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+                    ? "font-semibold text-foreground bg-primary/10 ring-1 ring-primary/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
@@ -531,7 +531,7 @@ export default function Proposals() {
                 <span
                   className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+                      ? "bg-primary/20 text-primary"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -539,7 +539,7 @@ export default function Proposals() {
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+                    isActive ? "bg-primary" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -579,7 +579,7 @@ export default function Proposals() {
                             Seed Sample Data
                           </Button>
                           <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                             onClick={() => navigate("/proposals/new")}
                           >
                             <Plus className="h-4 w-4" />
@@ -766,7 +766,7 @@ function ProposalCard({
       transition={{ duration: 0.3, delay: idx * 0.04 }}
       layout
     >
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden">
+      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-primary/30 overflow-hidden">
         <CardContent className="p-5">
           {/* Top Row: Status + Actions */}
           <div className="flex items-start justify-between mb-3">
@@ -852,8 +852,8 @@ function ProposalCard({
 
           {/* Title */}
           <h3
-            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#8B5CF6] transition-colors"
-            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+           
             onClick={onView}
           >
             {proposal.title}
@@ -903,7 +903,7 @@ function ProposalCard({
           {(proposal.status === "sent" || proposal.status === "viewed") && (
             <div className="flex items-center gap-2 mt-0">
               {scheduledFollowUps.length > 0 ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 rounded-md px-2 py-1">
                   <BellRing className="h-3 w-3" />
                   <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
                 </div>
@@ -916,7 +916,7 @@ function ProposalCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-[11px] text-[#8B5CF6] hover:text-[#7C3AED] hover:bg-[#8B5CF6]/10 gap-1"
+                className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 hover:bg-primary/10 gap-1"
                 onClick={(e) => {
                   e.stopPropagation();
                   onManageFollowUps?.(proposal._id);
@@ -930,7 +930,7 @@ function ProposalCard({
 
           {/* Follow-up badge for non-sent/viewed statuses */}
           {(proposal.status !== "sent" && proposal.status !== "viewed") && scheduledFollowUps.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
+            <div className="flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
               <Clock className="h-3 w-3" />
               <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
             </div>
@@ -941,7 +941,7 @@ function ProposalCard({
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
               <Button
                 size="sm"
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
                 onClick={() => onSend(proposal._id)}
               >
                 <Send className="h-3 w-3" />
@@ -964,7 +964,7 @@ function ProposalCard({
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
               <Button
                 size="sm"
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/projects?createFromProposal=${proposal._id}`);
@@ -1111,7 +1111,7 @@ function FollowUpManager({
   const proposalTitle = proposal?.title || "Proposal";
 
   const statusBadgeConfig: Record<string, { className: string; label: string }> = {
-    scheduled: { className: "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25", label: "Scheduled" },
+    scheduled: { className: "bg-primary/15 text-primary border-primary/25", label: "Scheduled" },
     sent: { className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25", label: "Sent" },
     skipped: { className: "bg-slate-500/15 text-slate-500 border-slate-500/25", label: "Skipped" },
     cancelled: { className: "bg-muted text-muted-foreground border-muted", label: "Cancelled" },
@@ -1124,8 +1124,8 @@ function FollowUpManager({
         <div className="px-6 pt-6 pb-4">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#8B5CF6]/10 flex items-center justify-center">
-                <BellRing className="h-5 w-5 text-[#8B5CF6]" />
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BellRing className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-base truncate">{proposalTitle}</DialogTitle>
@@ -1137,7 +1137,7 @@ function FollowUpManager({
                 variant="outline"
                 className={`text-[11px] px-2.5 py-0.5 h-6 font-medium ${
                   followUpActive
-                    ? "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25"
+                    ? "bg-primary/15 text-primary border-primary/25"
                     : "bg-muted text-muted-foreground border-muted"
                 }`}
               >
@@ -1154,7 +1154,7 @@ function FollowUpManager({
             {/* Control Buttons */}
             <div className="flex items-center gap-2">
               <Button
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-9 text-[13px]"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px]"
                 disabled={hasScheduled || isStarting || isMock}
                 onClick={handleStart}
               >
@@ -1187,7 +1187,7 @@ function FollowUpManager({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-[11px] text-[#8B5CF6] hover:text-[#7C3AED] gap-1"
+                  className="h-7 text-[11px] text-primary hover:text-primary/80 gap-1"
                   onClick={addInterval}
                   disabled={hasScheduled || intervals.length >= 8}
                 >
@@ -1265,7 +1265,7 @@ function FollowUpManager({
                           className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/30 transition-colors"
                         >
                           {/* Day indicator */}
-                          <div className="flex items-center justify-center h-8 w-8 rounded-md bg-[#8B5CF6]/10 text-[11px] font-bold text-[#8B5CF6] shrink-0">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-[11px] font-bold text-primary shrink-0">
                             D{fu.dayNumber}
                           </div>
 
@@ -1314,7 +1314,7 @@ function FollowUpManager({
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: "Scheduled", value: scheduledCount, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
+                { label: "Scheduled", value: scheduledCount, color: "text-primary", bg: "bg-primary/10" },
                 { label: "Sent", value: sentCount, color: "text-emerald-600", bg: "bg-emerald-500/10" },
                 { label: "Skipped", value: skippedCount, color: "text-slate-500", bg: "bg-slate-500/10" },
                 { label: "Cancelled", value: cancelledCount, color: "text-muted-foreground", bg: "bg-muted" },

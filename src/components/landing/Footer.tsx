@@ -16,7 +16,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           {Object.entries(footerLinks).map(([heading, links]) => (
             <div key={heading}>
-              <h3 className="text-lg font-semibold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+              <h3 className="text-lg font-semibold text-foreground mb-4">
                 {heading}
               </h3>
               <ul className="space-y-3">
@@ -24,8 +24,8 @@ export function Footer() {
                   <li key={link}>
                     <button
                       onClick={() => {}}
-                      className="text-base text-muted-foreground hover:text-[#00246B] dark:hover:text-white transition-colors font-medium"
-                      style={{ fontFamily: "Space Grotesk" }}
+                      className="text-base text-muted-foreground hover:text-primary dark:hover:text-white transition-colors font-medium"
+                     
                     >
                       {link}
                     </button>
@@ -37,7 +37,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border pt-6 text-center">
-          <p className="text-sm text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-sm text-muted-foreground">
             © 2025 Axia. All rights reserved. Protecting freelancer income worldwide.
           </p>
         </div>

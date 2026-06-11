@@ -15,17 +15,17 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
   const activePillars = pillars.starter || pillars.free; // Fallback should not happen in correct tier
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-b from-[#F0F9FF] to-white rounded-2xl border border-slate-200 shadow-md">
+    <Card className="relative overflow-hidden bg-gradient-to-b from-page-bg-from to-white rounded-2xl border border-slate-200 shadow-md">
       {/* Header */}
       <div className="flex justify-between items-start p-6 border-b border-slate-100">
         <div>
-          <h3 className="font-bold text-xl text-[#0A192F]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-foreground">
             Contextual Timeline
           </h3>
           <p className="text-sm text-slate-500 mt-1">Relevance & optimization tracking</p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-[#0A192F]">${totalProtectedWeekly}</div>
+          <div className="text-2xl font-bold text-foreground">${totalProtectedWeekly}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">Protected / week</div>
         </div>
       </div>
@@ -41,10 +41,10 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
             className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"
           >
             <div className="mb-2">
-              <span className="text-xs font-bold text-[#0087A6] uppercase tracking-wider">{pillar.label}</span>
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">{pillar.label}</span>
             </div>
             <div>
-              <div className="text-xl font-bold text-[#0A192F]">{pillar.displayValue}</div>
+              <div className="text-xl font-bold text-foreground">{pillar.displayValue}</div>
               <p className="text-[10px] text-slate-400 mt-1">{pillar.description}</p>
             </div>
           </motion.div>
@@ -53,19 +53,19 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
 
       {/* Contextual Score Banner */}
       <div className="px-6 pb-4">
-        <div className="bg-[#0A192F] rounded-xl p-4 flex items-center justify-between text-white">
+        <div className="bg-slate-900 dark:bg-background rounded-xl p-4 flex items-center justify-between text-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Layers className="w-5 h-5 text-[#00C9B7]" />
+            <div className="p-2 bg-white/10 dark:bg-white/10 rounded-lg">
+              <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-medium text-slate-300">{activePillars[3]?.label}</div>
+              <div className="text-sm font-medium text-slate-200 dark:text-slate-300">{activePillars[3]?.label}</div>
               <div className="text-lg font-bold">{activePillars[3]?.displayValue}</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-slate-400">Impact</div>
-            <div className="text-sm font-medium text-[#00C9B7]">+{activePillars[3]?.dollarImpact ? `$${activePillars[3].dollarImpact}` : '$0'}</div>
+            <div className="text-xs text-slate-300 dark:text-slate-400">Impact</div>
+            <div className="text-sm font-medium text-primary">+{activePillars[3]?.dollarImpact ? `$${activePillars[3].dollarImpact}` : '$0'}</div>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
           <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 uppercase">Timeline Risk Prediction</div>
           <div className="mt-8 relative h-12 flex items-center">
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#00C9B7] to-[#0087A6] w-3/4" />
+              <div className="h-full bg-gradient-to-r from-primary to-primary/70 w-3/4" />
             </div>
             {/* Interactive Markers */}
             {events.slice(0, 4).map((event, i) => (
@@ -85,12 +85,12 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
                 className="absolute w-8 h-8 -ml-4 flex items-center justify-center bg-white rounded-full border shadow-md cursor-pointer hover:scale-110 transition-transform group"
                 style={{ left: `${20 + i * 20}%` }}
               >
-                <AlertCircle className={`w-4 h-4 ${event.riskLevel === 'high' ? 'text-[#DC143C]' : 'text-[#F59E0B]'}`} />
+                <AlertCircle className={`w-4 h-4 ${event.riskLevel === 'high' ? 'text-danger' : 'text-warning'}`} />
                 
                 {/* Hover Tooltip */}
-                <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-[#0A192F] text-white text-xs p-2 rounded-lg shadow-xl z-10">
+                <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-slate-900 dark:bg-background text-white text-xs p-2 rounded-lg shadow-xl z-10">
                   <div className="font-bold mb-1">{event.description}</div>
-                  <div className="text-slate-300">Risk: ${event.impactValue.toFixed(0)}</div>
+                  <div className="text-slate-200 dark:text-slate-300">Risk: ${event.impactValue.toFixed(0)}</div>
                 </div>
               </div>
             ))}
@@ -102,12 +102,12 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
       {upgradePrompt && (
         <div className="p-6 border-t border-slate-100 bg-white">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium text-[#0A192F]">Prevent timeline vulnerabilities</div>
-            <div className="text-sm font-bold text-[#0087A6]">{upgradePrompt.message}</div>
+            <div className="text-sm font-medium text-foreground">Prevent timeline vulnerabilities</div>
+            <div className="text-sm font-bold text-primary">{upgradePrompt.message}</div>
           </div>
           <Button 
             onClick={onUpgrade}
-            className="w-full bg-[#0A192F] hover:bg-[#1e293b] text-white shadow-lg"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
           >
             Upgrade to Pro
           </Button>

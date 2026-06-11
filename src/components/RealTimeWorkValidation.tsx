@@ -68,7 +68,7 @@ export function RealTimeWorkValidation() {
                   <div className="flex items-center gap-2">
                     <MousePointer className="h-4 w-4 text-blue-500" />
                     <Keyboard className="h-4 w-4 text-green-500" />
-                    <Image className="h-4 w-4 text-purple-500" />
+                    <Image className="h-4 w-4 text-platinum-400" />
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{activity.freelancerName}</p>

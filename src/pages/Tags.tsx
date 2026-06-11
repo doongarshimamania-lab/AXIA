@@ -33,14 +33,11 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { TAG_COLORS, SEMANTIC_COLORS } from "@/lib/tokens";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PRESET_COLORS = [
-  "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e",
-  "#14b8a6", "#06b6d4", "#6366f1", "#a855f7", "#ec4899",
-  "#f43f5e", "#0ea5e9",
-];
+const PRESET_COLORS = [...TAG_COLORS];
 
 // ─── Mock Data (demo mode) ───────────────────────────────────────────────────
 
@@ -48,7 +45,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_1" as any,
     name: "Urgent",
-    color: "#ef4444",
+    color: TAG_COLORS[5],
     category: "general" as string | null,
     usageCount: 23,
     createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
@@ -56,7 +53,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_2" as any,
     name: "Design",
-    color: "#a855f7",
+    color: TAG_COLORS[2],
     category: "project" as string | null,
     usageCount: 18,
     createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
@@ -64,7 +61,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_3" as any,
     name: "Development",
-    color: "#22c55e",
+    color: TAG_COLORS[9],
     category: "project" as string | null,
     usageCount: 42,
     createdAt: Date.now() - 145 * 24 * 60 * 60 * 1000,
@@ -72,7 +69,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_4" as any,
     name: "Client Communication",
-    color: "#06b6d4",
+    color: TAG_COLORS[13],
     category: "client" as string | null,
     usageCount: 31,
     createdAt: Date.now() - 140 * 24 * 60 * 60 * 1000,
@@ -80,7 +77,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_5" as any,
     name: "Bug Fix",
-    color: "#f97316",
+    color: TAG_COLORS[6],
     category: "general" as string | null,
     usageCount: 14,
     createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
@@ -88,7 +85,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_6" as any,
     name: "Documentation",
-    color: "#14b8a6",
+    color: TAG_COLORS[14],
     category: "project" as string | null,
     usageCount: 9,
     createdAt: Date.now() - 115 * 24 * 60 * 60 * 1000,
@@ -96,7 +93,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_7" as any,
     name: "Revision",
-    color: "#f59e0b",
+    color: TAG_COLORS[7],
     category: "general" as string | null,
     usageCount: 19,
     createdAt: Date.now() - 110 * 24 * 60 * 60 * 1000,
@@ -104,7 +101,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_8" as any,
     name: "Research",
-    color: "#6366f1",
+    color: TAG_COLORS[0],
     category: "general" as string | null,
     usageCount: 7,
     createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
@@ -112,7 +109,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_9" as any,
     name: "Testing",
-    color: "#ec4899",
+    color: TAG_COLORS[3],
     category: "evidence" as string | null,
     usageCount: 11,
     createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
@@ -120,7 +117,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_10" as any,
     name: "Payment",
-    color: "#84cc16",
+    color: TAG_COLORS[8],
     category: "client" as string | null,
     usageCount: 5,
     createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,

@@ -28,8 +28,8 @@ export default function WaitlistSuccess() {
 
   if (!referralCode || !stats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <div className="text-foreground text-xl">Loading...</div>
       </div>
     );
   }
@@ -77,10 +77,10 @@ export default function WaitlistSuccess() {
   const spotsToEarlyAccess = Math.max(0, 5 - (referralCount ?? 0));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen gradient-hero py-12 px-4 sm:px-6 lg:px-8">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-white blur-3xl" />
+        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-white/50 dark:bg-white blur-3xl" />
         <div className="absolute bottom-20 left-20 w-96 h-96 rounded-full bg-blue-400 blur-3xl" />
       </div>
 
@@ -88,7 +88,7 @@ export default function WaitlistSuccess() {
         {/* Back Button */}
         <button
           onClick={() => navigate("/")}
-          className="mb-8 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          className="mb-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back to home</span>
@@ -99,7 +99,7 @@ export default function WaitlistSuccess() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 sm:p-12 border border-white/20"
+          className="bg-card border border-border rounded-3xl p-8 sm:p-12 backdrop-blur-md"
         >
           {/* Header */}
           <div className="text-center mb-8">
@@ -112,16 +112,16 @@ export default function WaitlistSuccess() {
               <Check className="w-10 h-10 text-white" />
             </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4" style={{ fontFamily: "Space Grotesk" }}>
+            <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
               You're on the waitlist!
             </h1>
 
-            <p className="text-xl text-blue-100 mb-2">
+            <p className="text-xl text-muted-foreground mb-2">
               Your current position is
             </p>
 
-            <div className="inline-block bg-white/20 px-8 py-4 rounded-2xl">
-              <span className="text-6xl font-bold text-white" style={{ fontFamily: "Space Grotesk" }}>
+            <div className="inline-block bg-accent/10 dark:bg-white/20 px-8 py-4 rounded-2xl">
+              <span className="text-6xl font-bold text-foreground">
                 #{position}
               </span>
             </div>
@@ -130,31 +130,31 @@ export default function WaitlistSuccess() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-4 text-2xl font-bold text-green-400"
+                className="mt-4 text-2xl font-bold text-emerald-500"
               >
-                🎉 You're next in line for early access!
+                You're next in line for early access!
               </motion.p>
             )}
           </div>
 
           {/* Referral Section */}
-          <div className="bg-white/5 rounded-2xl p-6 sm:p-8 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-3" style={{ fontFamily: "Space Grotesk" }}>
+          <div className="bg-muted/50 dark:bg-white/5 rounded-2xl p-6 sm:p-8 mb-6">
+            <h2 className="text-2xl font-bold text-foreground mb-3">
               Want to skip the line?
             </h2>
 
-            <p className="text-blue-100 mb-6">
+            <p className="text-muted-foreground mb-6">
               Refer your friends and move up the list. Each referral moves you up by 1 spot!
             </p>
 
             {/* Progress Bar */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-blue-200">Progress to Early Access</span>
-                <span className="text-sm font-bold text-white">{referralCount}/5 referrals</span>
+                <span className="text-sm text-muted-foreground">Progress to Early Access</span>
+                <span className="text-sm font-bold text-foreground">{referralCount}/5 referrals</span>
               </div>
 
-              <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-3 bg-muted dark:bg-white/10 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
@@ -164,7 +164,7 @@ export default function WaitlistSuccess() {
               </div>
 
               {spotsToEarlyAccess > 0 && (
-                <p className="text-sm text-blue-200 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Refer {spotsToEarlyAccess} more {spotsToEarlyAccess === 1 ? 'friend' : 'friends'} to get early access!
                 </p>
               )}
@@ -172,7 +172,7 @@ export default function WaitlistSuccess() {
 
             {/* Referral Link */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-blue-200 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Your referral link
               </label>
 
@@ -181,13 +181,13 @@ export default function WaitlistSuccess() {
                   type="text"
                   value={referralLink}
                   readOnly
-                  className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:outline-none focus:border-white/40"
-                  style={{ fontFamily: "Space Grotesk" }}
+                  className="flex-1 px-4 py-3 bg-muted dark:bg-white/10 border border-border dark:border-white/20 rounded-xl text-foreground text-sm focus:outline-none focus:border-ring"
+                 
                 />
 
                 <Button
                   onClick={copyToClipboard}
-                  className="px-6 bg-white text-[#00246B] hover:bg-white/90 rounded-xl"
+                  className="px-6 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl"
                 >
                   {copied ? (
                     <>
@@ -206,7 +206,7 @@ export default function WaitlistSuccess() {
 
             {/* Social Share Buttons */}
             <div>
-              <label className="block text-sm font-medium text-blue-200 mb-3">
+              <label className="block text-sm font-medium text-muted-foreground mb-3">
                 Share on social media
               </label>
 
@@ -237,7 +237,8 @@ export default function WaitlistSuccess() {
 
                 <Button
                   onClick={shareNative}
-                  className="bg-white/20 hover:bg-white/30 text-white rounded-xl py-6"
+                  variant="outline"
+                  className="border-border rounded-xl py-6"
                 >
                   <Share2 className="w-5 h-5 mr-2" />
                   Share
@@ -248,20 +249,20 @@ export default function WaitlistSuccess() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "Space Grotesk" }}>
+            <div className="bg-muted/50 dark:bg-white/5 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {referralCount}
               </div>
-              <div className="text-sm text-blue-200">
+              <div className="text-sm text-muted-foreground">
                 Friends Referred
               </div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "Space Grotesk" }}>
+            <div className="bg-muted/50 dark:bg-white/5 rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {referralCount}
               </div>
-              <div className="text-sm text-blue-200">
+              <div className="text-sm text-muted-foreground">
                 Spots Moved Up
               </div>
             </div>
@@ -269,8 +270,8 @@ export default function WaitlistSuccess() {
 
           {/* Footer */}
           <div className="text-center">
-            <p className="text-sm text-blue-200/60">
-              We'll notify you at <span className="font-medium text-white">{entry.email}</span> when it's your turn
+            <p className="text-sm text-muted-foreground">
+              We'll notify you at <span className="font-medium text-foreground">{entry.email}</span> when it's your turn
             </p>
           </div>
         </motion.div>
@@ -280,7 +281,7 @@ export default function WaitlistSuccess() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-8 text-center text-blue-200/60 text-sm"
+          className="mt-8 text-center text-muted-foreground text-sm"
         >
           <p>
             Questions? Contact us at support@axia.app

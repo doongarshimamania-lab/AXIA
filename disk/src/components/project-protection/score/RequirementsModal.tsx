@@ -18,7 +18,7 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-500" />
+            <FileText className="w-5 h-5 text-primary" />
             Client Requirements Mapping - Full Analysis
           </DialogTitle>
         </DialogHeader>
@@ -31,7 +31,7 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
             </div>
             <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-teal-500 transition-all" 
+                className="h-full bg-primary transition-all" 
                 style={{ width: `${matchRate}%` }}
               />
             </div>

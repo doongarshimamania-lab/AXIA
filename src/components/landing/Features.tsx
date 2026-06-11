@@ -8,7 +8,7 @@ const features = [
     description: "Live monitoring of your work context against platform requirements. Know your protection level before submission.",
     stat: "95%",
     statLabel: "Average protection score",
-    color: "from-[#00246B] to-[#003A8C]",
+    color: "from-primary to-primary/80",
   },
   {
     icon: FileCheck,
@@ -16,7 +16,7 @@ const features = [
     description: "AI-powered analysis identifies missing evidence before disputes happen. Never submit incomplete work context again.",
     stat: "87%",
     statLabel: "Gaps caught early",
-    color: "from-[#00246B] to-[#4F46E5]",
+    color: "from-primary to-axia-teal-600",
   },
   {
     icon: TrendingUp,
@@ -24,7 +24,7 @@ const features = [
     description: "Simulate potential disputes and see your success probability. Make informed decisions about work submission.",
     stat: "83%",
     statLabel: "Dispute success rate",
-    color: "from-[#4F46E5] to-[#7C3AED]",
+    color: "from-primary to-primary/80",
   },
   {
     icon: AlertTriangle,
@@ -32,7 +32,7 @@ const features = [
     description: "Get instant notifications when your work context doesn't meet Upwork, Fiverr, or Toptal requirements.",
     stat: "Real-time",
     statLabel: "Instant alerts",
-    color: "from-[#DC143C] to-[#FF6B6B]",
+    color: "from-danger to-danger/70",
   },
   {
     icon: Clock,
@@ -40,7 +40,7 @@ const features = [
     description: "Smart recommendations on when and what evidence to collect based on your work patterns and client requirements.",
     stat: "87 min",
     statLabel: "Saved weekly",
-    color: "from-[#FFD700] to-[#FFA500]",
+    color: "from-premium to-warning",
   },
   {
     icon: CheckCircle,
@@ -48,7 +48,7 @@ const features = [
     description: "Verify work consistency across multiple platforms. Ensure your evidence aligns everywhere.",
     stat: "4+",
     statLabel: "Platforms supported",
-    color: "from-[#00246B] to-[#00246B]",
+    color: "from-primary to-primary/80",
   },
   {
     icon: Zap,
@@ -56,7 +56,7 @@ const features = [
     description: "Generate professional dispute reports in seconds with all required evidence automatically compiled.",
     stat: "< 2 min",
     statLabel: "Report generation",
-    color: "from-[#7C3AED] to-[#A855F7]",
+    color: "from-primary/80 to-primary/60",
   },
   {
     icon: Target,
@@ -64,7 +64,7 @@ const features = [
     description: "Understand specific client requirements and get personalized recommendations for each project.",
     stat: "$1,028",
     statLabel: "Avg. loss prevented",
-    color: "from-[#00246B] to-[#00246B]",
+    color: "from-primary to-primary/80",
   },
 ];
 
@@ -79,10 +79,10 @@ export function Features() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-[36px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-[36px] font-bold text-foreground mb-4">
             Payment Protection Features That Actually Work
           </h2>
-          <p className="text-[20px] text-muted-foreground max-w-[800px] mx-auto leading-8" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-[20px] text-muted-foreground max-w-[800px] mx-auto leading-8">
             Every feature is designed to prevent payment denials before they happen. 
             <span className="text-primary font-semibold"> Real protection, backed by real data.</span>
           </p>
@@ -109,21 +109,21 @@ export function Features() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[18px] font-bold text-foreground mb-3 leading-tight" style={{ fontFamily: "Space Grotesk" }}>
+                <h3 className="text-[18px] font-bold text-foreground mb-3 leading-tight">
                   {feature.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-[14px] text-muted-foreground leading-6 mb-4" style={{ fontFamily: "Space Grotesk" }}>
+                <p className="text-[14px] text-muted-foreground leading-6 mb-4">
                   {feature.description}
                 </p>
 
                 {/* Stat badge */}
                 <div className="flex items-baseline gap-2 pt-3 border-t border-border">
-                  <span className={`text-[24px] font-bold bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`} style={{ fontFamily: "Space Grotesk" }}>
+                  <span className={`text-[24px] font-bold bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`}>
                     {feature.stat}
                   </span>
-                  <span className="text-[12px] text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
+                  <span className="text-[12px] text-muted-foreground">
                     {feature.statLabel}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export function Features() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="text-center mt-16"
         >
-          <p className="text-[18px] text-muted-foreground mb-6" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-[18px] text-muted-foreground mb-6">
             Join <span className="font-bold text-primary">thousands of freelancers</span> protecting their income with Axia
           </p>
           <button
@@ -150,8 +150,8 @@ export function Features() {
                 waitlistSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
             }}
-            className="px-8 py-4 text-[18px] font-semibold rounded-lg bg-[#00246B] hover:bg-[#00246B]/90 text-white shadow-lg transition-transform hover:scale-105"
-            style={{ fontFamily: "Space Grotesk" }}
+            className="px-8 py-4 text-[18px] font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-transform hover:scale-105"
+           
           >
             Start Protecting Your Income →
           </button>

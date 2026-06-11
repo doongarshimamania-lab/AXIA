@@ -171,7 +171,7 @@ export function ChannelList({
                 }`}
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 flex items-center justify-center text-[9px] text-white font-bold">
                     {channel.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-background" />

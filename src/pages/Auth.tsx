@@ -323,7 +323,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               onClick={() => navigate("/")}
             />
           </div>
-          <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
+          <CardTitle className="text-[28px]">
             {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
           </CardTitle>
           <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
@@ -443,7 +443,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                className="w-full h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -499,7 +499,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
+                className="w-full h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (

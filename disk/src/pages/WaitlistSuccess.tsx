@@ -28,7 +28,7 @@ export default function WaitlistSuccess() {
 
   if (!referralCode || !stats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] flex items-center justify-center">
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
@@ -77,7 +77,7 @@ export default function WaitlistSuccess() {
   const spotsToEarlyAccess = Math.max(0, 5 - (referralCount ?? 0));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#00246B] via-[#003087] to-[#0041A8] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen gradient-hero py-12 px-4 sm:px-6 lg:px-8">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-white blur-3xl" />
@@ -187,7 +187,7 @@ export default function WaitlistSuccess() {
 
                 <Button
                   onClick={copyToClipboard}
-                  className="px-6 bg-white text-[#00246B] hover:bg-white/90 rounded-xl"
+                  className="px-6 bg-white text-primary hover:bg-white/90 rounded-xl"
                 >
                   {copied ? (
                     <>

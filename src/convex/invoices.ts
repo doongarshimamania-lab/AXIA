@@ -1580,7 +1580,7 @@ export const getRecurringInvoices = query({
         const template = await ctx.db.get(rec.templateInvoiceId);
         return {
           ...rec,
-          clientName: client ? (client as any).name : "Unknown",
+          clientName: client ? (client.clientName || client.name) : "Unknown",
           templateInvoiceNumber: template ? template.invoiceNumber : "N/A",
           templateTotal: template ? template.total : 0,
           templateCurrency: template ? template.currency : "USD",

@@ -73,7 +73,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">
             Basic Verification
           </h3>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
@@ -88,7 +88,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <div className="text-slate-600 dark:text-slate-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-3xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
@@ -109,7 +109,7 @@ const ClientPolicyProfileFree = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for context-specific protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Starter → $4/mo
         </Button>
       </div>
@@ -131,7 +131,7 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-blue-900 dark:text-blue-100">
             Contextual Verification
           </h3>
           <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
@@ -146,14 +146,14 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
           <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-blue-800 rounded-xl border border-blue-200 dark:border-blue-700">
           <div className="text-blue-600 dark:text-blue-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {contextRelevance}%
           </div>
         </div>
@@ -184,7 +184,7 @@ const ClientPolicyProfileStarter = ({ clientData }: { clientData: any }) => {
         <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
           Upgrade for platform-specific protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Pro → $7/mo
         </Button>
       </div>
@@ -209,7 +209,7 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
     <Card className="p-6 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900 dark:to-amber-800 rounded-2xl border-2 border-amber-200 dark:border-amber-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-amber-900 dark:text-amber-100">
             Platform-Specific Protection
           </h3>
           <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
@@ -224,21 +224,21 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {contextRelevance}%
           </div>
         </div>
         
         <div className="p-4 bg-white dark:bg-amber-800 rounded-xl border border-amber-200 dark:border-amber-700">
           <div className="text-amber-600 dark:text-amber-400 text-sm mb-1">Platform Vulnerability</div>
-          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
             {platformVulnerability}%
           </div>
         </div>
@@ -284,14 +284,14 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
         </ul>
       </div>
       
-      <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800">
-        <p className="text-purple-900 dark:text-purple-100 text-sm mb-2 font-semibold">
+      <div className="mt-4 p-4 bg-platinum-50 dark:bg-platinum-900/20 rounded-xl border-2 border-platinum-200 dark:border-platinum-800">
+        <p className="text-platinum-400 dark:text-platinum-400 text-sm mb-2 font-semibold">
           You're preventing ${dollarValue} in losses through platform-specific protection
         </p>
-        <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">
+        <p className="text-platinum-400 dark:text-platinum-400 text-sm mb-3">
           Upgrade for business-wide protection
         </p>
-        <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
           Upgrade to Expert → $12/mo
         </Button>
       </div>
@@ -314,105 +314,105 @@ const ClientPolicyProfileExpert = ({ clientData }: { clientData: any }) => {
   const platformVulnerability = Math.max(0, 100 - platformProtection);
   
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
+    <Card className="p-6 bg-gradient-to-br from-platinum-50 to-platinum-100 dark:from-platinum-900 dark:to-platinum-800 rounded-2xl border-2 border-platinum-200 dark:border-platinum-700">
       <div className="flex justify-between items-start mb-5">
         <div>
-          <h3 className="font-bold text-xl text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h3 className="font-bold text-xl text-platinum-400 dark:text-platinum-400">
             Business-Wide Protection
           </h3>
-          <p className="text-purple-700 dark:text-purple-300 text-sm mt-1">
+          <p className="text-platinum-400 dark:text-platinum-400 text-sm mt-1">
             Cross-platform evidence analysis + business pattern detection
           </p>
         </div>
-        <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+        <span className="bg-platinum-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
           Expert
         </span>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Evidence Collection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Evidence Collection</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {clientData.evidenceCount || 0} items
           </div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Context Relevance</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Context Relevance</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {contextRelevance}%
           </div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Platform Vulnerability</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Platform Vulnerability</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {platformVulnerability}%
           </div>
         </div>
         
-        <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700">
-          <div className="text-purple-600 dark:text-purple-400 text-sm mb-1">Business Protection</div>
-          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+        <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700">
+          <div className="text-platinum-400 dark:text-platinum-400 text-sm mb-1">Business Protection</div>
+          <div className="text-2xl font-bold text-platinum-400 dark:text-platinum-400">
             {businessProtection}%
           </div>
         </div>
       </div>
       
-      <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700 mb-6">
-        <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-3 text-sm">Platform-Specific Analysis</h5>
+      <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700 mb-6">
+        <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-3 text-sm">Platform-Specific Analysis</h5>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Upwork compliance: {clientData.upworkCompliance || 95}%</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Upwork compliance: {clientData.upworkCompliance || 95}%</span>
           </div>
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Fiverr compliance: {clientData.fiverrCompliance || 90}%</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Fiverr compliance: {clientData.fiverrCompliance || 90}%</span>
           </div>
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Toptal compliance: {clientData.toptalCompliance || 85}%</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Toptal compliance: {clientData.toptalCompliance || 85}%</span>
           </div>
         </div>
       </div>
       
-      <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700 mb-6">
-        <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-3 text-sm">Business Pattern Detection</h5>
+      <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700 mb-6">
+        <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-3 text-sm">Business Pattern Detection</h5>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Cross-client pattern: {clientData.businessPattern || 85}%</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Cross-client pattern: {clientData.businessPattern || 85}%</span>
           </div>
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Payment pattern risk: {clientData.paymentPatternRisk || 15}%</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Payment pattern risk: {clientData.paymentPatternRisk || 15}%</span>
           </div>
           <div className="flex items-center">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Dispute trend: {clientData.disputeTrend || "Low"}</span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Dispute trend: {clientData.disputeTrend || "Low"}</span>
           </div>
         </div>
       </div>
       
-      <div className="p-4 bg-white dark:bg-purple-800 rounded-xl border border-purple-200 dark:border-purple-700 mb-6">
-        <h5 className="text-purple-900 dark:text-purple-100 font-semibold mb-3 text-sm">Strategic Recommendations</h5>
+      <div className="p-4 bg-white dark:bg-platinum-800 rounded-xl border border-platinum-200 dark:border-platinum-700 mb-6">
+        <h5 className="text-platinum-400 dark:text-platinum-400 font-semibold mb-3 text-sm">Strategic Recommendations</h5>
         <ul className="space-y-2">
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Standardize client templates across 3 platforms → <span className="font-semibold text-purple-900 dark:text-purple-100">+45% protection value</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Standardize client templates across 3 platforms → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+45% protection value</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Implement automated gap detection for new clients → <span className="font-semibold text-purple-900 dark:text-purple-100">+35% evidence quality</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Implement automated gap detection for new clients → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+35% evidence quality</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Optimize evidence collection for end-of-month payments → <span className="font-semibold text-purple-900 dark:text-purple-100">+28% payment success</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Optimize evidence collection for end-of-month payments → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+28% payment success</span></span>
           </li>
           <li className="flex items-start">
-            <span className="text-purple-500 mr-2">•</span>
-            <span className="text-purple-800 dark:text-purple-200 text-sm">Cross-platform dispute prevention protocol → <span className="font-semibold text-purple-900 dark:text-purple-100">+32% business protection</span></span>
+            <span className="text-platinum-400 mr-2">•</span>
+            <span className="text-platinum-400 dark:text-platinum-400 text-sm">Cross-platform dispute prevention protocol → <span className="font-semibold text-platinum-400 dark:text-platinum-400">+32% business protection</span></span>
           </li>
         </ul>
       </div>
@@ -426,7 +426,7 @@ const ClientPolicyProfileExpert = ({ clientData }: { clientData: any }) => {
         </div>
       </div>
       
-      <div className="mt-5 text-purple-600 dark:text-purple-400 text-xs">
+      <div className="mt-5 text-platinum-400 dark:text-platinum-400 text-xs">
         <p>Comprehensive business analysis across platforms and clients. Identifies strategic patterns and provides 
         enterprise-grade protection with automated implementation. Includes cross-platform policy mapping and 
         business-level dispute prevention.</p>

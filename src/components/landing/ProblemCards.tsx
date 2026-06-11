@@ -122,7 +122,7 @@ export function ProblemCards() {
           transition={{ duration: 0.5 }}
           className="text-center mb-6"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2">
             5 Payment Problems Axia Prevents
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
@@ -153,7 +153,7 @@ export function ProblemCards() {
                     THE PROBLEM
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                     The '{category.problem}' Trap
                   </h3>
 
@@ -162,7 +162,7 @@ export function ProblemCards() {
                   </p>
 
                   <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg p-2 border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
-                    <div className={`text-xl font-bold bg-gradient-to-r ${category.color} bg-clip-text text-transparent mb-0.5`} style={{ fontFamily: "Space Grotesk" }}>
+                    <div className={`text-xl font-bold bg-gradient-to-r ${category.color} bg-clip-text text-transparent mb-0.5`}>
                       {category.avgLoss}
                     </div>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
@@ -179,7 +179,7 @@ export function ProblemCards() {
                     THE AXIA SOLUTION
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                     {category.solutionTitle}
                   </h3>
 
@@ -200,7 +200,7 @@ export function ProblemCards() {
                 <button
                   onClick={scrollToWaitlist}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all hover:scale-105 text-xs w-full mt-auto"
-                  style={{ fontFamily: "Space Grotesk" }}
+                 
                 >
                   Join the Waitlist to Fix This
                   <ArrowRight className="w-3 h-3" />
@@ -234,7 +234,7 @@ export function ProblemCards() {
                       THE PROBLEM
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                       The '{category.problem}' Trap
                     </h3>
 
@@ -243,7 +243,7 @@ export function ProblemCards() {
                     </p>
 
                     <div className="bg-white/50 dark:bg-slate-950/50 rounded-lg p-2 border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
-                      <div className={`text-xl font-bold bg-gradient-to-r ${category.color} bg-clip-text text-transparent mb-0.5`} style={{ fontFamily: "Space Grotesk" }}>
+                      <div className={`text-xl font-bold bg-gradient-to-r ${category.color} bg-clip-text text-transparent mb-0.5`}>
                         {category.avgLoss}
                       </div>
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
@@ -260,7 +260,7 @@ export function ProblemCards() {
                       THE AXIA SOLUTION
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                       {category.solutionTitle}
                     </h3>
 
@@ -281,7 +281,7 @@ export function ProblemCards() {
                   <button
                     onClick={scrollToWaitlist}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all hover:scale-105 text-xs w-full mt-auto"
-                    style={{ fontFamily: "Space Grotesk" }}
+                   
                   >
                     Join the Waitlist to Fix This
                     <ArrowRight className="w-3 h-3" />
@@ -303,7 +303,7 @@ export function ProblemCards() {
           <button
             onClick={scrollToWaitlist}
             className="px-8 py-3 text-lg font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-xl transition-all hover:scale-105"
-            style={{ fontFamily: "Space Grotesk" }}
+           
           >
             Prevent These Problems Now →
           </button>

@@ -560,7 +560,7 @@ export function BulkImportDialog({
       <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-500" />
+            <Upload className="w-5 h-5 text-platinum-400" />
             Bulk Import {tableDisplayName}
           </DialogTitle>
           <DialogDescription>

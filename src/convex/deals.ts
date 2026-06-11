@@ -49,7 +49,7 @@ export const createDefaultStages = mutation({
       { name: "Lead", order: 0, color: "#6B7280", isDefault: true },
       { name: "Qualified", order: 1, color: "#3B82F6", isDefault: true },
       { name: "Proposal Sent", order: 2, color: "#F59E0B", isDefault: true },
-      { name: "Negotiation", order: 3, color: "#8B5CF6", isDefault: true },
+      { name: "Negotiation", order: 3, color: "hsl(var(--primary))", isDefault: true },
       { name: "Won", order: 4, color: "#10B981", isDefault: true },
       { name: "Lost", order: 5, color: "#EF4444", isDefault: true },
     ];

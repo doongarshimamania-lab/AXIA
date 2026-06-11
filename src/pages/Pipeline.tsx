@@ -75,6 +75,7 @@ import {
 } from "lucide-react";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
+import { STAGE_COLORS, PLATFORM_COLORS, SEMANTIC_COLORS } from "@/lib/tokens";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -124,12 +125,12 @@ interface PipelineStats {
 // ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
 
 const MOCK_STAGES: Stage[] = [
-  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: "#6366f1", order: 0, isDefault: true },
-  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: "#8b5cf6", order: 1, isDefault: true },
-  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: "#a855f7", order: 2, isDefault: true },
-  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: "#c084fc", order: 3, isDefault: true },
-  { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "#22c55e", order: 4, isDefault: true },
-  { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "#ef4444", order: 5, isDefault: true },
+  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: STAGE_COLORS.lead, order: 0, isDefault: true },
+  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: STAGE_COLORS.qualified, order: 1, isDefault: true },
+  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: STAGE_COLORS.proposal, order: 2, isDefault: true },
+  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: STAGE_COLORS.negotiation, order: 3, isDefault: true },
+  { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "var(--success)", order: 4, isDefault: true },
+  { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "var(--danger)", order: 5, isDefault: true },
 ];
 
 const now = Date.now();
@@ -188,12 +189,12 @@ const MOCK_PIPELINE_STATS: PipelineStats = {
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SOURCE_OPTIONS = [
-  { value: "upwork", label: "Upwork", color: "#14a800" },
-  { value: "fiverr", label: "Fiverr", color: "#00b22d" },
-  { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
-  { value: "referral", label: "Referral", color: "#8B5CF6" },
-  { value: "direct", label: "Direct", color: "#f59e0b" },
-  { value: "other", label: "Other", color: "#6b7280" },
+  { value: "upwork", label: "Upwork", color: PLATFORM_COLORS.upwork },
+  { value: "fiverr", label: "Fiverr", color: PLATFORM_COLORS.fiverr },
+  { value: "linkedin", label: "LinkedIn", color: PLATFORM_COLORS.linkedin },
+  { value: "referral", label: "Referral", color: "hsl(var(--primary))" },
+  { value: "direct", label: "Direct", color: STAGE_COLORS.lead },
+  { value: "other", label: "Other", color: SEMANTIC_COLORS.neutral },
 ];
 
 const DEFAULT_PROBABILITIES: Record<string, number> = {
@@ -1016,7 +1017,7 @@ export default function Pipeline() {
                 }
               }}
               disabled={safeStages.length === 0}
-              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white h-9 text-xs"
+              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground h-9 text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Deal
@@ -1030,26 +1031,26 @@ export default function Pipeline() {
             icon={<BarChart3 className="h-5 w-5" />}
             label="Total Deals"
             value={isLoading ? "—" : String(safeStats.totalDeals)}
-            accent="#8B5CF6"
+            accent="hsl(var(--primary))"
           />
           <StatsCard
             icon={<DollarSign className="h-5 w-5" />}
             label="Pipeline Value"
             value={isLoading ? "—" : formatCurrency(safeStats.totalValue)}
-            accent="#6366f1"
+            accent={STAGE_COLORS.lead}
           />
           <StatsCard
             icon={<TrendingUp className="h-5 w-5" />}
             label="Weighted Value"
             value={isLoading ? "—" : formatCurrency(safeStats.weightedValue)}
             subtitle="Value × Probability"
-            accent="#a855f7"
+            accent={STAGE_COLORS.proposal}
           />
           <StatsCard
             icon={<Target className="h-5 w-5" />}
             label="Win Rate"
             value={isLoading ? "—" : `${winRate}%`}
-            accent="#22c55e"
+            accent="var(--success)"
           />
         </div>
 
@@ -1076,7 +1077,7 @@ export default function Pipeline() {
             </p>
             <Button
               onClick={() => createDefaultStages(workspaceId ? { workspaceId } : {})}
-              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus className="h-4 w-4" />
               Create Default Stages
@@ -1101,7 +1102,7 @@ export default function Pipeline() {
                     transition-colors duration-200
                     ${
                       isDragOver
-                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                        ? "border-primary bg-primary/5 shadow-lg"
                         : "border-border bg-muted/30"
                     }
                   `}
@@ -1187,7 +1188,7 @@ export default function Pipeline() {
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-[#8B5CF6]" />
+              <Plus className="h-5 w-5 text-primary" />
               Create New Deal
             </DialogTitle>
             <DialogDescription>
@@ -1345,7 +1346,7 @@ export default function Pipeline() {
             <Button
               onClick={handleCreateDeal}
               disabled={isCreating || !formTitle.trim() || !formValue}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isCreating ? "Creating..." : "Create Deal"}
             </Button>
@@ -1402,7 +1403,7 @@ export default function Pipeline() {
                         <p className="text-xs text-muted-foreground">
                           Weighted Value
                         </p>
-                        <p className="text-lg font-bold text-[#8B5CF6]">
+                        <p className="text-lg font-bold text-primary">
                           {formatCurrency(
                             detailDeal.value *
                               (detailDeal.probability / 100)
@@ -1527,7 +1528,7 @@ export default function Pipeline() {
                                         stage._id
                                       )
                                     }
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/5 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors"
                                   >
                                     <div
                                       className="h-2 w-2 rounded-full"
@@ -1573,7 +1574,7 @@ export default function Pipeline() {
                         if (detailDeal) handleCreateProposalFromDeal(detailDeal);
                       }}
                       disabled={isCreatingProposal === detailDeal?._id}
-                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                      className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       {isCreatingProposal === detailDeal?._id ? (
                         <motion.div
@@ -1603,7 +1604,7 @@ export default function Pipeline() {
                   {/* ── Edit Mode ── */}
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      <Pencil className="h-5 w-5 text-[#8B5CF6]" />
+                      <Pencil className="h-5 w-5 text-primary" />
                       Edit Deal
                     </DialogTitle>
                     <DialogDescription>
@@ -1764,7 +1765,7 @@ export default function Pipeline() {
                     </Button>
                     <Button
                       onClick={handleUpdateDeal}
-                      className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       Save Changes
                     </Button>
@@ -1803,7 +1804,7 @@ export default function Pipeline() {
         <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings2 className="h-5 w-5 text-[#8B5CF6]" />
+              <Settings2 className="h-5 w-5 text-primary" />
               Custom Fields
             </DialogTitle>
             <DialogDescription>
@@ -1892,8 +1893,8 @@ export default function Pipeline() {
                   border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                   transition-colors duration-200
                   ${isDragOver
-                    ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
-                    : "border-muted-foreground/25 hover:border-[#8B5CF6]/50 hover:bg-muted/30"
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
                   }
                 `}
                 onDragOver={handleDragOverFile}
@@ -1957,7 +1958,7 @@ export default function Pipeline() {
                             </div>
                           </div>
                           {isCustom && customType && (
-                            <Badge variant="outline" className="text-[9px] h-5 px-1.5 shrink-0 border-[#8B5CF6]/30 text-[#8B5CF6]">
+                            <Badge variant="outline" className="text-[9px] h-5 px-1.5 shrink-0 border-primary/30 text-primary">
                               {customType}
                             </Badge>
                           )}
@@ -2035,7 +2036,7 @@ export default function Pipeline() {
               <Button
                 onClick={handleImport}
                 disabled={isImporting || !selectedStageId || !workspaceId}
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
               >
                 {isImporting ? (
                   <>
@@ -2139,15 +2140,15 @@ function DealCard({
         transition-all duration-150 select-none
         ${
           isDragging
-            ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5 shadow-lg z-50 opacity-50 scale-[1.02]"
-            : "border-border bg-card hover:border-[#8B5CF6]/25 hover:shadow-sm"
+            ? "border-primary/40 bg-primary/5 shadow-lg z-50 opacity-50 scale-[1.02]"
+            : "border-border bg-card hover:border-primary/25 hover:shadow-sm"
         }
       `}
     >
       {/* Drag handle + Create Proposal buttons */}
       <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+          className="h-5 w-5 flex items-center justify-center rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onCreateProposal();

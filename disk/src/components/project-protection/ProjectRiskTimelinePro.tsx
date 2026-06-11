@@ -51,10 +51,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
               <div className="p-6 bg-[#0A192F] max-h-[80vh] overflow-y-auto">
                 <Tabs defaultValue="starter" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-slate-800 mb-6">
-                    <TabsTrigger value="starter" className="data-[state=active]:bg-[#00C9B7] data-[state=active]:text-[#0A192F]">
+                    <TabsTrigger value="starter" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       Contextual Analysis (Starter)
                     </TabsTrigger>
-                    <TabsTrigger value="free" className="data-[state=active]:bg-[#00C9B7] data-[state=active]:text-[#0A192F]">
+                    <TabsTrigger value="free" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       Basic Timeline (Free)
                     </TabsTrigger>
                   </TabsList>
@@ -75,7 +75,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
         </div>
         
         <div className="text-right">
-          <div className="text-2xl font-bold text-[#00C9B7]">${totalProtectedMonthly}</div>
+          <div className="text-2xl font-bold text-primary">${totalProtectedMonthly}</div>
           <div className="text-xs text-slate-400 uppercase tracking-wide">Protected / month</div>
         </div>
       </div>
@@ -91,7 +91,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
             className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10 hover:bg-white/10 transition-colors"
           >
             <div className="flex justify-between items-start mb-2">
-              <Activity className="w-4 h-4 text-[#00C9B7]" />
+              <Activity className="w-4 h-4 text-primary" />
             </div>
             <div className="text-lg font-bold text-white mb-1">{pillar.displayValue}</div>
             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">{pillar.label}</div>
@@ -114,7 +114,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
             <svg className="w-full h-full">
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00C9B7" strokeWidth="0.5" opacity="0.3"/>
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3"/>
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
@@ -134,10 +134,10 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
             transformStyle: 'preserve-3d'
           }}>
             {/* Base Plane with Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#00C9B7]/20 via-[#00C9B7]/5 to-transparent rounded-lg border-b border-[#00C9B7]/30 shadow-[0_10px_40px_rgba(0,201,183,0.2)]">
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-primary/5 to-transparent rounded-lg border-b border-primary/30 shadow-lg">
               {/* Animated Scan Line */}
               <motion.div
-                className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-[#00C9B7] to-transparent"
+                className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"
                 animate={{ 
                   top: ['0%', '100%'],
                   opacity: [0.8, 0.3, 0.8]
@@ -186,7 +186,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                             : event.riskLevel === 'medium'
                             ? 'bg-gradient-to-t from-[#F59E0B] via-[#FBBF24] to-[#FCD34D]'
                             : 'bg-gradient-to-t from-[#3B82F6] via-[#60A5FA] to-[#93C5FD]'
-                        } ${isHovered ? 'shadow-[0_0_25px_rgba(220,20,60,1)] brightness-110' : 'shadow-[0_0_15px_rgba(220,20,60,0.5)]'}`}
+                        } ${isHovered ? 'shadow-lg brightness-110' : 'shadow-sm'}`}
                       />
                       
                       {/* Side Face (Right) - Perfectly Aligned */}
@@ -255,7 +255,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <ShieldAlert className="w-8 h-8 text-[#00C9B7] mx-auto mb-2 opacity-50" />
+                  <ShieldAlert className="w-8 h-8 text-primary mx-auto mb-2 opacity-50" />
                   <p className="text-xs text-slate-500">No vulnerabilities detected</p>
                 </div>
               </div>
@@ -264,7 +264,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
           
           {/* Status Indicator */}
           <div className="absolute bottom-4 left-6 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#00C9B7] animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs text-slate-500 font-mono">VULNERABILITY_SCAN_ACTIVE</span>
           </div>
 
@@ -295,7 +295,7 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
           </div>
           <Button 
             onClick={onUpgrade}
-            className="w-full bg-gradient-to-r from-[#00C9B7] to-[#0087A6] hover:opacity-90 text-white shadow-lg border-none"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg border-none"
           >
             Upgrade to Expert
           </Button>

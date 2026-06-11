@@ -72,18 +72,18 @@ export function ProfileModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1F2937] border-[#374151]">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white">
+          <DialogTitle className="text-2xl font-bold text-foreground">
             Profile & Settings
           </DialogTitle>
-          <DialogDescription className="text-[#9CA3AF]">
+          <DialogDescription className="text-muted-foreground">
             Manage your Axia account and preferences
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-[#111827] border border-[#374151]">
+          <TabsList className="grid w-full grid-cols-4 bg-muted border border-border">
             <TabsTrigger value="personal" className="text-xs">Personal</TabsTrigger>
             <TabsTrigger value="professional" className="text-xs">Professional</TabsTrigger>
             <TabsTrigger value="appearance" className="text-xs">Appearance</TabsTrigger>
@@ -92,31 +92,31 @@ export function ProfileModal() {
 
           {/* Personal Information Tab */}
           <TabsContent value="personal" className="space-y-4 mt-4">
-            <div className="p-4 bg-[#111827] rounded-lg border border-[#374151] space-y-4">
+            <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
               <div>
-                <label className="text-sm font-medium text-white mb-2 block">Full Name</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Full Name</label>
                 <Input
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
-                  className="bg-[#1F2937] border-[#374151] text-white"
+                  className="bg-background border-border text-foreground"
                   placeholder="Your name"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-white mb-2 block">Email Address</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Email Address</label>
                 <div className="flex gap-2">
                   <Input
                     value={profileEmail}
                     onChange={(e) => setProfileEmail(e.target.value)}
-                    className="bg-[#1F2937] border-[#374151] text-white"
+                    className="bg-background border-border text-foreground"
                     placeholder="your@email.com"
                   />
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleCopyEmail}
-                    className="border-[#374151] text-white hover:bg-[#374151]"
+                    className="border-border text-foreground hover:bg-muted"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </Button>
@@ -124,37 +124,37 @@ export function ProfileModal() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-white mb-2 block">Hourly Rate ($)</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Hourly Rate ($)</label>
                 <Input
                   type="number"
                   value={profileHourlyRate}
                   onChange={(e) => setProfileHourlyRate(e.target.value)}
-                  className="bg-[#1F2937] border-[#374151] text-white"
+                  className="bg-background border-border text-foreground"
                   placeholder="50"
                 />
               </div>
 
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151] space-y-3">
+              <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-white flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
                     Current Plan
                   </span>
-                  <span className="text-xs px-2 py-1 bg-[#3B82F6]/20 text-[#60A5FA] rounded capitalize">
+                  <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded capitalize">
                     {subscriptionTier}
                   </span>
                 </div>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-muted-foreground">
                   {subscriptionTier === "free"
                     ? "Upgrade to unlock advanced protection features"
                     : "Thank you for your subscription!"}
                 </p>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white block">Change Tier (Dev)</label>
+                  <label className="text-sm font-medium text-foreground block">Change Tier (Dev)</label>
                   <select
                     value={subscriptionTier}
                     onChange={(e) => handleTierChange(e.target.value as 'free' | 'starter' | 'pro' | 'expert' | 'client')}
-                    className="w-full bg-[#1F2937] border border-[#374151] text-white rounded px-3 py-2 text-sm"
+                    className="w-full bg-background border border-border text-foreground rounded px-3 py-2 text-sm"
                   >
                     <option value="free">Free</option>
                     <option value="starter">Starter</option>
@@ -169,44 +169,44 @@ export function ProfileModal() {
 
           {/* Professional Information Tab */}
           <TabsContent value="professional" className="space-y-4 mt-4">
-            <div className="p-4 bg-[#111827] rounded-lg border border-[#374151] space-y-4">
+            <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
               <div>
-                <label className="text-sm font-medium text-white mb-2 block">Professional Bio</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Professional Bio</label>
                 <Textarea
                   value={profileBio}
                   onChange={(e) => setProfileBio(e.target.value.slice(0, 500))}
-                  className="bg-[#1F2937] border-[#374151] text-white min-h-24"
+                  className="bg-background border-border text-foreground min-h-24"
                   placeholder="Tell us about your professional background..."
                   maxLength={500}
                 />
-                <p className="text-xs text-[#9CA3AF] mt-1">{profileBio.length}/500 characters</p>
+                <p className="text-xs text-muted-foreground mt-1">{profileBio.length}/500 characters</p>
               </div>
 
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
-                <div className="text-sm font-medium text-white mb-2">Protection Metrics</div>
-                <div className="space-y-2 text-xs text-[#9CA3AF]">
+              <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="text-sm font-medium text-foreground mb-2">Protection Metrics</div>
+                <div className="space-y-2 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Axia Protection:</span>
-                    <span className="text-emerald-400">✅ Active</span>
+                    <span className="text-emerald-500 dark:text-emerald-400">Active</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Hours Protected:</span>
-                    <span className="text-white">124.5h</span>
+                    <span className="text-foreground">124.5h</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Denial Rate:</span>
-                    <span className="text-white">0%</span>
+                    <span className="text-foreground">0%</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
-                <div className="text-sm font-medium text-white mb-3">Platform Connections</div>
+              <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="text-sm font-medium text-foreground mb-3">Platform Connections</div>
                 <div className="space-y-2">
                   {["Upwork", "Fiverr", "Toptal"].map((platform) => (
-                    <div key={platform} className="flex items-center justify-between p-2 bg-[#1F2937] rounded">
-                      <span className="text-xs text-white">{platform}</span>
-                      <Button size="sm" variant="outline" className="h-6 text-xs border-[#374151] text-white hover:bg-[#374151]">
+                    <div key={platform} className="flex items-center justify-between p-2 bg-background rounded">
+                      <span className="text-xs text-foreground">{platform}</span>
+                      <Button size="sm" variant="outline" className="h-6 text-xs border-border text-foreground hover:bg-muted">
                         Connect
                       </Button>
                     </div>
@@ -218,11 +218,11 @@ export function ProfileModal() {
 
           {/* Appearance Tab */}
           <TabsContent value="appearance" className="space-y-4 mt-4">
-            <div className="p-4 bg-[#111827] rounded-lg border border-[#374151] space-y-4">
-              <div className="flex items-center justify-between p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
+            <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                 <div>
-                  <div className="text-sm font-medium text-white">Dark Mode</div>
-                  <p className="text-xs text-[#9CA3AF] mt-1">Enable dark theme for the application</p>
+                  <div className="text-sm font-medium text-foreground">Dark Mode</div>
+                  <p className="text-xs text-muted-foreground mt-1">Enable dark theme for the application</p>
                 </div>
                 <Switch
                   checked={theme === "dark"}
@@ -231,14 +231,14 @@ export function ProfileModal() {
                 />
               </div>
 
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
-                <div className="text-sm font-medium text-white mb-2">Theme Preview</div>
+              <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="text-sm font-medium text-foreground mb-2">Theme Preview</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 bg-[#1F2937] rounded border border-[#374151] text-center">
-                    <div className="text-xs text-[#9CA3AF]">Light Mode</div>
+                  <div className="p-3 bg-background rounded border border-border text-center">
+                    <div className="text-xs text-muted-foreground">Light Mode</div>
                   </div>
-                  <div className="p-3 bg-[#0F172A] rounded border border-[#374151] text-center">
-                    <div className="text-xs text-[#9CA3AF]">Dark Mode</div>
+                  <div className="p-3 bg-muted rounded border border-border text-center">
+                    <div className="text-xs text-muted-foreground">Dark Mode</div>
                   </div>
                 </div>
               </div>
@@ -247,40 +247,40 @@ export function ProfileModal() {
 
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-4 mt-4">
-            <div className="p-4 bg-[#111827] rounded-lg border border-[#374151] space-y-4">
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
+            <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+              <div className="p-3 bg-background rounded-lg border border-border">
                 <div className="flex items-center gap-2 mb-3">
-                  <Lock className="w-4 h-4 text-[#60A5FA]" />
-                  <span className="text-sm font-medium text-white">Account Security</span>
+                  <Lock className="w-4 h-4 text-icon-blue" />
+                  <span className="text-sm font-medium text-foreground">Account Security</span>
                 </div>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start border-[#374151] text-white hover:bg-[#374151]">
+                  <Button variant="outline" className="w-full justify-start border-border text-foreground hover:bg-muted">
                     <Mail className="w-4 h-4 mr-2" />
                     Change Email
                   </Button>
-                  <Button variant="outline" className="w-full justify-start border-[#374151] text-white hover:bg-[#374151]">
+                  <Button variant="outline" className="w-full justify-start border-border text-foreground hover:bg-muted">
                     <Lock className="w-4 h-4 mr-2" />
                     Change Password
                   </Button>
                 </div>
               </div>
 
-              <div className="p-3 bg-[#0F172A] rounded-lg border border-[#374151]">
-                <div className="text-sm font-medium text-white mb-2">Session Information</div>
-                <div className="space-y-1 text-xs text-[#9CA3AF]">
+              <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="text-sm font-medium text-foreground mb-2">Session Information</div>
+                <div className="space-y-1 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Last Login:</span>
-                    <span className="text-white">Today at 10:30 AM</span>
+                    <span className="text-foreground">Today at 10:30 AM</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Active Sessions:</span>
-                    <span className="text-white">1</span>
+                    <span className="text-foreground">1</span>
                   </div>
                 </div>
               </div>
 
               <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                <div className="text-sm font-medium text-red-400 mb-2">Danger Zone</div>
+                <div className="text-sm font-medium text-red-500 dark:text-red-400 mb-2">Danger Zone</div>
                 <Button
                   onClick={handleSignOut}
                   className="w-full bg-red-600 hover:bg-red-700 text-white"
@@ -293,17 +293,17 @@ export function ProfileModal() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex gap-2 mt-6 pt-4 border-t border-[#374151]">
+        <div className="flex gap-2 mt-6 pt-4 border-t border-border">
           <Button
             onClick={handleSaveProfile}
-            className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             Save Changes
           </Button>
           <Button
             onClick={() => setIsOpen(false)}
             variant="outline"
-            className="flex-1 border-[#374151] text-white hover:bg-[#374151]"
+            className="flex-1 border-border text-foreground hover:bg-muted"
           >
             Close
           </Button>

@@ -34,10 +34,10 @@ export function HowItWorks() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+          <h2 className="text-[32px] font-bold text-foreground mb-4">
             How Axia Works
           </h2>
-          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
+          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto">
             Four simple steps to payment protection
           </p>
         </motion.div>
@@ -57,13 +57,13 @@ export function HowItWorks() {
                 transition={{ duration: 0.5, delay: index * 0.15 }}
                 className="relative text-center w-1/4 px-4"
               >
-                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-[#00246B] text-white flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                <h3 className="text-xl font-bold text-foreground mb-2">
                   {step.heading}
                 </h3>
-                <p className="text-base text-muted-foreground leading-6" style={{ fontFamily: "Space Grotesk" }}>
+                <p className="text-base text-muted-foreground leading-6">
                   {step.content}
                 </p>
               </motion.div>
@@ -82,14 +82,14 @@ export function HowItWorks() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="flex gap-4"
             >
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#00246B] text-white flex items-center justify-center text-xl font-bold shadow-lg" style={{ fontFamily: "Space Grotesk" }}>
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
                 {step.number}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground mb-2" style={{ fontFamily: "Space Grotesk" }}>
+                <h3 className="text-xl font-bold text-foreground mb-2">
                   {step.heading}
                 </h3>
-                <p className="text-base text-muted-foreground leading-6" style={{ fontFamily: "Space Grotesk" }}>
+                <p className="text-base text-muted-foreground leading-6">
                   {step.content}
                 </p>
               </div>
