@@ -8,11 +8,14 @@
    Source: axia_brand_identity_system_v2.pdf
    85/10/5 rule: 85% neutral, 10% teal brand, 5% accent
    
-   Tailwind 4 strategy: @theme inline = LIGHT mode values (becomes :root)
+   Tailwind 4 strategy: @theme = LIGHT mode values (emits :root CSS vars)
    Dark mode overrides go in @layer base .dark { ... }
+   NOTE: Must use @theme (NOT @theme inline) for dark mode to work.
+   @theme inline inlines values into utilities, making them immune to
+   CSS custom property overrides from .dark — dark mode breaks entirely.
    ============================================================ */
 
-@theme inline {
+@theme {
   /* ── Shadcn semantic bridge (light mode defaults) ── */
   --color-background: #F8FAFC;
   --color-foreground: #1E293B;
