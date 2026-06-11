@@ -70,15 +70,15 @@ const MOCK_ARTICLES: HelpArticle[] = [
   { id: "6", title: "Milestone protection explained", category: "Protection", excerpt: "How milestone-based protection keeps your payments safe." },
   { id: "7", title: "Exporting evidence reports", category: "Evidence", excerpt: "Generate professional evidence reports for clients and disputes." },
   { id: "8", title: "Subscription plans comparison", category: "Billing", excerpt: "Compare Free, Starter, Pro, and Expert plans." },
-  { id: "9", title: "Time tracking setup", category: "Getting Started", excerpt: "Configure automatic time tracking for your freelance projects." },
+  { id: "9", title: "Time tracking setup", category: "Getting Started", excerpt: "Configure automatic time tracking for your projects." },,
   { id: "10", title: "Client risk assessment", category: "Protection", excerpt: "How Axia evaluates and scores client payment patterns." },
 ];
 
 const FAQ_DATA = [
   {
-    question: "What is Axia and how does it protect freelancers?",
+    question: "What is Axia and how does it protect agencies?",
     answer:
-      "Axia is a freelancer protection platform that automatically collects work evidence, monitors milestones, and provides dispute resolution support. It continuously captures timestamps, screenshots, and activity logs to create an immutable record of your work, ensuring you have proof if a client disputes payment.",
+      "Axia is a professional protection platform that automatically collects work evidence, monitors milestones, and provides dispute resolution support. It continuously captures timestamps, screenshots, and activity logs to create an immutable record of your work, ensuring you have proof if a client disputes payment.",
   },
   {
     question: "How does the evidence collection system work?",
@@ -86,9 +86,9 @@ const FAQ_DATA = [
       "Axia runs in the background while you work, automatically capturing timestamps, activity patterns, and deliverable snapshots. All evidence is encrypted and stored with tamper-proof verification. You can also manually upload additional evidence like emails and contracts. The system builds a comprehensive timeline that can be exported as a professional report.",
   },
   {
-    question: "Can I use Axia with my existing freelance platforms?",
+    question: "Can I use Axia with my existing platforms?",
     answer:
-      "Yes! Axia integrates directly with popular freelance platforms including Upwork, Fiverr, Toptal, and Freelancer.com. Once connected, it imports your project data, payment history, and client communications automatically to build a complete protection profile.",
+      "Yes! Axia integrates directly with popular platforms including Upwork, Fiverr, Toptal, and Freelancer.com. Once connected, it imports your project data, payment history, and client communications automatically to build a complete protection profile.",
   },
   {
     question: "What happens if a client disputes my work?",
@@ -251,10 +251,10 @@ export default function HelpCenter() {
           <div className="space-y-6">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search help articles, FAQs, and tutorials..."
-                className="pl-12 h-12 text-base rounded-xl border-border"
+                className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -439,13 +439,13 @@ export default function HelpCenter() {
                     {
                       step: 1,
                       title: "Create Your Account",
-                      desc: "Sign up with your email and complete your freelancer profile with your skills and hourly rate.",
+                      desc: "Sign up with your email and complete your professional profile with your skills and hourly rate.",
                       icon: Shield,
                     },
                     {
                       step: 2,
                       title: "Connect Your Platforms",
-                      desc: "Link your freelance platforms (Upwork, Fiverr, etc.) to automatically import your projects and clients.",
+                      desc: "Link your platforms (Upwork, Fiverr, etc.) to automatically import your projects and clients.",
                       icon: Zap,
                     },
                     {

@@ -440,7 +440,7 @@ export default function Clients() {
                     <SelectItem value="upwork">Upwork</SelectItem>
                     <SelectItem value="fiverr">Fiverr</SelectItem>
                     <SelectItem value="toptal">Toptal</SelectItem>
-                    <SelectItem value="freelancer">Freelancer</SelectItem>
+                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
                     <SelectItem value="direct">Direct Client</SelectItem>
                   </SelectContent>
                 </Select>

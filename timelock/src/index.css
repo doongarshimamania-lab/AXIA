@@ -111,6 +111,46 @@
   /* ── Fonts ── */
   --font-sans: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
+
+  /* ── Typography Scale (1.25 ratio — Major Third) ── */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+  --text-5xl: 48px;
+  --leading-xs: 16px;
+  --leading-sm: 20px;
+  --leading-base: 24px;
+  --leading-lg: 28px;
+  --leading-xl: 28px;
+  --leading-2xl: 32px;
+  --leading-3xl: 36px;
+  --leading-4xl: 40px;
+  --leading-5xl: 48px;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Spacing Scale (8px base) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── Surface Elevation Scale ── */
+  --color-surface-0: #F8FAFC;
+  --color-surface-1: #FFFFFF;
+  --color-surface-2: #F1F5F9;
+  --color-surface-3: #E2E8F0;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -210,6 +250,12 @@
 
     /* Dark mode custom properties */
     --bg-page: #0A0F1C;
+
+    /* Dark mode surface elevation */
+    --color-surface-0: #0A0F1C;
+    --color-surface-1: #0C1322;
+    --color-surface-2: #111827;
+    --color-surface-3: #1A2035;
     --bg-surface-1: #0C1322;
     --bg-surface-2: #111827;
     --bg-surface-3: #1A2035;
@@ -498,4 +544,117 @@
 }
 .animate-pulse-glow {
   animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM UTILITY CLASSES
+   Phase 1: Typography, Spacing, Surface utilities
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Typography Scale Utilities ── */
+.text-display { font-size: var(--text-5xl); line-height: var(--leading-5xl); font-weight: var(--weight-bold); letter-spacing: -0.02em; }
+.text-h1 { font-size: var(--text-3xl); line-height: var(--leading-3xl); font-weight: var(--weight-bold); letter-spacing: -0.015em; }
+.text-h2 { font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-semibold); letter-spacing: -0.01em; }
+.text-h3 { font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-semibold); }
+.text-h4 { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-medium); }
+.text-body-lg { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-normal); }
+.text-body { font-size: var(--text-base); line-height: var(--leading-base); font-weight: var(--weight-normal); }
+.text-body-sm { font-size: var(--text-sm); line-height: var(--leading-sm); font-weight: var(--weight-normal); }
+.text-caption { font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-normal); letter-spacing: 0.02em; }
+.text-label { font-size: var(--text-sm); line-height: var(--leading-sm); font-weight: var(--weight-medium); letter-spacing: 0.01em; }
+.text-metric { font-size: var(--text-4xl); line-height: var(--leading-4xl); font-weight: var(--weight-bold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+/* ── Spacing Utilities ── */
+.p-space-1 { padding: var(--space-1); }
+.p-space-2 { padding: var(--space-2); }
+.p-space-3 { padding: var(--space-3); }
+.p-space-4 { padding: var(--space-4); }
+.p-space-5 { padding: var(--space-5); }
+.p-space-6 { padding: var(--space-6); }
+.gap-space-1 { gap: var(--space-1); }
+.gap-space-2 { gap: var(--space-2); }
+.gap-space-3 { gap: var(--space-3); }
+.gap-space-4 { gap: var(--space-4); }
+.gap-space-5 { gap: var(--space-5); }
+.gap-space-6 { gap: var(--space-6); }
+.mb-space-6 { margin-bottom: var(--space-6); }
+.mb-space-5 { margin-bottom: var(--space-5); }
+.mb-space-4 { margin-bottom: var(--space-4); }
+
+/* ── Surface Elevation Utilities ── */
+.bg-surface-0 { background-color: var(--color-surface-0); }
+.bg-surface-1 { background-color: var(--color-surface-1); }
+.bg-surface-2 { background-color: var(--color-surface-2); }
+.bg-surface-3 { background-color: var(--color-surface-3); }
+.border-surface { border-color: var(--color-border); }
+
+/* ── Standard Input Styling (Phase 5) ── */
+.input-standard {
+  height: 40px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border: 1px solid var(--color-input);
+  border-radius: var(--radius-md);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  outline: none;
+  width: 100%;
+}
+.input-standard::placeholder {
+  color: var(--color-muted-foreground);
+}
+.input-standard:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+.input-standard:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-muted);
+}
+.input-standard.input-error {
+  border-color: var(--color-destructive);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* ── Stat Card Utility (Phase 2 standard) ── */
+.stat-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.stat-card .stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-muted);
+  color: var(--color-primary);
+}
+.stat-card .stat-value {
+  font-size: var(--text-4xl);
+  line-height: var(--leading-4xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground);
+}
+.stat-card .stat-label {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-muted-foreground);
+}
+.stat-card .stat-trend-up {
+  color: var(--color-protected);
+}
+.stat-card .stat-trend-down {
+  color: var(--color-danger);
 }

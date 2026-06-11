@@ -126,7 +126,7 @@ export function PlatformConnectionCard() {
         <CardHeader>
           <CardTitle className="text-xl font-bold">Platform Connections</CardTitle>
           <CardDescription>
-            Connect your freelance platforms to enable full income protection
+            Connect your professional platforms to enable full income protection
           </CardDescription>
         </CardHeader>
         <CardContent>

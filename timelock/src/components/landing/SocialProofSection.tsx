@@ -16,7 +16,7 @@ export function SocialProofSection() {
             Don't Just Take My Word For It
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Freelancers are already reclaiming thousands in lost income by verifying their work context.
+            Agencies are already reclaiming thousands in lost income by verifying their work context.
           </p>
         </motion.div>
 

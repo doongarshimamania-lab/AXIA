@@ -41,7 +41,7 @@ import {
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
-import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
+import { useWorkspacePermissions, usePermissions, type RecordWithSharing } from "@/hooks/use-permissions";
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 
@@ -147,6 +147,55 @@ function formatDate(ts: number): string {
 function daysOverdue(dueDate: number): number {
   const now = Date.now();
   return Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
+}
+
+// ─── InvoiceActions sub-component (fixes rules-of-hooks violation) ──────────
+
+function InvoiceActions({
+  invoice,
+  canShareRecords,
+  canDeleteRecords,
+  onShare,
+  onDelete,
+}: {
+  invoice: Invoice;
+  canShareRecords: boolean;
+  canDeleteRecords: boolean;
+  onShare: () => void;
+  onDelete: () => void;
+}) {
+  const perms = usePermissions(invoice as unknown as RecordWithSharing);
+
+  return (
+    <>
+      {(canShareRecords || perms.canShare) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            onShare();
+          }}
+        >
+          <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+      )}
+      {(canDeleteRecords || perms.canDelete) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-red-600 hover:text-red-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </>
+  );
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -443,11 +492,11 @@ export default function Invoices() {
               placeholder="Search invoices..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9"
             />
           </div>
           <div className="flex items-center gap-2">
-            {safeInvoices.length === 0 && (
+            {import.meta.env.DEV && safeInvoices.length === 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -529,7 +578,7 @@ export default function Invoices() {
                           ? "Create your first invoice or seed demo data to get started"
                           : "No invoices match this filter"}
                       </p>
-                      {safeInvoices.length === 0 && (
+                      {import.meta.env.DEV && safeInvoices.length === 0 && (
                         <Button
                           className="mt-4 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-2"
                           onClick={handleSeedData}
@@ -698,44 +747,23 @@ export default function Invoices() {
                                 >
                                   <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                                 </Button>
-                                {(() => {
-                                  const perms = usePermissions(invoice as any);
-                                  return (canShareRecords || perms.canShare) ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 px-2"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSharingRecord({
-                                          id: invoice._id,
-                                          type: "invoice",
-                                          sharing: (invoice as any).sharing || [],
-                                        });
-                                        setShareInvoiceId(invoice._id);
-                                        setShowShareDialog(true);
-                                      }}
-                                    >
-                                      <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                    </Button>
-                                  ) : null;
-                                })()}
-                                {(() => {
-                                  const perms = usePermissions(invoice as any);
-                                  return (canDeleteRecords || perms.canDelete) ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 px-2 text-red-600 hover:text-red-700"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteConfirmId(invoice._id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                  ) : null;
-                                })()}
+                                <InvoiceActions
+                                  invoice={invoice}
+                                  canShareRecords={canShareRecords}
+                                  canDeleteRecords={canDeleteRecords}
+                                  onShare={() => {
+                                    setSharingRecord({
+                                      id: invoice._id,
+                                      type: "invoice",
+                                      sharing: (invoice as any).sharing || [],
+                                    });
+                                    setShareInvoiceId(invoice._id);
+                                    setShowShareDialog(true);
+                                  }}
+                                  onDelete={() => {
+                                    setDeleteConfirmId(invoice._id);
+                                  }}
+                                />
                                 <motion.div
                                   animate={{ rotate: isExpanded ? 180 : 0 }}
                                   transition={{ duration: 0.2 }}

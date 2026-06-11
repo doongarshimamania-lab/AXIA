@@ -38,7 +38,7 @@ export function FinalCTA() {
           </div>
           
           <p className="mt-6 text-sm text-blue-200/60">
-            Join 2,000+ freelancers on the waitlist. Launching soon.
+            Join 2,000+ agencies on the waitlist. Launching soon.
           </p>
         </motion.div>
       </div>

@@ -44,7 +44,7 @@ export default function ClientLogin() {
           </div>
           <CardTitle className="text-2xl">Client Portal</CardTitle>
           <CardDescription>
-            Verify freelancer work with Axia's industry-standard verification
+            Verify professional work with Axia's industry-standard verification
           </CardDescription>
         </CardHeader>
         <CardContent>

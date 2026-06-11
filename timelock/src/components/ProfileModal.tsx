@@ -26,10 +26,10 @@ export function ProfileModal() {
   const [copied, setCopied] = useState(false);
 
   // Profile state
-  const [profileName, setProfileName] = useState("Freelancer User");
+  const [profileName, setProfileName] = useState("Agency User");
   const [profileEmail, setProfileEmail] = useState(localStorage.getItem("userEmail") || "user@example.com");
   const [profileHourlyRate, setProfileHourlyRate] = useState("50");
-  const [profileBio, setProfileBio] = useState("Experienced freelancer focused on quality work");
+  const [profileBio, setProfileBio] = useState("Experienced professional focused on quality work");
 
   useEffect(() => {
     function handleOpenProfileModal() {

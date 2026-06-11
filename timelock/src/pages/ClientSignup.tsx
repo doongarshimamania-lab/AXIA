@@ -58,7 +58,7 @@ export default function ClientSignup() {
           </div>
           <CardTitle className="text-2xl">Create Client Account</CardTitle>
           <CardDescription>
-            Join Axia to verify freelancer work with industry-standard verification
+            Join Axia to verify professional work with industry-standard verification
           </CardDescription>
         </CardHeader>
         <CardContent>

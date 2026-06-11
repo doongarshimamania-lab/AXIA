@@ -33,7 +33,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
       impact: "'Maximum' protection ensures no billable hour goes unaccounted for or unprotected."
     },
     "Pattern Health": {
-      description: "How well your work matches successful, dispute-free freelancer patterns.",
+      description: "How well your work matches successful, dispute-free professional patterns.",
       impact: "Deviations can flag potential payment risks before they become disputes."
     }
   };

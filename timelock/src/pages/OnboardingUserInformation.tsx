@@ -151,7 +151,7 @@ export default function OnboardingUserInformation() {
             <div className="space-y-2">
               <Label htmlFor="primaryPlatform" className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-primary" />
-                Primary Freelance Platform
+                Primary Platform
               </Label>
               <select
                 id="primaryPlatform"
@@ -181,7 +181,7 @@ export default function OnboardingUserInformation() {
             <div className="space-y-2">
               <Label htmlFor="yearsExperience" className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-primary" />
-                Years of Freelancing Experience
+                Years of Professional Experience
               </Label>
               <select
                 id="yearsExperience"

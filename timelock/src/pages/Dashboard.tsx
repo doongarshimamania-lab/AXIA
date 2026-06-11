@@ -109,10 +109,12 @@ function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddCli
           Your dashboard is empty. Seed demo data to see how everything works, or start adding clients, deals, and proposals.
         </p>
         <div className="flex gap-3">
-          <Button onClick={onSeed}>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Seed Demo Data
-          </Button>
+          {import.meta.env.DEV && (
+            <Button onClick={onSeed}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Seed Demo Data
+            </Button>
+          )}
           <Button variant="outline" onClick={onAddClient}>
             <Plus className="mr-2 h-4 w-4" />
             Add Client
@@ -665,8 +667,8 @@ export default function Dashboard() {
               </Card>
             )}
 
-            {/* Seed Data button (only if some data exists but not much) */}
-            {!isLoading && hasAnyData && totalClients < 3 && (
+            {/* Seed Data button (only if some data exists but not much — dev only) */}
+            {import.meta.env.DEV && !isLoading && hasAnyData && totalClients < 3 && (
               <Button
                 variant="ghost"
                 size="sm"

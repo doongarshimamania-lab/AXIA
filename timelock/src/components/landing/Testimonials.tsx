@@ -69,10 +69,10 @@ export function Testimonials() {
           className="text-center mb-12"
         >
           <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
-            Trusted by Freelancers Worldwide
+            Trusted by Agencies Worldwide
           </h2>
           <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
-            Real stories from freelancers who've protected their income with Axia
+            Real stories from agencies who've protected their income with Axia
           </p>
         </motion.div>
 

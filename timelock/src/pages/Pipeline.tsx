@@ -916,7 +916,7 @@ export default function Pipeline() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {safeDeals.length === 0 && !isLoading && (
+            {import.meta.env.DEV && safeDeals.length === 0 && !isLoading && (
               <Button
                 onClick={handleSeedData}
                 disabled={isSeeding}

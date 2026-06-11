@@ -442,7 +442,7 @@ export default function Proposals() {
               placeholder="Search by title or client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9"
             />
           </div>
         </div>

@@ -80,7 +80,7 @@ export default function ClientDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Verified Freelancers</CardTitle>
+              <CardTitle className="text-sm font-medium">Verified Professionals</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -111,7 +111,7 @@ export default function ClientDashboard() {
             </TabsTrigger>
             <TabsTrigger value="directory">
               <UserSearch className="h-4 w-4 mr-2" />
-              Freelancer Directory
+              Professional Directory
             </TabsTrigger>
             <TabsTrigger value="requests">
               <FileCheck className="h-4 w-4 mr-2" />
@@ -149,8 +149,8 @@ export default function ClientDashboard() {
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                   <li><strong>WCVM Dashboard:</strong> View and manage work context verifications</li>
-                  <li><strong>Freelancer Directory:</strong> Browse verified freelancers with Axia protection</li>
-                  <li><strong>Verification Requests:</strong> Request work verification from freelancers</li>
+                  <li><strong>Professional Directory:</strong> Browse verified professionals with Axia protection</li>
+                  <li><strong>Verification Requests:</strong> Request work verification from professionals</li>
                   <li><strong>Real-time Validation:</strong> Monitor active work sessions in real-time</li>
                 </ul>
               </CardContent>

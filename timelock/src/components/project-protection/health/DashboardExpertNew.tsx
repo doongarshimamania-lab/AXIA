@@ -46,7 +46,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
       impact: "Protects your income stability if one client fails or one platform changes rules."
     },
     "Overall Health": {
-      description: "The aggregate protection score of your entire freelance business.",
+      description: "The aggregate protection score of your entire professional services business.",
       impact: "Your master KPI for business stability and dispute immunity."
     },
     // Pro Tier Metrics (for Deep Dive)
@@ -63,7 +63,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
       impact: "'Maximum' protection ensures no billable hour goes unaccounted for or unprotected."
     },
     "Pattern Health": {
-      description: "How well your work matches successful, dispute-free freelancer patterns.",
+      description: "How well your work matches successful, dispute-free professional patterns.",
       impact: "Deviations can flag potential payment risks before they become disputes."
     }
   };

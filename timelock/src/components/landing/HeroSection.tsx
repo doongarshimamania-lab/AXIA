@@ -22,7 +22,7 @@ export function HeroSection() {
           >
             <ShieldCheck className="w-4 h-4" />
             <span className="text-sm font-bold tracking-wide uppercase" style={{ fontFamily: "Space Grotesk" }}>
-              For Freelancers Who Value Their Time
+              For Agencies Who Value Their Time
             </span>
           </motion.div>
 
