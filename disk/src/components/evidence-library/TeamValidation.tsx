@@ -55,7 +55,7 @@ export function TeamValidation({ hasAccess }: TeamValidationProps) {
 
           <div className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs text-white font-semibold">SM</div>
+              <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-xs text-white font-semibold">SM</div>
               <div>
                 <div className="text-sm text-white font-medium">Sarah Miller</div>
                 <div className="text-xs text-slate-400">Validated 5 hours ago</div>

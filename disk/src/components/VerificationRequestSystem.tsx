@@ -40,8 +40,8 @@ export function VerificationRequestSystem({ clientId }: VerificationRequestSyste
     }
 
     try {
-      // For now, use a placeholder freelancer ID since we don't have email lookup
-      // In production, you'd look up the freelancer by email first
+      // For now, use a placeholder professional ID since we don't have email lookup
+      // In production, you'd look up the professional by email first
       const placeholderFreelancerId = "jx7a2ngnp07n3yxxtxqfsaw95h7trnc9";
       
       await createRequest({
@@ -74,11 +74,11 @@ export function VerificationRequestSystem({ clientId }: VerificationRequestSyste
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="freelancerEmail">Freelancer Email</Label>
+            <Label htmlFor="freelancerEmail">Professional Email</Label>
             <Input
               id="freelancerEmail"
               type="email"
-              placeholder="freelancer@example.com"
+              placeholder="professional@example.com"
               value={freelancerEmail}
               onChange={(e) => setFreelancerEmail(e.target.value)}
               required

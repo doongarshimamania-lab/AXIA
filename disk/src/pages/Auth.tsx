@@ -324,12 +324,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             />
           </div>
           <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
-            {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
+            {step === "signUp" ? "Create your account" : "Stop Scope Creep Before It Starts"}
           </CardTitle>
           <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
             {step === "signUp"
-              ? "Sign up to start protecting your freelance work with dispute-proof evidence."
-              : "Axia prevents payment denials by validating your work meets ALL requirements — with dispute-proof evidence."}
+              ? "Sign up to protect your agency from scope creep and billing disputes with automated compliance tracking."
+              : "Axia protects your agency from scope creep, billing disputes, and unbilled work — with dispute-proof evidence."}
           </CardDescription>
         </CardHeader>
 

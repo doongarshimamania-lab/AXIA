@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Code2 } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { useAuth } from "@/hooks/use-auth";
@@ -179,7 +179,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar gradient-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
         animate={{ width: isExpanded ? 320 : 80 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -404,9 +404,6 @@ export function CollapsibleSidebar() {
                   <button onClick={() => navigate("/subscription")} className="w-full text-left" type="button">
                     <NavItem icon={Zap} label="Subscription" isExpanded={true} />
                   </button>
-                  <button onClick={() => navigate("/api-settings")} className="w-full text-left" type="button">
-                    <NavItem icon={Code2} label="API Settings" isExpanded={true} />
-                  </button>
                   <button onClick={() => {
                     const event = new CustomEvent('openProfileModal');
                     window.dispatchEvent(event);
@@ -458,9 +455,6 @@ export function CollapsibleSidebar() {
                 </button>
                 <button onClick={() => navigate("/subscription")} title="Subscription" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Zap className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
-                </button>
-                <button onClick={() => navigate("/api-settings")} title="API Settings" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Code2 className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
               </motion.div>
             )}

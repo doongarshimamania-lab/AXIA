@@ -5,7 +5,7 @@ export function FinalCTA() {
   return (
     <section 
       data-waitlist-section
-      className="py-8 px-6 md:px-10 gradient-hero relative overflow-hidden"
+      className="py-8 px-6 md:px-10 bg-[#00246B] dark:bg-slate-900 relative overflow-hidden"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">
@@ -38,7 +38,7 @@ export function FinalCTA() {
           </div>
           
           <p className="mt-6 text-sm text-blue-200/60">
-            Join 2,000+ freelancers on the waitlist. Launching soon.
+            Join 2,000+ agencies on the waitlist. Launching soon.
           </p>
         </motion.div>
       </div>

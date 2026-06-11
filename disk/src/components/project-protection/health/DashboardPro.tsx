@@ -35,7 +35,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
           <p className="text-sm text-slate-600 mt-1">Advanced vulnerability detection</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="text-2xl font-bold text-primary">${valueMetric.amount}</div>
+          <div className="text-2xl font-bold text-teal-600">${valueMetric.amount}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
         </div>
       </div>
@@ -50,7 +50,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
               label={pillar.name}
               unit={pillar.unit}
               size="sm"
-              color={["#1e293b", "#334155", "#475569", "#64748b"][idx]}
+              color={["#00C9B7", "#0087A6", "#00A896", "#008B8B"][idx]}
               tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
             />
           ))}
@@ -91,7 +91,7 @@ export function DashboardPro({ data, onUpgrade }: DashboardProProps) {
       {/* Value Statement */}
       <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
         <p className="text-center text-slate-900">
-          You're preventing <span className="font-bold text-primary">${valueMetric.amount}</span>/{valueMetric.cadence} in timeline-related payment denials
+          You're preventing <span className="font-bold text-teal-600">${valueMetric.amount}</span>/{valueMetric.cadence} in timeline-related payment denials
         </p>
       </div>
 

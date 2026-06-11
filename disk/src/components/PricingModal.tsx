@@ -66,7 +66,7 @@ export function PricingModal({
             Your ${displaySavings.toFixed(0)} savings are ready
           </DialogTitle>
           <DialogDescription className="text-base text-muted-foreground">
-            Choose the plan that protects your freelance income
+            Choose the plan that protects your professional income
           </DialogDescription>
         </DialogHeader>
 

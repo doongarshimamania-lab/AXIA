@@ -82,8 +82,8 @@ const sectionTypeConfig: Record<
   bank_details: { label: "Bank Details", icon: Landmark, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
   client_info: { label: "Client Info", icon: User, color: "#ec4899" },
-  sender_info: { label: "Company Info", icon: Building2, color: "#64748B" },
-  invoice_meta: { label: "Invoice Meta", icon: FileText, color: "#475569" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  invoice_meta: { label: "Invoice Meta", icon: FileText, color: "#06b6d4" },
   total: { label: "Total", icon: DollarSign, color: "#22c55e" },
   notes: { label: "Notes", icon: StickyNote, color: "#a855f7" },
 };

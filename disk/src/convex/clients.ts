@@ -78,7 +78,6 @@ export const create = mutation({
       createdBy: userId,
       teamId: teamId ?? undefined,
       ...rest,
-      clientName: args.name, // keep canonical name in sync with CRM name
       status: args.status ?? "lead",
       createdAt: now,
       updatedAt: now,
@@ -141,7 +140,7 @@ export const update = mutation({
     // Build partial update object — only include fields that were explicitly provided
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
-    if (args.name !== undefined) { updates.name = args.name; updates.clientName = args.name; }
+    if (args.name !== undefined) updates.name = args.name;
     if (args.email !== undefined) updates.email = args.email;
     if (args.company !== undefined) updates.company = args.company;
     if (args.phone !== undefined) updates.phone = args.phone;

@@ -73,7 +73,7 @@ export default function Landing() {
               </button>
               <Button 
                 onClick={scrollToWaitlist}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
+                className="bg-[#00246B] hover:bg-[#00246B]/90 text-white rounded-full px-6"
                 disabled={isLoading}
               >
                 Get Started

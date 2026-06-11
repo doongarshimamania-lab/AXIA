@@ -7,7 +7,7 @@ const problemCategories = [
     problem: "Invoice Errors",
     quote: "My invoice was rejected for 'missing terms' but the platform never told me what was missing. Lost $720.",
     author: "Sarah K., Web Developer",
-    avgLoss: "42% of freelancers",
+    avgLoss: "42% of agencies",
     lossDescription: "report not getting paid for invoice errors (Skynova, 2024)",
     color: "from-red-500 to-red-600",
     bgColor: "bg-red-50 dark:bg-slate-800/50",
@@ -27,7 +27,7 @@ const problemCategories = [
     problem: "Context Gap Errors",
     quote: "Platform denied payment because my screenshots didn't show 'sufficient activity'—but I was coding the whole time.",
     author: "Marcus T., Software Engineer",
-    avgLoss: "35% of freelancers",
+    avgLoss: "35% of agencies",
     lossDescription: "lose payments due to context gaps (Upwork data, 2024)",
     color: "from-orange-500 to-orange-600",
     bgColor: "bg-orange-50 dark:bg-slate-800/50",
@@ -47,7 +47,7 @@ const problemCategories = [
     problem: "Pricing Disputes",
     quote: "Client disputed my rate saying 'we never agreed to this'—even though it was in the contract. $1,200 gone.",
     author: "Elena R., Designer",
-    avgLoss: "28% of freelancers",
+    avgLoss: "28% of agencies",
     lossDescription: "face pricing disputes without documentation (Fiverr survey, 2024)",
     color: "from-amber-500 to-amber-600",
     bgColor: "bg-amber-50 dark:bg-slate-800/50",
@@ -67,7 +67,7 @@ const problemCategories = [
     problem: "Scope Creep",
     quote: "Client kept adding 'small tweaks' that turned into 15 hours of unpaid work. They refused to pay for extras.",
     author: "David L., Developer",
-    avgLoss: "42% of freelancers",
+    avgLoss: "42% of agencies",
     lossDescription: "report not getting paid for scope creep (Skynova, 2024)",
     color: "from-blue-500 to-blue-600",
     bgColor: "bg-blue-50 dark:bg-slate-800/50",
@@ -87,7 +87,7 @@ const problemCategories = [
     problem: "Platform Policy Violations",
     quote: "Upwork flagged my work diary for 'low activity' and denied payment. I had no idea I was at risk.",
     author: "Priya M., Consultant",
-    avgLoss: "31% of freelancers",
+    avgLoss: "31% of agencies",
     lossDescription: "have payments denied for policy violations (Toptal data, 2024)",
     color: "from-slate-600 to-slate-700",
     bgColor: "bg-slate-100 dark:bg-slate-800/50",
@@ -126,7 +126,7 @@ export function ProblemCards() {
             5 Payment Problems Axia Prevents
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
-            Each problem costs freelancers hundreds of dollars. Here's how Axia stops them before they happen.
+            Each problem costs agencies hundreds of dollars. Here's how Axia stops them before they happen.
           </p>
         </motion.div>
 
@@ -308,7 +308,7 @@ export function ProblemCards() {
             Prevent These Problems Now →
           </button>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Join 2,000+ freelancers protecting their income with Axia
+            Join 2,000+ agencies protecting their income with Axia
           </p>
         </motion.div>
       </div>

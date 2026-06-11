@@ -53,7 +53,7 @@ const featureColorMap: Record<string, string> = {
   time: "text-emerald-500 bg-emerald-500/10",
   evidence: "text-indigo-500 bg-indigo-500/10",
   invoice: "text-amber-500 bg-amber-500/10",
-  scope: "text-primary bg-primary/10",
+  scope: "text-cyan-500 bg-cyan-500/10",
   payment: "text-green-500 bg-green-500/10",
   reminder: "text-red-500 bg-red-500/10",
 };

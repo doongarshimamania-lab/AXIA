@@ -41,7 +41,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
             className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"
           >
             <div className="mb-2">
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">{pillar.label}</span>
+              <span className="text-xs font-bold text-[#0087A6] uppercase tracking-wider">{pillar.label}</span>
             </div>
             <div>
               <div className="text-xl font-bold text-[#0A192F]">{pillar.displayValue}</div>
@@ -56,7 +56,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
         <div className="bg-[#0A192F] rounded-xl p-4 flex items-center justify-between text-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg">
-              <Layers className="w-5 h-5 text-primary" />
+              <Layers className="w-5 h-5 text-[#00C9B7]" />
             </div>
             <div>
               <div className="text-sm font-medium text-slate-300">{activePillars[3]?.label}</div>
@@ -65,7 +65,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
           </div>
           <div className="text-right">
             <div className="text-xs text-slate-400">Impact</div>
-            <div className="text-sm font-medium text-primary">+{activePillars[3]?.dollarImpact ? `$${activePillars[3].dollarImpact}` : '$0'}</div>
+            <div className="text-sm font-medium text-[#00C9B7]">+{activePillars[3]?.dollarImpact ? `$${activePillars[3].dollarImpact}` : '$0'}</div>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
           <div className="absolute top-4 left-4 text-xs font-bold text-slate-500 uppercase">Timeline Risk Prediction</div>
           <div className="mt-8 relative h-12 flex items-center">
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-primary to-primary/70 w-3/4" />
+              <div className="h-full bg-gradient-to-r from-[#00C9B7] to-[#0087A6] w-3/4" />
             </div>
             {/* Interactive Markers */}
             {events.slice(0, 4).map((event, i) => (
@@ -103,7 +103,7 @@ export function ProjectRiskTimelineStarter({ data, onUpgrade }: ProjectRiskTimel
         <div className="p-6 border-t border-slate-100 bg-white">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-medium text-[#0A192F]">Prevent timeline vulnerabilities</div>
-            <div className="text-sm font-bold text-primary">{upgradePrompt.message}</div>
+            <div className="text-sm font-bold text-[#0087A6]">{upgradePrompt.message}</div>
           </div>
           <Button 
             onClick={onUpgrade}

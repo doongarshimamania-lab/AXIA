@@ -172,7 +172,7 @@ export default function PlatformIntegrations() {
               Platform Connections
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Connect and manage your freelance platforms
+              Connect and manage your professional platforms
             </p>
           </div>
 
@@ -183,7 +183,7 @@ export default function PlatformIntegrations() {
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Demo Mode</h3>
               <p className="text-sm text-muted-foreground max-w-md">
-                Sign in to connect your freelance platforms and sync your work data for real-time income protection.
+                Sign in to connect your professional platforms and sync your work data for real-time income protection.
               </p>
             </CardContent>
           </Card>
@@ -239,7 +239,7 @@ export default function PlatformIntegrations() {
               Platform Connections
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Connect and manage your freelance platforms
+              Connect and manage your professional platforms
             </p>
           </div>
           <Card>
@@ -278,7 +278,7 @@ export default function PlatformIntegrations() {
                 Platform Connections
               </h1>
               <p className="text-[16px] text-muted-foreground">
-                Connect and manage your freelance platforms
+                Connect and manage your professional platforms
               </p>
             </div>
 

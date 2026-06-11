@@ -39,17 +39,17 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="relative overflow-hidden bg-white dark:bg-slate-950 border-2 border-primary/20 shadow-lg">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary" />
+      <Card className="relative overflow-hidden bg-white dark:bg-slate-950 border-2 border-teal-500/30 shadow-lg">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-500" />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           {/* Left: Score & Identity */}
-          <div className="lg:col-span-5 p-6 bg-muted/30 dark:bg-primary/5 border-b lg:border-b-0 lg:border-r border-border dark:border-border">
+          <div className="lg:col-span-5 p-6 bg-teal-50/30 dark:bg-teal-900/10 border-b lg:border-b-0 lg:border-r border-teal-100 dark:border-teal-900/50">
             <div className="flex justify-between items-start mb-6">
-              <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
-                <Target className="w-6 h-6 text-primary dark:text-primary/80" />
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/50 rounded-lg">
+                <Target className="w-6 h-6 text-teal-600 dark:text-teal-400" />
               </div>
-              <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 border-0">STARTER</Badge>
+              <Badge className="bg-teal-500 text-white hover:bg-teal-600 border-0">STARTER</Badge>
             </div>
 
             <div className="mb-8">
@@ -60,20 +60,20 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
             </div>
 
             <div className="text-center mb-8">
-              <div className="text-6xl font-black text-primary dark:text-primary/80 tracking-tight">
+              <div className="text-6xl font-black text-teal-600 dark:text-teal-400 tracking-tight">
                 {data.score}
               </div>
-              <div className="text-xs font-bold text-primary dark:text-primary/70 uppercase tracking-widest">
+              <div className="text-xs font-bold text-teal-700 dark:text-teal-300 uppercase tracking-widest">
                 Protection Score
               </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-border dark:border-border shadow-sm mb-6">
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-teal-100 dark:border-teal-800 shadow-sm mb-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs font-medium text-slate-500">Protected Value</span>
                 <span className="text-lg font-bold text-slate-900 dark:text-white">${data.valueProtection.toLocaleString()}</span>
               </div>
-              <div className="text-xs text-primary dark:text-primary/80 mb-2">60% of total project value secured</div>
+              <div className="text-xs text-teal-600 dark:text-teal-400 mb-2">60% of total project value secured</div>
               {data.upgradeValueGap && (
                 <div className="text-xs text-red-500 font-medium flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
@@ -85,11 +85,11 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
             {/* Requirement Mappings (Starter Feature) - Now Clickable */}
             <button
               onClick={() => setRequirementsModalOpen(true)}
-              className="mb-6 w-full text-left hover:bg-muted/50 dark:hover:bg-primary/5 transition-colors rounded-lg p-3 border border-transparent hover:border-primary/20 dark:hover:border-primary/30"
+              className="mb-6 w-full text-left hover:bg-teal-50/50 dark:hover:bg-teal-900/10 transition-colors rounded-lg p-3 border border-transparent hover:border-teal-200 dark:hover:border-teal-800"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary/70" />
+                  <FileText className="w-4 h-4 text-teal-500" />
                   <span className="text-xs font-bold text-slate-500 uppercase">Client Requirements</span>
                   <TooltipProvider>
                     <Tooltip>
@@ -102,13 +102,13 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <ChevronRight className="w-4 h-4 text-primary/70" />
+                <ChevronRight className="w-4 h-4 text-teal-500" />
               </div>
               <div className="space-y-2">
                 {data.requirementMappings?.slice(0, 3).map((req) => (
                   <div key={req.id} className="flex items-center justify-between text-xs p-2 rounded bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400 truncate max-w-[140px]">{req.requirement}</span>
-                    <Badge variant="outline" className={req.status === 'matched' ? 'text-primary border-primary/20 bg-primary/5 dark:bg-primary/10' : 'text-slate-400'}>
+                    <Badge variant="outline" className={req.status === 'matched' ? 'text-teal-600 border-teal-200 bg-teal-50 dark:bg-teal-900/20' : 'text-slate-400'}>
                       {req.status}
                     </Badge>
                   </div>
@@ -119,14 +119,14 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
             {/* Inherited: Evidence Timeline - Now Clickable */}
             <button
               onClick={() => setEvidenceModalOpen(true)}
-              className="pt-4 border-t border-border dark:border-border w-full text-left hover:bg-muted/50 dark:hover:bg-primary/5 transition-colors rounded-lg p-3"
+              className="pt-4 border-t border-teal-100 dark:border-teal-900/50 w-full text-left hover:bg-teal-50/50 dark:hover:bg-teal-900/10 transition-colors rounded-lg p-3"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
                   Evidence Timeline (Free)
                   <Lock className="w-3 h-3 text-slate-400" />
                 </span>
-                <ChevronRight className="w-4 h-4 text-primary/70" />
+                <ChevronRight className="w-4 h-4 text-teal-500" />
               </div>
               <div className="flex gap-2">
                 {data.evidenceTimeline?.map((entry) => (
@@ -155,7 +155,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
           <div className="lg:col-span-7 p-6">
             {/* Starter Tier Metrics First */}
             <div className="mb-3">
-              <h4 className="text-sm font-bold text-primary dark:text-primary/80 uppercase tracking-wider">Starter Tier Metrics</h4>
+              <h4 className="text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Starter Tier Metrics</h4>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {data.pillars.filter(p => ['req_match', 'memo_quality', 'activity_density', 'context'].includes(p.id)).map((pillar) => (
@@ -168,8 +168,8 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         onClick={() => setActivePillar(activePillar === pillar.id ? null : pillar.id)}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           activePillar === pillar.id 
-                            ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 ring-1 ring-primary/40' 
-                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary/20 dark:hover:border-primary/30'
+                            ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 ring-1 ring-teal-500' 
+                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-700'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
@@ -181,7 +181,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         </div>
                         <div className="font-bold text-sm text-slate-900 dark:text-white mb-1">{pillar.label}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{pillar.description}</div>
-                        <div className="mt-2 text-xs font-bold text-primary dark:text-primary/80">Score: {pillar.score}</div>
+                        <div className="mt-2 text-xs font-bold text-teal-600 dark:text-teal-400">Score: {pillar.score}</div>
                       </motion.button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-slate-900 text-white">
@@ -207,8 +207,8 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         onClick={() => setActivePillar(activePillar === pillar.id ? null : pillar.id)}
                         className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                           activePillar === pillar.id 
-                            ? 'bg-primary/5 dark:bg-primary/10 border-primary/40 ring-1 ring-primary/40' 
-                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-primary/20 dark:hover:border-primary/30'
+                            ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 ring-1 ring-teal-500' 
+                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-teal-200 dark:hover:border-teal-700'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
@@ -220,7 +220,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                         </div>
                         <div className="font-bold text-sm text-slate-900 dark:text-white mb-1">{pillar.label}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{pillar.description}</div>
-                        <div className="mt-2 text-xs font-bold text-primary dark:text-primary/80">Score: {pillar.score}</div>
+                        <div className="mt-2 text-xs font-bold text-teal-600 dark:text-teal-400">Score: {pillar.score}</div>
                       </motion.button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-slate-900 text-white">
@@ -241,7 +241,7 @@ export function ProtectionScoreCardStarter({ data, onUpgrade }: Props) {
                   <p className="text-xs text-slate-500 mb-3">
                     {metricDescriptions[activePillar] || data.pillars.find(p => p.id === activePillar)?.description}
                   </p>
-                  <div className="flex items-center gap-2 text-xs font-medium text-primary dark:text-primary/80">
+                  <div className="flex items-center gap-2 text-xs font-medium text-teal-600 dark:text-teal-400">
                     <Info className="w-3 h-3" />
                     <span>Current Score: {data.pillars.find(p => p.id === activePillar)?.score}</span>
                   </div>

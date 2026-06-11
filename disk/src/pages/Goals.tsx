@@ -119,7 +119,7 @@ const MOCK_GOALS = [
   {
     _id: "goal_1" as any,
     title: "Reach $10K monthly revenue",
-    description: "Scale freelance income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
+    description: "Scale agency income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
     type: "revenue",
     target: 10000,
     current: 7200,
@@ -517,7 +517,7 @@ export default function Goals() {
               Goals
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Set and track professional goals to protect your income and grow your freelance career
+              Set and track professional goals to protect your income and grow your agency
             </p>
           </div>
 
@@ -538,7 +538,7 @@ export default function Goals() {
               <DialogHeader>
                 <DialogTitle>Create New Goal</DialogTitle>
                 <DialogDescription>
-                  Define a measurable goal with a deadline to keep your freelance career on track.
+                  Define a measurable goal with a deadline to keep your professional growth on track.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">

@@ -178,7 +178,7 @@ export function WaitlistForm({
       <div className="relative">
         <Input
           type="email"
-          placeholder="you@freelancer.com"
+          placeholder="you@agency.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -186,7 +186,7 @@ export function WaitlistForm({
           className={`h-14 px-6 text-lg font-medium rounded-xl border-2 shadow-sm ${
             isDark
               ? "bg-white/10 border-white/20 text-white placeholder:text-white/60 focus-visible:border-white"
-              : "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:border-primary"
+              : "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:border-[#00246B]"
           } transition-all duration-200`}
           style={{ fontFamily: "Space Grotesk" }}
         />
@@ -197,8 +197,8 @@ export function WaitlistForm({
         disabled={isLoading}
         className={`h-14 px-8 text-lg font-bold rounded-xl shadow-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl ${
           isDark
-            ? "bg-white text-primary hover:bg-white/90"
-            : "bg-primary text-primary-foreground hover:bg-primary/90"
+            ? "bg-white text-[#00246B] hover:bg-white/90"
+            : "bg-[#00246B] text-white hover:bg-[#00246B]/90"
         }`}
         style={{ fontFamily: "Space Grotesk" }}
       >

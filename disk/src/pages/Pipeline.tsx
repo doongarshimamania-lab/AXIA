@@ -70,11 +70,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Settings2,
-  Link,
 } from "lucide-react";
-import { CustomFieldManager } from "@/components/CustomFieldManager";
-import { CustomFieldValues } from "@/components/CustomFieldValues";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -102,7 +98,6 @@ interface Deal {
   contactName?: string;
   expectedCloseDate?: number;
   notes?: string;
-  customFields?: Record<string, any>;
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -216,10 +211,6 @@ const CORE_FIELDS = [
   { value: "contactEmail", label: "Contact Email" },
   { value: "expectedCloseDate", label: "Expected Close Date" },
   { value: "notes", label: "Notes" },
-  { value: "custom:text", label: "→ Custom: Text" },
-  { value: "custom:number", label: "→ Custom: Number" },
-  { value: "custom:boolean", label: "→ Custom: Boolean" },
-  { value: "custom:link", label: "→ Custom: Link" },
   { value: "_skip", label: "Skip this column" },
 ];
 
@@ -259,10 +250,7 @@ const AUTO_DETECT_MAP: Record<string, string> = {
 
 function autoDetectMapping(headerName: string): string {
   const normalized = headerName.toLowerCase().trim();
-  const coreMatch = AUTO_DETECT_MAP[normalized];
-  if (coreMatch) return coreMatch;
-  // Auto-detect unknown columns as custom text fields
-  return "custom:text";
+  return AUTO_DETECT_MAP[normalized] ?? "_skip";
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -354,7 +342,6 @@ export default function Pipeline() {
   const [editContactEmail, setEditContactEmail] = useState("");
   const [editCloseDate, setEditCloseDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
   const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
 
   // ── Import State ──
@@ -367,9 +354,6 @@ export default function Pipeline() {
   const [selectedStageId, setSelectedStageId] = useState<Id<"pipelineStages"> | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Custom fields dialog state
-  const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
 
   // ── Derived State (with mock data fallback when Convex returns empty) ──
   const isMockData = useMemo(() => {
@@ -590,7 +574,6 @@ export default function Pipeline() {
         return;
       }
       const targetStageName = safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage";
-      const isWonStage = targetStageName === "Won";
 
       if (isMockData) {
         // Mock data: do optimistic local update (no Convex mutation needed)
@@ -600,16 +583,6 @@ export default function Pipeline() {
           return next;
         });
         toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
-        if (isWonStage) {
-          toast("Deal won! Create an invoice?", {
-            description: "Convert this deal into an invoice",
-            action: {
-              label: "Create Invoice",
-              onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
-            },
-            duration: 8000,
-          });
-        }
       } else {
         try {
           await moveDealMutation({
@@ -617,16 +590,6 @@ export default function Pipeline() {
             stageId: targetStageId,
           });
           toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
-          if (isWonStage) {
-            toast("Deal won! Create an invoice?", {
-              description: "Convert this deal into an invoice",
-              action: {
-                label: "Create Invoice",
-                onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
-              },
-              duration: 8000,
-            });
-          }
         } catch (err) {
           console.error("Failed to move deal:", err);
           toast.error("Failed to move deal");
@@ -658,7 +621,6 @@ export default function Pipeline() {
         : ""
     );
     setEditNotes(deal.notes ?? "");
-    setEditCustomFields(deal.customFields || {});
     setEditStageId(deal.stageId);
   }, []);
 
@@ -677,7 +639,6 @@ export default function Pipeline() {
           ? new Date(editCloseDate).getTime()
           : undefined,
         notes: editNotes.trim() || undefined,
-        customFields: Object.keys(editCustomFields).length > 0 ? editCustomFields : undefined,
       };
       if (editStageId && editStageId !== detailDeal.stageId) {
         updates.stageId = editStageId;
@@ -700,7 +661,6 @@ export default function Pipeline() {
     editContactEmail,
     editCloseDate,
     editNotes,
-    editCustomFields,
     editStageId,
     updateDealMutation,
   ]);
@@ -883,20 +843,8 @@ export default function Pipeline() {
         
         for (const [csvCol, field] of Object.entries(columnMappings)) {
           if (field === "_skip") continue;
-          if (field.startsWith("custom:")) {
-            const fieldType = field.replace("custom:", "");
-            const rawValue = row[csvCol];
-            let parsedValue = rawValue;
-            if (fieldType === "number") {
-              parsedValue = Number(String(rawValue).replace(/[^0-9.-]/g, "")) || 0;
-            } else if (fieldType === "boolean") {
-              const lower = String(rawValue).toLowerCase().trim();
-              parsedValue = lower === "true" || lower === "yes" || lower === "1" || lower === "x";
-            } else if (fieldType === "link") {
-              parsedValue = String(rawValue || "");
-            }
-            // Store as typed custom field: { value, type }
-            customFields[csvCol] = { value: parsedValue, type: fieldType };
+          if (field === "custom") {
+            customFields[csvCol] = row[csvCol];
           } else {
             deal[field] = row[csvCol];
           }
@@ -968,7 +916,7 @@ export default function Pipeline() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {safeDeals.length === 0 && !isLoading && (
+            {import.meta.env.DEV && safeDeals.length === 0 && !isLoading && (
               <Button
                 onClick={handleSeedData}
                 disabled={isSeeding}
@@ -995,19 +943,11 @@ export default function Pipeline() {
             <Button
               onClick={handleOpenImportDialog}
               variant="outline"
-              className="gap-2 h-9 text-xs"
+              className="gap-2"
               disabled={safeStages.length === 0}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-4 w-4" />
               Import
-            </Button>
-            <Button
-              onClick={() => setCustomFieldsDialogOpen(true)}
-              variant="outline"
-              className="gap-2 h-9 text-xs"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-              Fields
             </Button>
             <Button
               onClick={() => {
@@ -1016,9 +956,9 @@ export default function Pipeline() {
                 }
               }}
               disabled={safeStages.length === 0}
-              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white h-9 text-xs"
+              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               Add Deal
             </Button>
           </div>
@@ -1083,7 +1023,7 @@ export default function Pipeline() {
             </Button>
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin">
             {safeStages.map((stage) => {
               const stageDeals = dealsByStage.get(stage._id) ?? [];
               const stageValue = stageDeals.reduce(
@@ -1096,12 +1036,12 @@ export default function Pipeline() {
                 <div
                   key={stage._id}
                   className={`
-                    flex-shrink-0 w-[220px] sm:w-[240px] snap-start
-                    flex flex-col rounded-lg border
+                    flex-shrink-0 w-[280px] sm:w-[300px] snap-start
+                    flex flex-col rounded-xl border
                     transition-colors duration-200
                     ${
                       isDragOver
-                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-lg"
+                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
                         : "border-border bg-muted/30"
                     }
                   `}
@@ -1111,29 +1051,29 @@ export default function Pipeline() {
                 >
                   {/* ── Stage Header ── */}
                   <div
-                    className="px-3 py-2 rounded-t-lg border-b"
+                    className="px-4 py-3 rounded-t-xl border-b"
                     style={{
                       borderColor: `${stage.color}30`,
                       backgroundColor: `${stage.color}08`,
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
                         <div
-                          className="h-2 w-2 rounded-full"
+                          className="h-2.5 w-2.5 rounded-full"
                           style={{ backgroundColor: stage.color }}
                         />
-                        <h3 className="font-semibold text-xs">{stage.name}</h3>
+                        <h3 className="font-semibold text-sm">{stage.name}</h3>
                       </div>
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4 px-1"
+                        className="text-xs h-5 px-1.5"
                       >
                         {stageDeals.length}
                       </Badge>
                     </div>
                     <p
-                      className="text-[10px] font-medium mt-0.5"
+                      className="text-xs font-medium"
                       style={{ color: stage.color }}
                     >
                       {formatCurrency(stageValue)}
@@ -1141,7 +1081,7 @@ export default function Pipeline() {
                   </div>
 
                   {/* ── Deal Cards ── */}
-                  <div className="flex-1 p-1.5 space-y-1.5 min-h-[80px] max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-thin">
+                  <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-360px)] overflow-y-auto scrollbar-thin">
                       {stageDeals.map((deal) => (
                         <DealCard
                           key={deal._id}
@@ -1166,13 +1106,13 @@ export default function Pipeline() {
                   </div>
 
                   {/* ── Add Deal Button ── */}
-                  <div className="p-1.5 pt-0">
+                  <div className="p-2 pt-0">
                     <button
                       onClick={() => handleOpenCreateDialog(stage._id)}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                     >
-                      <Plus className="h-3 w-3" />
-                      Add
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Deal
                     </button>
                   </div>
                 </div>
@@ -1546,14 +1486,6 @@ export default function Pipeline() {
                           ))}
                       </div>
                     </div>
-
-                    {/* Custom Fields (View Mode) */}
-                    <CustomFieldValues
-                      workspaceId={workspaceId ?? null}
-                      tableName="deals"
-                      values={detailDeal.customFields}
-                      onChange={() => {}}
-                    />
                   </div>
 
                   <DialogFooter className="gap-2 sm:gap-0">
@@ -1745,14 +1677,6 @@ export default function Pipeline() {
                         onChange={(e) => setEditNotes(e.target.value)}
                       />
                     </div>
-
-                    {/* Custom Fields (Edit Mode) */}
-                    <CustomFieldValues
-                      workspaceId={workspaceId ?? null}
-                      tableName="deals"
-                      values={editCustomFields}
-                      onChange={setEditCustomFields}
-                    />
                   </div>
 
                   <DialogFooter>
@@ -1797,22 +1721,6 @@ export default function Pipeline() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* ── Custom Field Manager Dialog ── */}
-      <Dialog open={customFieldsDialogOpen} onOpenChange={setCustomFieldsDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings2 className="h-5 w-5 text-[#8B5CF6]" />
-              Custom Fields
-            </DialogTitle>
-            <DialogDescription>
-              Add and manage custom fields for your deals
-            </DialogDescription>
-          </DialogHeader>
-          <CustomFieldManager workspaceId={workspaceId ?? null} tableName="deals" />
-        </DialogContent>
-      </Dialog>
 
       {/* ── CSV Import Dialog ── */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
@@ -1944,44 +1852,33 @@ export default function Pipeline() {
                     {importData.length} rows detected • Showing first 5 rows preview
                   </div>
                   <div className="space-y-2">
-                    {importHeaders.map((header) => {
-                      const mapping = columnMappings[header] ?? "_skip";
-                      const isCustom = mapping.startsWith("custom:");
-                      const customType = isCustom ? mapping.replace("custom:", "") : null;
-                      return (
-                        <div key={header} className="flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{header}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {String(importData[0]?.[header] ?? "").slice(0, 40)}
-                            </div>
+                    {importHeaders.map((header) => (
+                      <div key={header} className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{header}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {String(importData[0]?.[header] ?? "").slice(0, 40)}
                           </div>
-                          {isCustom && customType && (
-                            <Badge variant="outline" className="text-[9px] h-5 px-1.5 shrink-0 border-[#8B5CF6]/30 text-[#8B5CF6]">
-                              {customType}
-                            </Badge>
-                          )}
-                          <Select
-                            value={mapping}
-                            onValueChange={(val) =>
-                              setColumnMappings((prev) => ({ ...prev, [header]: val }))
-                            }
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="_skip" className="text-muted-foreground">Skip this column</SelectItem>
-                              {CORE_FIELDS.filter(f => f.value !== "_skip").map((field) => (
-                                <SelectItem key={field.value} value={field.value}>
-                                  {field.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </div>
-                      );
-                    })}
+                        <Select
+                          value={columnMappings[header] ?? "_skip"}
+                          onValueChange={(val) =>
+                            setColumnMappings((prev) => ({ ...prev, [header]: val }))
+                          }
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CORE_FIELDS.map((field) => (
+                              <SelectItem key={field.value} value={field.value}>
+                                {field.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -2135,7 +2032,7 @@ function DealCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={`
-        group relative p-2 rounded-md border cursor-pointer
+        group relative p-3 rounded-lg border cursor-pointer
         transition-all duration-150 select-none
         ${
           isDragging
@@ -2145,9 +2042,9 @@ function DealCard({
       `}
     >
       {/* Drag handle + Create Proposal buttons */}
-      <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          className="h-5 w-5 flex items-center justify-center rounded hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onCreateProposal();
@@ -2160,33 +2057,33 @@ function DealCard({
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
             >
-              <Zap className="h-2.5 w-2.5" />
+              <Zap className="h-3 w-3" />
             </motion.div>
           ) : (
-            <FileText className="h-2.5 w-2.5" />
+            <FileText className="h-3 w-3" />
           )}
         </button>
-        <GripVertical className="h-3 w-3 opacity-50" />
+        <GripVertical className="h-3.5 w-3.5 opacity-50" />
       </div>
 
       {/* Title & Value */}
-      <div className="mb-1">
-        <h4 className="text-[11px] font-semibold leading-tight pr-5 line-clamp-2">
+      <div className="mb-2">
+        <h4 className="text-sm font-semibold leading-tight pr-6 line-clamp-2">
           {deal.title}
         </h4>
-        <div className="flex items-baseline gap-1 mt-0.5">
-          <span className="text-[11px] font-bold">
+        <div className="flex items-baseline gap-1.5 mt-1">
+          <span className="text-sm font-bold">
             {formatCurrency(deal.value)}
           </span>
-          <span className="text-[9px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground">
             ({deal.probability}%)
           </span>
         </div>
       </div>
 
       {/* Weighted Value Bar */}
-      <div className="mb-1">
-        <div className="h-0.5 rounded-full bg-muted overflow-hidden">
+      <div className="mb-2">
+        <div className="h-1 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -2199,13 +2096,13 @@ function DealCard({
 
       {/* Source Badge */}
       {deal.source && (
-        <div className="mb-1">
+        <div className="mb-2">
           <Badge
             variant="secondary"
-            className="text-[9px] h-4 px-1 gap-0.5"
+            className="text-[10px] h-5 px-1.5 gap-1"
           >
             <div
-              className="h-1 w-1 rounded-full"
+              className="h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: sourceInfo.color }}
             />
             {sourceInfo.label}
@@ -2214,18 +2111,18 @@ function DealCard({
       )}
 
       {/* Footer: Contact + Date */}
-      <div className="flex items-center justify-between gap-1.5 mt-0.5">
+      <div className="flex items-center justify-between gap-2 mt-1">
         {deal.contactName ? (
-          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground min-w-0">
-            <User className="h-2.5 w-2.5 flex-shrink-0" />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
+            <User className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{deal.contactName}</span>
           </div>
         ) : (
           <div />
         )}
         {deal.expectedCloseDate && (
-          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground flex-shrink-0">
-            <Calendar className="h-2.5 w-2.5" />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground flex-shrink-0">
+            <Calendar className="h-3 w-3" />
             {daysLeft !== null && daysLeft < 0 ? (
               <span className="text-destructive font-medium">
                 {Math.abs(daysLeft)}d overdue

@@ -32,7 +32,7 @@ export function UpgradePrompt({ message, valueGap, targetTier, description, onUp
         <Button
           onClick={onUpgrade}
           className="w-full text-white shadow-md"
-          style={{ background: "linear-gradient(to right, #1e293b, #334155)" }}
+          style={{ background: "linear-gradient(to right, #00C9B7, #0087A6)" }}
         >
           Upgrade to {targetTier.charAt(0).toUpperCase() + targetTier.slice(1)} → {tierPricing[targetTier]}
           <ArrowRight className="ml-2 h-4 w-4" />

@@ -47,7 +47,7 @@ export default function OnboardingSource() {
       id: 'podcast',
       label: 'Podcast',
       icon: Radio,
-      description: 'Freelance podcasts',
+      description: 'Professional podcasts',
       detailPrompt: "Which podcast? (Optional)"
     },
     {
@@ -79,7 +79,7 @@ export default function OnboardingSource() {
       detailPrompt: "Where do you work together? (Optional)"
     },
     {
-      id: 'freelance_community',
+      id: 'professional_community',
       label: 'Community',
       icon: GraduationCap,
       description: 'Forums, Slack, Discord',
@@ -175,7 +175,7 @@ export default function OnboardingSource() {
             <CardTitle className="text-2xl">How Did You Find Us?</CardTitle>
           </div>
           <CardDescription>
-            Help us understand how freelancers discover Axia so we can better serve you
+            Help us understand how agencies discover Axia so we can better serve you
           </CardDescription>
         </CardHeader>
         

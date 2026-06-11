@@ -88,26 +88,25 @@ export function useQuery(query: any, args: any): any {
  *     The wrapper logs the error first, then re-throws — this gives us console
  *     visibility while still letting pages show proper toast.error() feedback.
  */
-// A stable dummy mutation reference used when we want to skip a mutation.
-const DUMMY_MUTATION = (anyApi as any)._skip_placeholder_mutation;
-
 export function useMutation(mutation: any): any {
-  // If the mutation reference is null/undefined, use a dummy ref so we always
-  // call _useMutation in the same order (React hooks rule). The dummy mutation
-  // will be caught by the try/catch if ever invoked.
-  const shouldSkip = mutation === null || mutation === undefined;
-  const effectiveMutation = shouldSkip ? DUMMY_MUTATION : mutation;
+  // If the mutation reference is null/undefined, return a no-op function.
+  // We do NOT call _useMutation with null — that would crash Convex internals.
+  // Since mutation refs are typically static (not changing between renders),
+  // this does not violate React hooks ordering rules in practice.
+  if (mutation === null || mutation === undefined) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useCallback(async (_args: any) => {
+      console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
+      return undefined;
+    }, []);
+  }
 
   try {
     // @ts-ignore - dynamic mutation reference
-    const originalMutation = _useMutation(effectiveMutation);
+    const originalMutation = _useMutation(mutation);
 
     const safeMutation = useCallback(
       async (args: any) => {
-        if (shouldSkip) {
-          console.warn("[safe-convex-react] mutation not available (null/undefined ref, no-op)");
-          return undefined;
-        }
         try {
           return await originalMutation(args);
         } catch (err: any) {
@@ -116,7 +115,7 @@ export function useMutation(mutation: any): any {
           throw err;
         }
       },
-      [originalMutation, shouldSkip]
+      [originalMutation]
     );
 
     return safeMutation;
@@ -129,27 +128,17 @@ export function useMutation(mutation: any): any {
   }
 }
 
-// A stable dummy action reference used when we want to skip an action.
-const DUMMY_ACTION = (anyApi as any)._skip_placeholder_action;
-
 /**
  * Safe useAction — same pattern as useMutation for Convex actions.
  * Execution errors are re-thrown so callers can handle them.
  */
 export function useAction(action: any): any {
-  const shouldSkip = action === null || action === undefined;
-  const effectiveAction = shouldSkip ? DUMMY_ACTION : action;
-
   try {
     // @ts-ignore - dynamic action reference
-    const originalAction = _useAction(effectiveAction);
+    const originalAction = _useAction(action);
 
     const safeAction = useCallback(
       async (args: any) => {
-        if (shouldSkip) {
-          console.warn("[safe-convex-react] action not available (null/undefined ref, no-op)");
-          return undefined;
-        }
         try {
           return await originalAction(args);
         } catch (err: any) {
@@ -157,7 +146,7 @@ export function useAction(action: any): any {
           throw err;
         }
       },
-      [originalAction, shouldSkip]
+      [originalAction]
     );
 
     return safeAction;

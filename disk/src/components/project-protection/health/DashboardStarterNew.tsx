@@ -31,27 +31,27 @@ export function DashboardStarterNew({ data, onUpgrade }: DashboardStarterNewProp
   };
 
   return (
-    <Card className="overflow-hidden bg-white border border-border shadow-lg shadow-primary/5">
+    <Card className="overflow-hidden bg-white border border-teal-100 shadow-lg shadow-teal-900/5">
       {/* Productivity Header */}
-      <div className="bg-gradient-to-r from-muted/50 to-white p-6 border-b border-border">
+      <div className="bg-gradient-to-r from-teal-50 to-white p-6 border-b border-teal-100">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary text-primary-foreground rounded-xl shadow-sm">
+            <div className="p-2.5 bg-teal-500 text-white rounded-xl shadow-sm">
               <Zap className="w-6 h-6" />
             </div>
             <div>
               <h3 className="font-bold text-xl text-slate-900 tracking-tight">Productivity Health</h3>
-              <p className="text-sm text-primary font-medium">Active Rhythm Monitoring</p>
+              <p className="text-sm text-teal-600 font-medium">Active Rhythm Monitoring</p>
             </div>
           </div>
           <div className="text-right">
             <div className="text-3xl font-black text-slate-900 tracking-tight">${valueMetric.amount}</div>
-            <div className="text-xs font-bold text-primary uppercase tracking-wider">Protected / Week</div>
+            <div className="text-xs font-bold text-teal-600 uppercase tracking-wider">Protected / Week</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-teal-50">
         {/* Left: Key Metrics */}
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between mb-4">
@@ -93,7 +93,7 @@ export function DashboardStarterNew({ data, onUpgrade }: DashboardStarterNewProp
                         {def.description}
                       </p>
                       <div className="pt-2 border-t border-slate-100 mt-2">
-                        <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1">Why it matters</p>
+                        <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wide mb-1">Why it matters</p>
                         <p className="text-xs text-slate-500 italic">
                           "{def.impact}"
                         </p>
@@ -133,12 +133,12 @@ export function DashboardStarterNew({ data, onUpgrade }: DashboardStarterNewProp
       {/* Upgrade Banner */}
       <div className="bg-slate-900 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+          <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
           <p className="text-sm text-slate-300 font-medium">
             Want to see <span className="text-white font-bold">security vulnerabilities</span> in your timeline?
           </p>
         </div>
-        <Button onClick={onUpgrade} size="sm" variant="ghost" className="text-primary hover:text-primary/80 hover:bg-slate-800">
+        <Button onClick={onUpgrade} size="sm" variant="ghost" className="text-teal-400 hover:text-teal-300 hover:bg-slate-800">
           Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
         </Button>
       </div>

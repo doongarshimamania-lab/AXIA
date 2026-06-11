@@ -42,67 +42,22 @@ export const projectTables = {
     teamId: v.optional(v.id("teams")),
     sharing: v.optional(v.array(sharingEntry)),
     customFields: v.optional(v.any()),
-
-    // ── Name fields ──────────────────────────────────────────────────────
-    // clientName is canonical (used by freelancer features & indexes).
-    // name is an alias used by CRM mutations — both should be kept in sync.
     clientName: v.string(),
-    name: v.optional(v.string()),
-
-    // ── CRM contact fields ───────────────────────────────────────────────
-    email: v.optional(v.string()),
-    company: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    industry: v.optional(v.string()),
-    website: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    address: v.optional(v.object({
-      street: v.optional(v.string()),
-      city: v.optional(v.string()),
-      state: v.optional(v.string()),
-      zip: v.optional(v.string()),
-      country: v.optional(v.string()),
-    })),
-
-    // ── CRM status & source ──────────────────────────────────────────────
-    status: v.optional(v.union(v.literal("active"), v.literal("archived"), v.literal("lead"))),
-    source: v.optional(v.string()),
-
-    // ── Freelancer platform fields (optional for CRM-created clients) ────
-    platform: v.optional(v.union(
+    platform: v.union(
       v.literal("upwork"),
       v.literal("fiverr"),
       v.literal("toptal"),
       v.literal("freelancer"),
       v.literal("direct")
-    )),
-    hourlyRate: v.optional(v.number()),
-    contractType: v.optional(v.union(v.literal("hourly"), v.literal("fixed"))),
-    riskLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
-
-    // ── Freelancer-specific contact fields ───────────────────────────────
-    contactEmail: v.optional(v.string()),
-    contactName: v.optional(v.string()),
-
-    // ── Payment behavior tracking ────────────────────────────────────────
-    avgPaymentDays: v.optional(v.number()),
-    onTimeRate: v.optional(v.number()), // 0-1
-    totalPaid: v.optional(v.number()),
-    totalInvoiced: v.optional(v.number()),
-    lastPaymentAt: v.optional(v.number()),
-
-    // ── Workspace assignment ─────────────────────────────────────────────
-    assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
-
-    // ── Timestamps ───────────────────────────────────────────────────────
-    addedAt: v.optional(v.number()),
-    lastActivityAt: v.optional(v.number()),
-    createdAt: v.optional(v.number()),
-    updatedAt: v.optional(v.number()),
+    ),
+    hourlyRate: v.number(),
+    contractType: v.union(v.literal("hourly"), v.literal("fixed")),
+    riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    addedAt: v.number(),
+    lastActivityAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "clientName"])
-    .index("by_user_and_status", ["userId", "status"])
     .index("by_workspace", ["workspaceId"])
     .index("by_team", ["teamId"]),
 

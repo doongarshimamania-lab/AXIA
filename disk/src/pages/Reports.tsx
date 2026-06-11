@@ -196,7 +196,7 @@ const STATUS_CONFIG: Record<
     label: "Viewed",
     variant: "outline",
     icon: CheckCircle2,
-    color: "text-primary",
+    color: "text-cyan-500",
   },
   resolved: {
     label: "Resolved",

@@ -178,9 +178,6 @@ export default function InvoiceBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit") as any;
-  const projectIdParam = searchParams.get("projectId");
-  const proposalIdParam = searchParams.get("proposalId");
-  const dealIdParam = searchParams.get("dealId");
 
   // ── Convex Queries ─────────────────────────────────────────────────────
   const existingInvoice = useQuery(
@@ -193,28 +190,12 @@ export default function InvoiceBuilder() {
     editId ? { invoiceId: editId } : {}
   );
 
-  // Fetch clients for the client selector
-  const clients = useQuery(api.clients.crud.getClients, {});
-
-  // Fetch project details if projectId in URL
-  const projectFromUrl = useQuery(
-    projectIdParam ? api.projects.projectProtection.getProjectProtectionDetails : "skip",
-    projectIdParam ? { projectId: projectIdParam as any } : {}
-  );
-
-  // Fetch deal details if dealId in URL
-  const dealFromUrl = useQuery(
-    dealIdParam ? api.pipeline.crud.getDeal : "skip",
-    dealIdParam ? { dealId: dealIdParam as any } : {}
-  );
-
   // ── Convex Mutations ───────────────────────────────────────────────────
   const createInvoice = useMutation(api.billing.crud.createInvoice);
   const updateInvoice = useMutation(api.billing.crud.updateInvoice);
   const sendInvoiceMutation = useMutation(api.billing.crud.sendInvoice);
   const addWorkLinkMutation = useMutation(api.billing.crud.addWorkLink);
   const removeWorkLinkMutation = useMutation(api.billing.crud.removeWorkLink);
-  const createStripePaymentLinkMutation = useMutation(api.invoices.createStripePaymentLink);
 
   // ── State ──────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -222,7 +203,6 @@ export default function InvoiceBuilder() {
   const [sending, setSending] = useState(false);
   const [invoiceId, setInvoiceId] = useState<string | null>(editId || null);
 
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [issueDate, setIssueDate] = useState(timestampToDate(Date.now()));
@@ -234,9 +214,6 @@ export default function InvoiceBuilder() {
   const [notes, setNotes] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("(auto-generated)");
   const [status, setStatus] = useState("draft");
-  const [linkedProjectId, setLinkedProjectId] = useState<string | null>(projectIdParam || null);
-  const [linkedProposalId, setLinkedProposalId] = useState<string | null>(proposalIdParam || null);
-  const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false);
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: generateId(), description: "", quantity: 1, rate: 0, amount: 0, hasProof: false },
@@ -268,9 +245,6 @@ export default function InvoiceBuilder() {
       const inv = existingInvoice as any;
       setClientName(inv.clientName || "");
       setClientEmail(inv.clientEmail || "");
-      setSelectedClientId(inv.clientId || null);
-      setLinkedProjectId(inv.projectId || null);
-      setLinkedProposalId(inv.proposalId || null);
       setIssueDate(timestampToDate(inv.issueDate));
       setDueDate(timestampToDate(inv.dueDate));
       setCurrency(inv.currency || "USD");
@@ -295,39 +269,6 @@ export default function InvoiceBuilder() {
       }
     }
   }, [existingInvoice, editId]);
-
-  // ── Auto-populate from project URL param ──────────────────────────────
-  useEffect(() => {
-    if (projectFromUrl && projectIdParam) {
-      const proj = projectFromUrl as any;
-      if (proj.clientId) {
-        setSelectedClientId(proj.clientId);
-      }
-    }
-  }, [projectFromUrl, projectIdParam]);
-
-  // ── Auto-populate from deal URL param ──────────────────────────────────
-  useEffect(() => {
-    if (dealFromUrl && dealIdParam) {
-      const deal = dealFromUrl as any;
-      if (deal.clientId) {
-        setSelectedClientId(deal.clientId);
-      }
-      if (deal.contactName) setClientName(deal.contactName);
-      if (deal.contactEmail) setClientEmail(deal.contactEmail);
-    }
-  }, [dealFromUrl, dealIdParam]);
-
-  // ── Auto-fill client info when client selected ─────────────────────────
-  useEffect(() => {
-    if (selectedClientId && clients) {
-      const client = (clients as any[]).find((c: any) => c._id === selectedClientId);
-      if (client) {
-        setClientName(client.name || "");
-        setClientEmail(client.email || "");
-      }
-    }
-  }, [selectedClientId, clients]);
 
   // ── Computed values ────────────────────────────────────────────────────
   const subtotal = useMemo(
@@ -465,34 +406,10 @@ export default function InvoiceBuilder() {
     }
   };
 
-  // ── Generate Payment Link ──────────────────────────────────────────────
-  const handleGeneratePaymentLink = async () => {
-    if (!invoiceId) {
-      toast.error("Please save the invoice first");
-      return;
-    }
-    setGeneratingPaymentLink(true);
-    try {
-      const result = await createStripePaymentLinkMutation({ invoiceId: invoiceId as any });
-      if (result?.paymentUrl) {
-        await navigator.clipboard.writeText(result.paymentUrl);
-        toast.success("Payment link copied!", {
-          description: result.mock ? "Mock link — configure Stripe for real payments" : "Link copied to clipboard",
-        });
-      }
-    } catch (err: any) {
-      toast.error("Failed to generate payment link", {
-        description: err.message || "Please try again",
-      });
-    } finally {
-      setGeneratingPaymentLink(false);
-    }
-  };
-
   // ── Save Invoice ───────────────────────────────────────────────────────
   const handleSaveDraft = async () => {
-    if (!selectedClientId) {
-      toast.error("Please select a client");
+    if (!clientName.trim()) {
+      toast.error("Client name is required");
       return;
     }
     const validItems = lineItems.filter((li) => li.description.trim() && li.quantity > 0 && li.rate > 0);
@@ -516,9 +433,8 @@ export default function InvoiceBuilder() {
       if (invoiceId) {
         await updateInvoice({
           invoiceId: invoiceId as any,
-          clientId: selectedClientId as any,
-          projectId: linkedProjectId as any || undefined,
-          proposalId: linkedProposalId as any || undefined,
+          clientName: clientName.trim(),
+          clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
           subtotal,
           taxRate,
@@ -532,9 +448,8 @@ export default function InvoiceBuilder() {
         });
       } else {
         const newId = await createInvoice({
-          clientId: selectedClientId as any,
-          projectId: linkedProjectId as any || undefined,
-          proposalId: linkedProposalId as any || undefined,
+          clientName: clientName.trim(),
+          clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
           subtotal,
           taxRate,
@@ -751,18 +666,6 @@ export default function InvoiceBuilder() {
                 {sending ? "Sending..." : "Send Invoice"}
               </Button>
             )}
-            {invoiceId && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
-                onClick={handleGeneratePaymentLink}
-                disabled={generatingPaymentLink}
-              >
-                <DollarSign className="h-4 w-4" />
-                {generatingPaymentLink ? "Generating..." : "Payment Link"}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -789,23 +692,6 @@ export default function InvoiceBuilder() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">
-                          Select Client <span className="text-red-500">*</span>
-                        </Label>
-                        <Select value={selectedClientId || ""} onValueChange={(val) => setSelectedClientId(val)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a client..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(clients as any[] || []).map((c: any) => (
-                              <SelectItem key={c._id} value={c._id}>
-                                {c.name}{c.company ? ` (${c.company})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="clientName" className="text-sm">
@@ -831,20 +717,6 @@ export default function InvoiceBuilder() {
                           />
                         </div>
                       </div>
-                      {(linkedProjectId || linkedProposalId) && (
-                        <div className="flex gap-2 flex-wrap">
-                          {linkedProjectId && (
-                            <Badge variant="outline" className="text-xs bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30">
-                              Linked Project
-                            </Badge>
-                          )}
-                          {linkedProposalId && (
-                            <Badge variant="outline" className="text-xs bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30">
-                              Linked Proposal
-                            </Badge>
-                          )}
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
 

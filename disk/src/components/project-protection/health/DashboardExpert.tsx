@@ -31,7 +31,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
           <p className="text-sm text-slate-600 mt-1">Enterprise-level timeline protection</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <div className="text-2xl font-bold text-primary">${valueMetric.amount}</div>
+          <div className="text-2xl font-bold text-teal-600">${valueMetric.amount}</div>
           <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
         </div>
       </div>
@@ -46,7 +46,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
               label={pillar.name}
               unit={pillar.unit}
               size="sm"
-              color={["#1e293b", "#334155", "#475569", "#FFD700"][idx]}
+              color={["#00C9B7", "#0087A6", "#00A896", "#FFD700"][idx]}
               tooltip={`${pillar.name}: ${pillar.value}${pillar.unit}`}
             />
           ))}
@@ -83,7 +83,7 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Social Proof */}
       {darkPsychology.socialProof && (
         <div className="px-6 pb-6">
-          <div className="bg-gradient-to-r from-muted/50 to-blue-50 rounded-lg p-4 border border-border">
+          <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 border border-teal-200">
             <p className="text-sm text-center text-slate-900 font-medium">{darkPsychology.socialProof}</p>
           </div>
         </div>
@@ -92,14 +92,14 @@ export function DashboardExpert({ data }: DashboardExpertProps) {
       {/* Value Statement */}
       <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
         <p className="text-center text-slate-900">
-          You're protecting <span className="font-bold text-primary">${valueMetric.amount}</span>/{valueMetric.cadence} across all projects through business-wide timeline protection
+          You're protecting <span className="font-bold text-teal-600">${valueMetric.amount}</span>/{valueMetric.cadence} across all projects through business-wide timeline protection
         </p>
       </div>
 
       {/* Top Tier Badge */}
-      <div className="p-6 border-t border-slate-200 bg-gradient-to-r from-muted/50 to-blue-50">
+      <div className="p-6 border-t border-slate-200 bg-gradient-to-r from-teal-50 to-blue-50">
         <div className="text-center">
-          <TrendingUp className="w-8 h-8 text-primary mx-auto mb-2" />
+          <TrendingUp className="w-8 h-8 text-teal-600 mx-auto mb-2" />
           <p className="font-medium text-slate-900">Top-tier protection active</p>
           <p className="text-sm text-slate-600 mt-1">You have access to all enterprise features</p>
         </div>

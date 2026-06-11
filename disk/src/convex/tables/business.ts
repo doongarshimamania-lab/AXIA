@@ -220,14 +220,128 @@ export const businessTables = {
     .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
-  // INVOICES (Validated Billing) — MOVED to billing.ts
-  // These tables are now defined in billingTables (billing.ts) which is the
-  // canonical source for invoice schema. The billing.ts version has been
-  // consolidated with all fields from both schemas.
+  // INVOICES (Validated Billing)
   // ─────────────────────────────────────────────
-  // invoices: defineTable({ ... }) — SEE billing.ts
-  // invoiceWorkLinks: defineTable({ ... }) — SEE billing.ts
-  // paymentReminders: defineTable({ ... }) — SEE billing.ts
+  invoices: defineTable({
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    teamId: v.optional(v.id("teams")),
+    sharing: v.optional(v.array(sharingEntry)),
+    customFields: v.optional(v.any()),
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    proposalId: v.optional(v.id("proposals")),
+    invoiceNumber: v.string(), // auto-generated: INV-001, INV-002, etc.
+    // Line items stored as JSON
+    lineItems: v.array(v.object({
+      id: v.string(),
+      description: v.string(),
+      quantity: v.number(),
+      rate: v.number(),
+      amount: v.number(),
+      type: v.optional(v.union(
+        v.literal("service"),
+        v.literal("product"),
+        v.literal("time"),
+        v.literal("expense"),
+        v.literal("discount"),
+      )),
+    })),
+    subtotal: v.number(),
+    taxRate: v.optional(v.number()),
+    taxAmount: v.optional(v.number()),
+    discountAmount: v.optional(v.number()),
+    total: v.number(),
+    currency: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("sent"),
+      v.literal("viewed"),
+      v.literal("paid"),
+      v.literal("partial"),
+      v.literal("overdue"),
+      v.literal("cancelled"),
+    ),
+    dueDate: v.number(),
+    sentAt: v.optional(v.number()),
+    viewedAt: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
+    paidAmount: v.optional(v.number()),
+    // Stripe integration
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeInvoiceId: v.optional(v.string()),
+    // Public access
+    publicToken: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    terms: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_status", ["userId", "status"])
+    .index("by_client", ["clientId"])
+    .index("by_public_token", ["publicToken"])
+    .index("by_user_and_number", ["userId", "invoiceNumber"])
+    .index("by_workspace", ["workspaceId"])
+    .index("by_team", ["teamId"]),
+
+  // ─────────────────────────────────────────────
+  // INVOICE WORK LINKS (Validated Billing Proof)
+  // ─────────────────────────────────────────────
+  invoiceWorkLinks: defineTable({
+    invoiceId: v.id("invoices"),
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    lineItemIndex: v.number(), // which line item this proof belongs to
+    // Link to various proof sources
+    workSessionId: v.optional(v.id("workSessions")),
+    description: v.string(),
+    evidenceUrl: v.optional(v.string()),
+    type: v.union(
+      v.literal("time"),
+      v.literal("task"),
+      v.literal("milestone"),
+      v.literal("deliverable"),
+      v.literal("expense"),
+    ),
+    hours: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_invoice", ["invoiceId"])
+    .index("by_user", ["userId"])
+    .index("by_session", ["workSessionId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  // ─────────────────────────────────────────────
+  // PAYMENT REMINDERS
+  // ─────────────────────────────────────────────
+  paymentReminders: defineTable({
+    invoiceId: v.id("invoices"),
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    sequenceDay: v.number(), // 3, 7, 14
+    channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
+    tone: v.union(v.literal("friendly"), v.literal("professional"), v.literal("firm")),
+    status: v.union(
+      v.literal("scheduled"),
+      v.literal("sent"),
+      v.literal("cancelled"),
+    ),
+    subject: v.string(),
+    body: v.string(),
+    scheduledFor: v.number(),
+    sentAt: v.optional(v.number()),
+    openedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_invoice", ["invoiceId"])
+    .index("by_user_and_status", ["userId", "status"])
+    .index("by_scheduled", ["scheduledFor"])
+    .index("by_workspace", ["workspaceId"]),
 
   // ─────────────────────────────────────────────
   // SCOPE DEFINITIONS

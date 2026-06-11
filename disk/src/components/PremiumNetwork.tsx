@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface PremiumNetworkProps {
-  onFindFreelancers?: () => void;
+  onFindPartners?: () => void;
   onReferralProgram?: () => void;
   onRespondToOpportunity?: (opportunityId: string) => void;
 }
 
 export function PremiumNetwork({
-  onFindFreelancers,
+  onFindPartners,
   onReferralProgram,
   onRespondToOpportunity,
 }: PremiumNetworkProps) {
@@ -58,7 +58,7 @@ export function PremiumNetwork({
       hourlyRate: 50,
       protectedHours: 390,
       image: "",
-      connectedPlatforms: ["Upwork", "Freelancer"],
+      connectedPlatforms: ["Upwork", "Freelancer.com"],
       connectionStrength: 85
     }
   ];
@@ -100,9 +100,9 @@ export function PremiumNetwork({
       <div className="p-8">
         <Card className="p-8 text-center">
           <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Premium Network</h2>
+          <h2 className="text-2xl font-bold mb-2">Agency Partners</h2>
           <p className="text-muted-foreground mb-6">
-            This feature is exclusive to Pro users. Upgrade to connect with other freelancers and access referral opportunities.
+            This feature is exclusive to Pro users. Upgrade to connect with trusted partner agencies and access referral opportunities.
           </p>
           <Button onClick={() => window.location.href = '/dashboard'}>
             Back to Dashboard
@@ -131,11 +131,11 @@ export function PremiumNetwork({
           <div className="flex items-center">
             <Users className="w-6 h-6 text-primary mr-2" />
             <h3 className="font-[Space_Grotesk] font-bold text-xl text-foreground">
-              Protection Network
+              Agency Partners
             </h3>
           </div>
           <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-            EXCLUSIVE
+            PRO
           </span>
         </div>
 
@@ -143,7 +143,7 @@ export function PremiumNetwork({
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm font-medium text-foreground">Your Network</span>
             <span className="text-xs text-muted-foreground">
-              {totalConnections} connections
+              {totalConnections} partner agencies
             </span>
           </div>
 
@@ -205,14 +205,14 @@ export function PremiumNetwork({
         <div className="grid grid-cols-2 gap-3 mb-4">
           <button
             onClick={() => {
-              onFindFreelancers?.();
+              onFindPartners?.();
               setShowNetworkModal(true);
             }}
             className="p-3 border border-border rounded-lg hover:bg-muted/50 transition text-left"
           >
             <div className="flex items-center mb-1">
               <Search className="w-4 h-4 mr-2 text-primary" />
-              <span className="text-sm text-foreground">Find Freelancers</span>
+              <span className="text-sm text-foreground">Find Partners</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Connect with similar professionals
@@ -235,8 +235,7 @@ export function PremiumNetwork({
 
         <div className="p-3 bg-accent/50 rounded-md">
           <p className="text-sm text-foreground">
-            <span className="font-medium">Network Value:</span> Premium users in our
-            network earn 18% more through referrals
+            <span className="font-medium">Network Value:</span> Connect with trusted partner agencies for collaboration and referrals
           </p>
         </div>
       </Card>
@@ -245,7 +244,7 @@ export function PremiumNetwork({
       <Dialog open={showNetworkModal} onOpenChange={setShowNetworkModal}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Protection Network</DialogTitle>
+            <DialogTitle>Agency Partners</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {networkConnections?.map((connection: any) => (

@@ -46,11 +46,11 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="border-l-2 border-primary pl-4 py-1"
+            className="border-l-2 border-[#00C9B7] pl-4 py-1"
           >
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{pillar.label}</div>
             <div className="text-lg font-bold text-white">{pillar.displayValue}</div>
-            <div className="text-[10px] text-primary">{pillar.description}</div>
+            <div className="text-[10px] text-[#00C9B7]">{pillar.description}</div>
           </motion.div>
         ))}
       </div>
@@ -66,7 +66,7 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
                 <span>Optimize cross-platform sync</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-300 bg-white/5 px-2 py-1 rounded">
-                <TrendingUp className="w-3 h-3 text-primary" />
+                <TrendingUp className="w-3 h-3 text-[#00C9B7]" />
                 <span>Standardize evidence cadence</span>
               </div>
             </div>
@@ -85,7 +85,7 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
                       key={`${node.id}-${targetId}`}
                       x1={`${node.x}%`} y1={`${node.y}%`}
                       x2={`${target.x}%`} y2={`${target.y}%`}
-                      stroke="currentColor" strokeWidth="1" strokeOpacity="0.3"
+                      stroke="#00C9B7" strokeWidth="1" strokeOpacity="0.3"
                     />
                   );
                 })
@@ -96,8 +96,8 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
             {businessMapNodes?.map((node) => (
               <motion.div
                 key={node.id}
-                className={`absolute w-3 h-3 rounded-full cursor-pointer shadow-sm ${
-                  node.type === 'platform' ? 'bg-[#FFD700]' : 'bg-primary'
+                className={`absolute w-3 h-3 rounded-full cursor-pointer shadow-[0_0_10px_rgba(0,201,183,0.5)] ${
+                  node.type === 'platform' ? 'bg-[#FFD700]' : 'bg-[#00C9B7]'
                 }`}
                 style={{ left: `${node.x}%`, top: `${node.y}%` }}
                 whileHover={{ scale: 1.5 }}
@@ -114,7 +114,7 @@ export function ProjectRiskTimelineExpert({ data }: ProjectRiskTimelineExpertPro
       {/* Trust Statement */}
       <div className="relative z-10 p-4 text-center border-t border-slate-700/50 bg-[#0A192F]">
         <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-primary" />
+          <ShieldCheck className="w-4 h-4 text-[#00C9B7]" />
           <span>Your entire business timeline is strategically protected</span>
         </div>
       </div>

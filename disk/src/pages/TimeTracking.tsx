@@ -141,7 +141,7 @@ export default function TimeTracking() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState<"upwork" | "fiverr" | "toptal" | "manual">("upwork");
+  const [selectedPlatform, setSelectedPlatform] = useState<"upwork" | "fiverr" | "toptal" | "manual">("manual");
   const [entryMemo, setEntryMemo] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);

@@ -38,7 +38,7 @@ import { api } from "@/convex/_generated/api";
 
 const PRESET_COLORS = [
   "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e",
-  "#475569", "#64748B", "#6366f1", "#a855f7", "#ec4899",
+  "#14b8a6", "#06b6d4", "#6366f1", "#a855f7", "#ec4899",
   "#f43f5e", "#0ea5e9",
 ];
 
@@ -72,7 +72,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_4" as any,
     name: "Client Communication",
-    color: "#64748B",
+    color: "#06b6d4",
     category: "client" as string | null,
     usageCount: 31,
     createdAt: Date.now() - 140 * 24 * 60 * 60 * 1000,
@@ -88,7 +88,7 @@ const MOCK_TAGS = [
   {
     _id: "tag_6" as any,
     name: "Documentation",
-    color: "#475569",
+    color: "#14b8a6",
     category: "project" as string | null,
     usageCount: 9,
     createdAt: Date.now() - 115 * 24 * 60 * 60 * 1000,

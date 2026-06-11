@@ -58,7 +58,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
         
         <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <p className="text-slate-900 dark:text-slate-100 text-base mb-1">
-            You've protected <span className="text-2xl font-bold text-primary" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${trackedValue}</span>/week
+            You've protected <span className="text-2xl font-bold text-teal-600" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>${trackedValue}</span>/week
           </p>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
             by identifying timeline risks
@@ -111,7 +111,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
             Prevent ${Math.round(weeklyValue * 0.35)}/week in context-related payment denials
           </p>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
+          <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
             Upgrade to Starter → $4/mo
           </Button>
         </div>
@@ -190,7 +190,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
             Prevent ${Math.round(monthlyValue * 0.48)}/month in payment denials with comprehensive protection
           </p>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
+          <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
             Upgrade to Pro → $7/mo
           </Button>
         </div>
@@ -271,7 +271,7 @@ export function ClientDisputeSimulation({ clientData, tier }: ClientDisputeSimul
           <p className="text-purple-700 dark:text-purple-300 text-sm mb-3">
             Protect ${Math.round(monthlyValue * 0.95)}/month across all projects with business-wide protection
           </p>
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
+          <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold">
             Upgrade to Expert → $12/mo
           </Button>
         </div>

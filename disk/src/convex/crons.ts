@@ -9,7 +9,7 @@ const crons = cronJobs();
 crons.interval(
   "process due proposal follow-ups",
   { hours: 1 },
-  internal.proposals.crud.processDueFollowUps,
+  internal.proposals.processDueFollowUps,
   {}
 );
 
@@ -19,14 +19,6 @@ crons.interval(
   "process due payment reminders",
   { hours: 1 },
   internal.invoices.processDueReminders,
-  {}
-);
-
-// Process recurring invoices daily at 6am UTC
-crons.cron(
-  "processRecurringInvoices",
-  "0 6 * * *",
-  internal.invoices.processRecurringInvoices,
   {}
 );
 
