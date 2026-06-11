@@ -7,384 +7,232 @@
    V2 DESIGN SYSTEM — AXIA Brand Tokens
    Source: axia_brand_identity_system_v2.pdf
    85/10/5 rule: 85% neutral, 10% teal brand, 5% accent
+   
+   Tailwind 4 strategy: @theme inline = LIGHT mode values (becomes :root)
+   Dark mode overrides go in @layer base .dark { ... }
    ============================================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
+  /* ── Shadcn semantic bridge (light mode defaults) ── */
+  --color-background: #F8FAFC;
+  --color-foreground: #1E293B;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1E293B;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1E293B;
+  --color-primary: #0D9488;
+  --color-primary-foreground: #F1F5F9;
+  --color-secondary: #F1F5F9;
+  --color-secondary-foreground: #1E293B;
+  --color-muted: #F1F5F9;
+  --color-muted-foreground: #64748B;
+  --color-accent: #0D9488;
+  --color-accent-foreground: #F1F5F9;
+  --color-destructive: #EF4444;
+  --color-border: #E2E8F0;
+  --color-input: #E2E8F0;
+  --color-ring: #0D9488;
+  --color-chart-1: #475993;
+  --color-chart-2: #0D9488;
+  --color-chart-3: #94A3B8;
+  --color-chart-4: #7DD3FC;
+  --color-chart-5: #64748B;
+  --color-sidebar: #F8FAFC;
+  --color-sidebar-foreground: #1E293B;
+  --color-sidebar-primary: #0D9488;
+  --color-sidebar-primary-foreground: #F1F5F9;
+  --color-sidebar-accent: #F1F5F9;
+  --color-sidebar-accent-foreground: #1E293B;
+  --color-sidebar-border: #E2E8F0;
+  --color-sidebar-ring: #0D9488;
+
+  /* ── Radius ── */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
   /* ── Brand Primary: Deep Teal Scale (10% of visible area) ── */
-  --color-axia-teal-50: var(--axia-teal-50);
-  --color-axia-teal-100: var(--axia-teal-100);
-  --color-axia-teal-200: var(--axia-teal-200);
-  --color-axia-teal-300: var(--axia-teal-300);
-  --color-axia-teal-400: var(--axia-teal-400);
-  --color-axia-teal-500: var(--axia-teal-500);
-  --color-axia-teal-600: var(--axia-teal-600);
-  --color-axia-teal-700: var(--axia-teal-700);
-  --color-axia-teal-800: var(--axia-teal-800);
-  --color-axia-teal-900: var(--axia-teal-900);
+  --color-axia-teal-50: #F0FDFA;
+  --color-axia-teal-100: #CCFBF1;
+  --color-axia-teal-200: #99F6E4;
+  --color-axia-teal-300: #5EEAD4;
+  --color-axia-teal-400: #2DD4BF;
+  --color-axia-teal-500: #14B8A6;
+  --color-axia-teal-600: #0D9488;
+  --color-axia-teal-700: #0F766E;
+  --color-axia-teal-800: #115E59;
+  --color-axia-teal-900: #134E4A;
 
   /* ── Brand Secondary: Platinum Silver Scale (5% accent) ── */
-  --color-platinum-50: var(--platinum-50);
-  --color-platinum-100: var(--platinum-100);
-  --color-platinum-200: var(--platinum-200);
-  --color-platinum-300: var(--platinum-300);
-  --color-platinum-400: var(--platinum-400);
-  --color-platinum-500: var(--platinum-500);
-  --color-platinum-600: var(--platinum-600);
-  --color-platinum-700: var(--platinum-700);
-  --color-platinum-800: var(--platinum-800);
-  --color-platinum-900: var(--platinum-900);
-  --color-platinum-950: var(--platinum-950);
+  --color-platinum-50: #F8FAFC;
+  --color-platinum-100: #F1F5F9;
+  --color-platinum-200: #E2E8F0;
+  --color-platinum-300: #CBD5E1;
+  --color-platinum-400: #94A3B8;
+  --color-platinum-500: #64748B;
+  --color-platinum-600: #475569;
+  --color-platinum-700: #334155;
+  --color-platinum-800: #1E293B;
+  --color-platinum-900: #0F172A;
+  --color-platinum-950: #020617;
 
-  /* ── Semantic: Status Colors (5% accent tier) ── */
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-protected: var(--protected);
-  --color-info: var(--info);
+  /* ── Semantic: Status Colors ── */
+  --color-success: #14B8A6;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-protected: #10B981;
+  --color-info: #3B82F6;
 
   /* ── Semantic: Brand & Surface ── */
-  --color-brand: var(--primary);
-  --color-brand-foreground: var(--primary-foreground);
-  --color-surface-dark: var(--bg-page);
-  --color-surface-card: var(--card);
-  --color-surface-elevated: var(--bg-surface-3);
+  --color-brand: #0D9488;
+  --color-brand-foreground: #F1F5F9;
+  --color-surface-dark: #F8FAFC;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #E2E8F0;
 
-  /* ── Stage / Pipeline Colors (V2 Section 9 compliant — no indigo/purple) ── */
-  --color-stage-lead: var(--stage-lead);
-  --color-stage-qualified: var(--stage-qualified);
-  --color-stage-proposal: var(--stage-proposal);
-  --color-stage-negotiation: var(--stage-negotiation);
-  --color-stage-won: var(--stage-won);
-  --color-stage-lost: var(--stage-lost);
+  /* ── Stage / Pipeline Colors (V2 Section 9 — no indigo/purple) ── */
+  --color-stage-lead: #0D9488;
+  --color-stage-qualified: #0F766E;
+  --color-stage-proposal: #475993;
+  --color-stage-negotiation: #94A3B8;
+  --color-stage-won: #10B981;
+  --color-stage-lost: #EF4444;
 
-  /* ── Extended Semantic (indigo REMOVED — forbidden per V2 Section 9) ── */
-  --color-border-muted: var(--border-muted);
-  --color-icon-blue: var(--icon-blue);
-  --color-page-bg-from: var(--page-bg-from);
-  --color-page-bg-to: var(--page-bg-to);
-  --color-navy-accent: var(--navy-accent);
-  --color-chart-primary: var(--chart-primary);
-  --color-chart-frost: var(--chart-frost);
+  /* ── Extended Semantic ── */
+  --color-border-muted: #CBD5E1;
+  --color-icon-blue: #3B82F6;
+  --color-page-bg-from: #F0F9FF;
+  --color-page-bg-to: #F8FAFC;
+  --color-navy-accent: #F1F5F9;
+  --color-chart-primary: #475993;
+  --color-chart-frost: #7DD3FC;
+
+  /* ── Fonts ── */
+  --font-sans: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
 }
 
-:root {
-  --radius: 0.625rem;
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE OVERRIDES — in @layer base so Tailwind preserves them
+   Navy-tinted backgrounds (PDF Section 4.2)
+   Pure black forbidden. Use #0A0F1C navy-tinted instead.
+   ═══════════════════════════════════════════════════════════ */
+@layer base {
+  :root {
+    --radius: 0.625rem;
 
-  /* ═══════════════════════════════════════════════════════════
-     85% NEUTRAL — Light mode defaults (Tailwind .dark strategy)
-     :root = LIGHT mode, .dark = DARK mode overrides
-     ═══════════════════════════════════════════════════════════ */
+    /* Light mode custom properties (not color tokens — those are in @theme) */
+    --bg-page: #F8FAFC;
+    --bg-surface-1: #FFFFFF;
+    --bg-surface-2: #F1F5F9;
+    --bg-surface-3: #E2E8F0;
+    --border-subtle: #E2E8F0;
+    --border-default: #CBD5E1;
+    --border-strong: #94A3B8;
+    --text-primary: #1E293B;
+    --text-secondary: #64748B;
+    --text-tertiary: #94A3B8;
+    --text-inverse: #F1F5F9;
+    --accent-primary: #0D9488;
+    --accent-hover: #14B8A6;
+    --accent-muted: rgba(13,148,136,0.15);
+    --accent-secondary: #94A3B8;
+    --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+    --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+    --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+    --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+    --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+  }
 
-  /* Light Mode Background System */
-  --bg-page: #F8FAFC;
-  --bg-surface-1: #FFFFFF;
-  --bg-surface-2: #F1F5F9;
-  --bg-surface-3: #E2E8F0;
+  .dark {
+    /* ── Dark mode semantic overrides ── */
+    --color-background: #0A0F1C;
+    --color-foreground: #F1F5F9;
+    --color-card: #0C1322;
+    --color-card-foreground: #F1F5F9;
+    --color-popover: #0C1322;
+    --color-popover-foreground: #F1F5F9;
+    --color-primary: #0D9488;
+    --color-primary-foreground: #F1F5F9;
+    --color-secondary: #111827;
+    --color-secondary-foreground: #F1F5F9;
+    --color-muted: #111827;
+    --color-muted-foreground: #94A3B8;
+    --color-accent: #0D9488;
+    --color-accent-foreground: #F1F5F9;
+    --color-destructive: #EF4444;
+    --color-border: rgba(255,255,255,0.08);
+    --color-input: rgba(255,255,255,0.08);
+    --color-ring: #0D9488;
+    --color-chart-1: #475993;
+    --color-chart-2: #0D9488;
+    --color-chart-3: #94A3B8;
+    --color-chart-4: #7DD3FC;
+    --color-chart-5: #64748B;
+    --color-sidebar: #0C1322;
+    --color-sidebar-foreground: #F1F5F9;
+    --color-sidebar-primary: #0D9488;
+    --color-sidebar-primary-foreground: #F1F5F9;
+    --color-sidebar-accent: #111827;
+    --color-sidebar-accent-foreground: #F1F5F9;
+    --color-sidebar-border: rgba(255,255,255,0.08);
+    --color-sidebar-ring: #0D9488;
 
-  /* Borders — light mode */
-  --border-subtle: #E2E8F0;
-  --border-default: #CBD5E1;
-  --border-strong: #94A3B8;
+    /* Dark mode status colors — brighter */
+    --color-success: #2DD4BF;
+    --color-warning: #FBBF24;
+    --color-danger: #F87171;
+    --color-protected: #34D399;
+    --color-info: #60A5FA;
 
-  /* Spacing Tokens (PDF Section 4.1) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
+    /* Dark mode brand */
+    --color-brand: #0D9488;
+    --color-brand-foreground: #F1F5F9;
+    --color-surface-dark: #0A0F1C;
+    --color-surface-card: #0C1322;
+    --color-surface-elevated: #1A2035;
 
-  /* Type Scale (PDF Section 3.4) */
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 20px;
-  --text-2xl: 24px;
-  --text-3xl: 30px;
-  --text-4xl: 36px;
-  --text-display: 48px;
+    /* Dark mode stage — brighter */
+    --color-stage-lead: #14B8A6;
+    --color-stage-qualified: #2DD4BF;
+    --color-stage-proposal: #7DD3FC;
+    --color-stage-negotiation: #CBD5E1;
+    --color-stage-won: #34D399;
+    --color-stage-lost: #F87171;
 
-  /* Text System — Light mode defaults */
-  --text-primary: #1E293B;
-  --text-secondary: #64748B;
-  --text-tertiary: #94A3B8;
-  --text-inverse: #F1F5F9;
+    /* Dark mode extended */
+    --color-border-muted: #4B5563;
+    --color-icon-blue: #93C5FD;
+    --color-page-bg-from: #0A0F1C;
+    --color-page-bg-to: #0C1322;
+    --color-navy-accent: #112240;
 
-  /* Light mode shadcn bridge */
-  --background: #F8FAFC;
-  --foreground: #1E293B;
-  --card: #FFFFFF;
-  --card-foreground: #1E293B;
-  --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
-
-  /* Primary: Teal is brand primary even in light mode per PDF */
-  --primary: #0D9488;
-  --primary-foreground: #F1F5F9;
-
-  --secondary: #F1F5F9;
-  --secondary-foreground: #1E293B;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-
-  /* Accent → Teal brand (PDF: --accent-primary) */
-  --accent: #0D9488;
-  --accent-foreground: #F1F5F9;
-
-  /* V2 Accent Tokens (PDF Section 11) */
-  --accent-primary: var(--axia-teal-600);
-  --accent-hover: var(--axia-teal-500);
-  --accent-muted: rgba(13,148,136,0.15);
-  --accent-secondary: var(--platinum-400);
-
-  --destructive: #EF4444;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #0D9488;
-
-  --chart-1: #475993;
-  --chart-2: #0D9488;
-  --chart-3: #94A3B8;
-  --chart-4: #7DD3FC;
-  --chart-5: #64748B;
-
-  /* Sidebar */
-  --sidebar: #F8FAFC;
-  --sidebar-foreground: #1E293B;
-  --sidebar-primary: #0D9488;
-  --sidebar-primary-foreground: #F1F5F9;
-  --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #1E293B;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #0D9488;
-
-  /* ═══════════════════════════════════════════════════════════
-     10% BRAND PRIMARY — Deep Teal (PDF Section 4.1)
-     ═══════════════════════════════════════════════════════════ */
-  --axia-teal-50: #F0FDFA;
-  --axia-teal-100: #CCFBF1;
-  --axia-teal-200: #99F6E4;
-  --axia-teal-300: #5EEAD4;
-  --axia-teal-400: #2DD4BF;
-  --axia-teal-500: #14B8A6;
-  --axia-teal-600: #0D9488;
-  --axia-teal-700: #0F766E;
-  --axia-teal-800: #115E59;
-  --axia-teal-900: #134E4A;
-
-  /* ═══════════════════════════════════════════════════════════
-     5% ACCENT — Platinum + Semantic (PDF Sections 4.4, 7.4)
-     ═══════════════════════════════════════════════════════════ */
-  --platinum-50: #F8FAFC;
-  --platinum-100: #F1F5F9;
-  --platinum-200: #E2E8F0;
-  --platinum-300: #CBD5E1;
-  --platinum-400: #94A3B8;
-  --platinum-500: #64748B;
-  --platinum-600: #475569;
-  --platinum-700: #334155;
-  --platinum-800: #1E293B;
-  --platinum-900: #0F172A;
-  --platinum-950: #020617;
-
-  /* Semantic State Colors (PDF Section 4.4) */
-  --protected: #10B981;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --success: #14B8A6;
-  --info: #3B82F6;
-
-  /* Data Visualization (PDF Section 11) */
-  --chart-primary: #475993;
-  --chart-frost: #7DD3FC;
-
-  /* Matte Gradient Recipes — Light mode defaults */
-  --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
-  --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
-  --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
-  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
-  --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
-
-  /* Stage / Pipeline Colors (V2 Section 9 — indigo/purple FORBIDDEN) */
-  --stage-lead: #0D9488;
-  --stage-qualified: #0F766E;
-  --stage-proposal: #475993;
-  --stage-negotiation: #94A3B8;
-  --stage-won: #10B981;
-  --stage-lost: #EF4444;
-
-  /* Extended semantic — Light mode defaults */
-  --border-muted: #CBD5E1;
-  --icon-blue: #3B82F6;
-  --page-bg-from: #F0F9FF;
-  --page-bg-to: #F8FAFC;
-  --navy-accent: #F1F5F9;
-  --accent-highlight: var(--platinum-400);
-}
-
-.dark {
-  /* ═══════════════════════════════════════════════════════════
-     DARK MODE — Navy-tinted backgrounds (PDF Section 4.2)
-     Pure black forbidden. Use #0A0F1C navy-tinted instead.
-     ═══════════════════════════════════════════════════════════ */
-
-  /* Dark Mode Background System */
-  --bg-page: #0A0F1C;
-  --bg-surface-1: #0C1322;
-  --bg-surface-2: #111827;
-  --bg-surface-3: #1A2035;
-
-  /* Borders — dark mode opacity-based */
-  --border-subtle: rgba(255,255,255,0.04);
-  --border-default: rgba(255,255,255,0.08);
-  --border-strong: rgba(255,255,255,0.12);
-
-  /* Text System — Dark mode */
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-tertiary: #64748B;
-  --text-inverse: #1E293B;
-
-  --background: #0A0F1C;
-  --foreground: #F1F5F9;
-  --card: #0C1322;
-  --card-foreground: #F1F5F9;
-  --popover: #0C1322;
-  --popover-foreground: #F1F5F9;
-
-  --primary: #0D9488;
-  --primary-foreground: #F1F5F9;
-
-  --secondary: #111827;
-  --secondary-foreground: #F1F5F9;
-  --muted: #111827;
-  --muted-foreground: #94A3B8;
-
-  --accent: #0D9488;
-  --accent-foreground: #F1F5F9;
-
-  --destructive: #EF4444;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.08);
-  --ring: #0D9488;
-
-  --chart-1: #475993;
-  --chart-2: #0D9488;
-  --chart-3: #94A3B8;
-  --chart-4: #7DD3FC;
-  --chart-5: #64748B;
-
-  --sidebar: #0C1322;
-  --sidebar-foreground: #F1F5F9;
-  --sidebar-primary: #0D9488;
-  --sidebar-primary-foreground: #F1F5F9;
-  --sidebar-accent: #111827;
-  --sidebar-accent-foreground: #F1F5F9;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: #0D9488;
-
-  /* Teal Scale — same in dark mode */
-  --axia-teal-50: #F0FDFA;
-  --axia-teal-100: #CCFBF1;
-  --axia-teal-200: #99F6E4;
-  --axia-teal-300: #5EEAD4;
-  --axia-teal-400: #2DD4BF;
-  --axia-teal-500: #14B8A6;
-  --axia-teal-600: #0D9488;
-  --axia-teal-700: #0F766E;
-  --axia-teal-800: #115E59;
-  --axia-teal-900: #134E4A;
-
-  /* Platinum Scale — same */
-  --platinum-50: #F8FAFC;
-  --platinum-100: #F1F5F9;
-  --platinum-200: #E2E8F0;
-  --platinum-300: #CBD5E1;
-  --platinum-400: #94A3B8;
-  --platinum-500: #64748B;
-  --platinum-600: #475569;
-  --platinum-700: #334155;
-  --platinum-800: #1E293B;
-  --platinum-900: #0F172A;
-  --platinum-950: #020617;
-
-  /* Gradients — Dark mode */
-  --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
-  --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
-  --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
-  --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
-  --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
-
-  /* Semantic — dark mode brighter variants */
-  --protected: #34D399;
-  --warning: #FBBF24;
-  --danger: #F87171;
-  --success: #2DD4BF;
-  --info: #60A5FA;
-
-  --chart-primary: #475993;
-  --chart-frost: #7DD3FC;
-
-  /* Stage colors — brighter for dark (V2 Section 9 compliant) */
-  --stage-lead: #14B8A6;
-  --stage-qualified: #2DD4BF;
-  --stage-proposal: #7DD3FC;
-  --stage-negotiation: #CBD5E1;
-  --stage-won: #34D399;
-  --stage-lost: #F87171;
-
-  /* Extended semantic (indigo REMOVED) */
-  --border-muted: #4B5563;
-  --icon-blue: #93C5FD;
-  --page-bg-from: #0A0F1C;
-  --page-bg-to: #0C1322;
-  --navy-accent: #112240;
-  --accent-highlight: var(--platinum-400);
+    /* Dark mode custom properties */
+    --bg-page: #0A0F1C;
+    --bg-surface-1: #0C1322;
+    --bg-surface-2: #111827;
+    --bg-surface-3: #1A2035;
+    --border-subtle: rgba(255,255,255,0.04);
+    --border-default: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.12);
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-tertiary: #64748B;
+    --text-inverse: #1E293B;
+    --accent-primary: #0D9488;
+    --accent-hover: #2DD4BF;
+    --accent-muted: rgba(13,148,136,0.20);
+    --accent-secondary: #94A3B8;
+    --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+    --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
+    --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
+    --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
+    --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
+  }
 }
 
 /* ── Light mode: Global text-white override ── */
-/* In light mode, text-white is invisible on light surfaces — override to dark text
-   EXCEPT: elements on colored/accent backgrounds (buttons, badges, icons inside teal/emerald/red bg) */
 :root:not(.dark) .text-white {
   color: var(--foreground) !important;
 }
@@ -474,8 +322,6 @@
 /* ── Light mode: text-blue-100/200 ── */
 :root:not(.dark) .text-blue-100 { color: #1E40AF !important; }
 :root:not(.dark) .text-blue-200 { color: #1D4ED8 !important; }
-:root:not(.dark) .text-blue-200\/60 { color: rgba(29,78,216,0.6) !important; }
-:root:not(.dark) .text-blue-200\/80 { color: rgba(29,78,216,0.8) !important; }
 :root:not(.dark) .text-blue-300 { color: #2563EB !important; }
 :root:not(.dark) .text-blue-400 { color: #3B82F6 !important; }
 
@@ -590,7 +436,6 @@
   border-radius: 2px;
 }
 
-/* Skip-to-content for keyboard navigation */
 .skip-to-content {
   position: absolute;
   top: -100%;
@@ -608,7 +453,6 @@
   top: 0.5rem;
 }
 
-/* Custom scrollbar for dark sidebar */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -636,7 +480,6 @@
   background-color: #F8FAFC;
 }
 
-/* Smooth animations */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
