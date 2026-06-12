@@ -269,26 +269,26 @@ export default function AccountSettings() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
             Account Settings
           </h1>
-          <p className="text-[16px] text-muted-foreground">
+          <p className="text-sm md:text-[16px] text-muted-foreground">
             Manage your profile, subscription, get help, and secure your account.
           </p>
         </div>
 
-        <div className="flex gap-8">
-          {/* Left Sidebar Navigation */}
-          <nav className="w-56 flex-shrink-0">
-            <div className="bg-card border border-border rounded-xl p-2 space-y-1 sticky top-8">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+          {/* Left Sidebar Navigation — horizontal tabs on mobile, vertical on desktop */}
+          <nav className="w-full md:w-56 flex-shrink-0">
+            <div className="bg-card border border-border rounded-xl p-2 space-y-1 md:sticky md:top-8 flex md:flex-col gap-1 overflow-x-auto md:overflow-visible">
               {navItems.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setActiveSection(key)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                     activeSection === key
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"

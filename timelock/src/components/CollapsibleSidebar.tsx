@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
@@ -50,6 +51,7 @@ export function CollapsibleSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   // Analytics: wrap toggleTheme to track theme changes
   const handleToggleTheme = () => {
@@ -188,7 +190,7 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto hidden md:flex"
         initial={false}
         animate={{ width: isExpanded ? 280 : 64 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -536,6 +538,64 @@ export function CollapsibleSidebar() {
           )}
         </div>
       </motion.div>
+
+      {/* Mobile sidebar: always expanded, shown inside Sheet from main.tsx */}
+      {isMobile && (
+        <div className="h-full bg-sidebar flex flex-col overflow-y-auto">
+          {/* Logo */}
+          <div className="h-14 border-b border-sidebar-border flex items-center px-4">
+            <div className="flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+                <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span className="font-[Space_Grotesk] font-semibold text-base text-sidebar-foreground">Axia</span>
+            </div>
+          </div>
+          {/* Nav items — always expanded on mobile */}
+          <div className="flex-1 py-2 space-y-2 overflow-y-auto">
+            <div className="px-2 space-y-0.5">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">WORK</div>
+              <button onClick={() => navigate("/dashboard")} className="w-full text-left"><NavItem icon={Home} label="Dashboard" isExpanded={true} /></button>
+              <button onClick={() => navigate("/projects")} className="w-full text-left"><NavItem icon={Briefcase} label="Projects" isExpanded={true} /></button>
+              <button onClick={() => navigate("/clients")} className="w-full text-left"><NavItem icon={Users} label="Clients" isExpanded={true} /></button>
+              <button onClick={() => navigate("/teams")} className="w-full text-left"><NavItem icon={Building2} label="Team" isExpanded={true} /></button>
+              <button onClick={() => navigate("/messages")} className="w-full text-left"><NavItem icon={MessageSquare} label="Messages" isExpanded={true} /></button>
+              <button onClick={() => navigate("/scope")} className="w-full text-left"><NavItem icon={Shield} label="Scope" isExpanded={true} /></button>
+              <button onClick={() => navigate("/evidence-library")} className="w-full text-left"><NavItem icon={Database} label="Evidence Library" isExpanded={true} /></button>
+              <button onClick={() => navigate("/time-tracking")} className="w-full text-left"><NavItem icon={Clock} label="Time Tracking" isExpanded={true} /></button>
+              <button onClick={() => navigate("/goals")} className="w-full text-left"><NavItem icon={TrendingUp} label="Goals" isExpanded={true} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">CRM</div>
+              <button onClick={() => navigate("/pipeline")} className="w-full text-left"><NavItem icon={Kanban} label="Pipeline" isExpanded={true} /></button>
+              <button onClick={() => navigate("/proposals")} className="w-full text-left"><NavItem icon={FileSignature} label="Proposals" isExpanded={true} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">BILLING</div>
+              <button onClick={() => navigate("/invoices")} className="w-full text-left"><NavItem icon={FileText} label="Invoices" isExpanded={true} /></button>
+              <button onClick={() => navigate("/payment-patterns")} className="w-full text-left"><NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} /></button>
+              <button onClick={() => navigate("/reports")} className="w-full text-left"><NavItem icon={Activity} label="Reports" isExpanded={true} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">ADMIN</div>
+              <button onClick={() => navigate("/account-settings")} className="w-full text-left"><NavItem icon={Settings} label="Account Settings" isExpanded={true} /></button>
+            </div>
+          </div>
+          {/* Bottom: Theme + Work Timeline */}
+          <div className="border-t border-sidebar-border py-2 px-2 space-y-0.5 text-xs">
+            <button onClick={handleToggleTheme} className="w-full text-left">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+                {theme === "dark" ? <Sun className="w-4 h-4 flex-shrink-0" /> : <Moon className="w-4 h-4 flex-shrink-0" />}
+                <span className="font-medium text-[13px]">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </div>
+            </button>
+            <button onClick={() => { const event = new CustomEvent('openTimelinePopup'); window.dispatchEvent(event); }} className="w-full text-left">
+              <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

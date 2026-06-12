@@ -911,7 +911,7 @@ export default function Pipeline() {
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold tracking-tight mb-1">
+            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight mb-1">
               Deal Pipeline
             </h1>
             <p className="text-muted-foreground text-sm">

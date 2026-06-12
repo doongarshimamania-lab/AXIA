@@ -550,7 +550,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-12 w-[360px] max-h-[480px] overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50"
+                  className="absolute right-0 top-12 w-[360px] max-w-[calc(100vw-2rem)] max-h-[480px] overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50"
                 >
                   <div className="sticky top-0 bg-popover border-b border-border px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -632,7 +632,7 @@ export default function Dashboard() {
             <>
               {/* Revenue KPI */}
               <Card className="border-l-4 border-l-emerald-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
-                <CardContent className="pt-4 pb-4 px-5">
+                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Revenue</span>
                     <DollarSign className="h-4 w-4 text-emerald-500" />
@@ -655,7 +655,7 @@ export default function Dashboard() {
 
               {/* Pipeline KPI */}
               <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
-                <CardContent className="pt-4 pb-4 px-5">
+                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline</span>
                     <Kanban className="h-4 w-4 text-blue-500" />
@@ -678,7 +678,7 @@ export default function Dashboard() {
 
               {/* Proposals KPI */}
               <Card className="border-l-4 border-l-violet-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
-                <CardContent className="pt-4 pb-4 px-5">
+                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Proposals</span>
                     <FileSignature className="h-4 w-4 text-violet-500" />
