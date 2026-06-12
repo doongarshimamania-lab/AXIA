@@ -72,6 +72,7 @@ import {
 // Export utility
 import { exportEvidence } from "@/lib/exportUtils";
 import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -450,7 +451,7 @@ export default function EvidenceLibrary() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Page Header ── */}
         <div>
           <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -963,7 +964,7 @@ export default function EvidenceLibrary() {
             </>
           )}
         </section>
-      </div>
+      </PageLayout>
     </div>
   );
 }

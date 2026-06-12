@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -327,7 +328,7 @@ export default function Proposals() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="px-6 py-6 max-w-7xl">
+      <PageLayout wide>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -590,7 +591,7 @@ export default function Proposals() {
         </div>
         </>
         )}
-      </div>
+      </PageLayout>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>

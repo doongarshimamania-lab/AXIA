@@ -52,6 +52,7 @@ import { api } from "@/convex/_generated/api";
 import {
   useWorkspaceContext,
 } from "@/hooks/use-workspace";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Demo Mode Banner ────────────────────────────────────────
 function DemoModeBanner() {
@@ -484,7 +485,7 @@ export default function TeamManagement() {
   };
 
   return (
-    <div className="px-6 py-6">
+    <PageLayout>
       <div className="max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1300,7 +1301,7 @@ export default function TeamManagement() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -1489,7 +1490,7 @@ function SoloModePrompt() {
   };
 
   return (
-    <div className="px-6 py-6">
+    <PageLayout>
       <div className="max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Teams Workspace</h1>
@@ -1547,6 +1548,6 @@ function SoloModePrompt() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

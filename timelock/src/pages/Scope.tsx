@@ -35,6 +35,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -730,7 +731,7 @@ export default function Scope() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -1092,7 +1093,7 @@ export default function Scope() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </PageLayout>
 
       {/* ─── Create Scope Definition Dialog ──────────────────────────── */}
       <Dialog open={showCreateScope} onOpenChange={setShowCreateScope}>

@@ -41,6 +41,7 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportPaymentReport } from "@/lib/exportUtils";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Platform Meta ────────────────────────────────────────────────────────────
 
@@ -402,7 +403,7 @@ export default function PaymentPatterns() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="px-6 py-6 max-w-7xl">
+      <PageLayout wide>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -1046,7 +1047,7 @@ export default function PaymentPatterns() {
             </Tabs>
           </>
         )}
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

@@ -44,6 +44,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -501,7 +502,7 @@ export default function Goals() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background text-foreground"
     >
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -927,7 +928,7 @@ export default function Goals() {
             )}
           </>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Edit Goal Dialog ── */}
       <Dialog

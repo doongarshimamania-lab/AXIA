@@ -21,6 +21,7 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Mock data for demo mode (unauthenticated) ──────────────────────────
 const MOCK_CLIENTS = [
@@ -245,7 +246,7 @@ export default function Clients() {
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -582,7 +583,7 @@ export default function Clients() {
             toast.success("Import complete");
           }}
         />
-      </div>
+      </PageLayout>
     </div>
   );
 }

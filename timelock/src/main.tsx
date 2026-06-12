@@ -23,6 +23,7 @@ import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import "./types/global.d.ts";
 import TimeTracking from "./pages/TimeTracking.tsx";
 import Tags from "./pages/Tags.tsx";
@@ -160,16 +161,19 @@ function MobileHeader() {
         </svg>
         <span className="font-[Space_Grotesk] font-semibold text-base text-foreground">Axia</span>
       </div>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[280px] p-0">
-          <CollapsibleSidebar />
-        </SheetContent>
-      </Sheet>
+      <div className="flex items-center gap-1">
+        <NotificationCenter />
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <CollapsibleSidebar />
+          </SheetContent>
+        </Sheet>
+      </div>
     </div>
   );
 }

@@ -72,6 +72,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Navigation Items ────────────────────────────────────────────────────────
 
@@ -269,7 +270,7 @@ export default function AccountSettings() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="px-6 py-6">
+      <PageLayout>
         {/* Page Header */}
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -360,7 +361,7 @@ export default function AccountSettings() {
             </motion.div>
           </div>
         </div>
-      </div>
+      </PageLayout>
     </div>
   );
 }

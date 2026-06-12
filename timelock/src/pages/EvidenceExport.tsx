@@ -54,6 +54,7 @@ import { api } from "@/convex/_generated/api";
 import { exportEvidence } from "@/lib/exportUtils";
 import { PageLoader } from "@/components/QueryState";
 import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // --- Types ---
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
@@ -444,7 +445,7 @@ export default function EvidenceExport() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background"
     >
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Export</h1>
@@ -894,7 +895,7 @@ export default function EvidenceExport() {
             </Card>
           </>
         )}
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

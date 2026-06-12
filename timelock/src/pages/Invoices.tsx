@@ -44,6 +44,7 @@ import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions, type RecordWithSharing } from "@/hooks/use-permissions";
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -360,7 +361,7 @@ export default function Invoices() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="px-6 py-6">
+      <PageLayout>
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1
@@ -1006,7 +1007,7 @@ export default function Invoices() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </PageLayout>
 
       {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>

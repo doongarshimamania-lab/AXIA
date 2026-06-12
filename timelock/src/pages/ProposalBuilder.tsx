@@ -51,6 +51,7 @@ import {
   Upload,
 } from "lucide-react";
 import { TemplateImportDialog } from "@/components/proposals/TemplateImportDialog";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -498,7 +499,7 @@ export default function ProposalBuilder() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="px-6 py-6 max-w-5xl">
+      <PageLayout narrow>
         {/* ─── Top Bar ────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -808,7 +809,7 @@ export default function ProposalBuilder() {
             </Card>
           </div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ─── Template Dialog ──────────────────────────────────────────── */}
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>

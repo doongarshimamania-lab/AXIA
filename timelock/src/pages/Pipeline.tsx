@@ -71,6 +71,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -907,7 +908,7 @@ export default function Pipeline() {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
-      <div className="px-6 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -1124,7 +1125,7 @@ export default function Pipeline() {
             })}
           </div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Create Deal Dialog ── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

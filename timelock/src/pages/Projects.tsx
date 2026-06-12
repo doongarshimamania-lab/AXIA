@@ -16,6 +16,7 @@ import { ShareDialog } from "@/components/ShareDialog";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 interface Project {
   _id: Id<"projects">;
@@ -134,7 +135,7 @@ export default function Projects() {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
-      <div className="px-6 py-6 space-y-8">
+      <PageLayout className="space-y-8">
           <div className="mb-6">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
               Project Protection
@@ -204,7 +205,7 @@ export default function Projects() {
               </>
             )}
           </div>
-      </div>
+      </PageLayout>
 
       {/* Share Dialog */}
       <ShareDialog

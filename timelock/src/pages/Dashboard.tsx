@@ -22,9 +22,6 @@ import {
   Eye,
   FileSignature,
   CreditCard,
-  Bell,
-  BellRing,
-  X,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -51,6 +48,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { PricingModal } from "@/components/PricingModal";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Format helpers ─────────────────────────────────────────────────────
 function fmtCurrency(n: number): string {
@@ -180,18 +178,6 @@ function ProgressRing({ value, size = 56, strokeWidth = 4, color = "#8B5CF6", la
   );
 }
 
-// ─── Notification type ────────────────────────────────────────────────────
-interface InsightNotification {
-  id: string;
-  icon: React.ElementType;
-  iconColor: string;
-  title: string;
-  description: string;
-  timestamp: number;
-  href: string;
-  read: boolean;
-}
-
 // ─── Get Started state ───────────────────────────────────────────────────
 function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddClient: () => void }) {
   return (
@@ -245,7 +231,6 @@ export default function Dashboard() {
   const { isDisconnected } = useConvexConnectionState();
 
   const [showPricingModal, setShowPricingModal] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   // ─── Convex queries ─────────────────────────────────────────────────────
   const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
@@ -325,33 +310,6 @@ export default function Dashboard() {
     return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (0.4 + i * 0.1) + Math.cos(i * 1.2) * 1)));
   }, [totalProjects]);
 
-  // ─── Build insight notifications ────────────────────────────────────────
-  const notifications: InsightNotification[] = useMemo(() => {
-    const notifs: InsightNotification[] = [];
-    if (invoiceOverdue > 0) {
-      notifs.push({ id: "overdue-alert", icon: AlertCircle, iconColor: "text-red-500 bg-red-500/10", title: `${invoiceOverdue} Overdue Invoice${invoiceOverdue > 1 ? "s" : ""}`, description: `${fmtCurrency(invoiceOutstanding)} outstanding — needs attention`, timestamp: Date.now() - 60000, href: "/invoices", read: false });
-    }
-    if (proposalViewed > 0) {
-      notifs.push({ id: "proposals-viewed", icon: Eye, iconColor: "text-blue-500 bg-blue-500/10", title: `${proposalViewed} Proposal${proposalViewed > 1 ? "s" : ""} Viewed`, description: "Client opened but hasn't signed yet — follow up", timestamp: Date.now() - 300000, href: "/proposals", read: false });
-    }
-    if (proposalSigned > 0) {
-      notifs.push({ id: "proposals-signed", icon: FileSignature, iconColor: "text-emerald-500 bg-emerald-500/10", title: `${proposalSigned} Proposal${proposalSigned > 1 ? "s" : ""} Signed`, description: `${fmtCurrency(proposalTotalValue)} in signed contracts`, timestamp: Date.now() - 600000, href: "/proposals", read: false });
-    }
-    if (invoiceTotal - invoicePaid - invoiceOverdue > 0) {
-      const pending = invoiceTotal - invoicePaid - invoiceOverdue;
-      notifs.push({ id: "invoices-pending", icon: CreditCard, iconColor: "text-amber-500 bg-amber-500/10", title: `${pending} Invoice${pending > 1 ? "s" : ""} Pending`, description: "Sent but awaiting payment", timestamp: Date.now() - 900000, href: "/invoices", read: true });
-    }
-    if (totalDeals > 0) {
-      notifs.push({ id: "pipeline-active", icon: Kanban, iconColor: "text-violet-500 bg-violet-500/10", title: `${totalDeals} Active Deal${totalDeals > 1 ? "s" : ""}`, description: `${fmtCurrency(pipelineValue)} total pipeline value`, timestamp: Date.now() - 1200000, href: "/pipeline", read: true });
-    }
-    if (invoiceRevenue > 0) {
-      notifs.push({ id: "revenue-received", icon: DollarSign, iconColor: "text-emerald-500 bg-emerald-500/10", title: `${fmtCompactCurrency(invoiceRevenue)} Collected`, description: "Revenue received this period", timestamp: Date.now() - 7200000, href: "/invoices", read: true });
-    }
-    return notifs;
-  }, [invoiceOverdue, invoiceOutstanding, proposalViewed, proposalSigned, proposalTotalValue, invoiceTotal, invoicePaid, totalDeals, pipelineValue, invoiceRevenue]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   // ─── Recent items for activity ──────────────────────────────────────────
   const recentItems = useMemo(() => {
     const items: { id: string; type: string; title: string; subtitle: string; status: string; timestamp: number; href: string; icon: React.ElementType; iconColor: string }[] = [];
@@ -398,13 +356,6 @@ export default function Dashboard() {
     setShowPricingModal(false);
   };
 
-  // ─── Auto-dismiss notification panel ───────────────────────────────────
-  useEffect(() => {
-    if (!showNotifications) return;
-    const timer = setTimeout(() => setShowNotifications(false), 15000);
-    return () => clearTimeout(timer);
-  }, [showNotifications]);
-
   // ─── Auth loading gate ──────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -421,7 +372,7 @@ export default function Dashboard() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="px-6 py-6 max-w-[1400px]">
+      <PageLayout maxWidth="max-w-[1400px]">
         {/* ─── Header ─────────────────────────────────────────────────── */}
         <motion.div
           className="flex items-start justify-between mb-8"
@@ -436,74 +387,6 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">
               Your business at a glance — real-time insights, clients, deals, and revenue
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-              >
-                {unreadCount > 0 ? (
-                  <BellRing className="h-5 w-5 text-foreground" />
-                ) : (
-                  <Bell className="h-5 w-5 text-muted-foreground" />
-                )}
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 w-[360px] max-w-[calc(100vw-2rem)] max-h-[480px] overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50"
-                  >
-                    <div className="sticky top-0 bg-popover border-b border-border px-4 py-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold">Insights</h3>
-                        {unreadCount > 0 && (
-                          <Badge variant="destructive" className="text-[10px] h-4 px-1.5">{unreadCount} new</Badge>
-                        )}
-                      </div>
-                      <button onClick={() => setShowNotifications(false)} className="p-1 rounded-md hover:bg-muted transition-colors">
-                        <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {notifications.length === 0 ? (
-                        <div className="py-8 text-center text-sm text-muted-foreground">No insights right now</div>
-                      ) : (
-                        notifications.map((notif) => (
-                          <button
-                            key={notif.id}
-                            onClick={() => { navigate(notif.href); setShowNotifications(false); }}
-                            className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${!notif.read ? "bg-primary/5" : ""}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notif.iconColor}`}>
-                                <notif.icon className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground">{notif.title}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{notif.description}</p>
-                                <p className="text-[10px] text-muted-foreground/60 mt-1">{fmtRelative(notif.timestamp)}</p>
-                              </div>
-                              {!notif.read && <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />}
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
         </motion.div>
 
@@ -987,7 +870,7 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
-      </div>
+      </PageLayout>
 
       {/* Pricing Modal */}
       <PricingModal

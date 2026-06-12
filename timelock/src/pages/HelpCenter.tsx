@@ -43,6 +43,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // --- Types ---
 interface HelpArticle {
@@ -236,7 +237,7 @@ export default function HelpCenter() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="px-6 py-6 max-w-5xl">
+        <PageLayout narrow>
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -703,7 +704,7 @@ export default function HelpCenter() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </PageLayout>
       </div>
     </motion.div>
   );
