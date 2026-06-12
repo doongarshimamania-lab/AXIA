@@ -163,3 +163,44 @@ Stage Summary:
 - All "Loading Timed Out" error cards: REMOVED (replaced with content-first pattern)
 - Architecture: Pages now always show content, never blocking error cards
 - Build succeeds, all pages tested
+---
+Task ID: data-flow-p0-p2-fixes
+Agent: Main Agent
+Task: Fix all priority data flow bugs (P0, P1, P2) from Axia Data Flow Architecture analysis
+
+Work Log:
+- Analyzed Axia_Data_Flow_Architecture.pdf and AXIA_Brand_Identity_Analysis.pdf line by line
+- Verified document claims against actual codebase (found document 70% accurate but outdated on several claims)
+- P0 FIX: Created src/convex/evidence/extension.ts with 3 internal mutations
+  - startEvidenceSession: creates evidenceSession record (was just echoing sessionId)
+  - recordEvidenceEvents: batch-inserts events into evidenceEvents table (was discarding all data)
+  - finalizeEvidenceSession: marks session finalized, computes evidence metadata, creates compliance alerts
+- P0 FIX: Updated src/convex/http.ts to call real internal mutations instead of returning success without persisting
+  - /api/extension/start now calls startEvidenceSession
+  - /api/extension/record now validates, sanitizes, caps at 500 events, and calls recordEvidenceEvents
+  - /api/extension/finalize now calls finalizeEvidenceSession
+- P1 FIX: Updated src/convex/proposals/crud.ts signProposal mutation
+  - Now auto-creates project when proposal is signed (with all fields from proposal)
+  - Now auto-creates scopeDefinition from proposal sections/deliverables
+  - Both cascades are non-blocking (proposal signing succeeds even if cascade fails)
+- P1 FIX: Updated src/pages/Projects.tsx to consume createFromProposal URL param
+- P1 FIX: Rewrote src/convex/wcvm/contextScanner.ts
+  - Now fetches real clientPolicies from database instead of hardcoded mock requirements
+  - Extracted shared analysis logic to eliminate 200-line code duplication
+  - Falls back to default requirements when no client-specific policies exist
+- Schema updates:
+  - complianceAlerts: added session_rejected, low_activity alert types
+  - evidenceMetadata: added evidenceSessionId field
+  - projects: added proposalId, protectionScore, totalHours, totalValue, atRiskAmount, rejectedHours, activeSession, by_proposal index
+- Also: ThemeProvider respects OS dark/light preference, .env.example created
+- Built successfully with Vite, deployed to disk/
+- Committed and pushed to GitHub
+- Created GitHub Release v4.0.0-data-flow-fixes with zip backup
+
+Stage Summary:
+- 16 files changed, 768 insertions, 425 deletions
+- P0 (critical data loss bug): FIXED — extension endpoints now persist evidence data
+- P1 (proposal cascade): FIXED — signed proposals auto-create project + scope
+- P1 (WCVM policies): FIXED — uses real clientPolicies instead of hardcoded mock
+- Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v4.0.0-data-flow-fixes
+- Zip: /home/z/my-project/download/AXIA-v4.0.0-data-flow-fixes.zip
