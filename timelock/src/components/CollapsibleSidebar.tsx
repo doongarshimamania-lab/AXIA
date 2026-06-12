@@ -158,7 +158,7 @@ export function CollapsibleSidebar() {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("axia_sidebar_state", isExpanded ? "expanded" : "collapsed");
       // Sync CSS variable immediately when state changes
-      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
     }
   }, [isExpanded]);
 
@@ -190,7 +190,7 @@ export function CollapsibleSidebar() {
       <motion.div
         className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
         initial={false}
-        animate={{ width: isExpanded ? 320 : 80 }}
+        animate={{ width: isExpanded ? 280 : 64 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         style={{ 
           cursor: isExpanded ? 'default' : 'pointer',
@@ -202,15 +202,15 @@ export function CollapsibleSidebar() {
           }
         }}
         onAnimationStart={() => {
-          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
         }}
         onAnimationComplete={() => {
-          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
         }}
       >
         {/* Logo Section */}
         <div
-          className="h-16 border-b border-sidebar-border flex items-center justify-between px-5 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
+          className="h-14 border-b border-sidebar-border flex items-center justify-between px-4 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             if (isExpanded) {
@@ -409,37 +409,65 @@ export function CollapsibleSidebar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="py-6 flex flex-col items-center gap-6"
+                className="py-3 flex flex-col items-center gap-1"
               >
-                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Home className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                {/* WORK */}
+                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Home className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/projects")} title="Projects" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Briefcase className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/projects")} title="Projects" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Briefcase className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/clients")} title="Clients" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Users className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/teams")} title="Team" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Building2 className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/messages")} title="Messages" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <MessageSquare className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/scope")} title="Scope" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Shield className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/scope")} title="Scope" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Shield className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Database className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/pipeline")} title="Pipeline" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Kanban className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/time-tracking")} title="Time Tracking" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Clock className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/proposals")} title="Proposals" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <FileSignature className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/goals")} title="Goals" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <TrendingUp className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/account-settings")} title="Account Settings" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Settings className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+
+                {/* Divider: CRM */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/pipeline")} title="Pipeline" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Kanban className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/proposals")} title="Proposals" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <FileSignature className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+
+                {/* Divider: BILLING */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/invoices")} title="Invoices" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <FileText className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/payment-patterns")} title="Payment Patterns" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <TrendingUp className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+                <button onClick={() => navigate("/reports")} title="Reports" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Activity className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                </button>
+
+                {/* Divider: ADMIN */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/account-settings")} title="Account Settings" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+                  <Settings className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
               </motion.div>
             )}
@@ -489,19 +517,19 @@ export function CollapsibleSidebar() {
           </AnimatePresence>
           {/* Collapsed theme toggle icon */}
           {!isExpanded && (
-            <div className="flex flex-col items-center gap-4 py-2">
+            <div className="flex flex-col items-center gap-2 py-1">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleToggleTheme();
                 }}
                 title={theme === "dark" ? "Light Mode" : "Dark Mode"}
-                className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
+                className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors"
               >
                 {theme === "dark" ? (
-                  <Sun className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                  <Sun className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 ) : (
-                  <Moon className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                  <Moon className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 )}
               </button>
             </div>
