@@ -405,22 +405,13 @@ export function CollapsibleSidebar() {
 
                 </div>
 
-                {/* ADMIN Section */}
+                {/* ADMIN Section — Subscription, Help & Sign Out moved to Account Settings page */}
                 <div className="px-2 space-y-0.5 mt-4">
                   <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     ADMIN
                   </div>
-                  <button onClick={() => navigate("/subscription")} className="w-full text-left" type="button">
-                    <NavItem icon={Zap} label="Subscription" isExpanded={true} />
-                  </button>
-                  <button onClick={() => {
-                    const event = new CustomEvent('openProfileModal');
-                    window.dispatchEvent(event);
-                  }} className="w-full text-left" type="button">
+                  <button onClick={() => navigate("/account-settings")} className="w-full text-left" type="button">
                     <NavItem icon={Settings} label="Account Settings" isExpanded={true} />
-                  </button>
-                  <button onClick={() => navigate("/help-center")} className="w-full text-left" type="button">
-                    <NavItem icon={HelpCircle} label="Help Center" isExpanded={true} />
                   </button>
                 </div>
               </motion.div>
@@ -462,8 +453,8 @@ export function CollapsibleSidebar() {
                 <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <LinkIcon className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
-                <button onClick={() => navigate("/subscription")} title="Subscription" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Zap className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/account-settings")} title="Account Settings" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
+                  <Settings className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
               </motion.div>
             )}
@@ -507,18 +498,7 @@ export function CollapsibleSidebar() {
                 }} className="w-full text-left">
                   <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
                 </button>
-                {/* Sign Out */}
-                <button onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    await signOut();
-                    navigate("/auth");
-                  } catch {
-                    toast.error("Failed to sign out");
-                  }
-                }} className="w-full text-left">
-                  <NavItem icon={LogOut} label="Sign Out" isExpanded={true} />
-                </button>
+                {/* Sign Out moved to Account Settings > Security */}
               </motion.div>
             )}
           </AnimatePresence>

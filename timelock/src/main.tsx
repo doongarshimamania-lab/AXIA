@@ -41,6 +41,7 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import Scope from "./pages/Scope.tsx";
+import AccountSettings from "./pages/AccountSettings.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Error Boundary to catch Convex errors and prevent app crash
@@ -207,6 +208,7 @@ root.render(
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
+                    <Route path="/account-settings" element={<AccountSettings />} />
                   </Route>
 
                   {/* Catch-all */}
