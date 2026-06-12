@@ -10,7 +10,7 @@ import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { ShareDialog } from "@/components/ShareDialog";
 
@@ -40,7 +40,24 @@ interface Project {
 export default function Projects() {
   const { isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { tier } = useSubscriptionTier();
+
+  // ── P1 FIX: Consume createFromProposal URL param ──
+  // When user clicks "Convert to Project" from a signed proposal,
+  // they arrive here with ?createFromProposal=<proposalId>
+  const createFromProposal = searchParams.get("createFromProposal");
+
+  useEffect(() => {
+    if (createFromProposal) {
+      // Clear the param so we don't show the toast again on re-render
+      setSearchParams({}, { replace: true });
+      toast.success("Project auto-created from signed proposal!", {
+        description: "Check your projects list — a project and scope were automatically created when the proposal was signed.",
+        duration: 8000,
+      });
+    }
+  }, [createFromProposal, setSearchParams]);
 
   // ── Workspace Context ──
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();

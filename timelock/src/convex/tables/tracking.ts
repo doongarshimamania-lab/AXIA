@@ -72,12 +72,15 @@ export const trackingTables = {
     sessionId: v.optional(v.id("workSessions")),
     alertType: v.union(
       v.literal("at_risk"),
+      v.literal("session_rejected"),
+      v.literal("low_activity"),
       v.literal("payment_protection_risk"),
       v.literal("non_browser_work"),
       v.literal("timer_paused")
     ),
     message: v.string(),
-    triggeredAt: v.number(),
+    triggeredAt: v.optional(v.number()),
+    timestamp: v.optional(v.number()),
     acknowledged: v.boolean(),
     actionTaken: v.optional(v.string()),
   })

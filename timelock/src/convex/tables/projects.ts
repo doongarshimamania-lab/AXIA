@@ -77,7 +77,15 @@ export const projectTables = {
     createdAt: v.number(),
     lastActivityAt: v.number(),
     
+    // P1 FIX: Link to proposal that created this project (nullable for manually created projects)
+    proposalId: v.optional(v.id("proposals")),
+    
     // Protection score metrics
+    protectionScore: v.optional(v.number()),
+    totalHours: v.optional(v.number()),
+    totalValue: v.optional(v.number()),
+    atRiskAmount: v.optional(v.number()),
+    rejectedHours: v.optional(v.number()),
     evidenceCount: v.optional(v.number()),
     evidenceWithClientKeywords: v.optional(v.number()),
     clientKeywords: v.optional(v.array(v.string())),
@@ -102,13 +110,15 @@ export const projectTables = {
     historicalSuccess: v.optional(v.number()),
     weeklyIncome: v.optional(v.number()),
     avgProjectValue: v.optional(v.number()),
+    activeSession: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "projectName"])
     .index("by_client", ["clientId"])
     .index("by_workspace", ["workspaceId"])
     .index("by_team", ["teamId"])
-    .index("by_creator", ["createdBy"]),
+    .index("by_creator", ["createdBy"])
+    .index("by_proposal", ["proposalId"]),
 
   clientCompanies: defineTable({
     workspaceId: v.optional(v.id("workspaces")),

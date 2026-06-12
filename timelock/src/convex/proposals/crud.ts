@@ -339,11 +339,13 @@ export const signProposal = mutation({
       throw new Error("Proposal has already been signed");
     }
 
+    const now = Date.now();
+
     await ctx.db.patch(proposal._id, {
       status: "signed",
-      signedAt: Date.now(),
+      signedAt: now,
       signatureData,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     // Cancel remaining follow-ups
@@ -355,6 +357,109 @@ export const signProposal = mutation({
     for (const fu of followUps) {
       if (fu.status === "scheduled") {
         await ctx.db.patch(fu._id, { status: "cancelled" });
+      }
+    }
+
+    // ── P1 FIX: Signed Proposal → Project + Scope Cascade ──
+    // When a proposal is signed, automatically create a project and scope definition
+    // This closes the "dead end" where signed proposals just sat with no downstream action.
+
+    // 1. Create a project from the signed proposal
+    let projectId: any = null;
+    try {
+      const projectName = proposal.title
+        ? `${proposal.title} — Signed Project`
+        : `Project from Proposal`;
+
+      // Parse sections for deliverables if available
+      const sections = (proposal as any).sections || [];
+      const totalEstimatedHours = sections.reduce(
+        (sum: number, s: any) => sum + (s.estimatedHours || 0),
+        0
+      );
+
+      projectId = await ctx.db.insert("projects", {
+        userId: proposal.userId,
+        clientId: proposal.clientId || undefined,
+        projectName,
+        hourlyRate: (proposal as any).hourlyRate || 0,
+        projectType: "milestone",
+        protectionLevel: "standard",
+        status: "active",
+        proposalId: proposal._id,
+        workspaceId: proposal.workspaceId,
+        teamId: proposal.teamId,
+        createdAt: now,
+        lastActivityAt: now,
+        // Initialize protection score fields
+        protectionScore: 0,
+        evidenceCount: 0,
+        totalHours: totalEstimatedHours,
+        totalValue: (proposal as any).totalValue || 0,
+        atRiskAmount: 0,
+        rejectedHours: 0,
+        pattern7Vulnerability: 0,
+        evidenceWithClientKeywords: 0,
+        activityDensity: 0,
+        memoQuality: 0,
+        hasClientSpecificRequirements: false,
+        upworkCompliance: 0,
+        fiverrCompliance: 0,
+        toptalCompliance: 0,
+      });
+
+      console.log("[Proposals] Auto-created project from signed proposal:", {
+        proposalId: proposal._id,
+        projectId,
+        projectName,
+      });
+    } catch (err) {
+      console.error("[Proposals] Failed to auto-create project from signed proposal:", err);
+      // Non-blocking — the proposal is still signed even if project creation fails
+    }
+
+    // 2. Create a scope definition from the proposal sections
+    if (projectId) {
+      try {
+        const sections = (proposal as any).sections || [];
+        const deliverables = sections.map((s: any, i: number) => ({
+          id: `del_${i + 1}`,
+          name: s.title || `Deliverable ${i + 1}`,
+          description: s.description || "",
+          estimatedHours: s.estimatedHours || undefined,
+          status: "pending" as const,
+        }));
+
+        const totalEstimatedHours = sections.reduce(
+          (sum: number, s: any) => sum + (s.estimatedHours || 0),
+          0
+        );
+
+        await ctx.db.insert("scopeDefinitions", {
+          userId: proposal.userId,
+          projectId,
+          proposalId: proposal._id,
+          title: `Scope: ${(proposal as any).title || "Signed Proposal"}`,
+          description: `Auto-generated scope from signed proposal. Client signed on ${new Date(now).toISOString().split('T')[0]}.`,
+          deliverables,
+          totalEstimatedHours: totalEstimatedHours > 0 ? totalEstimatedHours : undefined,
+          revisionLimit: 3,
+          revisionCount: 0,
+          status: "active",
+          workspaceId: proposal.workspaceId,
+          teamId: proposal.teamId,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        console.log("[Proposals] Auto-created scope definition from signed proposal:", {
+          proposalId: proposal._id,
+          projectId,
+          deliverableCount: deliverables.length,
+        });
+      } catch (err) {
+        console.error("[Proposals] Failed to auto-create scope from signed proposal:", err);
+        // Non-blocking — project is still created even if scope creation fails
       }
     }
   },
