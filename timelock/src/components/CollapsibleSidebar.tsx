@@ -391,19 +391,7 @@ export function CollapsibleSidebar() {
                   </button>
                 </div>
 
-                {/* INTEGRATIONS Section */}
-                <div className="px-2 space-y-0.5 mt-4">
-                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
-                    INTEGRATIONS
-                  </div>
-                  <button onClick={() => navigate("/platform-integrations")} className="w-full text-left" type="button">
-                    <NavItem icon={LinkIcon} label="Platform Connections" isExpanded={true} />
-                  </button>
-                  <button onClick={() => navigate("/evidence-export")} className="w-full text-left" type="button">
-                    <NavItem icon={FileText} label="Evidence Export" isExpanded={true} />
-                  </button>
-
-                </div>
+                {/* INTEGRATIONS section removed — Platform Connections moved to Account Settings > Connections tab; Evidence Export merged into Evidence Library page */}
 
                 {/* ADMIN Section — Subscription, Help & Sign Out moved to Account Settings page */}
                 <div className="px-2 space-y-0.5 mt-4">
@@ -449,9 +437,6 @@ export function CollapsibleSidebar() {
                 </button>
                 <button onClick={() => navigate("/proposals")} title="Proposals" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <FileSignature className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
-                </button>
-                <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <LinkIcon className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 </button>
                 <button onClick={() => navigate("/account-settings")} title="Account Settings" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
                   <Settings className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />

@@ -42,6 +42,7 @@ import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
+import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Error Boundary to catch Convex errors and prevent app crash
@@ -209,6 +210,11 @@ root.render(
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
+                    {/* Legacy redirects — these pages are now consolidated */}
+                    <Route path="/evidence-export" element={<EvidenceLibrary />} />
+                    <Route path="/platform-integrations" element={<AccountSettings />} />
+                    <Route path="/subscription" element={<AccountSettings />} />
+                    <Route path="/help-center" element={<AccountSettings />} />
                   </Route>
 
                   {/* Catch-all */}

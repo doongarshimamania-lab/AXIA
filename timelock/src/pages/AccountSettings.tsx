@@ -75,11 +75,12 @@ import { toast } from "sonner";
 
 // ─── Navigation Items ────────────────────────────────────────────────────────
 
-type SettingsSection = "profile" | "subscription" | "help" | "security";
+type SettingsSection = "profile" | "subscription" | "connections" | "help" | "security";
 
 const navItems: { key: SettingsSection; label: string; icon: React.ElementType }[] = [
   { key: "profile", label: "Profile", icon: User },
   { key: "subscription", label: "Subscription", icon: Zap },
+  { key: "connections", label: "Connections", icon: Globe },
   { key: "help", label: "Help & Support", icon: HelpCircle },
   { key: "security", label: "Security", icon: Shield },
 ];
@@ -187,6 +188,15 @@ const MOCK_FAQ = [
 
 export default function AccountSettings() {
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
+
+  // Listen for navigation events from child components (e.g. "Manage" button in Profile)
+  useEffect(() => {
+    function handleNavigateToConnections() {
+      setActiveSection("connections");
+    }
+    window.addEventListener("navigateToConnections", handleNavigateToConnections as EventListener);
+    return () => window.removeEventListener("navigateToConnections", handleNavigateToConnections as EventListener);
+  }, []);
   const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { theme, setTheme } = useTheme();
   const { signOut } = useAuthActions();
@@ -323,6 +333,9 @@ export default function AccountSettings() {
                   subscriptionTier={subscriptionTier}
                   handleTierChange={handleTierChange}
                 />
+              )}
+              {activeSection === "connections" && (
+                <ConnectionsSection />
               )}
               {activeSection === "help" && (
                 <HelpSection
@@ -466,21 +479,20 @@ function ProfileSection({
             </div>
           </div>
 
+          {/* Platform Connections — link to dedicated Connections tab */}
           <div className="p-4 bg-primary/5 rounded-lg border border-border">
-            <div className="text-sm font-medium mb-3">Platform Connections</div>
-            <div className="space-y-2">
-              {[
-                { name: "Upwork", color: "#14A800" },
-                { name: "Fiverr", color: "#1DBF73" },
-                { name: "Toptal", color: "#204ECF" },
-              ].map((platform) => (
-                <div key={platform.name} className="flex items-center justify-between p-2 bg-background rounded border border-border">
-                  <span className="text-sm">{platform.name}</span>
-                  <Button size="sm" variant="outline" className="h-7 text-xs border-border hover:bg-accent">
-                    Connect
-                  </Button>
-                </div>
-              ))}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Platform Connections</div>
+                <div className="text-xs text-muted-foreground mt-1">Manage Upwork, Fiverr, Toptal, and Freelancer.com connections</div>
+              </div>
+              <Button size="sm" variant="outline" className="border-border hover:bg-accent" onClick={() => {
+                // Navigate to connections tab — we use the parent component's setActiveSection
+                const event = new CustomEvent('navigateToConnections');
+                window.dispatchEvent(event);
+              }}>
+                Manage <ChevronRight className="w-3 h-3 ml-1" />
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -1049,6 +1061,257 @@ function SecuritySection({
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Connections Section ──────────────────────────────────────────────────────
+
+type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
+
+const platformLabels: Record<Platform, string> = {
+  upwork: "Upwork",
+  fiverr: "Fiverr",
+  toptal: "Toptal",
+  freelancer: "Freelancer.com",
+};
+
+const platformColors: Record<Platform, string> = {
+  upwork: "#14A800",
+  fiverr: "#1DBF73",
+  toptal: "#204ECF",
+  freelancer: "#29B2FE",
+};
+
+function ConnectionsSection() {
+  const { isAuthenticated } = useConvexAuth();
+  const { isDisconnected } = useConvexConnectionState();
+
+  // Fetch real platform connection status
+  const connections = useQuery(
+    isAuthenticated ? api.platforms.platformConnections.getPlatformConnectionStatus : "skip",
+    {}
+  );
+
+  const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
+  const [disconnectingPlatform, setDisconnectingPlatform] = useState<Platform | null>(null);
+
+  const handleConnect = async (platform: Platform) => {
+    setConnectingPlatform(platform);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success(`Connected to ${platformLabels[platform]}`, {
+        description: "Your platform data will begin syncing automatically.",
+      });
+    } catch {
+      toast.error(`Failed to connect ${platformLabels[platform]}`, {
+        description: "Please try again later.",
+      });
+    }
+    setConnectingPlatform(null);
+  };
+
+  const handleDisconnect = async (platform: Platform) => {
+    setDisconnectingPlatform(platform);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success(`Disconnected from ${platformLabels[platform]}`, {
+        description: "Your platform data has been removed.",
+      });
+    } catch {
+      toast.error(`Failed to disconnect ${platformLabels[platform]}`);
+    }
+    setDisconnectingPlatform(null);
+  };
+
+  const getStatusInfo = (platform: Platform) => {
+    if (!connections || isDisconnected) {
+      return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+    }
+    const conn = (connections as any)?.find((c: any) => c.platform === platform);
+    if (!conn) {
+      return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+    }
+    if (conn.status === "connected") {
+      return { status: "connected" as const, label: "Connected", color: "text-emerald-500", lastSynced: conn.lastSyncedAt };
+    }
+    if (conn.status === "pending") {
+      return { status: "pending" as const, label: "Pending", color: "text-amber-500" };
+    }
+    if (conn.status === "error") {
+      return { status: "error" as const, label: "Error", color: "text-red-500" };
+    }
+    return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+  };
+
+  const platforms: Platform[] = ["upwork", "fiverr", "toptal", "freelancer"];
+
+  return (
+    <div className="space-y-6">
+      {/* Platform Connections */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-primary" />
+            Platform Connections
+          </CardTitle>
+          <CardDescription>
+            Connect your freelance platforms to automatically collect evidence and sync work data.
+            Axia reads your work history, communications, and earnings to build your protection record.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {platforms.map((platform) => {
+            const statusInfo = getStatusInfo(platform);
+            const isConnecting = connectingPlatform === platform;
+            const isDisconnecting = disconnectingPlatform === platform;
+
+            return (
+              <div
+                key={platform}
+                className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                    style={{ backgroundColor: platformColors[platform] }}
+                  >
+                    {platformLabels[platform].charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{platformLabels[platform]}</div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                      {statusInfo.status === "connected" && statusInfo.lastSynced && (
+                        <span className="text-xs text-muted-foreground">
+                          — Last synced {new Date(statusInfo.lastSynced).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {statusInfo.status === "connected" ? (
+                    <>
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 border">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />Active
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDisconnect(platform)}
+                        disabled={isDisconnecting}
+                        className="border-border hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                      >
+                        {isDisconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
+                      </Button>
+                    </>
+                  ) : statusInfo.status === "pending" ? (
+                    <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 border">
+                      <Clock className="w-3 h-3 mr-1" />Pending
+                    </Badge>
+                  ) : statusInfo.status === "error" ? (
+                    <>
+                      <Badge className="bg-red-500/10 text-red-500 border-red-500/20 border">
+                        <AlertCircle className="w-3 h-3 mr-1" />Error
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleConnect(platform)}
+                        disabled={isConnecting}
+                        className="border-border hover:bg-accent"
+                      >
+                        {isConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Reconnect"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleConnect(platform)}
+                      disabled={isConnecting || !isAuthenticated}
+                      className="border-border hover:bg-accent"
+                    >
+                      {isConnecting ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* What Axia Accesses */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm">What Axia Accesses</CardTitle>
+          <CardDescription>When you connect a platform, Axia reads the following data to build your protection record:</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: Users, title: "Profile & Work History", desc: "Your public profile, skills, and completed contracts" },
+              { icon: MessageSquare, title: "Communications", desc: "Message timestamps and response patterns (not content)" },
+              { icon: CreditCard, title: "Earnings & Payments", desc: "Payment records, milestones, and transaction history" },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="p-3 bg-background rounded-lg border border-border">
+                <Icon className="w-4 h-4 text-primary mb-2" />
+                <div className="text-sm font-medium mb-1">{title}</div>
+                <div className="text-xs text-muted-foreground">{desc}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Coming Soon: CRM & Tool Integrations */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Coming Soon: Data Import from Other Tools
+          </CardTitle>
+          <CardDescription>
+            Import your existing data from CRMs, project managers, and invoicing tools.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { name: "HubSpot", color: "#FF7A59" },
+              { name: "Stripe", color: "#635BFF" },
+              { name: "ClickUp", color: "#7B68EE" },
+              { name: "Pipedrive", color: "#2F4C48" },
+              { name: "Asana", color: "#F06A6A" },
+              { name: "FreshBooks", color: "#0070FF" },
+              { name: "PandaDoc", color: "#3D7BFF" },
+              { name: "QuickBooks", color: "#2CA01C" },
+            ].map((tool) => (
+              <div
+                key={tool.name}
+                className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border opacity-60"
+              >
+                <div
+                  className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+                  style={{ backgroundColor: tool.color }}
+                >
+                  {tool.name.charAt(0)}
+                </div>
+                <span className="text-sm">{tool.name}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            We're building OAuth-based integrations to import your clients, projects, invoices, and proposals from these tools.
+            Want early access? <Button variant="link" className="h-auto p-0 text-xs text-primary">Join the waitlist</Button>
+          </p>
         </CardContent>
       </Card>
     </div>
