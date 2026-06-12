@@ -204,3 +204,28 @@ Stage Summary:
 - P1 (WCVM policies): FIXED — uses real clientPolicies instead of hardcoded mock
 - Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v4.0.0-data-flow-fixes
 - Zip: /home/z/my-project/download/AXIA-v4.0.0-data-flow-fixes.zip
+---
+Task ID: 4
+Agent: Sub Agent
+Task: Fix sidebar-to-page gap inconsistency across all dashboard pages
+
+Work Log:
+- Identified 7 pages with inconsistent inner div padding patterns
+- Pages that used `p-4 md:p-8`, `p-6 space-y-6`, or `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` had inconsistent gaps from the sidebar
+- Standardized all 7 pages to use `container mx-auto px-4 py-6` (with `space-y-6` where the original had spacing):
+  1. Clients.tsx: `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  2. Pipeline.tsx: `p-6 space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  3. Scope.tsx: `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  4. AccountSettings.tsx: `p-4 md:p-8` → `container mx-auto px-4 py-6`
+  5. TeamManagement.tsx: two instances of `p-4 md:p-8` → `container mx-auto px-4 py-6`
+  6. EvidenceLibrary.tsx: `p-4 md:p-8 space-y-4 md:space-y-8` → `container mx-auto px-4 py-6 space-y-6`
+  7. EvidenceExport.tsx: `p-6 md:p-8 space-y-8` → `container mx-auto px-4 py-6 space-y-6`
+- Verified no remaining old padding patterns exist in pages directory
+- Verified build succeeds (13.26s)
+- Pages already using correct pattern (unchanged): Dashboard, Goals, Reports, TimeTracking, Tags, Proposals, Projects, PaymentPatterns, Subscription, ApiSettings, HelpCenter, ProposalBuilder, PlatformIntegrations, Invoices
+
+Stage Summary:
+- 7 files edited, 8 className replacements
+- All dashboard pages now use consistent `container mx-auto px-4 py-6` pattern
+- Content is properly centered with consistent sidebar-to-page gap
+- Build passes successfully

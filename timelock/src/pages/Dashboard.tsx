@@ -40,6 +40,7 @@ import {
   Timer,
   Kanban,
   Building2,
+  Briefcase,
 } from "lucide-react";
 import { useQuery, useMutation, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
@@ -254,6 +255,7 @@ export default function Dashboard() {
   const proposalStats = useQuery(api.proposals.crud.getProposalStats, queryArgs);
   const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, queryArgs);
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
+  const projectsData = useQuery(api.projects.projectProtection.getMyProjects, {});
 
   const deals = useQuery(api.pipeline.crud.getDeals, queryArgs);
   const proposals = useQuery(api.proposals.crud.getProposals, queryArgs);
@@ -287,8 +289,10 @@ export default function Dashboard() {
   const invoiceOutstanding = invoiceStats?.totalOutstanding ?? 0;
   const invoiceDraft = invoiceStats?.draft ?? 0;
   const scopeCount = (scopeDefinitions as any[])?.length ?? 0;
+  const totalProjects = (projectsData as any[])?.length ?? 0;
+  const activeProjects = (projectsData as any[])?.filter((p: any) => p.status === 'active' || p.status === 'in_progress')?.length ?? 0;
 
-  const hasAnyData = totalClients > 0 || totalDeals > 0 || proposalTotal > 0 || invoiceTotal > 0;
+  const hasAnyData = totalClients > 0 || totalDeals > 0 || proposalTotal > 0 || invoiceTotal > 0 || totalProjects > 0;
 
   // ─── Derived health metrics ─────────────────────────────────────────────
   const collectionRate = invoiceTotal > 0 ? Math.round((invoicePaid / invoiceTotal) * 100) : 0;
@@ -620,7 +624,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ─── PRIMARY METRICS ROW — Big 3 KPIs ────────────────────────── */}
+        {/* ─── PRIMARY METRICS ROW — Big 3 KPIs: Projects, Clients, Revenue ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           {isQueryLoading ? (
             <>
@@ -630,7 +634,53 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              {/* Revenue KPI */}
+              {/* Projects KPI */}
+              <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/projects")}>
+                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Projects</span>
+                    <Briefcase className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div className="text-3xl font-bold text-foreground tracking-tight">
+                    {totalProjects}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      {activeProjects} active · {totalProjects - activeProjects} completed
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <span className="text-blue-600 dark:text-blue-400 font-medium">{totalDeals}</span>
+                      <span className="text-muted-foreground">pipeline</span>
+                    </span>
+                  </div>
+                  <Progress value={totalProjects > 0 ? Math.round((activeProjects / totalProjects) * 100) : 0} className="h-1.5 mt-2" />
+                </CardContent>
+              </Card>
+
+              {/* Clients KPI */}
+              <Card className="border-l-4 border-l-violet-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
+                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Clients</span>
+                    <Users className="h-4 w-4 text-violet-500" />
+                  </div>
+                  <div className="text-3xl font-bold text-foreground tracking-tight">
+                    {totalClients}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      {proposalSent + proposalViewed} proposals in play
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <span className="text-violet-600 dark:text-violet-400 font-medium">{proposalSignatureRate}%</span>
+                      <span className="text-muted-foreground">close rate</span>
+                    </span>
+                  </div>
+                  <Progress value={proposalSignatureRate} className="h-1.5 mt-2" />
+                </CardContent>
+              </Card>
+
+              {/* Revenue KPI — Money Paid */}
               <Card className="border-l-4 border-l-emerald-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
                 <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
                   <div className="flex items-center justify-between mb-2">
@@ -652,52 +702,6 @@ export default function Dashboard() {
                   <Progress value={collectionRate} className="h-1.5 mt-2" />
                 </CardContent>
               </Card>
-
-              {/* Pipeline KPI */}
-              <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
-                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline</span>
-                    <Kanban className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="text-3xl font-bold text-foreground tracking-tight">
-                    {fmtCompactCurrency(pipelineValue)}
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">
-                      {totalDeals} deal{totalDeals !== 1 ? "s" : ""} · {fmtCompactCurrency(weightedValue)} weighted
-                    </span>
-                    <span className="flex items-center gap-1 text-xs">
-                      <span className="text-blue-600 dark:text-blue-400 font-medium">{pipelineHealth}%</span>
-                      <span className="text-muted-foreground">health</span>
-                    </span>
-                  </div>
-                  <Progress value={pipelineHealth} className="h-1.5 mt-2" />
-                </CardContent>
-              </Card>
-
-              {/* Proposals KPI */}
-              <Card className="border-l-4 border-l-violet-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
-                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Proposals</span>
-                    <FileSignature className="h-4 w-4 text-violet-500" />
-                  </div>
-                  <div className="text-3xl font-bold text-foreground tracking-tight">
-                    {proposalTotal}
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">
-                      {proposalSigned} signed · {fmtCompactCurrency(proposalTotalValue)} value
-                    </span>
-                    <span className="flex items-center gap-1 text-xs">
-                      <span className="text-violet-600 dark:text-violet-400 font-medium">{proposalSignatureRate}%</span>
-                      <span className="text-muted-foreground">close rate</span>
-                    </span>
-                  </div>
-                  <Progress value={proposalSignatureRate} className="h-1.5 mt-2" />
-                </CardContent>
-              </Card>
             </>
           )}
         </div>
@@ -708,16 +712,6 @@ export default function Dashboard() {
             Array.from({ length: 6 }).map((_, i) => <StatCardSkeleton key={i} />)
           ) : (
             <>
-              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
-                <CardContent className="pt-3 pb-3 px-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Clients</span>
-                  </div>
-                  <div className="text-xl font-bold text-foreground">{totalClients}</div>
-                </CardContent>
-              </Card>
-
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
                 <CardContent className="pt-3 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -725,6 +719,16 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground">Active Deals</span>
                   </div>
                   <div className="text-xl font-bold text-foreground">{totalDeals}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+                <CardContent className="pt-3 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Kanban className="h-3.5 w-3.5 text-blue-500" />
+                    <span className="text-xs text-muted-foreground">Pipeline</span>
+                  </div>
+                  <div className="text-xl font-bold text-foreground">{fmtCompactCurrency(pipelineValue)}</div>
                 </CardContent>
               </Card>
 
@@ -778,67 +782,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ─── MAIN CONTENT: Activity + Side Panels ───────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Activity Feed — takes 2 cols */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-                {activityItems.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-muted-foreground"
-                    onClick={() => navigate("/pipeline")}
-                  >
-                    View all <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                {isQueryLoading ? (
-                  <ActivitySkeleton />
-                ) : activityItems.length === 0 ? (
-                  <EmptyState
-                    icon={Clock}
-                    title="No activity yet"
-                    description="Activity will appear here as you create deals, proposals, and invoices."
-                    actionLabel="Add Deal"
-                    onAction={() => navigate("/pipeline")}
-                  />
-                ) : (
-                  <div className="space-y-2 max-h-[420px] overflow-y-auto">
-                    {activityItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer"
-                        onClick={() => navigate(item.href)}
-                      >
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                          {statusIcon(item.type, item.status)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge variant={statusColor(item.status)} className="text-[10px] capitalize">
-                            {item.status}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {fmtRelative(item.timestamp)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column — Stacked Cards */}
+        {/* ─── MAIN CONTENT: Side Panels (no activity feed) ───────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Column 1 — Quick Actions + Business Health */}
           <div className="space-y-4">
             {/* Quick Actions */}
             <Card>

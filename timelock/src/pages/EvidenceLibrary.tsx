@@ -450,7 +450,7 @@ export default function EvidenceLibrary() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="p-4 md:p-8 space-y-4 md:space-y-8">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         {/* ── Page Header ── */}
         <div>
           <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">

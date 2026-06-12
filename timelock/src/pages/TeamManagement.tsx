@@ -484,7 +484,7 @@ export default function TeamManagement() {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="container mx-auto px-4 py-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1489,7 +1489,7 @@ function SoloModePrompt() {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="container mx-auto px-4 py-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Teams Workspace</h1>

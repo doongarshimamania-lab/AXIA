@@ -730,7 +730,7 @@ export default function Scope() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div>
