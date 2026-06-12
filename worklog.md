@@ -229,3 +229,34 @@ Stage Summary:
 - All dashboard pages now use consistent `container mx-auto px-4 py-6` pattern
 - Content is properly centered with consistent sidebar-to-page gap
 - Build passes successfully
+---
+Task ID: 1
+Agent: Main
+Task: Fix sidebar gaps, create centralized layout, add active page indicator, build notification system
+
+Work Log:
+- Created centralized `PageLayout` component in `src/components/design-system/PageLayout.tsx`
+- Updated all 22 sidebar pages to use `PageLayout` instead of hardcoded `px-6 py-6 max-w-*` patterns
+- Added `useLocation` to `CollapsibleSidebar` for current path detection
+- Added `isActive` prop to all NavItem instances (expanded, collapsed, mobile views)
+- Enhanced `NavItem` component with left-border active indicator (`border-l-2 border-l-primary bg-primary/15`)
+- Collapsed view icons get `bg-primary/20 text-primary` active state
+- Created `useNotifications` hook in `src/hooks/use-notifications.ts` with localStorage persistence
+- Created `NotificationCenter` component in `src/components/NotificationCenter.tsx` with portal-based dropdown
+- Integrated notification bell into sidebar header (both expanded and collapsed) + mobile header
+- Only "reaction" notifications shown (client viewed proposal, payment received, invoice overdue, etc.)
+- NOT self-initiated actions (I added leads, I created deal)
+- Unseen notifications have `bg-primary/[0.08] border-l-2 border-l-primary` + pulsing dot
+- Click marks as seen + navigates to page
+- "Mark all as read" action available
+- Badge count on bell icon (red circle with count)
+- Removed inline notification system from Dashboard.tsx
+- Changed Tags icon from Settings to Tag in sidebar
+- Build passes, pushed to GitHub
+
+Stage Summary:
+- All sidebar pages now use centralized PageLayout component
+- Active page shows highlighted indicator in sidebar with left border
+- Global notification system with seen/unseen states, click-to-mark-seen
+- Notification bell in sidebar + mobile header
+- Build succeeds, pushed to main branch
