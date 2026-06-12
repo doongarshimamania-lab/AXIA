@@ -1,0 +1,2002 @@
+     1→import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+     2→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+     3→import { api } from "@/convex/_generated/api";
+     4→import type { Id } from "@/convex/_generated/dataModel";
+     5→import { motion, AnimatePresence } from "framer-motion";
+     6→import { toast } from "sonner";
+     7→import { useNavigate } from "react-router";
+     8→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     9→import Papa from "papaparse";
+    10→import * as XLSX from "xlsx";
+    11→import {
+    12→  Card,
+    13→  CardContent,
+    14→  CardHeader,
+    15→  CardTitle,
+    16→} from "@/components/ui/card";
+    17→import { Button } from "@/components/ui/button";
+    18→import { Input } from "@/components/ui/input";
+    19→import { Textarea } from "@/components/ui/textarea";
+    20→import { Label } from "@/components/ui/label";
+    21→import { Badge } from "@/components/ui/badge";
+    22→import {
+    23→  Dialog,
+    24→  DialogContent,
+    25→  DialogDescription,
+    26→  DialogFooter,
+    27→  DialogHeader,
+    28→  DialogTitle,
+    29→} from "@/components/ui/dialog";
+    30→import {
+    31→  AlertDialog,
+    32→  AlertDialogAction,
+    33→  AlertDialogCancel,
+    34→  AlertDialogContent,
+    35→  AlertDialogDescription,
+    36→  AlertDialogFooter,
+    37→  AlertDialogHeader,
+    38→  AlertDialogTitle,
+    39→} from "@/components/ui/alert-dialog";
+    40→import {
+    41→  Select,
+    42→  SelectContent,
+    43→  SelectItem,
+    44→  SelectTrigger,
+    45→  SelectValue,
+    46→} from "@/components/ui/select";
+    47→import {
+    48→  Tooltip,
+    49→  TooltipContent,
+    50→  TooltipProvider,
+    51→  TooltipTrigger,
+    52→} from "@/components/ui/tooltip";
+    53→import { Skeleton } from "@/components/ui/skeleton";
+    54→import {
+    55→  TrendingUp,
+    56→  DollarSign,
+    57→  Target,
+    58→  BarChart3,
+    59→  Plus,
+    60→  GripVertical,
+    61→  Calendar,
+    62→  User,
+    63→  Mail,
+    64→  FileText,
+    65→  Trash2,
+    66→  Pencil,
+    67→  Zap,
+    68→  Upload,
+    69→  Download,
+    70→  AlertCircle,
+    71→  CheckCircle2,
+    72→  Loader2,
+    73→} from "lucide-react";
+    74→
+    75→// ─── Types ─────────────────────────────────────────────────────────────────
+    76→
+    77→interface Stage {
+    78→  _id: Id<"pipelineStages">;
+    79→  userId: Id<"users">;
+    80→  name: string;
+    81→  color: string;
+    82→  order: number;
+    83→  isDefault?: boolean;
+    84→}
+    85→
+    86→interface Deal {
+    87→  _id: Id<"deals">;
+    88→  userId: Id<"users">;
+    89→  stageId: Id<"pipelineStages">;
+    90→  clientId?: Id<"clients">;
+    91→  title: string;
+    92→  description?: string;
+    93→  value: number;
+    94→  probability: number;
+    95→  currency?: string;
+    96→  source?: string;
+    97→  contactEmail?: string;
+    98→  contactName?: string;
+    99→  expectedCloseDate?: number;
+   100→  notes?: string;
+   101→  order: number;
+   102→  createdAt: number;
+   103→  updatedAt: number;
+   104→}
+   105→
+   106→interface PipelineStats {
+   107→  totalDeals: number;
+   108→  totalValue: number;
+   109→  weightedValue: number;
+   110→  byStage: {
+   111→    stageId: Id<"pipelineStages">;
+   112→    stageName: string;
+   113→    color: string;
+   114→    dealCount: number;
+   115→    totalValue: number;
+   116→  }[];
+   117→}
+   118→
+   119→// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
+   120→
+   121→const MOCK_STAGES: Stage[] = [
+   122→  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: "#6366f1", order: 0, isDefault: true },
+   123→  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: "#8b5cf6", order: 1, isDefault: true },
+   124→  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: "#a855f7", order: 2, isDefault: true },
+   125→  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: "#c084fc", order: 3, isDefault: true },
+   126→  { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "#22c55e", order: 4, isDefault: true },
+   127→  { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "#ef4444", order: 5, isDefault: true },
+   128→];
+   129→
+   130→const now = Date.now();
+   131→const day = 86400000;
+   132→
+   133→const MOCK_DEALS: Deal[] = [
+   134→  // Lead
+   135→  { _id: "deal_1" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "E-Commerce Platform Build", value: 12000, probability: 10, source: "upwork", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 60 * day, description: "Full e-commerce platform with product catalog, cart, checkout, and admin dashboard.", notes: "Initial inquiry received. Needs scoping call scheduled for next week.", order: 0, createdAt: now - 5 * day, updatedAt: now },
+   136→  { _id: "deal_7" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "AI Chatbot Integration", value: 6000, probability: 10, source: "fiverr", contactName: "Nina Patel", contactEmail: "nina@smartassist.ai", expectedCloseDate: now + 75 * day, description: "Custom AI chatbot with NLP capabilities for customer support automation.", notes: "Inbound lead from Fiverr. Early stage exploration.", order: 1, createdAt: now - 2 * day, updatedAt: now },
+   137→  { _id: "deal_13" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Real Estate Listing Portal", value: 18000, probability: 15, source: "linkedin", contactName: "Marcus Rivera", contactEmail: "marcus@primeproperty.com", expectedCloseDate: now + 90 * day, description: "Property listing portal with map search, virtual tours, and agent management.", notes: "Found us on LinkedIn. Budget not confirmed yet.", order: 2, createdAt: now - 1 * day, updatedAt: now },
+   138→  { _id: "deal_14" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "EdTech Course Platform", value: 9500, probability: 10, source: "referral", contactName: "Prof. Anika Desai", contactEmail: "anika@learnvista.edu", expectedCloseDate: now + 50 * day, description: "Online course platform with video hosting, quizzes, progress tracking.", notes: "Referred by Priya at FinServe. Long sales cycle expected.", order: 3, createdAt: now - 3 * day, updatedAt: now },
+   139→  { _id: "deal_15" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Fitness App MVP", value: 7500, probability: 8, source: "upwork", contactName: "Jake Morrison", contactEmail: "jake@fittrack.app", expectedCloseDate: now + 40 * day, description: "MVP fitness tracking app with workout plans and social features.", notes: "Startup founder with limited budget. Exploring options.", order: 4, createdAt: now - 4 * day, updatedAt: now },
+   140→  // Qualified
+   141→  { _id: "deal_2" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "SaaS Dashboard Redesign", value: 8500, probability: 25, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now + 45 * day, description: "Complete redesign of analytics dashboard with real-time data visualization.", notes: "Qualified lead. Demo scheduled for next week. Shortlisted among 3 agencies.", order: 5, createdAt: now - 12 * day, updatedAt: now },
+   142→  { _id: "deal_8" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Digital Marketing Landing Pages", value: 4500, probability: 25, source: "upwork", contactName: "Lisa Park", contactEmail: "lisa@digitalmarketingco.com", expectedCloseDate: now + 30 * day, description: "5 A/B tested landing pages with analytics tracking.", notes: "Returning client. Budget approved internally. Quick turnaround expected.", order: 6, createdAt: now - 8 * day, updatedAt: now },
+   143→  { _id: "deal_16" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Supply Chain Management System", value: 32000, probability: 30, source: "direct", contactName: "Robert Chang", contactEmail: "rchang@logisync.com", expectedCloseDate: now + 60 * day, description: "End-to-end supply chain management with inventory tracking and predictive analytics.", notes: "Enterprise client. Thorough evaluation process. Decision expected in 3 weeks.", order: 7, createdAt: now - 15 * day, updatedAt: now },
+   144→  { _id: "deal_17" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Restaurant POS & Ordering System", value: 14000, probability: 20, source: "referral", contactName: "Maria Santos", contactEmail: "maria@freshbites.co", expectedCloseDate: now + 35 * day, description: "Point-of-sale system with online ordering and kitchen display integration.", notes: "Referred by Sam from TechCorp. Chain of 12 restaurants. Pilot at 2 locations first.", order: 8, createdAt: now - 10 * day, updatedAt: now },
+   145→  // Proposal
+   146→  { _id: "deal_3" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Mobile Banking App", value: 25000, probability: 50, source: "referral", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now + 30 * day, description: "Full-featured mobile banking app with biometric auth and compliance reporting.", notes: "Proposal sent. Awaiting board approval. CTO is our champion internally.", order: 9, createdAt: now - 20 * day, updatedAt: now },
+   147→  { _id: "deal_9" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Creative Studios Motion Design Package", value: 7500, probability: 50, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 21 * day, description: "Motion graphics reel and social media content package for brand launch.", notes: "Existing client expanding scope. They viewed it within 2 hours of sending.", order: 10, createdAt: now - 10 * day, updatedAt: now },
+   148→  { _id: "deal_18" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Healthcare Patient Portal", value: 35000, probability: 45, source: "direct", contactName: "Dr. Robert Singh", contactEmail: "robert@medportal.health", expectedCloseDate: now + 28 * day, description: "HIPAA-compliant patient portal with appointment scheduling and secure messaging.", notes: "Proposal sent with detailed compliance section. Their CIO requested additional security docs.", order: 11, createdAt: now - 14 * day, updatedAt: now },
+   149→  { _id: "deal_19" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Brand Identity for NovaTech", value: 8500, probability: 55, source: "fiverr", contactName: "Aisha Khan", contactEmail: "aisha@novatech.io", expectedCloseDate: now + 14 * day, description: "Complete brand identity package: logo, color palette, typography, guidelines.", notes: "Startup rebranding after Series A. They love our portfolio. Decision imminent.", order: 12, createdAt: now - 7 * day, updatedAt: now },
+   150→  // Negotiation
+   151→  { _id: "deal_4" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Full-Stack SaaS Platform", value: 45000, probability: 70, source: "referral", contactName: "Rachel Green", contactEmail: "rachel@scaleup.io", expectedCloseDate: now + 7 * day, description: "Multi-tenant SaaS platform with subscription billing and white-label capabilities.", notes: "Close to agreement. Legal team reviewing contract terms. Only sticking point is IP clause.", order: 13, createdAt: now - 35 * day, updatedAt: now },
+   152→  { _id: "deal_10" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "StartupHub Mobile App Phase 2", value: 9500, probability: 70, source: "fiverr", contactName: "Sarah Mitchell", contactEmail: "sarah@startuphub.co", expectedCloseDate: now + 10 * day, description: "Phase 2: push notifications, payment integration, and analytics dashboard.", notes: "Phase 1 successful. Negotiating final scope and timeline.", order: 14, createdAt: now - 18 * day, updatedAt: now },
+   153→  { _id: "deal_20" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Insurance Claims Platform", value: 28000, probability: 65, source: "linkedin", contactName: "Vikram Mehta", contactEmail: "vikram@insureflow.com", expectedCloseDate: now + 14 * day, description: "Claims processing platform with document OCR and automated workflows.", notes: "Budget approved by CFO. Final negotiation on maintenance terms and SLA.", order: 15, createdAt: now - 25 * day, updatedAt: now },
+   154→  { _id: "deal_23" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Manufacturing Quality Control System", value: 38000, probability: 60, source: "direct", contactName: "Ingrid Svensson", contactEmail: "ingrid@precisemfg.se", expectedCloseDate: now + 5 * day, description: "IoT-connected quality control system with real-time defect detection.", notes: "Final negotiation on change order process. Proposing hybrid model. Decision imminent.", order: 16, createdAt: now - 40 * day, updatedAt: now },
+   155→  // Won
+   156→  { _id: "deal_5" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "TechCorp Phase 2 — CMS & Marketing Automation", value: 15000, probability: 100, source: "upwork", contactName: "David Chen", contactEmail: "david.chen@techcorp.io", expectedCloseDate: now - 3 * day, description: "Phase 2: CMS integration, marketing automation, and analytics dashboard.", notes: "Won! Phase 2 approved. Kickoff meeting scheduled for next Monday.", order: 17, createdAt: now - 60 * day, updatedAt: now },
+   157→  { _id: "deal_11" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "FinServe Analytics Platform", value: 5720, probability: 100, source: "upwork", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now - 10 * day, description: "Financial analytics platform with real-time market data and compliance reporting.", notes: "Monthly retainer won. First invoice paid. Excellent client relationship.", order: 18, createdAt: now - 30 * day, updatedAt: now },
+   158→  { _id: "deal_21" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "GlobalEnt Data Dashboard", value: 22000, probability: 100, source: "toptal", contactName: "Anna Schmidt", contactEmail: "anna@insightdata.de", expectedCloseDate: now - 15 * day, description: "Enterprise analytics dashboard with real-time data streaming and role-based access.", notes: "Won after 3-month sales cycle. Enterprise contract with annual renewal.", order: 19, createdAt: now - 45 * day, updatedAt: now },
+   159→  { _id: "deal_29" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "Creative Studios Brand Refresh", value: 5500, probability: 100, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now - 1 * day, description: "Brand refresh including updated visual identity and brand animation toolkit.", notes: "Won! Existing client expanding relationship. Kickoff tomorrow.", order: 20, createdAt: now - 50 * day, updatedAt: now },
+   160→  { _id: "deal_30" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "CloudMetrics SaaS Dashboard", value: 8500, probability: 100, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now - 5 * day, description: "Analytics dashboard redesign with real-time data visualization.", notes: "Won after competitive evaluation. CTO championed us. 3-month engagement.", order: 21, createdAt: now - 55 * day, updatedAt: now },
+   161→  // Lost
+   162→  { _id: "deal_6" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Legacy System Migration", value: 22000, probability: 0, source: "toptal", contactName: "Frank Miller", contactEmail: "frank@oldtech.com", expectedCloseDate: now - 20 * day, description: "Legacy .NET system migration to modern React/Node.js stack.", notes: "Lost to competitor. Budget constraints. Went with cheaper offshore alternative.", order: 22, createdAt: now - 45 * day, updatedAt: now },
+   163→  { _id: "deal_12" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Retail Inventory System", value: 14000, probability: 0, source: "linkedin", contactName: "Amy Foster", contactEmail: "amy@retailpro.com", expectedCloseDate: now - 30 * day, description: "Custom inventory management system with barcode scanning.", notes: "Lost due to project scope mismatch. Client needed off-the-shelf solution.", order: 23, createdAt: now - 55 * day, updatedAt: now },
+   164→  { _id: "deal_24" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Government Portal Redesign", value: 48000, probability: 0, source: "direct", contactName: "Director Helen Park", contactEmail: "helen.park@citygov.org", expectedCloseDate: now - 10 * day, description: "Municipal government services portal with citizen authentication.", notes: "Lost due to procurement process favoring incumbent vendor.", order: 24, createdAt: now - 65 * day, updatedAt: now },
+   165→];
+   166→
+   167→const MOCK_PIPELINE_STATS: PipelineStats = {
+   168→  totalDeals: MOCK_DEALS.length,
+   169→  totalValue: MOCK_DEALS.reduce((s, d) => s + d.value, 0),
+   170→  weightedValue: MOCK_DEALS.reduce((s, d) => s + d.value * (d.probability / 100), 0),
+   171→  byStage: MOCK_STAGES.map((stage) => {
+   172→    const stageDeals = MOCK_DEALS.filter((d) => d.stageId === stage._id);
+   173→    return {
+   174→      stageId: stage._id,
+   175→      stageName: stage.name,
+   176→      color: stage.color,
+   177→      dealCount: stageDeals.length,
+   178→      totalValue: stageDeals.reduce((s, d) => s + d.value, 0),
+   179→    };
+   180→  }),
+   181→};
+   182→
+   183→// ─── Constants ─────────────────────────────────────────────────────────────
+   184→
+   185→const SOURCE_OPTIONS = [
+   186→  { value: "upwork", label: "Upwork", color: "#14a800" },
+   187→  { value: "fiverr", label: "Fiverr", color: "#00b22d" },
+   188→  { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
+   189→  { value: "referral", label: "Referral", color: "#8B5CF6" },
+   190→  { value: "direct", label: "Direct", color: "#f59e0b" },
+   191→  { value: "other", label: "Other", color: "#6b7280" },
+   192→];
+   193→
+   194→const DEFAULT_PROBABILITIES: Record<string, number> = {
+   195→  Lead: 10,
+   196→  Qualified: 25,
+   197→  Proposal: 50,
+   198→  Negotiation: 70,
+   199→  Won: 100,
+   200→  Lost: 0,
+   201→};
+   202→
+   203→// ─── CSV Import Constants ─────────────────────────────────────────────────
+   204→
+   205→const CORE_FIELDS = [
+   206→  { value: "title", label: "Title" },
+   207→  { value: "value", label: "Value ($)" },
+   208→  { value: "probability", label: "Probability (%)" },
+   209→  { value: "source", label: "Source" },
+   210→  { value: "contactName", label: "Contact Name" },
+   211→  { value: "contactEmail", label: "Contact Email" },
+   212→  { value: "expectedCloseDate", label: "Expected Close Date" },
+   213→  { value: "notes", label: "Notes" },
+   214→  { value: "_skip", label: "Skip this column" },
+   215→];
+   216→
+   217→const AUTO_DETECT_MAP: Record<string, string> = {
+   218→  title: "title",
+   219→  name: "title",
+   220→  "deal name": "title",
+   221→  "deal title": "title",
+   222→  opportunity: "title",
+   223→  value: "value",
+   224→  amount: "value",
+   225→  "deal value": "value",
+   226→  "deal amount": "value",
+   227→  revenue: "value",
+   228→  price: "value",
+   229→  probability: "probability",
+   230→  "win probability": "probability",
+   231→  "close probability": "probability",
+   232→  likelihood: "probability",
+   233→  source: "source",
+   234→  "lead source": "source",
+   235→  origin: "source",
+   236→  "contact name": "contactName",
+   237→  "client name": "contactName",
+   238→  "contact person": "contactName",
+   239→  "contact email": "contactEmail",
+   240→  email: "contactEmail",
+   241→  "client email": "contactEmail",
+   242→  "expected close date": "expectedCloseDate",
+   243→  "close date": "expectedCloseDate",
+   244→  "expected close": "expectedCloseDate",
+   245→  "due date": "expectedCloseDate",
+   246→  notes: "notes",
+   247→  description: "notes",
+   248→  comments: "notes",
+   249→};
+   250→
+   251→function autoDetectMapping(headerName: string): string {
+   252→  const normalized = headerName.toLowerCase().trim();
+   253→  return AUTO_DETECT_MAP[normalized] ?? "_skip";
+   254→}
+   255→
+   256→// ─── Helpers ───────────────────────────────────────────────────────────────
+   257→
+   258→function formatCurrency(value: number): string {
+   259→  return new Intl.NumberFormat("en-US", {
+   260→    style: "currency",
+   261→    currency: "USD",
+   262→    minimumFractionDigits: 0,
+   263→    maximumFractionDigits: 0,
+   264→  }).format(value);
+   265→}
+   266→
+   267→function formatDate(timestamp: number | undefined): string {
+   268→  if (!timestamp) return "—";
+   269→  return new Intl.DateTimeFormat("en-US", {
+   270→    month: "short",
+   271→    day: "numeric",
+   272→    year: "numeric",
+   273→  }).format(new Date(timestamp));
+   274→}
+   275→
+   276→function daysUntilClose(timestamp: number | undefined): number | null {
+   277→  if (!timestamp) return null;
+   278→  const diff = timestamp - Date.now();
+   279→  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+   280→}
+   281→
+   282→function getSourceInfo(source: string | undefined) {
+   283→  return SOURCE_OPTIONS.find((s) => s.value === source) ?? SOURCE_OPTIONS[5];
+   284→}
+   285→
+   286→// ─── Main Component ────────────────────────────────────────────────────────
+   287→
+   288→export default function Pipeline() {
+   289→  // ── Workspace Context ──
+   290→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   291→  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+   292→
+   293→  // ── Convex Queries & Mutations ──
+   294→  const stages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as
+   295→    | Stage[]
+   296→    | undefined;
+   297→  const deals = useQuery(api.pipeline.crud.getDeals, workspaceId ? { workspaceId } : "skip") as
+   298→    | Deal[]
+   299→    | undefined;
+   300→  const stats = useQuery(api.pipeline.crud.getPipelineStats, workspaceId ? { workspaceId } : "skip") as
+   301→    | PipelineStats
+   302→    | undefined;
+   303→
+   304→  const navigate = useNavigate();
+   305→  const createDefaultStages = useMutation(api.pipeline.crud.createDefaultStages);
+   306→  const createDealMutation = useMutation(api.pipeline.crud.createDeal);
+   307→  const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
+   308→  const updateDealMutation = useMutation(api.pipeline.crud.updateDeal);
+   309→  const deleteDealMutation = useMutation(api.pipeline.crud.deleteDeal);
+   310→  const seedMockPipeline = useMutation(api.seedNew.seedMockPipeline);
+   311→  const createProposalFromDeal = useMutation(api.proposals.crud.createProposalFromDeal);
+   312→  const bulkImportMutation = useMutation(api.pipeline.bulkImport.bulkImportDeals);
+   313→
+   314→  // ── Local State ──
+   315→  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+   316→  // Track which stage the create dialog was opened from (kept for future use)
+   317→  const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
+   318→  const [editMode, setEditMode] = useState(false);
+   319→  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+   320→  const [isSeeding, setIsSeeding] = useState(false);
+   321→  const [isCreating, setIsCreating] = useState(false);
+   322→  const [dragOverStageId, setDragOverStageId] = useState<Id<"pipelineStages"> | null>(null);
+   323→  const [isCreatingProposal, setIsCreatingProposal] = useState<string | null>(null); // dealId being processed
+   324→
+   325→  // ── Create Deal Form State ──
+   326→  const [formTitle, setFormTitle] = useState("");
+   327→  const [formValue, setFormValue] = useState("");
+   328→  const [formProbability, setFormProbability] = useState("");
+   329→  const [formSource, setFormSource] = useState("");
+   330→  const [formContactName, setFormContactName] = useState("");
+   331→  const [formContactEmail, setFormContactEmail] = useState("");
+   332→  const [formCloseDate, setFormCloseDate] = useState("");
+   333→  const [formNotes, setFormNotes] = useState("");
+   334→  const [formStageId, setFormStageId] = useState<Id<"pipelineStages"> | null>(null);
+   335→
+   336→  // ── Edit Deal Form State ──
+   337→  const [editTitle, setEditTitle] = useState("");
+   338→  const [editValue, setEditValue] = useState("");
+   339→  const [editProbability, setEditProbability] = useState("");
+   340→  const [editSource, setEditSource] = useState("");
+   341→  const [editContactName, setEditContactName] = useState("");
+   342→  const [editContactEmail, setEditContactEmail] = useState("");
+   343→  const [editCloseDate, setEditCloseDate] = useState("");
+   344→  const [editNotes, setEditNotes] = useState("");
+   345→  const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
+   346→
+   347→  // ── Import State ──
+   348→  const [importDialogOpen, setImportDialogOpen] = useState(false);
+   349→  const [importData, setImportData] = useState<any[]>([]);
+   350→  const [importHeaders, setImportHeaders] = useState<string[]>([]);
+   351→  const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
+   352→  const [isImporting, setIsImporting] = useState(false);
+   353→  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+   354→  const [selectedStageId, setSelectedStageId] = useState<Id<"pipelineStages"> | null>(null);
+   355→  const [isDragOver, setIsDragOver] = useState(false);
+   356→  const fileInputRef = useRef<HTMLInputElement>(null);
+   357→
+   358→  // ── Derived State (with mock data fallback when Convex returns empty) ──
+   359→  const isMockData = useMemo(() => {
+   360→    const s = stages ?? [];
+   361→    const d = deals ?? [];
+   362→    return s.length === 0 && d.length === 0;
+   363→  }, [stages, deals]);
+   364→
+   365→  // Local override for mock deal stage moves (optimistic updates for demo data)
+   366→  const [mockDealOverrides, setMockDealOverrides] = useState<Map<string, string>>(new Map());
+   367→
+   368→  const safeStages = useMemo(() => {
+   369→    const s = stages ?? [];
+   370→    return s.length > 0 ? s : MOCK_STAGES;
+   371→  }, [stages]);
+   372→  const safeDeals = useMemo(() => {
+   373→    const d = deals ?? [];
+   374→    if (d.length > 0) return d;
+   375→    // Apply mock deal overrides (stage moves) on top of MOCK_DEALS
+   376→    if (mockDealOverrides.size === 0) return MOCK_DEALS;
+   377→    return MOCK_DEALS.map((deal) => {
+   378→      const overrideStageId = mockDealOverrides.get(deal._id);
+   379→      if (overrideStageId) {
+   380→        return { ...deal, stageId: overrideStageId as Id<"pipelineStages"> };
+   381→      }
+   382→      return deal;
+   383→    });
+   384→  }, [deals, mockDealOverrides]);
+   385→  const safeStats = useMemo(
+   386→    () => {
+   387→      if (stats && stats.totalDeals > 0) return stats;
+   388→      // Recalculate mock stats from safeDeals (respects mock overrides)
+   389→      const totalValue = safeDeals.reduce((s, d) => s + d.value, 0);
+   390→      const weightedValue = safeDeals.reduce((s, d) => s + d.value * (d.probability / 100), 0);
+   391→      return {
+   392→        totalDeals: safeDeals.length,
+   393→        totalValue,
+   394→        weightedValue,
+   395→        byStage: safeStages.map((stage) => {
+   396→          const stageDeals = safeDeals.filter((d) => d.stageId === stage._id);
+   397→          return {
+   398→            stageId: stage._id,
+   399→            stageName: stage.name,
+   400→            color: stage.color,
+   401→            dealCount: stageDeals.length,
+   402→            totalValue: stageDeals.reduce((s, d) => s + d.value, 0),
+   403→          };
+   404→        }),
+   405→      };
+   406→    },
+   407→    [stats, safeDeals, safeStages]
+   408→  );
+   409→  const { isDisconnected } = useConvexConnectionState();
+   410→  const isLoading = stages === undefined || deals === undefined;
+   411→  const timedOut = useQueryTimeout(isLoading, 3000);
+   412→  const showLoading = isLoading && !timedOut && !isDisconnected;
+   413→
+   414→  const dealsByStage = useMemo(() => {
+   415→    const map = new Map<Id<"pipelineStages">, Deal[]>();
+   416→    for (const stage of safeStages) {
+   417→      map.set(stage._id, []);
+   418→    }
+   419→    for (const deal of safeDeals) {
+   420→      const list = map.get(deal.stageId);
+   421→      if (list) {
+   422→        list.push(deal);
+   423→      }
+   424→    }
+   425→    // Sort deals by order within each stage
+   426→    for (const [, list] of map) {
+   427→      list.sort((a, b) => a.order - b.order);
+   428→    }
+   429→    return map;
+   430→  }, [safeStages, safeDeals]);
+   431→
+   432→  // Win rate: deals in "Won" stage / (deals in "Won" + "Lost" stages)
+   433→  const winRate = useMemo(() => {
+   434→    const wonStage = safeStages.find((s) => s.name === "Won");
+   435→    const lostStage = safeStages.find((s) => s.name === "Lost");
+   436→    if (!wonStage || !lostStage) return 0;
+   437→    const wonDeals = (dealsByStage.get(wonStage._id) ?? []).length;
+   438→    const lostDeals = (dealsByStage.get(lostStage._id) ?? []).length;
+   439→    const total = wonDeals + lostDeals;
+   440→    return total === 0 ? 0 : Math.round((wonDeals / total) * 100);
+   441→  }, [safeStages, dealsByStage]);
+   442→
+   443→  // ── Auto-create default stages on first load ──
+   444→  useEffect(() => {
+   445→    if (stages !== undefined && stages.length === 0) {
+   446→      createDefaultStages(workspaceId ? { workspaceId } : {}).catch(() => {
+   447→        // Silently fail - user might not be authenticated
+   448→      });
+   449→    }
+   450→  }, [stages, createDefaultStages, workspaceId]);
+   451→
+   452→  // ── Handlers ──
+   453→  const handleOpenCreateDialog = useCallback(
+   454→    (stageId: Id<"pipelineStages">) => {
+   455→      const stage = safeStages.find((s) => s._id === stageId);
+   456→      setFormStageId(stageId);
+   457→      setFormTitle("");
+   458→      setFormValue("");
+   459→      setFormProbability(
+   460→        stage ? String(DEFAULT_PROBABILITIES[stage.name] ?? 20) : "20"
+   461→      );
+   462→      setFormSource("");
+   463→      setFormContactName("");
+   464→      setFormContactEmail("");
+   465→      setFormCloseDate("");
+   466→      setFormNotes("");
+   467→      setCreateDialogOpen(true);
+   468→    },
+   469→    [safeStages]
+   470→  );
+   471→
+   472→  const handleCreateDeal = useCallback(async () => {
+   473→    if (!formStageId || !formTitle.trim() || !formValue) {
+   474→      toast.error("Please fill in at least the title and value");
+   475→      return;
+   476→    }
+   477→    setIsCreating(true);
+   478→    try {
+   479→      await createDealMutation({
+   480→        stageId: formStageId,
+   481→        title: formTitle.trim(),
+   482→        value: Number(formValue),
+   483→        probability: formProbability ? Number(formProbability) : undefined,
+   484→        source: formSource || undefined,
+   485→        contactName: formContactName.trim() || undefined,
+   486→        contactEmail: formContactEmail.trim() || undefined,
+   487→        expectedCloseDate: formCloseDate
+   488→          ? new Date(formCloseDate).getTime()
+   489→          : undefined,
+   490→        notes: formNotes.trim() || undefined,
+   491→        ...(workspaceId ? { workspaceId } : {}),
+   492→      });
+   493→      toast.success("Deal created successfully");
+   494→      setCreateDialogOpen(false);
+   495→    } catch (err) {
+   496→      console.error("Failed to create deal:", err);
+   497→      toast.error("Failed to create deal");
+   498→    } finally {
+   499→      setIsCreating(false);
+   500→    }
+   501→  }, [
+   502→    formStageId,
+   503→    formTitle,
+   504→    formValue,
+   505→    formProbability,
+   506→    formSource,
+   507→    formContactName,
+   508→    formContactEmail,
+   509→    formCloseDate,
+   510→    formNotes,
+   511→    createDealMutation,
+   512→    workspaceId,
+   513→  ]);
+   514→
+   515→  const handleSeedData = useCallback(async () => {
+   516→    setIsSeeding(true);
+   517→    try {
+   518→      const result = await seedMockPipeline({});
+   519→      const seedResult = result as { seeded?: boolean; dealCount?: number };
+   520→      if (seedResult?.seeded) {
+   521→        toast.success(`Seeded ${seedResult.dealCount} demo deals`);
+   522→      } else {
+   523→        toast.info("Demo data already exists");
+   524→      }
+   525→    } catch (err) {
+   526→      console.error("Failed to seed data:", err);
+   527→      toast.error("Failed to seed demo data");
+   528→    } finally {
+   529→      setIsSeeding(false);
+   530→    }
+   531→  }, [seedMockPipeline]);
+   532→
+   533→  // ── Drag & Drop ──
+   534→  const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
+   535→
+   536→  const handleDragStart = useCallback((e: React.DragEvent, deal: Deal) => {
+   537→    setDraggedDeal(deal);
+   538→    e.dataTransfer.effectAllowed = "move";
+   539→    e.dataTransfer.setData("text/plain", deal._id);
+   540→    // Add a drag image
+   541→    const el = e.currentTarget as HTMLElement;
+   542→    if (el) {
+   543→      e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 20);
+   544→    }
+   545→  }, []);
+   546→
+   547→  const handleDragOver = useCallback(
+   548→    (e: React.DragEvent, stageId: Id<"pipelineStages">) => {
+   549→      e.preventDefault();
+   550→      e.dataTransfer.dropEffect = "move";
+   551→      if (draggedDeal && draggedDeal.stageId !== stageId) {
+   552→        setDragOverStageId(stageId);
+   553→      }
+   554→    },
+   555→    [draggedDeal]
+   556→  );
+   557→
+   558→  const handleDragLeave = useCallback(
+   559→    (e: React.DragEvent, stageId: Id<"pipelineStages">) => {
+   560→      // Only clear if we're leaving the column itself (not a child)
+   561→      const rect = e.currentTarget.getBoundingClientRect();
+   562→      const x = e.clientX;
+   563→      const y = e.clientY;
+   564→      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+   565→        setDragOverStageId((prev) => (prev === stageId ? null : prev));
+   566→      }
+   567→    },
+   568→    []
+   569→  );
+   570→
+   571→  const handleDrop = useCallback(
+   572→    async (e: React.DragEvent, targetStageId: Id<"pipelineStages">) => {
+   573→      e.preventDefault();
+   574→      setDragOverStageId(null);
+   575→      if (!draggedDeal || draggedDeal.stageId === targetStageId) {
+   576→        setDraggedDeal(null);
+   577→        return;
+   578→      }
+   579→      const targetStageName = safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage";
+   580→
+   581→      if (isMockData) {
+   582→        // Mock data: do optimistic local update (no Convex mutation needed)
+   583→        setMockDealOverrides((prev) => {
+   584→          const next = new Map(prev);
+   585→          next.set(draggedDeal._id, targetStageId);
+   586→          return next;
+   587→        });
+   588→        toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+   589→      } else {
+   590→        try {
+   591→          await moveDealMutation({
+   592→            dealId: draggedDeal._id,
+   593→            stageId: targetStageId,
+   594→          });
+   595→          toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
+   596→        } catch (err) {
+   597→          console.error("Failed to move deal:", err);
+   598→          toast.error("Failed to move deal");
+   599→        }
+   600→      }
+   601→      setDraggedDeal(null);
+   602→    },
+   603→    [draggedDeal, moveDealMutation, safeStages, isMockData]
+   604→  );
+   605→
+   606→  const handleDragEnd = useCallback(() => {
+   607→    setDraggedDeal(null);
+   608→    setDragOverStageId(null);
+   609→  }, []);
+   610→
+   611→  // ── Detail / Edit Handlers ──
+   612→  const openDealDetail = useCallback((deal: Deal) => {
+   613→    setDetailDeal(deal);
+   614→    setEditMode(false);
+   615→    setEditTitle(deal.title);
+   616→    setEditValue(String(deal.value));
+   617→    setEditProbability(String(deal.probability));
+   618→    setEditSource(deal.source ?? "");
+   619→    setEditContactName(deal.contactName ?? "");
+   620→    setEditContactEmail(deal.contactEmail ?? "");
+   621→    setEditCloseDate(
+   622→      deal.expectedCloseDate
+   623→        ? new Date(deal.expectedCloseDate).toISOString().split("T")[0]
+   624→        : ""
+   625→    );
+   626→    setEditNotes(deal.notes ?? "");
+   627→    setEditStageId(deal.stageId);
+   628→  }, []);
+   629→
+   630→  const handleUpdateDeal = useCallback(async () => {
+   631→    if (!detailDeal) return;
+   632→    try {
+   633→      const updates: any = {
+   634→        dealId: detailDeal._id,
+   635→        title: editTitle.trim(),
+   636→        value: Number(editValue),
+   637→        probability: Number(editProbability),
+   638→        source: editSource || undefined,
+   639→        contactName: editContactName.trim() || undefined,
+   640→        contactEmail: editContactEmail.trim() || undefined,
+   641→        expectedCloseDate: editCloseDate
+   642→          ? new Date(editCloseDate).getTime()
+   643→          : undefined,
+   644→        notes: editNotes.trim() || undefined,
+   645→      };
+   646→      if (editStageId && editStageId !== detailDeal.stageId) {
+   647→        updates.stageId = editStageId;
+   648→      }
+   649→      await updateDealMutation(updates);
+   650→      toast.success("Deal updated successfully");
+   651→      setEditMode(false);
+   652→      setDetailDeal(null);
+   653→    } catch (err) {
+   654→      console.error("Failed to update deal:", err);
+   655→      toast.error("Failed to update deal");
+   656→    }
+   657→  }, [
+   658→    detailDeal,
+   659→    editTitle,
+   660→    editValue,
+   661→    editProbability,
+   662→    editSource,
+   663→    editContactName,
+   664→    editContactEmail,
+   665→    editCloseDate,
+   666→    editNotes,
+   667→    editStageId,
+   668→    updateDealMutation,
+   669→  ]);
+   670→
+   671→  const handleMoveDealToStage = useCallback(
+   672→    async (dealId: Id<"deals">, targetStageId: Id<"pipelineStages">) => {
+   673→      const stageName =
+   674→        safeStages.find((s) => s._id === targetStageId)?.name ?? "stage";
+   675→      if (isMockData) {
+   676→        setMockDealOverrides((prev) => {
+   677→          const next = new Map(prev);
+   678→          next.set(dealId, targetStageId);
+   679→          return next;
+   680→        });
+   681→        toast.success(`Deal moved to ${stageName}`);
+   682→        setDetailDeal(null);
+   683→      } else {
+   684→        try {
+   685→          await moveDealMutation({ dealId, stageId: targetStageId });
+   686→          toast.success(`Deal moved to ${stageName}`);
+   687→          setDetailDeal(null);
+   688→        } catch (err) {
+   689→          console.error("Failed to move deal:", err);
+   690→          toast.error("Failed to move deal");
+   691→        }
+   692→      }
+   693→    },
+   694→    [moveDealMutation, safeStages, isMockData]
+   695→  );
+   696→
+   697→  const handleDeleteDeal = useCallback(async () => {
+   698→    if (!detailDeal) return;
+   699→    try {
+   700→      await deleteDealMutation({ dealId: detailDeal._id });
+   701→      toast.success("Deal deleted");
+   702→      setDeleteConfirmOpen(false);
+   703→      setDetailDeal(null);
+   704→    } catch (err) {
+   705→      console.error("Failed to delete deal:", err);
+   706→      toast.error("Failed to delete deal");
+   707→    }
+   708→  }, [detailDeal, deleteDealMutation]);
+   709→
+   710→  const handleCreateProposalFromDeal = useCallback(async (deal: Deal) => {
+   711→    setIsCreatingProposal(deal._id);
+   712→    try {
+   713→      if (isMockData) {
+   714→        // Mock data: show a helpful message since we can't create a real proposal
+   715→        toast.info("Sign in to create proposals", {
+   716→          description: `Proposal for "${deal.title}" can be created once you're signed in with real data. Click "Load Demo Data" to seed your pipeline.`,
+   717→          duration: 5000,
+   718→        });
+   719→        return;
+   720→      }
+   721→      const proposalId = await createProposalFromDeal({ dealId: deal._id as any });
+   722→      if (proposalId) {
+   723→        toast.success("Draft proposal created from deal!", {
+   724→          description: "Redirecting to proposal builder...",
+   725→        });
+   726→        navigate(`/proposals/new?edit=${proposalId}`);
+   727→      } else {
+   728→        // Mutation returned undefined — likely not deployed or auth issue
+   729→        toast.error("Could not create proposal", {
+   730→          description: "Please make sure you're signed in and try again.",
+   731→        });
+   732→      }
+   733→    } catch (err: any) {
+   734→      console.error("Failed to create proposal from deal:", err);
+   735→      toast.error("Failed to create proposal from deal", {
+   736→        description: err?.message || "An unexpected error occurred",
+   737→      });
+   738→    } finally {
+   739→      setIsCreatingProposal(null);
+   740→    }
+   741→  }, [createProposalFromDeal, navigate, isMockData]);
+   742→
+   743→  // ── Import Handlers ──
+   744→  const handleFileUpload = useCallback((file: File) => {
+   745→    const extension = file.name.split(".").pop()?.toLowerCase();
+   746→    
+   747→    if (extension === "csv") {
+   748→      Papa.parse(file, {
+   749→        header: true,
+   750→        skipEmptyLines: true,
+   751→        complete: (results) => {
+   752→          const headers = results.meta.fields ?? [];
+   753→          const data = results.data as any[];
+   754→          setImportHeaders(headers);
+   755→          setImportData(data);
+   756→          setImportResult(null);
+   757→          // Auto-detect column mappings
+   758→          const mappings: Record<string, string> = {};
+   759→          for (const header of headers) {
+   760→            mappings[header] = autoDetectMapping(header);
+   761→          }
+   762→          setColumnMappings(mappings);
+   763→          // Default to first stage
+   764→          if (safeStages.length > 0 && !selectedStageId) {
+   765→            setSelectedStageId(safeStages[0]._id);
+   766→          }
+   767→        },
+   768→        error: () => {
+   769→          toast.error("Failed to parse CSV file");
+   770→        },
+   771→      });
+   772→    } else if (extension === "xlsx" || extension === "xls") {
+   773→      const reader = new FileReader();
+   774→      reader.onload = (e) => {
+   775→        try {
+   776→          const arrayBuffer = e.target?.result;
+   777→          if (!arrayBuffer) return;
+   778→          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+   779→          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+   780→          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+   781→          if (jsonData.length === 0) {
+   782→            toast.error("No data found in the Excel file");
+   783→            return;
+   784→          }
+   785→          const headers = Object.keys(jsonData[0] as Record<string, unknown>);
+   786→          setImportHeaders(headers);
+   787→          setImportData(jsonData as any[]);
+   788→          setImportResult(null);
+   789→          // Auto-detect column mappings
+   790→          const mappings: Record<string, string> = {};
+   791→          for (const header of headers) {
+   792→            mappings[header] = autoDetectMapping(header);
+   793→          }
+   794→          setColumnMappings(mappings);
+   795→          if (safeStages.length > 0 && !selectedStageId) {
+   796→            setSelectedStageId(safeStages[0]._id);
+   797→          }
+   798→        } catch {
+   799→          toast.error("Failed to parse Excel file");
+   800→        }
+   801→      };
+   802→      reader.readAsArrayBuffer(file);
+   803→    } else {
+   804→      toast.error("Unsupported file format. Please upload CSV or Excel files.");
+   805→    }
+   806→  }, [safeStages, selectedStageId]);
+   807→
+   808→  const handleDropFile = useCallback((e: React.DragEvent) => {
+   809→    e.preventDefault();
+   810→    e.stopPropagation();
+   811→    setIsDragOver(false);
+   812→    const file = e.dataTransfer.files[0];
+   813→    if (file) handleFileUpload(file);
+   814→  }, [handleFileUpload]);
+   815→
+   816→  const handleDragOverFile = useCallback((e: React.DragEvent) => {
+   817→    e.preventDefault();
+   818→    e.stopPropagation();
+   819→    setIsDragOver(true);
+   820→  }, []);
+   821→
+   822→  const handleDragLeaveFile = useCallback((e: React.DragEvent) => {
+   823→    e.preventDefault();
+   824→    e.stopPropagation();
+   825→    setIsDragOver(false);
+   826→  }, []);
+   827→
+   828→  const handleImport = useCallback(async () => {
+   829→    if (!workspaceId || !selectedStageId) {
+   830→      toast.error("Please select a workspace and pipeline stage");
+   831→      return;
+   832→    }
+   833→
+   834→    // Validate required fields
+   835→    const hasTitleMapping = Object.values(columnMappings).some(m => m === "title");
+   836→    if (!hasTitleMapping) {
+   837→      toast.error("Please map at least one column to the Title field");
+   838→      return;
+   839→    }
+   840→
+   841→    setIsImporting(true);
+   842→    try {
+   843→      const deals = importData.map(row => {
+   844→        const deal: any = {};
+   845→        const customFields: Record<string, any> = {};
+   846→        
+   847→        for (const [csvCol, field] of Object.entries(columnMappings)) {
+   848→          if (field === "_skip") continue;
+   849→          if (field === "custom") {
+   850→            customFields[csvCol] = row[csvCol];
+   851→          } else {
+   852→            deal[field] = row[csvCol];
+   853→          }
+   854→        }
+   855→        
+   856→        if (Object.keys(customFields).length > 0) {
+   857→          deal.customFields = customFields;
+   858→        }
+   859→        
+   860→        // Ensure title is present
+   861→        if (!deal.title) deal.title = "Untitled Deal";
+   862→        // Convert value to number
+   863→        if (deal.value) deal.value = Number(String(deal.value).replace(/[^0-9.-]/g, "")) || 0;
+   864→        if (deal.probability) deal.probability = Number(deal.probability) || 20;
+   865→        // Convert date strings to timestamps
+   866→        if (deal.expectedCloseDate && typeof deal.expectedCloseDate === "string") {
+   867→          const parsed = new Date(deal.expectedCloseDate);
+   868→          if (!isNaN(parsed.getTime())) {
+   869→            deal.expectedCloseDate = parsed.getTime();
+   870→          } else {
+   871→            delete deal.expectedCloseDate;
+   872→          }
+   873→        }
+   874→        
+   875→        return deal;
+   876→      }).filter(d => d.title);
+   877→
+   878→      const result = await bulkImportMutation({
+   879→        workspaceId,
+   880→        stageId: selectedStageId,
+   881→        deals,
+   882→        skipDuplicates: true,
+   883→      });
+   884→      setImportResult(result as { imported: number; skipped: number; errors: string[] });
+   885→      toast.success(`Imported ${(result as any).imported} deals!`);
+   886→    } catch (err: any) {
+   887→      console.error("Import failed:", err);
+   888→      toast.error("Import failed", { description: err?.message || "An unexpected error occurred" });
+   889→    } finally {
+   890→      setIsImporting(false);
+   891→    }
+   892→  }, [workspaceId, selectedStageId, columnMappings, importData, bulkImportMutation]);
+   893→
+   894→  const handleOpenImportDialog = useCallback(() => {
+   895→    setImportData([]);
+   896→    setImportHeaders([]);
+   897→    setColumnMappings({});
+   898→    setImportResult(null);
+   899→    setIsImporting(false);
+   900→    if (safeStages.length > 0) {
+   901→      setSelectedStageId(safeStages[0]._id);
+   902→    }
+   903→    setImportDialogOpen(true);
+   904→  }, [safeStages]);
+   905→
+   906→  // ─── RENDER ────────────────────────────────────────────────────────────
+   907→
+   908→  return (
+   909→    <div className="w-full min-h-screen bg-background text-foreground">
+   910→      <div className="container mx-auto px-4 py-6 space-y-6">
+   911→        {/* ── Page Header ── */}
+   912→        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+   913→          <div>
+   914→            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight mb-1">
+   915→              Deal Pipeline
+   916→            </h1>
+   917→            <p className="text-muted-foreground text-sm">
+   918→              Track and manage your deals from lead to close
+   919→            </p>
+   920→          </div>
+   921→          <div className="flex items-center gap-3">
+   922→            {import.meta.env.DEV && safeDeals.length === 0 && !isLoading && (
+   923→              <Button
+   924→                onClick={handleSeedData}
+   925→                disabled={isSeeding}
+   926→                variant="outline"
+   927→                className="gap-2"
+   928→              >
+   929→                {isSeeding ? (
+   930→                  <motion.div
+   931→                    animate={{ rotate: 360 }}
+   932→                    transition={{
+   933→                      repeat: Infinity,
+   934→                      duration: 1,
+   935→                      ease: "linear",
+   936→                    }}
+   937→                  >
+   938→                    <Zap className="h-4 w-4" />
+   939→                  </motion.div>
+   940→                ) : (
+   941→                  <Zap className="h-4 w-4" />
+   942→                )}
+   943→                Load Demo Data
+   944→              </Button>
+   945→            )}
+   946→            <Button
+   947→              onClick={handleOpenImportDialog}
+   948→              variant="outline"
+   949→              className="gap-2"
+   950→              disabled={safeStages.length === 0}
+   951→            >
+   952→              <Upload className="h-4 w-4" />
+   953→              Import
+   954→            </Button>
+   955→            <Button
+   956→              onClick={() => {
+   957→                if (safeStages.length > 0) {
+   958→                  handleOpenCreateDialog(safeStages[0]._id);
+   959→                }
+   960→              }}
+   961→              disabled={safeStages.length === 0}
+   962→              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+   963→            >
+   964→              <Plus className="h-4 w-4" />
+   965→              Add Deal
+   966→            </Button>
+   967→          </div>
+   968→        </div>
+   969→
+   970→        {/* ── Stats Bar ── */}
+   971→        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   972→          <StatsCard
+   973→            icon={<BarChart3 className="h-5 w-5" />}
+   974→            label="Total Deals"
+   975→            value={isLoading ? "—" : String(safeStats.totalDeals)}
+   976→            accent="#8B5CF6"
+   977→          />
+   978→          <StatsCard
+   979→            icon={<DollarSign className="h-5 w-5" />}
+   980→            label="Pipeline Value"
+   981→            value={isLoading ? "—" : formatCurrency(safeStats.totalValue)}
+   982→            accent="#6366f1"
+   983→          />
+   984→          <StatsCard
+   985→            icon={<TrendingUp className="h-5 w-5" />}
+   986→            label="Weighted Value"
+   987→            value={isLoading ? "—" : formatCurrency(safeStats.weightedValue)}
+   988→            subtitle="Value × Probability"
+   989→            accent="#a855f7"
+   990→          />
+   991→          <StatsCard
+   992→            icon={<Target className="h-5 w-5" />}
+   993→            label="Win Rate"
+   994→            value={isLoading ? "—" : `${winRate}%`}
+   995→            subtitle="Won vs Lost deals"
+   996→            accent="#22c55e"
+   997→          />
+   998→        </div>
+   999→
+  1000→        {/* ── Kanban Board ── */}
+  1001→        {showLoading ? (
+  1002→          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+  1003→            {Array.from({ length: 6 }).map((_, i) => (
+  1004→              <div key={i} className="space-y-3">
+  1005→                <Skeleton className="h-12 w-full rounded-lg" />
+  1006→                <Skeleton className="h-28 w-full rounded-lg" />
+  1007→                <Skeleton className="h-28 w-full rounded-lg" />
+  1008→              </div>
+  1009→            ))}
+  1010→          </div>
+  1011→        ) : safeStages.length === 0 ? (
+  1012→          <div className="flex flex-col items-center justify-center py-20 text-center">
+  1013→            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+  1014→              <BarChart3 className="h-8 w-8 text-muted-foreground" />
+  1015→            </div>
+  1016→            <h3 className="text-lg font-semibold mb-2">No Pipeline Stages</h3>
+  1017→            <p className="text-muted-foreground text-sm max-w-md mb-6">
+  1018→              Create default stages to start tracking your deals through the
+  1019→              pipeline.
+  1020→            </p>
+  1021→            <Button
+  1022→              onClick={() => createDefaultStages(workspaceId ? { workspaceId } : {})}
+  1023→              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+  1024→            >
+  1025→              <Plus className="h-4 w-4" />
+  1026→              Create Default Stages
+  1027→            </Button>
+  1028→          </div>
+  1029→        ) : (
+  1030→          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin">
+  1031→            {safeStages.map((stage) => {
+  1032→              const stageDeals = dealsByStage.get(stage._id) ?? [];
+  1033→              const stageValue = stageDeals.reduce(
+  1034→                (sum, d) => sum + d.value,
+  1035→                0
+  1036→              );
+  1037→              const isDragOver = dragOverStageId === stage._id;
+  1038→
+  1039→              return (
+  1040→                <div
+  1041→                  key={stage._id}
+  1042→                  className={`
+  1043→                    flex-shrink-0 w-[280px] sm:w-[300px] snap-start
+  1044→                    flex flex-col rounded-xl border
+  1045→                    transition-colors duration-200
+  1046→                    ${
+  1047→                      isDragOver
+  1048→                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+  1049→                        : "border-border bg-muted/30"
+  1050→                    }
+  1051→                  `}
+  1052→                  onDragOver={(e) => handleDragOver(e, stage._id)}
+  1053→                  onDragLeave={(e) => handleDragLeave(e, stage._id)}
+  1054→                  onDrop={(e) => handleDrop(e, stage._id)}
+  1055→                >
+  1056→                  {/* ── Stage Header ── */}
+  1057→                  <div
+  1058→                    className="px-4 py-3 rounded-t-xl border-b"
+  1059→                    style={{
+  1060→                      borderColor: `${stage.color}30`,
+  1061→                      backgroundColor: `${stage.color}08`,
+  1062→                    }}
+  1063→                  >
+  1064→                    <div className="flex items-center justify-between mb-1">
+  1065→                      <div className="flex items-center gap-2">
+  1066→                        <div
+  1067→                          className="h-2.5 w-2.5 rounded-full"
+  1068→                          style={{ backgroundColor: stage.color }}
+  1069→                        />
+  1070→                        <h3 className="font-semibold text-sm">{stage.name}</h3>
+  1071→                      </div>
+  1072→                      <Badge
+  1073→                        variant="secondary"
+  1074→                        className="text-xs h-5 px-1.5"
+  1075→                      >
+  1076→                        {stageDeals.length}
+  1077→                      </Badge>
+  1078→                    </div>
+  1079→                    <p
+  1080→                      className="text-xs font-medium"
+  1081→                      style={{ color: stage.color }}
+  1082→                    >
+  1083→                      {formatCurrency(stageValue)}
+  1084→                    </p>
+  1085→                  </div>
+  1086→
+  1087→                  {/* ── Deal Cards ── */}
+  1088→                  <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-360px)] overflow-y-auto scrollbar-thin">
+  1089→                      {stageDeals.map((deal) => (
+  1090→                        <DealCard
+  1091→                          key={deal._id}
+  1092→                          deal={deal}
+  1093→                          stage={stage}
+  1094→                          isDragging={
+  1095→                            draggedDeal?._id === deal._id
+  1096→                          }
+  1097→                          isCreatingProposal={isCreatingProposal === deal._id}
+  1098→                          onDragStart={handleDragStart}
+  1099→                          onDragEnd={handleDragEnd}
+  1100→                          onClick={() => openDealDetail(deal)}
+  1101→                          onCreateProposal={() => handleCreateProposalFromDeal(deal)}
+  1102→                        />
+  1103→                      ))}
+  1104→
+  1105→                    {stageDeals.length === 0 && !isDragOver && (
+  1106→                      <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/60">
+  1107→                        Drop deals here
+  1108→                      </div>
+  1109→                    )}
+  1110→                  </div>
+  1111→
+  1112→                  {/* ── Add Deal Button ── */}
+  1113→                  <div className="p-2 pt-0">
+  1114→                    <button
+  1115→                      onClick={() => handleOpenCreateDialog(stage._id)}
+  1116→                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+  1117→                    >
+  1118→                      <Plus className="h-3.5 w-3.5" />
+  1119→                      Add Deal
+  1120→                    </button>
+  1121→                  </div>
+  1122→                </div>
+  1123→              );
+  1124→            })}
+  1125→          </div>
+  1126→        )}
+  1127→      </div>
+  1128→
+  1129→      {/* ── Create Deal Dialog ── */}
+  1130→      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+  1131→        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+  1132→          <DialogHeader>
+  1133→            <DialogTitle className="flex items-center gap-2">
+  1134→              <Plus className="h-5 w-5 text-[#8B5CF6]" />
+  1135→              Create New Deal
+  1136→            </DialogTitle>
+  1137→            <DialogDescription>
+  1138→              Add a new deal to your pipeline
+  1139→            </DialogDescription>
+  1140→          </DialogHeader>
+  1141→
+  1142→          <div className="grid gap-4 py-2">
+  1143→            {/* Stage */}
+  1144→            <div className="grid gap-2">
+  1145→              <Label>Stage</Label>
+  1146→              <Select
+  1147→                value={formStageId ?? undefined}
+  1148→                onValueChange={(val) =>
+  1149→                  setFormStageId(val as Id<"pipelineStages">)
+  1150→                }
+  1151→              >
+  1152→                <SelectTrigger className="w-full">
+  1153→                  <SelectValue placeholder="Select stage" />
+  1154→                </SelectTrigger>
+  1155→                <SelectContent>
+  1156→                  {safeStages.map((stage) => (
+  1157→                    <SelectItem key={stage._id} value={stage._id}>
+  1158→                      <div className="flex items-center gap-2">
+  1159→                        <div
+  1160→                          className="h-2 w-2 rounded-full"
+  1161→                          style={{ backgroundColor: stage.color }}
+  1162→                        />
+  1163→                        {stage.name}
+  1164→                      </div>
+  1165→                    </SelectItem>
+  1166→                  ))}
+  1167→                </SelectContent>
+  1168→              </Select>
+  1169→            </div>
+  1170→
+  1171→            {/* Title */}
+  1172→            <div className="grid gap-2">
+  1173→              <Label htmlFor="deal-title">
+  1174→                Title <span className="text-destructive">*</span>
+  1175→              </Label>
+  1176→              <Input
+  1177→                id="deal-title"
+  1178→                placeholder="E.g., Website Redesign"
+  1179→                value={formTitle}
+  1180→                onChange={(e) => setFormTitle(e.target.value)}
+  1181→              />
+  1182→            </div>
+  1183→
+  1184→            {/* Value & Probability */}
+  1185→            <div className="grid grid-cols-2 gap-4">
+  1186→              <div className="grid gap-2">
+  1187→                <Label htmlFor="deal-value">
+  1188→                  Value ($) <span className="text-destructive">*</span>
+  1189→                </Label>
+  1190→                <Input
+  1191→                  id="deal-value"
+  1192→                  type="number"
+  1193→                  placeholder="10000"
+  1194→                  value={formValue}
+  1195→                  onChange={(e) => setFormValue(e.target.value)}
+  1196→                />
+  1197→              </div>
+  1198→              <div className="grid gap-2">
+  1199→                <Label htmlFor="deal-probability">Probability (%)</Label>
+  1200→                <Input
+  1201→                  id="deal-probability"
+  1202→                  type="number"
+  1203→                  min={0}
+  1204→                  max={100}
+  1205→                  placeholder="50"
+  1206→                  value={formProbability}
+  1207→                  onChange={(e) => setFormProbability(e.target.value)}
+  1208→                />
+  1209→              </div>
+  1210→            </div>
+  1211→
+  1212→            {/* Source */}
+  1213→            <div className="grid gap-2">
+  1214→              <Label>Source</Label>
+  1215→              <Select value={formSource} onValueChange={setFormSource}>
+  1216→                <SelectTrigger className="w-full">
+  1217→                  <SelectValue placeholder="Select source" />
+  1218→                </SelectTrigger>
+  1219→                <SelectContent>
+  1220→                  {SOURCE_OPTIONS.map((src) => (
+  1221→                    <SelectItem key={src.value} value={src.value}>
+  1222→                      <div className="flex items-center gap-2">
+  1223→                        <div
+  1224→                          className="h-2 w-2 rounded-full"
+  1225→                          style={{ backgroundColor: src.color }}
+  1226→                        />
+  1227→                        {src.label}
+  1228→                      </div>
+  1229→                    </SelectItem>
+  1230→                  ))}
+  1231→                </SelectContent>
+  1232→              </Select>
+  1233→            </div>
+  1234→
+  1235→            {/* Contact Name & Email */}
+  1236→            <div className="grid grid-cols-2 gap-4">
+  1237→              <div className="grid gap-2">
+  1238→                <Label htmlFor="deal-contact-name">Contact Name</Label>
+  1239→                <Input
+  1240→                  id="deal-contact-name"
+  1241→                  placeholder="John Doe"
+  1242→                  value={formContactName}
+  1243→                  onChange={(e) => setFormContactName(e.target.value)}
+  1244→                />
+  1245→              </div>
+  1246→              <div className="grid gap-2">
+  1247→                <Label htmlFor="deal-contact-email">Contact Email</Label>
+  1248→                <Input
+  1249→                  id="deal-contact-email"
+  1250→                  type="email"
+  1251→                  placeholder="john@example.com"
+  1252→                  value={formContactEmail}
+  1253→                  onChange={(e) => setFormContactEmail(e.target.value)}
+  1254→                />
+  1255→              </div>
+  1256→            </div>
+  1257→
+  1258→            {/* Expected Close Date */}
+  1259→            <div className="grid gap-2">
+  1260→              <Label htmlFor="deal-close-date">Expected Close Date</Label>
+  1261→              <Input
+  1262→                id="deal-close-date"
+  1263→                type="date"
+  1264→                value={formCloseDate}
+  1265→                onChange={(e) => setFormCloseDate(e.target.value)}
+  1266→              />
+  1267→            </div>
+  1268→
+  1269→            {/* Notes */}
+  1270→            <div className="grid gap-2">
+  1271→              <Label htmlFor="deal-notes">Notes</Label>
+  1272→              <Textarea
+  1273→                id="deal-notes"
+  1274→                placeholder="Any additional notes..."
+  1275→                rows={3}
+  1276→                value={formNotes}
+  1277→                onChange={(e) => setFormNotes(e.target.value)}
+  1278→              />
+  1279→            </div>
+  1280→          </div>
+  1281→
+  1282→          <DialogFooter>
+  1283→            <Button
+  1284→              variant="outline"
+  1285→              onClick={() => setCreateDialogOpen(false)}
+  1286→            >
+  1287→              Cancel
+  1288→            </Button>
+  1289→            <Button
+  1290→              onClick={handleCreateDeal}
+  1291→              disabled={isCreating || !formTitle.trim() || !formValue}
+  1292→              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+  1293→            >
+  1294→              {isCreating ? "Creating..." : "Create Deal"}
+  1295→            </Button>
+  1296→          </DialogFooter>
+  1297→        </DialogContent>
+  1298→      </Dialog>
+  1299→
+  1300→      {/* ── Deal Detail Dialog ── */}
+  1301→      <Dialog
+  1302→        open={detailDeal !== null}
+  1303→        onOpenChange={(open) => {
+  1304→          if (!open) {
+  1305→            setDetailDeal(null);
+  1306→            setEditMode(false);
+  1307→          }
+  1308→        }}
+  1309→      >
+  1310→        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+  1311→          {detailDeal && (
+  1312→            <>
+  1313→              {!editMode ? (
+  1314→                <>
+  1315→                  {/* ── View Mode ── */}
+  1316→                  <DialogHeader>
+  1317→                    <div className="flex items-start justify-between">
+  1318→                      <div className="space-y-1">
+  1319→                        <DialogTitle className="text-xl">
+  1320→                          {detailDeal.title}
+  1321→                        </DialogTitle>
+  1322→                        <DialogDescription>
+  1323→                          {safeStages.find(
+  1324→                            (s) => s._id === detailDeal.stageId
+  1325→                          )?.name ?? "Unknown Stage"}{" "}
+  1326→                          ·{" "}
+  1327→                          {formatCurrency(detailDeal.value)} ·{" "}
+  1328→                          {detailDeal.probability}% probability
+  1329→                        </DialogDescription>
+  1330→                      </div>
+  1331→                    </div>
+  1332→                  </DialogHeader>
+  1333→
+  1334→                  <div className="space-y-4 py-2">
+  1335→                    {/* Value & Probability */}
+  1336→                    <div className="grid grid-cols-2 gap-4">
+  1337→                      <div className="rounded-lg border border-border p-3 space-y-1">
+  1338→                        <p className="text-xs text-muted-foreground">
+  1339→                          Deal Value
+  1340→                        </p>
+  1341→                        <p className="text-lg font-bold">
+  1342→                          {formatCurrency(detailDeal.value)}
+  1343→                        </p>
+  1344→                      </div>
+  1345→                      <div className="rounded-lg border border-border p-3 space-y-1">
+  1346→                        <p className="text-xs text-muted-foreground">
+  1347→                          Weighted Value
+  1348→                        </p>
+  1349→                        <p className="text-lg font-bold text-[#8B5CF6]">
+  1350→                          {formatCurrency(
+  1351→                            detailDeal.value *
+  1352→                              (detailDeal.probability / 100)
+  1353→                          )}
+  1354→                        </p>
+  1355→                      </div>
+  1356→                    </div>
+  1357→
+  1358→                    {/* Details Grid */}
+  1359→                    <div className="space-y-3">
+  1360→                      {detailDeal.source && (
+  1361→                        <DetailRow
+  1362→                          icon={<FileText className="h-4 w-4" />}
+  1363→                          label="Source"
+  1364→                          value={
+  1365→                            <Badge
+  1366→                              variant="secondary"
+  1367→                              className="gap-1.5 text-xs"
+  1368→                            >
+  1369→                              <div
+  1370→                                className="h-1.5 w-1.5 rounded-full"
+  1371→                                style={{
+  1372→                                  backgroundColor: getSourceInfo(
+  1373→                                    detailDeal.source
+  1374→                                  ).color,
+  1375→                                }}
+  1376→                              />
+  1377→                              {getSourceInfo(detailDeal.source).label}
+  1378→                            </Badge>
+  1379→                          }
+  1380→                        />
+  1381→                      )}
+  1382→                      {detailDeal.contactName && (
+  1383→                        <DetailRow
+  1384→                          icon={<User className="h-4 w-4" />}
+  1385→                          label="Contact"
+  1386→                          value={detailDeal.contactName}
+  1387→                        />
+  1388→                      )}
+  1389→                      {detailDeal.contactEmail && (
+  1390→                        <DetailRow
+  1391→                          icon={<Mail className="h-4 w-4" />}
+  1392→                          label="Email"
+  1393→                          value={detailDeal.contactEmail}
+  1394→                        />
+  1395→                      )}
+  1396→                      {detailDeal.expectedCloseDate && (
+  1397→                        <DetailRow
+  1398→                          icon={<Calendar className="h-4 w-4" />}
+  1399→                          label="Expected Close"
+  1400→                          value={
+  1401→                            <span className="flex items-center gap-2">
+  1402→                              {formatDate(detailDeal.expectedCloseDate)}
+  1403→                              {(() => {
+  1404→                                const days = daysUntilClose(
+  1405→                                  detailDeal.expectedCloseDate
+  1406→                                );
+  1407→                                if (days === null) return null;
+  1408→                                if (days < 0)
+  1409→                                  return (
+  1410→                                    <Badge
+  1411→                                      variant="destructive"
+  1412→                                      className="text-[10px] h-4 px-1"
+  1413→                                    >
+  1414→                                      {Math.abs(days)}d overdue
+  1415→                                    </Badge>
+  1416→                                  );
+  1417→                                if (days <= 7)
+  1418→                                  return (
+  1419→                                    <Badge
+  1420→                                      variant="secondary"
+  1421→                                      className="text-[10px] h-4 px-1 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+  1422→                                    >
+  1423→                                      {days}d left
+  1424→                                    </Badge>
+  1425→                                  );
+  1426→                                return (
+  1427→                                  <span className="text-xs text-muted-foreground">
+  1428→                                    ({days}d left)
+  1429→                                  </span>
+  1430→                                );
+  1431→                              })()}
+  1432→                            </span>
+  1433→                          }
+  1434→                        />
+  1435→                      )}
+  1436→                      {detailDeal.description && (
+  1437→                        <DetailRow
+  1438→                          icon={<FileText className="h-4 w-4" />}
+  1439→                          label="Description"
+  1440→                          value={detailDeal.description}
+  1441→                        />
+  1442→                      )}
+  1443→                      {detailDeal.notes && (
+  1444→                        <div className="rounded-lg border border-border p-3 space-y-1">
+  1445→                          <p className="text-xs text-muted-foreground font-medium">
+  1446→                            Notes
+  1447→                          </p>
+  1448→                          <p className="text-sm whitespace-pre-wrap">
+  1449→                            {detailDeal.notes}
+  1450→                          </p>
+  1451→                        </div>
+  1452→                      )}
+  1453→                    </div>
+  1454→
+  1455→                    {/* Move to Stage */}
+  1456→                    <div className="space-y-2">
+  1457→                      <p className="text-xs text-muted-foreground font-medium">
+  1458→                        Move to Stage
+  1459→                      </p>
+  1460→                      <div className="flex flex-wrap gap-2">
+  1461→                        {safeStages
+  1462→                          .filter((s) => s._id !== detailDeal.stageId)
+  1463→                          .map((stage) => (
+  1464→                            <TooltipProvider key={stage._id}>
+  1465→                              <Tooltip>
+  1466→                                <TooltipTrigger asChild>
+  1467→                                  <button
+  1468→                                    onClick={() =>
+  1469→                                      handleMoveDealToStage(
+  1470→                                        detailDeal._id,
+  1471→                                        stage._id
+  1472→                                      )
+  1473→                                    }
+  1474→                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/5 transition-colors"
+  1475→                                  >
+  1476→                                    <div
+  1477→                                      className="h-2 w-2 rounded-full"
+  1478→                                      style={{
+  1479→                                        backgroundColor: stage.color,
+  1480→                                      }}
+  1481→                                    />
+  1482→                                    {stage.name}
+  1483→                                  </button>
+  1484→                                </TooltipTrigger>
+  1485→                                <TooltipContent>
+  1486→                                  Move to {stage.name}
+  1487→                                </TooltipContent>
+  1488→                              </Tooltip>
+  1489→                            </TooltipProvider>
+  1490→                          ))}
+  1491→                      </div>
+  1492→                    </div>
+  1493→                  </div>
+  1494→
+  1495→                  <DialogFooter className="gap-2 sm:gap-0">
+  1496→                    <Button
+  1497→                      variant="destructive"
+  1498→                      size="sm"
+  1499→                      onClick={() => setDeleteConfirmOpen(true)}
+  1500→                      className="gap-1.5"
+  1501→                    >
+  1502→                      <Trash2 className="h-3.5 w-3.5" />
+  1503→                      Delete
+  1504→                    </Button>
+  1505→                    <div className="flex-1" />
+  1506→                    <Button
+  1507→                      size="sm"
+  1508→                      onClick={() => {
+  1509→                        if (detailDeal) handleCreateProposalFromDeal(detailDeal);
+  1510→                      }}
+  1511→                      disabled={isCreatingProposal === detailDeal?._id}
+  1512→                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+  1513→                    >
+  1514→                      {isCreatingProposal === detailDeal?._id ? (
+  1515→                        <motion.div
+  1516→                          animate={{ rotate: 360 }}
+  1517→                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+  1518→                        >
+  1519→                          <Zap className="h-3.5 w-3.5" />
+  1520→                        </motion.div>
+  1521→                      ) : (
+  1522→                        <FileText className="h-3.5 w-3.5" />
+  1523→                      )}
+  1524→                      Make Proposal
+  1525→                    </Button>
+  1526→                    <Button
+  1527→                      variant="outline"
+  1528→                      size="sm"
+  1529→                      onClick={() => setEditMode(true)}
+  1530→                      className="gap-1.5"
+  1531→                    >
+  1532→                      <Pencil className="h-3.5 w-3.5" />
+  1533→                      Edit
+  1534→                    </Button>
+  1535→                  </DialogFooter>
+  1536→                </>
+  1537→              ) : (
+  1538→                <>
+  1539→                  {/* ── Edit Mode ── */}
+  1540→                  <DialogHeader>
+  1541→                    <DialogTitle className="flex items-center gap-2">
+  1542→                      <Pencil className="h-5 w-5 text-[#8B5CF6]" />
+  1543→                      Edit Deal
+  1544→                    </DialogTitle>
+  1545→                    <DialogDescription>
+  1546→                      Update deal details
+  1547→                    </DialogDescription>
+  1548→                  </DialogHeader>
+  1549→
+  1550→                  <div className="grid gap-4 py-2">
+  1551→                    {/* Stage */}
+  1552→                    <div className="grid gap-2">
+  1553→                      <Label>Stage</Label>
+  1554→                      <Select
+  1555→                        value={editStageId ?? undefined}
+  1556→                        onValueChange={(val) =>
+  1557→                          setEditStageId(val as Id<"pipelineStages">)
+  1558→                        }
+  1559→                      >
+  1560→                        <SelectTrigger className="w-full">
+  1561→                          <SelectValue placeholder="Select stage" />
+  1562→                        </SelectTrigger>
+  1563→                        <SelectContent>
+  1564→                          {safeStages.map((stage) => (
+  1565→                            <SelectItem key={stage._id} value={stage._id}>
+  1566→                              <div className="flex items-center gap-2">
+  1567→                                <div
+  1568→                                  className="h-2 w-2 rounded-full"
+  1569→                                  style={{
+  1570→                                    backgroundColor: stage.color,
+  1571→                                  }}
+  1572→                                />
+  1573→                                {stage.name}
+  1574→                              </div>
+  1575→                            </SelectItem>
+  1576→                          ))}
+  1577→                        </SelectContent>
+  1578→                      </Select>
+  1579→                    </div>
+  1580→
+  1581→                    {/* Title */}
+  1582→                    <div className="grid gap-2">
+  1583→                      <Label htmlFor="edit-title">Title</Label>
+  1584→                      <Input
+  1585→                        id="edit-title"
+  1586→                        value={editTitle}
+  1587→                        onChange={(e) => setEditTitle(e.target.value)}
+  1588→                      />
+  1589→                    </div>
+  1590→
+  1591→                    {/* Value & Probability */}
+  1592→                    <div className="grid grid-cols-2 gap-4">
+  1593→                      <div className="grid gap-2">
+  1594→                        <Label htmlFor="edit-value">Value ($)</Label>
+  1595→                        <Input
+  1596→                          id="edit-value"
+  1597→                          type="number"
+  1598→                          value={editValue}
+  1599→                          onChange={(e) => setEditValue(e.target.value)}
+  1600→                        />
+  1601→                      </div>
+  1602→                      <div className="grid gap-2">
+  1603→                        <Label htmlFor="edit-probability">
+  1604→                          Probability (%)
+  1605→                        </Label>
+  1606→                        <Input
+  1607→                          id="edit-probability"
+  1608→                          type="number"
+  1609→                          min={0}
+  1610→                          max={100}
+  1611→                          value={editProbability}
+  1612→                          onChange={(e) => setEditProbability(e.target.value)}
+  1613→                        />
+  1614→                      </div>
+  1615→                    </div>
+  1616→
+  1617→                    {/* Source */}
+  1618→                    <div className="grid gap-2">
+  1619→                      <Label>Source</Label>
+  1620→                      <Select value={editSource} onValueChange={setEditSource}>
+  1621→                        <SelectTrigger className="w-full">
+  1622→                          <SelectValue placeholder="Select source" />
+  1623→                        </SelectTrigger>
+  1624→                        <SelectContent>
+  1625→                          {SOURCE_OPTIONS.map((src) => (
+  1626→                            <SelectItem key={src.value} value={src.value}>
+  1627→                              <div className="flex items-center gap-2">
+  1628→                                <div
+  1629→                                  className="h-2 w-2 rounded-full"
+  1630→                                  style={{
+  1631→                                    backgroundColor: src.color,
+  1632→                                  }}
+  1633→                                />
+  1634→                                {src.label}
+  1635→                              </div>
+  1636→                            </SelectItem>
+  1637→                          ))}
+  1638→                        </SelectContent>
+  1639→                      </Select>
+  1640→                    </div>
+  1641→
+  1642→                    {/* Contact Name & Email */}
+  1643→                    <div className="grid grid-cols-2 gap-4">
+  1644→                      <div className="grid gap-2">
+  1645→                        <Label htmlFor="edit-contact-name">Contact Name</Label>
+  1646→                        <Input
+  1647→                          id="edit-contact-name"
+  1648→                          value={editContactName}
+  1649→                          onChange={(e) => setEditContactName(e.target.value)}
+  1650→                        />
+  1651→                      </div>
+  1652→                      <div className="grid gap-2">
+  1653→                        <Label htmlFor="edit-contact-email">Contact Email</Label>
+  1654→                        <Input
+  1655→                          id="edit-contact-email"
+  1656→                          type="email"
+  1657→                          value={editContactEmail}
+  1658→                          onChange={(e) => setEditContactEmail(e.target.value)}
+  1659→                        />
+  1660→                      </div>
+  1661→                    </div>
+  1662→
+  1663→                    {/* Expected Close Date */}
+  1664→                    <div className="grid gap-2">
+  1665→                      <Label htmlFor="edit-close-date">Expected Close</Label>
+  1666→                      <Input
+  1667→                        id="edit-close-date"
+  1668→                        type="date"
+  1669→                        value={editCloseDate}
+  1670→                        onChange={(e) => setEditCloseDate(e.target.value)}
+  1671→                      />
+  1672→                    </div>
+  1673→
+  1674→                    {/* Notes */}
+  1675→                    <div className="grid gap-2">
+  1676→                      <Label htmlFor="edit-notes">Notes</Label>
+  1677→                      <Textarea
+  1678→                        id="edit-notes"
+  1679→                        rows={3}
+  1680→                        value={editNotes}
+  1681→                        onChange={(e) => setEditNotes(e.target.value)}
+  1682→                      />
+  1683→                    </div>
+  1684→                  </div>
+  1685→
+  1686→                  <DialogFooter>
+  1687→                    <Button
+  1688→                      variant="outline"
+  1689→                      onClick={() => setEditMode(false)}
+  1690→                    >
+  1691→                      Cancel
+  1692→                    </Button>
+  1693→                    <Button
+  1694→                      onClick={handleUpdateDeal}
+  1695→                      className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+  1696→                    >
+  1697→                      Save Changes
+  1698→                    </Button>
+  1699→                  </DialogFooter>
+  1700→                </>
+  1701→              )}
+  1702→            </>
+  1703→          )}
+  1704→        </DialogContent>
+  1705→      </Dialog>
+  1706→
+  1707→      {/* ── Delete Confirmation ── */}
+  1708→      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+  1709→        <AlertDialogContent>
+  1710→          <AlertDialogHeader>
+  1711→            <AlertDialogTitle>Delete Deal</AlertDialogTitle>
+  1712→            <AlertDialogDescription>
+  1713→              Are you sure you want to delete &quot;{detailDeal?.title}&quot;?
+  1714→              This action cannot be undone.
+  1715→            </AlertDialogDescription>
+  1716→          </AlertDialogHeader>
+  1717→          <AlertDialogFooter>
+  1718→            <AlertDialogCancel>Cancel</AlertDialogCancel>
+  1719→            <AlertDialogAction
+  1720→              onClick={handleDeleteDeal}
+  1721→              className="bg-destructive text-white hover:bg-destructive/90"
+  1722→            >
+  1723→              Delete
+  1724→            </AlertDialogAction>
+  1725→          </AlertDialogFooter>
+  1726→        </AlertDialogContent>
+  1727→      </AlertDialog>
+  1728→
+  1729→      {/* ── CSV Import Dialog ── */}
+  1730→      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+  1731→        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+  1732→          <DialogHeader>
+  1733→            <DialogTitle>Import Deals</DialogTitle>
+  1734→            <DialogDescription>
+  1735→              Upload a CSV or Excel file to bulk import deals into your pipeline.
+  1736→            </DialogDescription>
+  1737→          </DialogHeader>
+  1738→
+  1739→          <div className="space-y-6 py-4">
+  1740→            {/* Import Result */}
+  1741→            {importResult && (
+  1742→              <div className="rounded-lg border p-4 space-y-2">
+  1743→                <div className="flex items-center gap-2 text-sm font-medium">
+  1744→                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+  1745→                  Import Complete
+  1746→                </div>
+  1747→                <div className="grid grid-cols-3 gap-4 text-sm">
+  1748→                  <div>
+  1749→                    <span className="text-muted-foreground">Imported:</span>{" "}
+  1750→                    <span className="font-semibold text-emerald-600">{importResult.imported}</span>
+  1751→                  </div>
+  1752→                  <div>
+  1753→                    <span className="text-muted-foreground">Skipped:</span>{" "}
+  1754→                    <span className="font-semibold text-amber-600">{importResult.skipped}</span>
+  1755→                  </div>
+  1756→                  <div>
+  1757→                    <span className="text-muted-foreground">Errors:</span>{" "}
+  1758→                    <span className="font-semibold text-red-600">{importResult.errors.length}</span>
+  1759→                  </div>
+  1760→                </div>
+  1761→                {importResult.errors.length > 0 && (
+  1762→                  <div className="mt-2 text-xs text-red-600 space-y-1 max-h-32 overflow-y-auto">
+  1763→                    {importResult.errors.map((err, i) => (
+  1764→                      <div key={i} className="flex items-start gap-1">
+  1765→                        <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+  1766→                        {err}
+  1767→                      </div>
+  1768→                    ))}
+  1769→                  </div>
+  1770→                )}
+  1771→              </div>
+  1772→            )}
+  1773→
+  1774→            {/* Stage Selector */}
+  1775→            <div className="space-y-2">
+  1776→              <Label>Import into Stage *</Label>
+  1777→              <Select
+  1778→                value={selectedStageId ?? ""}
+  1779→                onValueChange={(val) => setSelectedStageId(val as Id<"pipelineStages">)}
+  1780→              >
+  1781→                <SelectTrigger>
+  1782→                  <SelectValue placeholder="Select a pipeline stage" />
+  1783→                </SelectTrigger>
+  1784→                <SelectContent>
+  1785→                  {safeStages.map((stage) => (
+  1786→                    <SelectItem key={stage._id} value={stage._id}>
+  1787→                      <div className="flex items-center gap-2">
+  1788→                        <div
+  1789→                          className="h-2.5 w-2.5 rounded-full"
+  1790→                          style={{ backgroundColor: stage.color }}
+  1791→                        />
+  1792→                        {stage.name}
+  1793→                      </div>
+  1794→                    </SelectItem>
+  1795→                  ))}
+  1796→                </SelectContent>
+  1797→              </Select>
+  1798→            </div>
+  1799→
+  1800→            {/* File Upload / Drag & Drop Zone */}
+  1801→            {importData.length === 0 ? (
+  1802→              <div
+  1803→                className={`
+  1804→                  border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+  1805→                  transition-colors duration-200
+  1806→                  ${isDragOver
+  1807→                    ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
+  1808→                    : "border-muted-foreground/25 hover:border-[#8B5CF6]/50 hover:bg-muted/30"
+  1809→                  }
+  1810→                `}
+  1811→                onDragOver={handleDragOverFile}
+  1812→                onDragLeave={handleDragLeaveFile}
+  1813→                onDrop={handleDropFile}
+  1814→                onClick={() => fileInputRef.current?.click()}
+  1815→              >
+  1816→                <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+  1817→                <p className="text-sm font-medium mb-1">
+  1818→                  Drop your file here, or click to browse
+  1819→                </p>
+  1820→                <p className="text-xs text-muted-foreground">
+  1821→                  Supports .csv, .xlsx, .xls files
+  1822→                </p>
+  1823→                <input
+  1824→                  ref={fileInputRef}
+  1825→                  type="file"
+  1826→                  accept=".csv,.xlsx,.xls"
+  1827→                  className="hidden"
+  1828→                  onChange={(e) => {
+  1829→                    const file = e.target.files?.[0];
+  1830→                    if (file) handleFileUpload(file);
+  1831→                    e.target.value = "";
+  1832→                  }}
+  1833→                />
+  1834→              </div>
+  1835→            ) : (
+  1836→              <>
+  1837→                {/* Column Mapping */}
+  1838→                <div className="space-y-3">
+  1839→                  <div className="flex items-center justify-between">
+  1840→                    <Label className="text-sm font-medium">Column Mapping</Label>
+  1841→                    <Button
+  1842→                      variant="ghost"
+  1843→                      size="sm"
+  1844→                      className="text-xs h-7"
+  1845→                      onClick={() => {
+  1846→                        setImportData([]);
+  1847→                        setImportHeaders([]);
+  1848→                        setColumnMappings({});
+  1849→                        setImportResult(null);
+  1850→                      }}
+  1851→                    >
+  1852→                      Change File
+  1853→                    </Button>
+  1854→                  </div>
+  1855→                  <div className="text-xs text-muted-foreground mb-2">
+  1856→                    {importData.length} rows detected • Showing first 5 rows preview
+  1857→                  </div>
+  1858→                  <div className="space-y-2">
+  1859→                    {importHeaders.map((header) => (
+  1860→                      <div key={header} className="flex items-center gap-3">
+  1861→                        <div className="flex-1 min-w-0">
+  1862→                          <div className="text-sm font-medium truncate">{header}</div>
+  1863→                          <div className="text-xs text-muted-foreground truncate">
+  1864→                            {String(importData[0]?.[header] ?? "").slice(0, 40)}
+  1865→                          </div>
+  1866→                        </div>
+  1867→                        <Select
+  1868→                          value={columnMappings[header] ?? "_skip"}
+  1869→                          onValueChange={(val) =>
+  1870→                            setColumnMappings((prev) => ({ ...prev, [header]: val }))
+  1871→                          }
+  1872→                        >
+  1873→                          <SelectTrigger className="w-[180px]">
+  1874→                            <SelectValue />
+  1875→                          </SelectTrigger>
+  1876→                          <SelectContent>
+  1877→                            {CORE_FIELDS.map((field) => (
+  1878→                              <SelectItem key={field.value} value={field.value}>
+  1879→                                {field.label}
+  1880→                              </SelectItem>
+  1881→                            ))}
+  1882→                          </SelectContent>
+  1883→                        </Select>
+  1884→                      </div>
+  1885→                    ))}
+  1886→                  </div>
+  1887→                </div>
+  1888→
+  1889→                {/* Preview Table */}
+  1890→                {importData.length > 0 && (
+  1891→                  <div className="space-y-2">
+  1892→                    <Label className="text-sm font-medium">Preview (first 5 rows)</Label>
+  1893→                    <div className="border rounded-lg overflow-x-auto">
+  1894→                      <table className="w-full text-xs">
+  1895→                        <thead>
+  1896→                          <tr className="bg-muted/50 border-b">
+  1897→                            {importHeaders
+  1898→                              .filter((h) => columnMappings[h] && columnMappings[h] !== "_skip")
+  1899→                              .map((header) => (
+  1900→                                <th key={header} className="text-left px-3 py-2 font-medium">
+  1901→                                  {CORE_FIELDS.find((f) => f.value === columnMappings[header])?.label ?? header}
+  1902→                                </th>
+  1903→                              ))}
+  1904→                          </tr>
+  1905→                        </thead>
+  1906→                        <tbody>
+  1907→                          {importData.slice(0, 5).map((row, i) => (
+  1908→                            <tr key={i} className="border-b last:border-0">
+  1909→                              {importHeaders
+  1910→                                .filter((h) => columnMappings[h] && columnMappings[h] !== "_skip")
+  1911→                                .map((header) => (
+  1912→                                  <td key={header} className="px-3 py-1.5 max-w-[200px] truncate">
+  1913→                                    {String(row[header] ?? "")}
+  1914→                                  </td>
+  1915→                                ))}
+  1916→                            </tr>
+  1917→                          ))}
+  1918→                        </tbody>
+  1919→                      </table>
+  1920→                    </div>
+  1921→                  </div>
+  1922→                )}
+  1923→              </>
+  1924→            )}
+  1925→          </div>
+  1926→
+  1927→          <DialogFooter>
+  1928→            <Button
+  1929→              variant="outline"
+  1930→              onClick={() => setImportDialogOpen(false)}
+  1931→              disabled={isImporting}
+  1932→            >
+  1933→              {importResult ? "Close" : "Cancel"}
+  1934→            </Button>
+  1935→            {importData.length > 0 && !importResult && (
+  1936→              <Button
+  1937→                onClick={handleImport}
+  1938→                disabled={isImporting || !selectedStageId || !workspaceId}
+  1939→                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+  1940→              >
+  1941→                {isImporting ? (
+  1942→                  <>
+  1943→                    <Loader2 className="h-4 w-4 animate-spin" />
+  1944→                    Importing...
+  1945→                  </>
+  1946→                ) : (
+  1947→                  <>
+  1948→                    <Download className="h-4 w-4" />
+  1949→                    Import {importData.length} Deals
+  1950→                  </>
+  1951→                )}
+  1952→              </Button>
+  1953→            )}
+  1954→          </DialogFooter>
+  1955→        </DialogContent>
+  1956→      </Dialog>
+  1957→    </div>
+  1958→  );
+  1959→}
+  1960→
+  1961→// ─── Sub-Components ─────────────────────────────────────────────────────────
+  1962→
+  1963→/** Stats card in the top bar */
+  1964→function StatsCard({
+  1965→  icon,
+  1966→  label,
+  1967→  value,
+  1968→  subtitle,
+  1969→  accent,
+  1970→}: {
+  1971→  icon: React.ReactNode;
+  1972→  label: string;
+  1973→  value: string;
+  1974→  subtitle?: string;
+  1975→  accent: string;
+  1976→}) {
+  1977→  return (
+  1978→    <motion.div
+  1979→      initial={{ opacity: 0, y: 12 }}
+  1980→      animate={{ opacity: 1, y: 0 }}
+  1981→      transition={{ duration: 0.3 }}
+  1982→    >
+  1983→      <Card className="py-4 gap-3 hover:shadow-md transition-shadow min-h-[88px]">
+  1984→        <CardHeader className="pb-0 pt-0 px-4">
+  1985→          <div className="flex items-center gap-2">
+  1986→            <div
+  1987→              className="h-8 w-8 rounded-lg flex items-center justify-center"
+  1988→              style={{ backgroundColor: `${accent}15`, color: accent }}
+  1989→            >
+  1990→              {icon}
+  1991→            </div>
+  1992→            <CardTitle className="text-xs text-muted-foreground font-medium">
+  1993→              {label}
+  1994→            </CardTitle>
+  1995→          </div>
+  1996→        </CardHeader>
+  1997→        <CardContent className="pt-0 px-4">
+  1998→          <p className="text-2xl font-bold tracking-tight">{value}</p>
+  1999→          <p className="text-[11px] text-muted-foreground mt-0.5 min-h-[16px]">
+  2000→            {subtitle ?? "\u00A0"}
+
+[showing lines 1-2000 of 2164; use offset=2001 with limit to continue reading]

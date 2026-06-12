@@ -245,7 +245,7 @@ export default function Clients() {
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="px-6 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">

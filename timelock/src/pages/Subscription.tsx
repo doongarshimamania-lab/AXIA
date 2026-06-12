@@ -695,7 +695,7 @@ export default function Subscription() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="px-6 py-6 max-w-6xl">
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">

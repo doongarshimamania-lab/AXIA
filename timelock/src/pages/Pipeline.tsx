@@ -907,7 +907,7 @@ export default function Pipeline() {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="px-6 py-6 space-y-6">
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

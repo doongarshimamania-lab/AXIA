@@ -360,7 +360,7 @@ export default function Invoices() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-4 py-6">
+      <div className="px-6 py-6">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1

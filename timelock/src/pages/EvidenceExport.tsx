@@ -444,7 +444,7 @@ export default function EvidenceExport() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background"
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="px-6 py-6 space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Export</h1>

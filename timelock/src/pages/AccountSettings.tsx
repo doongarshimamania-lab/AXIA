@@ -269,7 +269,7 @@ export default function AccountSettings() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="px-6 py-6">
         {/* Page Header */}
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">

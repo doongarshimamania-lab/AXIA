@@ -203,8 +203,10 @@ export function CollapsibleSidebar() {
             setIsExpanded(true);
           }
         }}
-        onAnimationStart={() => {
-          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+        onUpdate={(latest) => {
+          // Smoothly sync CSS variable as animation progresses — no gap during transition
+          const w = typeof latest.width === 'number' ? latest.width : (isExpanded ? 280 : 64);
+          document.documentElement.style.setProperty('--sidebar-width', `${w}px`);
         }}
         onAnimationComplete={() => {
           document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');

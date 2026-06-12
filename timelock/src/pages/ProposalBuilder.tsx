@@ -498,7 +498,7 @@ export default function ProposalBuilder() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="px-6 py-6 max-w-5xl">
         {/* ─── Top Bar ────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
