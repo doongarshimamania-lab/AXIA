@@ -195,16 +195,8 @@ function DashboardLayout() {
       <CollapsibleSidebar />
       {/* Mobile header with hamburger */}
       {isMobile && <MobileHeader />}
-      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0 flex flex-col" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
-        {/* Global top bar with notification bell — part of content flow, not overlapping */}
-        {!isMobile && (
-          <div className="flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/95 backdrop-blur-sm flex-shrink-0">
-            <NotificationCenter />
-          </div>
-        )}
-        <div className="flex-1 min-h-0">
-          <Outlet />
-        </div>
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
+        <Outlet />
       </div>
     </div>
   );
@@ -243,6 +235,7 @@ root.render(
                     <Route path="/network" element={<PremiumNetwork />} />
                     <Route path="/teams" element={<TeamManagement />} />
                     <Route path="/evidence-library" element={<EvidenceLibrary />} />
+                    <Route path="/evidence-export" element={<EvidenceExport />} />
                     <Route path="/time-tracking" element={<TimeTracking />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/goals" element={<Goals />} />
@@ -250,10 +243,6 @@ root.render(
                     <Route path="/invoices/new" element={<InvoiceBuilder />} />
                     <Route path="/payment-patterns" element={<PaymentPatterns />} />
                     <Route path="/reports" element={<Reports />} />
-                    <Route path="/platform-integrations" element={<PlatformIntegrations />} />
-                    <Route path="/evidence-export" element={<EvidenceExport />} />
-                    <Route path="/subscription" element={<Subscription />} />
-                    <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/pipeline" element={<Pipeline />} />
                     <Route path="/proposals" element={<Proposals />} />
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
@@ -261,7 +250,6 @@ root.render(
                     <Route path="/scope" element={<Scope />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
                     {/* Legacy redirects — these pages are now consolidated */}
-                    <Route path="/evidence-export" element={<EvidenceLibrary />} />
                     <Route path="/platform-integrations" element={<AccountSettings />} />
                     <Route path="/subscription" element={<AccountSettings />} />
                     <Route path="/help-center" element={<AccountSettings />} />

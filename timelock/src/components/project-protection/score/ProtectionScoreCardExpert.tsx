@@ -53,8 +53,10 @@ export function ProtectionScoreCardExpert({ data, onUpgrade, projectId, projectN
   const [reportViewerOpen, setReportViewerOpen] = useState(false);
   const [reportData, setReportData] = useState<{ content: string; caseId: string } | null>(null);
   
-  const generateUniversalReport = useMutation(api.evidence.generateUniversalReport);
-  const generateProjectAuditReport = useMutation(api.evidence.generateProjectAuditReport);
+  // Safely access evidence API — it may not exist in local Convex deployment
+  const evidenceMutations = (api as any).evidence;
+  const generateUniversalReport = useMutation(evidenceMutations?.generateUniversalReport ?? null);
+  const generateProjectAuditReport = useMutation(evidenceMutations?.generateProjectAuditReport ?? null);
 
   return (
     <motion.div

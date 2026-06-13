@@ -487,7 +487,7 @@ export default function Messages() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] bg-background">
+    <div className="flex h-[calc(100vh)] bg-background">
       <ChannelList
         channels={activeChannels}
         activeChannelId={activeChannelId}
