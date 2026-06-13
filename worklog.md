@@ -260,3 +260,35 @@ Stage Summary:
 - Global notification system with seen/unseen states, click-to-mark-seen
 - Notification bell in sidebar + mobile header
 - Build succeeds, pushed to main branch
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix notification bell overlapping, messages gap, notification persistence, and channel member selection
+
+Work Log:
+- Analyzed uploaded screenshot showing messaging UI with overlapping elements
+- Read DashboardLayout in main.tsx — bell was using absolute positioning (top-5 right-6 z-50) which overlapped page content
+- Read NotificationCenter, use-notifications hook, Messages page, ChannelList component
+- Fixed DashboardLayout: Replaced absolute-positioned bell with inline top bar (h-14, border-bottom, flex-shrink-0) that's part of content flow
+- Fixed Messages page height: Changed from h-[calc(100vh-4rem)] to h-[calc(100vh-3.5rem)] to account for the new top bar
+- Rewrote use-notifications hook with last-seen-count persistence:
+  - Changed from Set<string> of dedup keys to Record<string, number> of last seen counts
+  - Stable dedupKeys (e.g., "proposal-viewed") instead of count-dependent keys ("proposal-viewed-3")
+  - Notification is "seen" when currentValue <= lastSeenValue
+  - Only appears as unseen when count increases beyond previously seen value
+  - New localStorage key: axia_notifications_last_seen
+- Added member selection to Create Channel dialog in ChannelList:
+  - New AvailableMember interface and availableMembers prop
+  - Search/filter members, toggle selection with visual chips
+  - Pass selected memberIds to onCreateChannel callback
+- Updated Messages.tsx to pass availableMembers and handle memberIds in channel creation
+- Updated bell icon colors from sidebar-specific to standard foreground colors
+- Built successfully, committed, pushed to GitHub, tagged as v1.2.0
+
+Stage Summary:
+- Notification bell no longer overlaps page content — sits in a proper inline top bar
+- Messages page fills available height correctly
+- Notifications persist across page navigation — only re-appear when counts increase
+- Channel creation now supports adding members
+- All changes pushed to main branch and tagged as v1.2.0
