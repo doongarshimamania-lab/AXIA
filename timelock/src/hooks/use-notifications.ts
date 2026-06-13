@@ -5,12 +5,17 @@
  * - Derives "reaction" notifications from live Convex data
  * - Only shows events that happened TO the user (client viewed proposal,
  *   payment received, invoice overdue) — NOT self-initiated actions
- * - Persists seen/unseen state in localStorage
- * - Marks notifications as seen only when explicitly clicked
+ * - Persists "last seen count" per notification type in localStorage
+ * - A notification is "unseen" when its current count exceeds the last seen count
+ * - Marks notifications as seen by updating the last seen count to current value
  * - Provides unread count for badge display
  *
- * Usage:
- *   const { notifications, unreadCount, markAsSeen, markAllSeen } = useNotifications();
+ * Persistence strategy:
+ *   Instead of storing a set of dedup keys (which change when counts change),
+ *   we store a map of { notificationType: lastSeenCount }.
+ *   A notification is unseen when: currentValue > lastSeenValue
+ *   When marked as seen: lastSeenValue = currentValue
+ *   This means notifications only re-appear when the count actually increases.
  */
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -46,28 +51,32 @@ export interface AppNotification {
   href: string;
   /** Is this a reaction/external event (true) or self-initiated (false) */
   isReaction: boolean;
-  /** Unique key for dedup — based on the data that generated this notification */
+  /** Unique key for this notification type (stable — does NOT include count) */
   dedupKey: string;
+  /** The current numeric value driving this notification (for seen tracking) */
+  currentValue: number;
+  /** Whether the user has seen this notification */
+  seen: boolean;
 }
 
-// ─── LocalStorage helpers ───────────────────────────────────────────────────
-const SEEN_KEY = "axia_notifications_seen";
+// ─── LocalStorage helpers — stores last seen counts per notification type ──
+const LAST_SEEN_KEY = "axia_notifications_last_seen";
 
-function getSeenIds(): Set<string> {
+type LastSeenMap = Record<string, number>;
+
+function getLastSeenMap(): LastSeenMap {
   try {
-    const raw = localStorage.getItem(SEEN_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw));
+    const raw = localStorage.getItem(LAST_SEEN_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
   } catch {
-    return new Set();
+    return {};
   }
 }
 
-function saveSeenIds(ids: Set<string>) {
+function saveLastSeenMap(map: LastSeenMap) {
   try {
-    // Keep only the most recent 200 entries to avoid unbounded growth
-    const arr = Array.from(ids).slice(-200);
-    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
+    localStorage.setItem(LAST_SEEN_KEY, JSON.stringify(map));
   } catch {
     // Ignore storage errors
   }
@@ -104,13 +113,13 @@ export function useNotifications() {
   const invoices = useQuery(api.billing.crud.getInvoices, queryArgs);
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
 
-  // Seen state
-  const [seenIds, setSeenIds] = useState<Set<string>>(() => getSeenIds());
+  // Persisted "last seen" state — maps notification type key → last seen count
+  const [lastSeenMap, setLastSeenMap] = useState<LastSeenMap>(() => getLastSeenMap());
 
-  // Persist seen state when it changes
+  // Persist when changed
   useEffect(() => {
-    saveSeenIds(seenIds);
-  }, [seenIds]);
+    saveLastSeenMap(lastSeenMap);
+  }, [lastSeenMap]);
 
   // ─── Build reaction notifications ──────────────────────────────────────
   const notifications: AppNotification[] = useMemo(() => {
@@ -146,7 +155,8 @@ export function useNotifications() {
     if (proposalViewed > 0) {
       notifs.push({
         id: "proposal-viewed-reaction",
-        dedupKey: `proposal-viewed-${proposalViewed}`,
+        dedupKey: "proposal-viewed",
+        currentValue: proposalViewed,
         icon: Eye,
         iconColor: "text-blue-500 bg-blue-500/10",
         title: `${proposalViewed} Proposal${proposalViewed > 1 ? "s" : ""} Viewed by Client`,
@@ -154,6 +164,7 @@ export function useNotifications() {
         timestamp: Date.now() - 300000,
         href: "/proposals",
         isReaction: true,
+        seen: false, // computed below
       });
     }
 
@@ -161,7 +172,8 @@ export function useNotifications() {
     if (proposalSigned > 0) {
       notifs.push({
         id: "proposal-signed-reaction",
-        dedupKey: `proposal-signed-${proposalSigned}`,
+        dedupKey: "proposal-signed",
+        currentValue: proposalSigned,
         icon: FileSignature,
         iconColor: "text-emerald-500 bg-emerald-500/10",
         title: `${proposalSigned} Proposal${proposalSigned > 1 ? "s" : ""} Signed`,
@@ -169,6 +181,7 @@ export function useNotifications() {
         timestamp: Date.now() - 600000,
         href: "/proposals",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -176,7 +189,8 @@ export function useNotifications() {
     if (invoicePaid > 0 && invoiceRevenue > 0) {
       notifs.push({
         id: "payment-received-reaction",
-        dedupKey: `payment-received-${invoicePaid}-${Math.floor(invoiceRevenue / 100)}`,
+        dedupKey: "payment-received",
+        currentValue: invoicePaid,
         icon: DollarSign,
         iconColor: "text-emerald-500 bg-emerald-500/10",
         title: `${fmtCompactCurrency(invoiceRevenue)} Payment${invoicePaid > 1 ? "s" : ""} Received`,
@@ -184,6 +198,7 @@ export function useNotifications() {
         timestamp: Date.now() - 1800000,
         href: "/invoices",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -191,7 +206,8 @@ export function useNotifications() {
     if (invoiceOverdue > 0) {
       notifs.push({
         id: "invoice-overdue-reaction",
-        dedupKey: `invoice-overdue-${invoiceOverdue}`,
+        dedupKey: "invoice-overdue",
+        currentValue: invoiceOverdue,
         icon: AlertCircle,
         iconColor: "text-red-500 bg-red-500/10",
         title: `${invoiceOverdue} Overdue Invoice${invoiceOverdue > 1 ? "s" : ""}`,
@@ -199,6 +215,7 @@ export function useNotifications() {
         timestamp: Date.now() - 60000,
         href: "/invoices",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -206,7 +223,8 @@ export function useNotifications() {
     if (wonDeals > 0) {
       notifs.push({
         id: "deal-won-reaction",
-        dedupKey: `deal-won-${wonDeals}`,
+        dedupKey: "deal-won",
+        currentValue: wonDeals,
         icon: CheckCircle2,
         iconColor: "text-emerald-500 bg-emerald-500/10",
         title: `${wonDeals} Deal${wonDeals > 1 ? "s" : ""} Won`,
@@ -214,6 +232,7 @@ export function useNotifications() {
         timestamp: Date.now() - 2400000,
         href: "/pipeline",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -221,7 +240,8 @@ export function useNotifications() {
     if (proposalSent > 0 && proposalViewed === 0) {
       notifs.push({
         id: "proposal-not-viewed-reaction",
-        dedupKey: `proposal-not-viewed-${proposalSent}`,
+        dedupKey: "proposal-not-viewed",
+        currentValue: proposalSent,
         icon: Clock,
         iconColor: "text-amber-500 bg-amber-500/10",
         title: `${proposalSent} Proposal${proposalSent > 1 ? "s" : ""} Awaiting View`,
@@ -229,15 +249,17 @@ export function useNotifications() {
         timestamp: Date.now() - 3600000,
         href: "/proposals",
         isReaction: true,
+        seen: false,
       });
     }
 
     // 7. Invoices pending payment (client hasn't paid — reaction)
-    if (invoiceTotal - invoicePaid - invoiceOverdue - invoiceDraft > 0) {
-      const pending = invoiceTotal - invoicePaid - invoiceOverdue - invoiceDraft;
+    const pending = invoiceTotal - invoicePaid - invoiceOverdue - invoiceDraft;
+    if (pending > 0) {
       notifs.push({
         id: "invoice-pending-reaction",
-        dedupKey: `invoice-pending-${pending}`,
+        dedupKey: "invoice-pending",
+        currentValue: pending,
         icon: CreditCard,
         iconColor: "text-amber-500 bg-amber-500/10",
         title: `${pending} Invoice${pending > 1 ? "s" : ""} Awaiting Payment`,
@@ -245,6 +267,7 @@ export function useNotifications() {
         timestamp: Date.now() - 5400000,
         href: "/invoices",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -252,7 +275,8 @@ export function useNotifications() {
     if (totalClients > 0 && totalClients <= 3) {
       notifs.push({
         id: "client-onboarded-reaction",
-        dedupKey: `client-onboarded-${totalClients}`,
+        dedupKey: "client-onboarded",
+        currentValue: totalClients,
         icon: UserPlus,
         iconColor: "text-violet-500 bg-violet-500/10",
         title: `${totalClients} Client${totalClients > 1 ? "s" : ""} Onboarded`,
@@ -260,6 +284,7 @@ export function useNotifications() {
         timestamp: Date.now() - 7200000,
         href: "/clients",
         isReaction: true,
+        seen: false,
       });
     }
 
@@ -272,35 +297,44 @@ export function useNotifications() {
   ]);
 
   // ─── Compute seen/unseen state ─────────────────────────────────────────
+  // A notification is "seen" when the user has acknowledged it at this count level.
+  // It becomes "unseen" again only when currentValue > lastSeenValue (i.e., count increased)
+  const enrichedNotifications = useMemo(
+    () =>
+      notifications.map((n) => {
+        const lastSeenValue = lastSeenMap[n.dedupKey] ?? 0;
+        const isSeen = n.currentValue <= lastSeenValue;
+        return { ...n, seen: isSeen };
+      }),
+    [notifications, lastSeenMap]
+  );
+
   const unseenNotifications = useMemo(
-    () => notifications.filter((n) => !seenIds.has(n.dedupKey)),
-    [notifications, seenIds]
+    () => enrichedNotifications.filter((n) => !n.seen),
+    [enrichedNotifications]
   );
 
   const unreadCount = unseenNotifications.length;
 
-  const enrichedNotifications = useMemo(
-    () =>
-      notifications.map((n) => ({
-        ...n,
-        seen: seenIds.has(n.dedupKey),
-      })),
-    [notifications, seenIds]
-  );
-
   // ─── Actions ────────────────────────────────────────────────────────────
   const markAsSeen = useCallback((dedupKey: string) => {
-    setSeenIds((prev) => {
-      const next = new Set(prev);
-      next.add(dedupKey);
-      return next;
-    });
-  }, []);
+    // Find the current value for this notification type
+    const notif = notifications.find((n) => n.dedupKey === dedupKey);
+    if (!notif) return;
+    const currentValue = notif.currentValue;
+    setLastSeenMap((prev) => ({
+      ...prev,
+      [dedupKey]: currentValue,
+    }));
+  }, [notifications]);
 
   const markAllSeen = useCallback(() => {
-    setSeenIds((prev) => {
-      const next = new Set(prev);
-      notifications.forEach((n) => next.add(n.dedupKey));
+    setLastSeenMap((prev) => {
+      const next = { ...prev };
+      notifications.forEach((n) => {
+        // Only update if current value is higher (never downgrade)
+        next[n.dedupKey] = Math.max(next[n.dedupKey] ?? 0, n.currentValue);
+      });
       return next;
     });
   }, [notifications]);

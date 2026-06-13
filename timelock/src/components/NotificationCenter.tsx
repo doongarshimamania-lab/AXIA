@@ -196,12 +196,12 @@ export function NotificationCenter() {
         ref={buttonRef}
         data-notification-bell
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+        className="relative p-2 rounded-lg hover:bg-accent transition-colors"
       >
         {unreadCount > 0 ? (
-          <BellRing className="h-4 w-4 text-sidebar-foreground animate-pulse" />
+          <BellRing className="h-5 w-5 text-foreground animate-pulse" />
         ) : (
-          <Bell className="h-4 w-4 text-sidebar-foreground/60" />
+          <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground" />
         )}
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-0.5">

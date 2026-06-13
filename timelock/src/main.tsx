@@ -195,14 +195,16 @@ function DashboardLayout() {
       <CollapsibleSidebar />
       {/* Mobile header with hamburger */}
       {isMobile && <MobileHeader />}
-      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0 relative" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
-        {/* Notification bell — fixed top-right, inline with page headers */}
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0 flex flex-col" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
+        {/* Global top bar with notification bell — part of content flow, not overlapping */}
         {!isMobile && (
-          <div className="absolute top-5 right-6 z-50">
+          <div className="flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/95 backdrop-blur-sm flex-shrink-0">
             <NotificationCenter />
           </div>
         )}
-        <Outlet />
+        <div className="flex-1 min-h-0">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

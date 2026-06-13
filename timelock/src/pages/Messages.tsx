@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MessageSquare } from "lucide-react";
-import { ChannelList, type Channel } from "@/components/messaging/ChannelList";
+import { ChannelList, type Channel, type AvailableMember } from "@/components/messaging/ChannelList";
 import { ChannelHeader } from "@/components/messaging/ChannelHeader";
 import { MessageList, type Message } from "@/components/messaging/MessageList";
 import { MessageInput } from "@/components/messaging/MessageInput";
@@ -274,7 +274,7 @@ export default function Messages() {
     }
   }, []);
 
-  const handleCreateChannel = useCallback((name: string, isPrivate: boolean) => {
+  const handleCreateChannel = useCallback((name: string, isPrivate: boolean, memberIds?: string[]) => {
     // Try Convex first
     if (canUseConvex && createChannelMutation) {
       createChannelMutation({
@@ -282,6 +282,7 @@ export default function Messages() {
         workspaceId: activeWorkspaceId as Id<"workspaces">,
         isPrivate,
         type: "channel" as const,
+        memberIds: memberIds && memberIds.length > 0 ? memberIds : undefined,
       }).catch(() => {});
       return;
     }
@@ -293,7 +294,7 @@ export default function Messages() {
       type: "channel",
       isPrivate,
       unreadCount: 0,
-      members: 1,
+      members: (memberIds?.length ?? 0) + 1, // +1 for the creator
       lastMessage: undefined,
       lastMessageTime: undefined,
     };
@@ -486,12 +487,18 @@ export default function Messages() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background">
+    <div className="flex h-[calc(100vh-3.5rem)] bg-background">
       <ChannelList
         channels={activeChannels}
         activeChannelId={activeChannelId}
         onChannelSelect={handleChannelSelect}
         onCreateChannel={handleCreateChannel}
+        availableMembers={activeMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          role: m.role,
+          isOnline: m.isOnline,
+        }))}
       />
 
       {activeChannel ? (
