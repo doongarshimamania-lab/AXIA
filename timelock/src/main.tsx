@@ -195,10 +195,10 @@ function DashboardLayout() {
       <CollapsibleSidebar />
       {/* Mobile header with hamburger */}
       {isMobile && <MobileHeader />}
-      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
-        {/* Top-right notification bar — visible on desktop alongside page content */}
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0 relative" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
+        {/* Notification bell — fixed top-right, inline with page headers */}
         {!isMobile && (
-          <div className="sticky top-0 z-50 flex items-center justify-end px-6 py-3 bg-background/80 backdrop-blur-sm border-b border-border/50">
+          <div className="absolute top-5 right-6 z-50">
             <NotificationCenter />
           </div>
         )}
