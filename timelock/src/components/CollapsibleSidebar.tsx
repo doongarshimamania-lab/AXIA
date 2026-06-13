@@ -29,7 +29,7 @@ import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Hom
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { useAuth } from "@/hooks/use-auth";
-import { NotificationCenter } from "@/components/NotificationCenter";
+
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -262,18 +262,6 @@ export function CollapsibleSidebar() {
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-          )}
-        </div>
-
-        {/* Notification Center — always accessible */}
-        <div className="border-b border-sidebar-border px-2 py-1.5 flex items-center justify-center relative" style={{ pointerEvents: 'auto' }}>
-          {isExpanded ? (
-            <div className="w-full flex items-center justify-between px-2">
-              <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider font-semibold">Notifications</span>
-              <NotificationCenter />
-            </div>
-          ) : (
-            <NotificationCenter />
           )}
         </div>
 
