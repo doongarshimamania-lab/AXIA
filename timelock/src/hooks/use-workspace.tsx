@@ -488,8 +488,9 @@ export function useInviteMember() {
     hasInviteApi ? workspacesApi.invitations.createInvitation : null
   );
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
+    // SECURITY: Fail closed — don't return fake success when API is unavailable
     if (!hasInviteApi || !inviteMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: true, invitationId: `inv_${Date.now()}` };
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
     }
     try {
       await inviteMutation({
@@ -511,8 +512,9 @@ export function useRemoveMember() {
     hasRemoveApi ? workspacesApi.members.removeMember : null
   );
   return async (args: { workspaceId: string; memberId: string }) => {
+    // SECURITY: Fail closed
     if (!hasRemoveApi || !removeMutation || !isValidConvexId(args.memberId)) {
-      return { success: true };
+      return { success: false, error: "Member management service unavailable. Please try again later." };
     }
     try {
       await removeMutation({
@@ -532,8 +534,9 @@ export function useUpdateMemberRole() {
     hasUpdateRoleApi ? workspacesApi.members.updateMemberRole : null
   );
   return async (args: { workspaceId: string; memberId: string; role: WorkspaceRole }) => {
+    // SECURITY: Fail closed
     if (!hasUpdateRoleApi || !updateRoleMutation || !isValidConvexId(args.memberId)) {
-      return { success: true };
+      return { success: false, error: "Role management service unavailable. Please try again later." };
     }
     try {
       await updateRoleMutation({
@@ -554,8 +557,9 @@ export function useCancelInvitation() {
     hasCancelApi ? workspacesApi.invitations.cancelInvitation : null
   );
   return async (args: { invitationId: string }) => {
+    // SECURITY: Fail closed
     if (!hasCancelApi || !cancelMutation || !isValidConvexId(args.invitationId)) {
-      return { success: true };
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
     }
     try {
       await cancelMutation({
@@ -573,8 +577,9 @@ export function useConvertToTeamWorkspace() {
     (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
   );
   return async (args: { workspaceId: string; name: string }) => {
+    // SECURITY: Fail closed
     if (!convertMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: true };
+      return { success: false, error: "Workspace conversion service unavailable. Please try again later." };
     }
     try {
       await convertMutation({ workspaceId: args.workspaceId as any, name: args.name });
@@ -585,15 +590,36 @@ export function useConvertToTeamWorkspace() {
   };
 }
 
+// SECURITY: All workspace operations that lack a backend API now fail closed
+// instead of returning fake success. This prevents silent data loss.
+
 export function useCreatePersonalWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
+  return async (args: any) => {
+    if (!createMutation) {
+      return { success: false, error: "Workspace creation unavailable. Please try again later." };
+    }
+    try {
+      await createMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useCreateTeamWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
+  return async (args: any) => {
+    if (!createMutation) {
+      return { success: false, error: "Workspace creation unavailable. Please try again later." };
+    }
+    try {
+      await createMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
@@ -604,32 +630,68 @@ export function useSwitchWorkspace() {
 }
 
 export function useUpdateWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const updateMutation = useMutation((api as any).workspaces?.crud?.update ?? null);
+  return async (args: any) => {
+    if (!updateMutation) {
+      return { success: false, error: "Workspace update unavailable. Please try again later." };
+    }
+    try {
+      await updateMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useAcceptInvitation() {
-  return async (_args: any) => {
-    return { success: true };
+  const acceptMutation = useMutation((api as any).workspaces?.invitations?.acceptInvitation ?? null);
+  return async (args: any) => {
+    if (!acceptMutation) {
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
+    }
+    try {
+      await acceptMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useDeclineInvitation() {
-  return async (_args: any) => {
-    return { success: true };
+  const declineMutation = useMutation((api as any).workspaces?.invitations?.cancelInvitation ?? null);
+  return async (args: any) => {
+    if (!declineMutation) {
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
+    }
+    try {
+      await declineMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useTransferOwnership() {
   return async (_args: any) => {
-    return { success: true };
+    return { success: false, error: "Ownership transfer is not yet available. Contact support." };
   };
 }
 
 export function useDeleteWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const deleteMutation = useMutation((api as any).workspaces?.crud?.deleteWorkspace ?? null);
+  return async (args: any) => {
+    if (!deleteMutation) {
+      return { success: false, error: "Workspace deletion unavailable. Please try again later." };
+    }
+    try {
+      await deleteMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 

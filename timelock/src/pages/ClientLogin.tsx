@@ -6,31 +6,26 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Shield, Building2 } from "lucide-react";
-import { useQuery } from "@/lib/safe-convex-react";
-import { api } from "@/convex/_generated/api";
 
 export default function ClientLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [checkEmail, setCheckEmail] = useState<string | null>(null);
-
-  // @ts-ignore - Convex type inference causes deep instantiation error
-  const clientProfile = useQuery(
-    "clientAuth:getClientProfile" as any,
-    checkEmail ? { email: checkEmail } : "skip"
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Allow any email for dev/demo access
-    localStorage.setItem("axia_client_email", email);
-    toast.success("Logged in successfully (Demo Mode)");
-    setTimeout(() => {
-      navigate("/client-dashboard");
-    }, 500);
+
+    // SECURITY: Redirect to the main auth page instead of storing email in localStorage.
+    // Client portal now uses proper Convex authentication — no more demo mode bypass.
+    try {
+      // Navigate to the main auth page with the client-dashboard redirect
+      navigate(`/auth?redirect=/client-dashboard&email=${encodeURIComponent(email)}`);
+    } catch {
+      toast.error("Failed to redirect to login. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,7 +56,7 @@ export default function ClientLogin() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Continue"}
+              {isLoading ? "Redirecting..." : "Continue to Sign In"}
             </Button>
           </form>
 
@@ -71,7 +66,7 @@ export default function ClientLogin() {
               <Button
                 variant="link"
                 className="p-0 h-auto"
-                onClick={() => navigate("/client-signup")}
+                onClick={() => navigate("/auth?mode=signUp&redirect=/client-dashboard")}
               >
                 Sign up
               </Button>

@@ -15,7 +15,9 @@ export const configureCORS = (response: Response): Response => {
     "http://localhost:3000",
   ];
   const origin = response.headers.get("Origin") || "";
-  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  // SECURITY: Don't fall back to an arbitrary origin — only allow explicitly listed origins.
+  // If the origin isn't in the allowlist, reject the request by not setting CORS headers.
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : "";
   response.headers.set('Access-Control-Allow-Origin', allowOrigin);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
