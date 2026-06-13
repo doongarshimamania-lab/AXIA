@@ -31,30 +31,7 @@ type AsyncError = {
 
 type GenericError = SyncError | AsyncError;
 
-async function reportErrorToVly(errorData: {
-  error: string;
-  stackTrace?: string;
-  filename?: string;
-  lineno?: number;
-  colno?: number;
-}) {
-  if (!import.meta.env.VITE_VLY_APP_ID) {
-    return;
-  }
-
-  try {
-    await fetch(import.meta.env.VITE_VLY_MONITORING_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        ...errorData,
-        url: window.location.href,
-        projectSemanticIdentifier: import.meta.env.VITE_VLY_APP_ID,
-      }),
-    });
-  } catch (error) {
-    console.error("Failed to report error to Vly:", error);
-  }
-}
+// External error reporting removed — errors are captured by Sentry only.
 
 function ErrorDialog({
   error,
@@ -74,8 +51,7 @@ function ErrorDialog({
         <DialogHeader>
           <DialogTitle>Runtime Error</DialogTitle>
         </DialogHeader>
-        A runtime error occurred. Open the vly editor to automatically debug the
-        error.
+        A runtime error occurred. Please try refreshing the page.
         <div className="mt-4">
           <Collapsible>
             <CollapsibleTrigger>
@@ -91,15 +67,9 @@ function ErrorDialog({
           </Collapsible>
         </div>
         <DialogFooter>
-          <a
-            href={`https://vly.ai/project/${import.meta.env.VITE_VLY_APP_ID}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button>
-              <ExternalLink /> Open editor
-            </Button>
-          </a>
+          <Button onClick={() => window.location.reload()}>
+            <ExternalLink /> Refresh page
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -127,12 +97,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Report to both Vly and Sentry
-    reportErrorToVly({
-      error: error.message,
-      stackTrace: error.stack,
-    });
-
+    // Report to Sentry
     captureException(error, {
       componentStack: info.componentStack,
     });
@@ -219,15 +184,7 @@ export function InstrumentationProvider({
           colno: event.colno,
         });
 
-        if (import.meta.env.VITE_VLY_APP_ID) {
-          await reportErrorToVly({
-            error: event.message,
-            stackTrace: event.error?.stack,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-          });
-        }
+        // Error reporting handled by Sentry
       } catch (error) {
         console.error("Error in handleError:", error);
       }
@@ -270,12 +227,7 @@ export function InstrumentationProvider({
 
         const errorStack = event.reason?.stack || "";
 
-        if (import.meta.env.VITE_VLY_APP_ID) {
-          await reportErrorToVly({
-            error: errorMessage,
-            stackTrace: errorStack,
-          });
-        }
+        // Error reporting handled by Sentry
 
         setError({
           error: errorMessage,

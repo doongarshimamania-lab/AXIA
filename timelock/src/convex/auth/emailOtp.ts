@@ -11,16 +11,17 @@ export const emailOtp = Email({
   },
   async sendVerificationRequest({ identifier: email, provider, token }) {
     try {
+      // TODO: Replace with your own email service endpoint
       await axios.post(
-        "https://email.vly.ai/send_otp",
+        process.env.EMAIL_SERVICE_URL || "https://email.example.com/send_otp",
         {
           to: email,
           otp: token,
-          appName: process.env.VLY_APP_NAME || "a vly.ai application",
+          appName: process.env.APP_NAME || "AXIA",
         },
         {
           headers: {
-            "x-api-key": process.env.VLY_API_KEY || "",
+            "x-api-key": process.env.EMAIL_API_KEY || "",
           },
         },
       );

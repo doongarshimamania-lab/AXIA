@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "./vly-toolbar-readonly.tsx";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import Dashboard from "@/pages/Dashboard.tsx";
 import Clients from "@/pages/Clients.tsx";
@@ -207,7 +206,6 @@ const root = createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>
-    <VlyToolbar />
     <ThemeProvider>
       <InstrumentationProvider>
         <ConvexProvider client={convex}>
