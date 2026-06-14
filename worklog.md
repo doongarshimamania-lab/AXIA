@@ -316,3 +316,27 @@ Stage Summary:
 - Notifications auto-mark as seen when panel is viewed
 - P0 security vulnerabilities patched
 - Build: successful | Push: be831d6 → origin/main | Tag: v4.0.0-security-root-cause-fixes
+---
+Task ID: 2
+Agent: Main Agent
+Task: Remove ALL hardcoded mock data, fix defensive API patterns, fix evidence component fallbacks
+
+Work Log:
+- Audited 34 page files + 6 component directories + 2 hook files
+- Found 12 pages with mock data constants, 7 pages with zero Convex queries, 90+ `as any` casts, 5 components with hardcoded fallbacks
+- Removed mock data from: Pipeline, Proposals, Clients, Tags, Goals, Reports, TimeTracking, OwnerDashboard, ClientWorkspace, AccountSettings, HelpCenter, ApiSettings
+- Rewrote HelpCenter and ApiSettings as "Coming Soon" placeholders
+- Fixed OwnerDashboard to show "No analytics data" instead of fake Stripe/Airtable data
+- Fixed use-workspace hook: Removed MOCK_MEMBERS/MOCK_STATS → EMPTY_STATS + []
+- Fixed defensive API patterns: (api as any).xxx?.yyy → api.xxx.yyy in 6 pages
+- Fixed evidence component fallbacks: || 87/92/85/94 → ?? 0 across 5 components
+- Fixed TruthLayerWidget: Removed MOCK_TIME_ENTRIES/INVOICES/SCOPES
+- Fixed PaymentReminders: Removed MOCK_OVERDUE_INVOICES/SETTINGS
+- Fixed TeamValidation: Hardcoded values → dynamic props with null state
+- Build: successful | Push: 9550a3a → origin/main | Tag: v4.1.0-mock-data-elimination
+
+Stage Summary:
+- ZERO mock data remaining in pages/ and components/
+- All pages show proper empty states or "Coming Soon" instead of fake data
+- All defensive API patterns in pages replaced with direct typed references
+- Evidence components no longer show fake scores when data is missing
