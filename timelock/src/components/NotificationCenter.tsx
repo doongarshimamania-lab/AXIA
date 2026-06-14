@@ -87,6 +87,19 @@ export function NotificationCenter() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
+  // Auto-mark all as seen when opening the notification center
+  // This ensures that once a user opens the panel, the badge clears
+  // and won't re-appear on page navigation (unless new data arrives)
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) {
+      // Small delay so the user can see the notifications before they're marked
+      const timer = setTimeout(() => {
+        markAllSeen();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, unreadCount, markAllSeen]);
+
   const handleNotifClick = (notif: typeof notifications[0]) => {
     markAsSeen(notif.dedupKey);
     setIsOpen(false);

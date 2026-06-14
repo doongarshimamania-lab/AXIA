@@ -247,38 +247,34 @@ export default function EvidenceLibrary() {
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
 
   // ── Convex Queries ──
-  // Safely access evidence API — it may not exist in local Convex deployment
-  const evidenceApi = (api as any).evidence?.library;
-  const hasEvidenceApi = !!(evidenceApi?.getEvidenceLibraryData);
-  const hasTimelineApi = !!(evidenceApi?.getEvidenceTimeline);
 
   // Library data with ±30 day window for monitoring
   const evidenceData = useQuery(
-    hasEvidenceApi ? evidenceApi.getEvidenceLibraryData : "skip",
-    hasEvidenceApi ? {
+    api.evidence.library.getEvidenceLibraryData,
+    {
       view: viewMode,
       startDate: libraryDateRange.start,
       endDate: libraryDateRange.end,
-    } : "skip"
+    }
   );
 
   // Export data with full year window for comprehensive exports
   const exportData = useQuery(
-    hasEvidenceApi ? evidenceApi.getEvidenceLibraryData : "skip",
-    hasEvidenceApi ? {
+    api.evidence.library.getEvidenceLibraryData,
+    {
       view: "date" as const,
       startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
       endDate: Date.now(),
-    } : "skip"
+    }
   ) as any | undefined;
 
   const timelineData = useQuery(
-    hasTimelineApi ? evidenceApi.getEvidenceTimeline : "skip",
-    hasTimelineApi ? { date: startOfDay } : "skip"
+    api.evidence.library.getEvidenceTimeline,
+    { date: startOfDay }
   );
 
-  const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
-  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {}) as any[] | undefined;
+  const clients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as any[] | undefined;
+  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, workspaceId ? { workspaceId } : "skip") as any[] | undefined;
 
   const isLoading = evidenceData === undefined || timelineData === undefined;
   const exportLoading = exportData === undefined || clients === undefined;

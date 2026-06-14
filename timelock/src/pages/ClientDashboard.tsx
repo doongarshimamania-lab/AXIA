@@ -5,6 +5,7 @@ import { Building2, Users, CheckCircle, Clock, LayoutDashboard, UserSearch, File
 import { useNavigate } from "react-router";
 import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
 import { useEffect } from "react";
+import { api } from "@/convex/_generated/api";
 import { WCVMVerificationDashboard } from "@/components/WCVMVerificationDashboard";
 import { FreelancerDirectoryView } from "@/components/FreelancerDirectoryView";
 import { VerificationRequestSystem } from "@/components/VerificationRequestSystem";
@@ -24,7 +25,7 @@ export default function ClientDashboard() {
   // Fetch client profile using authenticated user's data
   // SECURITY: No longer reading email from localStorage — uses Convex auth
   const userProfile = useQuery(
-    isAuthenticated ? "users:getProfile" as any : "skip",
+    isAuthenticated ? api.users.getProfile : "skip",
     {}
   );
 
@@ -48,15 +49,17 @@ export default function ClientDashboard() {
     );
   }
 
-  // Build client profile from authenticated user data
+  // Build client profile from real user profile data returned by users.getProfile
   const displayProfile = {
     _id: userProfile?._id || "unknown",
     email: userProfile?.email || "",
-    companyName: userProfile?.name || "My Company",
+    companyName: userProfile?.name || userProfile?.email?.split("@")[0] || "My Company",
     contactName: userProfile?.name || "User",
-    verificationCount: 0,
-    industry: "",
-    companySize: "",
+    role: userProfile?.role || "member",
+    subscriptionTier: userProfile?.subscriptionTier || "free",
+    verificationCount: userProfile?.verificationCount ?? 0,
+    industry: userProfile?.industry || "",
+    companySize: userProfile?.companySize || "",
   };
 
   return (

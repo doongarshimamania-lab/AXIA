@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, QueryCtx } from "./_generated/server";
-import { mutation } from "./_generated/server";
+import { mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -81,7 +81,7 @@ export const updateProfile = mutation({
 
 // SECURITY: Server-side only tier update — called by payment webhooks or admin actions.
 // This mutation is internal and should not be exposed to the client directly.
-export const setSubscriptionTier = mutation({
+export const setSubscriptionTier = internalMutation({
   args: {
     userId: v.id("users"),
     tier: v.union(

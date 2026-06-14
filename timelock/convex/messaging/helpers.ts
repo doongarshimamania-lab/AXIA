@@ -1,4 +1,4 @@
-import { QueryCtx, MutationCtx } from "../../_generated/server";
+import { QueryCtx, MutationCtx } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {

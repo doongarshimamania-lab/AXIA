@@ -7,7 +7,6 @@ import { ProtectionValueDashboard } from "@/components/ProtectionValueDashboard.
 import { PremiumNetwork } from "@/components/PremiumNetwork.tsx";
 import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
-import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { Component, StrictMode, useEffect } from "react";
