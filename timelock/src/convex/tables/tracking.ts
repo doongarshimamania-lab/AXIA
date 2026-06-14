@@ -20,6 +20,7 @@ export const trackingTables = {
     platform: v.optional(v.union(v.literal("upwork"), v.literal("fiverr"), v.literal("toptal"), v.literal("manual"))),
     notes: v.optional(v.string()),
     isManualEntry: v.optional(v.boolean()),
+    invoiced: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("stopped"), v.literal("completed"))),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),

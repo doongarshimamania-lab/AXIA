@@ -163,3 +163,59 @@ Stage Summary:
 - All "Loading Timed Out" error cards: REMOVED (replaced with content-first pattern)
 - Architecture: Pages now always show content, never blocking error cards
 - Build succeeds, all pages tested
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix Convex cloud connection and write comprehensive seed data for all tables
+
+Work Log:
+- Found deploy keys stored in /home/z/my-project/timelock/DEPLOY_KEYS.md
+  - Dev: veracious-zebra-519 (deploy key: dev:veracious-zebra-519|...)
+  - Prod: artful-civet-344
+- Created .env.local with VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud
+- Fixed messaging/helpers.ts — added missing `auth` export alias for `getAuthenticatedUser`
+- Fixed tracking.ts schema — added missing `invoiced` field to workSessions table
+- Deployed Convex functions to cloud deployment successfully
+- Wrote comprehensive autoSeed.ts covering ALL 58 tables with every status/type variation:
+  - Users: full profile with all optional fields
+  - Workspaces: personal + team, workspace invitations (all 4 statuses)
+  - Teams: 5 teams with memberships, including cross-team
+  - Pipeline stages: 6 default stages
+  - Clients: 10 clients across all platforms (upwork/fiverr/toptal/freelancer/direct), all contract types, all risk levels
+  - Client policies: 3 policies with requirements
+  - Projects: 11 projects with all protection levels, both statuses, extensive metrics
+  - Deals: 17 deals across all pipeline stages
+  - Proposals: 8 proposals with ALL statuses (draft/sent/viewed/signed/declined/expired)
+  - Proposal follow-ups: with all channels
+  - Invoices: 8 invoices with ALL statuses (draft/sent/viewed/paid/partial/overdue/cancelled)
+  - Invoice work links, payment reminders, reminder settings, invoice templates
+  - Messaging: 7 channels (channel + dm types), messages, reactions, mentions
+  - Tags: 16 tags across all categories (project/client/evidence/general)
+  - Goals: 9 goals with ALL statuses (not_started/in_progress/completed/abandoned)
+  - Scope definitions: 5 with ALL statuses (active/completed/disputed), scope change orders with ALL statuses
+  - Work sessions: 10 with ALL statuses (active/paused/stopped/completed), time blocks, compliance alerts, app usage
+  - Evidence sessions (active + finalized), evidence events (all kinds), evidence metadata, WCVN verifications
+  - Platform connections (all 4 statuses), imported data, cross-platform verifications
+  - Extension tokens
+  - Protection advisor alerts (all 5 types, all 3 severities)
+  - Protection plans (conservative/balanced/aggressive)
+  - Milestone snapshots, alerts, reports
+  - Client companies, verification requests (all 4 statuses), verification results, activity log
+  - Freelancer public profile
+  - Compliance: audit trail, consent management (PII/health/financial), certificates, data lineage, consent audits, platform compliance checks
+  - Custom field definitions (9 fields across clients/projects/deals)
+  - Team validations (all 4 statuses)
+  - Dispute reports (all 5 statuses), automated dispute reports
+  - Policy intelligence
+  - Upgrade triggers, upgrade conversions
+  - Waitlist entries
+  - Scope formalizations (all 3 statuses)
+  - Network connections (all 3 statuses)
+- Built Vite app successfully
+- Preview server running on port 3000
+
+Stage Summary:
+- Convex cloud deployment: https://veracious-zebra-519.convex.cloud
+- AutoSeed triggers automatically on user login (via useAutoSeed hook)
+- All 58+ table types now have comprehensive seed data with every possible status/type variation
+- WebSocket connection should now work (was previously pointing to localhost 127.0.0.1:3210)

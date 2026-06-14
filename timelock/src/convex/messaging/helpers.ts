@@ -1,6 +1,10 @@
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+export async function auth(ctx: QueryCtx | MutationCtx) {
+  return getAuthenticatedUser(ctx);
+}
+
 export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
