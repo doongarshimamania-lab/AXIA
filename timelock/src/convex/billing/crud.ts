@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
+import type { Id } from "../_generated/dataModel";
 
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -156,25 +157,34 @@ export const createInvoice = mutation({
   args: {
     workspaceId: v.optional(v.id("workspaces")),
     teamId: v.optional(v.id("teams")),
-    clientId: v.optional(v.id("clients")),
-    clientName: v.optional(v.string()),
-    clientEmail: v.optional(v.string()),
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    proposalId: v.optional(v.id("proposals")),
     lineItems: v.array(v.object({
       id: v.string(),
       description: v.string(),
       quantity: v.number(),
       rate: v.number(),
       amount: v.number(),
+      type: v.optional(v.union(
+        v.literal("service"),
+        v.literal("product"),
+        v.literal("time"),
+        v.literal("expense"),
+        v.literal("discount"),
+      )),
       workLinkId: v.optional(v.string()),
       hasProof: v.optional(v.boolean()),
     })),
     subtotal: v.number(),
     taxRate: v.optional(v.number()),
     taxAmount: v.optional(v.number()),
+    discountAmount: v.optional(v.number()),
     total: v.number(),
     dueDate: v.number(),
     issueDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    terms: v.optional(v.string()),
     currency: v.optional(v.string()),
     customFields: v.optional(v.any()),
   },
@@ -186,6 +196,13 @@ export const createInvoice = mutation({
     if (args.workspaceId) {
       await requireWorkspaceAccess(ctx, args.workspaceId, "member");
     }
+
+    // Fetch client and derive clientName/clientEmail
+    const client = await ctx.db.get(args.clientId);
+    if (!client) throw new Error("Client not found");
+    // clientName is the canonical field; name is a CRM alias — try both
+    const clientName = client.clientName || client.name;
+    const clientEmail = client.email ?? client.contactEmail ?? undefined;
 
     const { workspaceId, teamId, customFields, ...invoiceArgs } = args;
 
@@ -204,12 +221,16 @@ export const createInvoice = mutation({
       teamId: teamId ?? undefined,
       customFields: customFields ?? undefined,
       ...invoiceArgs,
+      clientName,
+      clientEmail,
       invoiceNumber,
       publicToken: generateToken(),
       status: "draft",
       issueDate: args.issueDate ?? Date.now(),
       proofCount,
       hasValidatedBilling: proofCount > 0,
+      discountAmount: invoiceArgs.discountAmount ?? undefined,
+      terms: invoiceArgs.terms ?? undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -219,23 +240,33 @@ export const createInvoice = mutation({
 export const updateInvoice = mutation({
   args: {
     invoiceId: v.id("invoices"),
-    clientName: v.optional(v.string()),
-    clientEmail: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.optional(v.id("projects")),
+    proposalId: v.optional(v.id("proposals")),
     lineItems: v.optional(v.array(v.object({
       id: v.string(),
       description: v.string(),
       quantity: v.number(),
       rate: v.number(),
       amount: v.number(),
+      type: v.optional(v.union(
+        v.literal("service"),
+        v.literal("product"),
+        v.literal("time"),
+        v.literal("expense"),
+        v.literal("discount"),
+      )),
       workLinkId: v.optional(v.string()),
       hasProof: v.optional(v.boolean()),
     }))),
     subtotal: v.optional(v.number()),
     taxRate: v.optional(v.number()),
     taxAmount: v.optional(v.number()),
+    discountAmount: v.optional(v.number()),
     total: v.optional(v.number()),
     dueDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    terms: v.optional(v.string()),
     teamId: v.optional(v.id("teams")),
     customFields: v.optional(v.any()),
   },
@@ -520,6 +551,7 @@ export const seedMockInvoices = mutation({
 
     const mockInvoices = [
       {
+        clientId: "mock_client_1" as Id<"clients">,
         clientName: "Acme Corp",
         clientEmail: "billing@acmecorp.com",
         status: "paid" as const,
@@ -532,6 +564,7 @@ export const seedMockInvoices = mutation({
         proofCount: 2, hasValidatedBilling: true,
       },
       {
+        clientId: "mock_client_2" as Id<"clients">,
         clientName: "TechStart Inc",
         clientEmail: "finance@techstart.io",
         status: "sent" as const,
@@ -544,6 +577,7 @@ export const seedMockInvoices = mutation({
         proofCount: 1, hasValidatedBilling: true,
       },
       {
+        clientId: "mock_client_3" as Id<"clients">,
         clientName: "GlobalMedia",
         clientEmail: "accounts@globalmedia.com",
         status: "overdue" as const,
@@ -557,6 +591,7 @@ export const seedMockInvoices = mutation({
         proofCount: 2, hasValidatedBilling: true,
       },
       {
+        clientId: "mock_client_4" as Id<"clients">,
         clientName: "DesignHub",
         clientEmail: "pay@designhub.co",
         status: "draft" as const,

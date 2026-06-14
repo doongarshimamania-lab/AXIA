@@ -45,7 +45,17 @@ export const isDevUserSeeded = query({
 export const resetDevUser = mutation({
   args: {},
   handler: async (ctx) => {
-    // Find the orphaned dev user document
+    // SECURITY: Require authentication
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Authentication required");
+
+    // SECURITY: Only allow the dev user to reset their own account
+    const user = await ctx.db.get(userId);
+    if (user?.email !== DEV_USER_EMAIL) {
+      throw new Error("Only dev user can reset their account");
+    }
+
+    // Find the dev user document (should be the same as the authenticated user)
     const devUser = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", DEV_USER_EMAIL))
@@ -55,47 +65,47 @@ export const resetDevUser = mutation({
       return { success: true, message: "No dev user found to reset." };
     }
 
-    const userId = devUser._id;
+    const devUserId = devUser._id;
     let deletedCount = 0;
 
     // Delete all related data for this user
     // 1. Pipeline stages
     const stages = await ctx.db
       .query("pipelineStages")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", devUserId))
       .collect();
     for (const s of stages) { await ctx.db.delete(s._id); deletedCount++; }
 
     // 2. Deals
     const deals = await ctx.db
       .query("deals")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", devUserId))
       .collect();
     for (const d of deals) { await ctx.db.delete(d._id); deletedCount++; }
 
     // 3. Clients
     const clients = await ctx.db
       .query("clients")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", devUserId))
       .collect();
     for (const c of clients) { await ctx.db.delete(c._id); deletedCount++; }
 
     // 4. Projects
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user", (q) => q.eq("userId", devUserId))
       .collect();
     for (const p of projects) { await ctx.db.delete(p._id); deletedCount++; }
 
     // 5. Workspaces
     const workspaces = await ctx.db
       .query("workspaces")
-      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+      .withIndex("by_owner", (q) => q.eq("ownerId", devUserId))
       .collect();
     for (const w of workspaces) { await ctx.db.delete(w._id); deletedCount++; }
 
-    // 6. Finally, delete the orphaned user document
-    await ctx.db.delete(userId);
+    // 6. Finally, delete the user document
+    await ctx.db.delete(devUserId);
     deletedCount++;
 
     return {
@@ -396,12 +406,20 @@ export const seedDevProfile = mutation({
       throw new Error("User not found.");
     }
 
-    // Enrich any user with dev-friendly defaults
+    // Enrich user with appropriate defaults based on identity
     const updates: Record<string, any> = {};
 
     if (!user.name) updates.name = user.email?.split("@")[0] || "User";
-    if (!user.role) updates.role = "admin";
-    if (!user.subscriptionTier) updates.subscriptionTier = "pro";
+
+    // SECURITY: Only grant admin/pro to the dev user
+    if (user.email === DEV_USER_EMAIL) {
+      if (!user.role) updates.role = "admin";
+      if (!user.subscriptionTier) updates.subscriptionTier = "pro";
+    } else {
+      // Regular users get "member" role and "free" tier by default
+      if (!user.role) updates.role = "member";
+      if (!user.subscriptionTier) updates.subscriptionTier = "free";
+    }
     if (!user.hourlyRate) updates.hourlyRate = 85;
     if (!user.onboardingComplete) {
       updates.onboardingComplete = true;

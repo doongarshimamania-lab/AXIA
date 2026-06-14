@@ -21,6 +21,11 @@ export const trackingTables = {
     notes: v.optional(v.string()),
     isManualEntry: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("stopped"), v.literal("completed"))),
+    // Invoice linking fields
+    clientId: v.optional(v.id("clients")),
+    projectId_fk: v.optional(v.id("projects")),
+    invoiced: v.optional(v.boolean()),
+    invoiceId: v.optional(v.id("invoices")),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
@@ -28,7 +33,10 @@ export const trackingTables = {
     .index("by_user_and_project", ["userId", "projectName"])
     .index("by_user_and_date", ["userId", "startTime"])
     .index("by_workspace", ["workspaceId"])
-    .index("by_team", ["teamId"]),
+    .index("by_team", ["teamId"])
+    .index("by_client", ["clientId"])
+    .index("by_project_invoiced", ["projectId_fk", "invoiced"])
+    .index("by_invoice", ["invoiceId"]),
 
   timeBlocks: defineTable({
     sessionId: v.id("workSessions"),
@@ -72,15 +80,12 @@ export const trackingTables = {
     sessionId: v.optional(v.id("workSessions")),
     alertType: v.union(
       v.literal("at_risk"),
-      v.literal("session_rejected"),
-      v.literal("low_activity"),
       v.literal("payment_protection_risk"),
       v.literal("non_browser_work"),
       v.literal("timer_paused")
     ),
     message: v.string(),
-    triggeredAt: v.optional(v.number()),
-    timestamp: v.optional(v.number()),
+    triggeredAt: v.number(),
     acknowledged: v.boolean(),
     actionTaken: v.optional(v.string()),
   })

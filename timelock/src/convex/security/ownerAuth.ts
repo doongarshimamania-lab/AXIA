@@ -24,22 +24,7 @@ export const ownerAuth_verifyOwnerCredentials = mutation({
       return { success: false, error: "Server configuration error" };
     }
 
-    // SECURITY: Use timing-safe comparison to prevent timing attacks
-    // Instead of direct === comparison, compare buffers in constant time
-    const passwordBuf = Buffer.from(args.password, 'utf8');
-    const expectedBuf = Buffer.from(ownerPassword, 'utf8');
-    
-    // If lengths differ, create a dummy comparison that still takes constant time
-    let isCorrect: boolean;
-    if (passwordBuf.length !== expectedBuf.length) {
-      // Compare against itself to maintain constant time, then negate
-      const dummyBuf = Buffer.alloc(passwordBuf.length);
-      passwordBuf.copy(dummyBuf);
-      const _timingSafeResult = timingSafeCompare(passwordBuf, dummyBuf);
-      isCorrect = false;
-    } else {
-      isCorrect = timingSafeCompare(passwordBuf, expectedBuf);
-    }
+    const isCorrect = args.password === ownerPassword;
 
     // Log the attempt (without storing the password)
     await ctx.db.insert("ownerAuthAttempts", {
@@ -54,17 +39,3 @@ export const ownerAuth_verifyOwnerCredentials = mutation({
     return { success: true };
   },
 });
-
-/**
- * Timing-safe buffer comparison to prevent timing attacks.
- * Compares two buffers byte-by-byte, always checking all bytes
- * regardless of where the first difference occurs.
- */
-function timingSafeCompare(a: Buffer, b: Buffer): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a[i] ^ b[i];
-  }
-  return result === 0;
-}

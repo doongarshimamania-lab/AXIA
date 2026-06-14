@@ -1008,22 +1008,22 @@ export const processDueReminders = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Get all scheduled reminders where scheduledFor < now
+    // Get all scheduled reminders where scheduledAt < now
     const scheduledReminders = await ctx.db
       .query("paymentReminders")
-      .withIndex("by_scheduled", (q) => q.lt("scheduledFor", now))
+      .withIndex("by_status_and_date", (q) =>
+        q.eq("status", "scheduled").lt("scheduledAt", now)
+      )
       .collect();
 
     let processedCount = 0;
 
     for (const reminder of scheduledReminders) {
-      if (reminder.status === "scheduled") {
-        await ctx.db.patch(reminder._id, {
-          status: "sent",
-          sentAt: now,
-        });
-        processedCount++;
-      }
+      await ctx.db.patch(reminder._id, {
+        status: "sent",
+        sentAt: now,
+      });
+      processedCount++;
     }
 
     return { processedCount };
@@ -1058,7 +1058,136 @@ export const cancelReminders = mutation({
 });
 
 // ─────────────────────────────────────────────
-// 21. GET REMINDER HISTORY
+// 21. START REMINDERS (per-invoice, with custom intervals)
+// ─────────────────────────────────────────────
+export const startReminders = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    intervals: v.optional(v.array(v.number())),  // custom day intervals, defaults to [3, 7, 14]
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    // Check workspace access or direct ownership
+    if (invoice.workspaceId) {
+      await requireRecordAccess(ctx, invoice, "collaborate");
+    } else if (invoice.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    // Only allow for sent/viewed/overdue invoices
+    if (!["sent", "viewed", "overdue"].includes(invoice.status)) {
+      throw new ConvexError("Reminders can only be started for sent, viewed, or overdue invoices");
+    }
+
+    if (!invoice.sentAt) {
+      throw new ConvexError("Invoice has not been sent yet");
+    }
+
+    // Cancel existing scheduled reminders first
+    await cancelRemindersInternal(ctx, args.invoiceId);
+
+    // Determine intervals and create new reminders
+    const intervals = args.intervals ?? [3, 7, 14];
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const sentAt = invoice.sentAt;
+    let scheduledCount = 0;
+
+    for (const dayNum of intervals) {
+      const scheduledAt = sentAt + dayNum * dayMs;
+
+      // Determine tone based on day number
+      let tone: "friendly" | "firm" | "urgent";
+      if (dayNum <= 5) {
+        tone = "friendly";
+      } else if (dayNum <= 10) {
+        tone = "firm";
+      } else {
+        tone = "urgent";
+      }
+
+      // Only schedule if the scheduledAt time is still in the future
+      if (scheduledAt > now) {
+        await ctx.db.insert("paymentReminders", {
+          invoiceId: args.invoiceId,
+          userId,
+          workspaceId: invoice.workspaceId ?? undefined,
+          createdBy: userId,
+          dayNumber: dayNum,
+          channel: "email",
+          tone,
+          status: "scheduled",
+          subject: tone === "friendly"
+            ? `Friendly Reminder: Invoice ${invoice.invoiceNumber}`
+            : tone === "firm"
+            ? `Payment Reminder: Invoice ${invoice.invoiceNumber}`
+            : `URGENT: Overdue Invoice ${invoice.invoiceNumber}`,
+          body: tone === "friendly"
+            ? `Hi there,\n\nThis is a friendly reminder that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is approaching its due date. If you've already processed the payment, please disregard this message.\n\nThank you for your prompt attention!\n\nBest regards`
+            : tone === "firm"
+            ? `Dear Client,\n\nWe would like to remind you that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is now past due. We kindly request that you process this payment at your earliest convenience.\n\nIf you have any questions regarding this invoice, please do not hesitate to reach out.\n\nKind regards`
+            : `Dear Client,\n\nDespite our previous reminders, invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} remains unpaid and is now significantly overdue.\n\nWe must insist on immediate payment to avoid any further action. If payment has already been sent, please provide confirmation so we may update our records.\n\nSincerely`,
+          scheduledAt,
+          sentAt: undefined,
+          createdAt: now,
+        });
+        scheduledCount++;
+      }
+    }
+
+    return { success: true, scheduledCount };
+  },
+});
+
+// ─────────────────────────────────────────────
+// 22. STOP REMINDERS (cancel all scheduled for an invoice)
+// ─────────────────────────────────────────────
+export const stopReminders = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    // Check workspace access or direct ownership
+    if (invoice.workspaceId) {
+      await requireRecordAccess(ctx, invoice, "collaborate");
+    } else if (invoice.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    // Find all scheduled reminders for this invoice and cancel them
+    const reminders = await ctx.db
+      .query("paymentReminders")
+      .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
+      .collect();
+
+    let cancelledCount = 0;
+
+    for (const reminder of reminders) {
+      if (reminder.status === "scheduled") {
+        await ctx.db.patch(reminder._id, {
+          status: "cancelled",
+        });
+        cancelledCount++;
+      }
+    }
+
+    return { success: true, cancelledCount };
+  },
+});
+
+// ─────────────────────────────────────────────
+// 23. GET REMINDER HISTORY
 // ─────────────────────────────────────────────
 export const getReminderHistory = query({
   args: {
@@ -1085,11 +1214,531 @@ export const getReminderHistory = query({
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
       .collect();
 
-    // Sort by sequenceDay ascending
-    return reminders.sort((a, b) => a.sequenceDay - b.sequenceDay);
+    // Sort by dayNumber ascending
+    return reminders.sort((a, b) => a.dayNumber - b.dayNumber);
   },
 });
 
+
+// ═════════════════════════════════════════════
+// INVOICE GENERATION FROM SESSIONS / PROPOSALS
+// ═════════════════════════════════════════════
+
+export const generateInvoiceFromSessions = mutation({
+  args: {
+    projectId: v.id("projects"),
+    sessionIds: v.optional(v.array(v.id("workSessions"))),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new ConvexError("Project not found");
+    if (project.userId !== userId) throw new ConvexError("Not authorized");
+
+    const clientId = project.clientId;
+    const client = await ctx.db.get(clientId);
+
+    // Find uninvoiced sessions
+    let sessions: any[];
+    if (args.sessionIds && args.sessionIds.length > 0) {
+      sessions = [];
+      for (const sid of args.sessionIds) {
+        const s = await ctx.db.get(sid);
+        if (s && s.userId === userId && !s.invoiced) sessions.push(s);
+      }
+    } else {
+      const allSessions = await ctx.db
+        .query("workSessions")
+        .withIndex("by_user_and_project", (q: any) => q.eq("userId", userId).eq("projectName", project.projectName))
+        .collect();
+      sessions = allSessions.filter((s: any) => !s.invoiced);
+    }
+
+    if (sessions.length === 0) throw new ConvexError("No uninvoiced sessions found");
+
+    // Group by rate and create line items
+    const rateGroups = new Map<number, { hours: number; sessions: any[] }>();
+    for (const session of sessions) {
+      const rate = session.hourlyRate || project.hourlyRate;
+      const minutes = session.totalMinutes || 0;
+      const hours = minutes / 60;
+      const existing = rateGroups.get(rate) || { hours: 0, sessions: [] as any[] };
+      existing.hours += hours;
+      existing.sessions.push(session);
+      rateGroups.set(rate, existing);
+    }
+
+    const lineItems = Array.from(rateGroups.entries()).map(([rate, group], idx) => ({
+      id: `li_${Date.now()}_${idx}`,
+      description: `${project.projectName} - ${group.sessions.length} session(s)`,
+      quantity: Math.round(group.hours * 100) / 100,
+      rate,
+      amount: Math.round(group.hours * rate * 100) / 100,
+      type: "time" as const,
+    }));
+
+    const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const total = subtotal;
+    const invoiceNumber = await getNextInvoiceNumberInternal(ctx, userId);
+    const publicToken = crypto.randomUUID();
+    const now = Date.now();
+
+    const invoiceId = await ctx.db.insert("invoices", {
+      userId,
+      clientId,
+      projectId: args.projectId,
+      invoiceNumber,
+      publicToken,
+      status: "draft",
+      lineItems,
+      subtotal,
+      total,
+      dueDate: args.dueDate,
+      issueDate: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Mark sessions as invoiced
+    for (const session of sessions) {
+      await ctx.db.patch(session._id, {
+        invoiced: true,
+        invoiceId,
+        updatedAt: now,
+      });
+    }
+
+    return invoiceId;
+  },
+});
+
+export const createInvoiceFromProposal = mutation({
+  args: {
+    proposalId: v.id("proposals"),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const proposal = await ctx.db.get(args.proposalId);
+    if (!proposal) throw new ConvexError("Proposal not found");
+    if (proposal.userId !== userId) throw new ConvexError("Not authorized");
+
+    const clientId = proposal.clientId;
+    const client = await ctx.db.get(clientId);
+
+    // Extract line items from proposal pricing sections
+    const lineItems: any[] = [];
+    let idx = 0;
+    for (const section of proposal.content || []) {
+      if (section.type === "pricing_table" && section.data?.items) {
+        for (const item of section.data.items) {
+          lineItems.push({
+            id: `li_${Date.now()}_${idx++}`,
+            description: item.name || item.description || "Service",
+            quantity: 1,
+            rate: item.price || item.amount || 0,
+            amount: item.price || item.amount || 0,
+            type: "service" as const,
+          });
+        }
+      }
+    }
+
+    // Fallback: if no pricing items found, create a single line item with total value
+    if (lineItems.length === 0 && proposal.totalValue) {
+      lineItems.push({
+        id: `li_${Date.now()}_0`,
+        description: proposal.title,
+        quantity: 1,
+        rate: proposal.totalValue,
+        amount: proposal.totalValue,
+        type: "service" as const,
+      });
+    }
+
+    if (lineItems.length === 0) throw new ConvexError("No billable items found in proposal");
+
+    const subtotal = lineItems.reduce((sum, li) => sum + li.amount, 0);
+    const total = subtotal;
+    const invoiceNumber = await getNextInvoiceNumberInternal(ctx, userId);
+    const publicToken = crypto.randomUUID();
+    const now = Date.now();
+
+    const invoiceId = await ctx.db.insert("invoices", {
+      userId,
+      clientId,
+      proposalId: args.proposalId,
+      invoiceNumber,
+      publicToken,
+      status: "draft",
+      lineItems,
+      subtotal,
+      total,
+      dueDate: args.dueDate,
+      issueDate: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return invoiceId;
+  },
+});
+
+export const processRecurringInvoices = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const recurring = await ctx.db
+      .query("recurringInvoices")
+      .withIndex("by_next_due_date", (q: any) => q.lte("nextDueDate", now))
+      .collect();
+
+    let generated = 0;
+    for (const rec of recurring) {
+      if (!rec.active) continue;
+
+      const template = await ctx.db.get(rec.templateInvoiceId);
+      if (!template) continue;
+
+      const invoiceNumber = await getNextInvoiceNumberInternal(ctx, rec.userId);
+      const publicToken = crypto.randomUUID();
+      const dueDate = now + 30 * 86400000; // 30 days from now
+
+      await ctx.db.insert("invoices", {
+        userId: rec.userId,
+        workspaceId: rec.workspaceId,
+        clientId: rec.clientId,
+        projectId: rec.projectId,
+        invoiceNumber,
+        publicToken,
+        status: "draft",
+        lineItems: template.lineItems,
+        subtotal: template.subtotal,
+        taxRate: template.taxRate,
+        taxAmount: template.taxAmount,
+        total: template.total,
+        dueDate,
+        issueDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Calculate next due date
+      const freq = rec.frequency;
+      let nextDate = rec.nextDueDate;
+      if (freq === "weekly") nextDate += 7 * 86400000;
+      else if (freq === "monthly") nextDate += 30 * 86400000;
+      else if (freq === "quarterly") nextDate += 90 * 86400000;
+
+      await ctx.db.patch(rec._id, {
+        nextDueDate: nextDate,
+        lastGeneratedAt: now,
+        updatedAt: now,
+      });
+
+      generated++;
+    }
+
+    return { generated };
+  },
+});
+
+export const createStripePaymentLink = mutation({
+  args: { invoiceId: v.id("invoices") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+    if (invoice.userId !== userId) throw new ConvexError("Not authorized");
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeKey) {
+      // No Stripe key configured — return a mock payment link
+      const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+      await ctx.db.patch(args.invoiceId, {
+        updatedAt: Date.now(),
+      });
+      return { paymentUrl: mockUrl, mock: true };
+    }
+
+    // Real Stripe integration:
+    // 1. Create a Stripe Checkout Session with the invoice amount
+    // 2. Set success_url and cancel_url
+    // 3. Set metadata: { invoiceId, userId }
+    // 4. Return the session URL
+    const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+    return { paymentUrl: mockUrl, mock: true };
+  },
+});
+
+// ═════════════════════════════════════════════
+// RECURRING INVOICES
+// ═════════════════════════════════════════════
+
+// ─────────────────────────────────────────────
+// SETUP RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const setupRecurringInvoice = mutation({
+  args: {
+    clientId: v.id("clients"),
+    projectId: v.optional(v.id("projects")),
+    templateInvoiceId: v.id("invoices"),
+    frequency: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("quarterly")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    // Validate client access
+    const client = await ctx.db.get(args.clientId);
+    if (!client) throw new ConvexError("Client not found");
+    if (client.workspaceId) {
+      const access = await getRecordAccess(ctx, client, userId);
+      if (!access) throw new ConvexError("Client does not belong to this workspace");
+    } else if (client.userId !== userId) {
+      throw new ConvexError("Client does not belong to this user");
+    }
+
+    // Validate project access if provided
+    if (args.projectId) {
+      const project = await ctx.db.get(args.projectId);
+      if (!project) throw new ConvexError("Project not found");
+      if (project.workspaceId) {
+        const access = await getRecordAccess(ctx, project, userId);
+        if (!access) throw new ConvexError("Project does not belong to this workspace");
+      } else if (project.userId !== userId) {
+        throw new ConvexError("Project does not belong to this user");
+      }
+    }
+
+    // Validate template invoice access
+    const template = await ctx.db.get(args.templateInvoiceId);
+    if (!template) throw new ConvexError("Template invoice not found");
+    if (template.workspaceId) {
+      const access = await getRecordAccess(ctx, template, userId);
+      if (!access) throw new ConvexError("Template invoice does not belong to this workspace");
+    } else if (template.userId !== userId) {
+      throw new ConvexError("Template invoice does not belong to this user");
+    }
+
+    // Calculate nextDueDate based on frequency
+    const now = Date.now();
+    const dayMs = 86400000;
+    let nextDueDate: number;
+    if (args.frequency === "weekly") {
+      nextDueDate = now + 7 * dayMs;
+    } else if (args.frequency === "monthly") {
+      nextDueDate = now + 30 * dayMs;
+    } else {
+      nextDueDate = now + 90 * dayMs;
+    }
+
+    const recurringInvoiceId = await ctx.db.insert("recurringInvoices", {
+      userId,
+      workspaceId: template.workspaceId ?? undefined,
+      clientId: args.clientId,
+      projectId: args.projectId ?? undefined,
+      templateInvoiceId: args.templateInvoiceId,
+      frequency: args.frequency,
+      nextDueDate,
+      active: true,
+      createdFromInvoiceId: args.templateInvoiceId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return recurringInvoiceId;
+  },
+});
+
+// ─────────────────────────────────────────────
+// GET RECURRING INVOICES
+// ─────────────────────────────────────────────
+export const getRecurringInvoices = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db
+      .query("recurringInvoices")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Enrich with client info
+    const enriched = await Promise.all(
+      recurring.map(async (rec) => {
+        const client = await ctx.db.get(rec.clientId);
+        const template = await ctx.db.get(rec.templateInvoiceId);
+        return {
+          ...rec,
+          clientName: client ? (client.clientName || client.name) : "Unknown",
+          templateInvoiceNumber: template ? template.invoiceNumber : "N/A",
+          templateTotal: template ? template.total : 0,
+          templateCurrency: template ? template.currency : "USD",
+        };
+      })
+    );
+
+    return enriched.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+// ─────────────────────────────────────────────
+// TOGGLE RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const toggleRecurringInvoice = mutation({
+  args: {
+    recurringInvoiceId: v.id("recurringInvoices"),
+    active: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db.get(args.recurringInvoiceId);
+    if (!recurring) throw new ConvexError("Recurring invoice not found");
+
+    if (recurring.workspaceId) {
+      const access = await getRecordAccess(ctx, recurring, userId);
+      if (!access) throw new ConvexError("Not authorized");
+    } else if (recurring.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    const now = Date.now();
+
+    // If reactivating, recalculate nextDueDate based on now
+    let nextDueDate = recurring.nextDueDate;
+    if (args.active && !recurring.active) {
+      const dayMs = 86400000;
+      if (recurring.frequency === "weekly") {
+        nextDueDate = now + 7 * dayMs;
+      } else if (recurring.frequency === "monthly") {
+        nextDueDate = now + 30 * dayMs;
+      } else {
+        nextDueDate = now + 90 * dayMs;
+      }
+    }
+
+    await ctx.db.patch(args.recurringInvoiceId, {
+      active: args.active,
+      nextDueDate,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+// ─────────────────────────────────────────────
+// REMOVE RECURRING INVOICE
+// ─────────────────────────────────────────────
+export const removeRecurringInvoice = mutation({
+  args: {
+    recurringInvoiceId: v.id("recurringInvoices"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const recurring = await ctx.db.get(args.recurringInvoiceId);
+    if (!recurring) throw new ConvexError("Recurring invoice not found");
+
+    if (recurring.workspaceId) {
+      const access = await getRecordAccess(ctx, recurring, userId);
+      if (!access) throw new ConvexError("Not authorized");
+    } else if (recurring.userId !== userId) {
+      throw new ConvexError("Not authorized");
+    }
+
+    await ctx.db.delete(args.recurringInvoiceId);
+
+    return { success: true };
+  },
+});
+
+// ═════════════════════════════════════════════
+// STRIPE WEBHOOK HANDLER
+// ═════════════════════════════════════════════
+
+export const handleStripeWebhook = mutation({
+  args: {
+    invoiceId: v.id("invoices"),
+    eventType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const invoice = await ctx.db.get(args.invoiceId);
+    if (!invoice) throw new ConvexError("Invoice not found");
+
+    const now = Date.now();
+
+    if (args.eventType === "payment_succeeded") {
+      // Mark invoice as paid
+      await ctx.db.patch(args.invoiceId, {
+        status: "paid",
+        paidAt: now,
+        paidAmount: invoice.total,
+        updatedAt: now,
+      });
+
+      // Cancel all pending reminders for this invoice
+      await cancelRemindersInternal(ctx, args.invoiceId);
+
+      // Update client payment stats
+      const client = await ctx.db.get(invoice.clientId);
+      if (client) {
+        const totalPaid = (client.totalPaid ?? 0) + invoice.total;
+        const totalInvoiced = (client.totalInvoiced ?? 0) + invoice.total;
+
+        let avgPaymentDays = client.avgPaymentDays ?? 0;
+        if (invoice.sentAt) {
+          const paymentDays = (now - invoice.sentAt) / (1000 * 60 * 60 * 24);
+          const previousPaymentCount = client.avgPaymentDays ? Math.round((client.totalPaid ?? 0) / Math.max(invoice.total, 1)) : 0;
+          const totalCount = previousPaymentCount + 1;
+          avgPaymentDays = ((avgPaymentDays * previousPaymentCount) + paymentDays) / totalCount;
+        }
+
+        const isOnTime = now <= invoice.dueDate;
+        const currentOnTimeRate = client.onTimeRate ?? 0;
+        const previousPaymentCount = client.totalPaid ? Math.round(client.totalPaid / Math.max(invoice.total, 1)) : 0;
+        const newOnTimeRate = previousPaymentCount === 0
+          ? (isOnTime ? 1 : 0)
+          : ((currentOnTimeRate * previousPaymentCount) + (isOnTime ? 1 : 0)) / (previousPaymentCount + 1);
+
+        await ctx.db.patch(invoice.clientId, {
+          totalPaid,
+          totalInvoiced,
+          avgPaymentDays: Math.round(avgPaymentDays * 10) / 10,
+          onTimeRate: Math.round(newOnTimeRate * 100) / 100,
+          lastPaymentAt: now,
+          updatedAt: now,
+        });
+      }
+    } else if (args.eventType === "payment_failed") {
+      // Update invoice status to indicate payment failure
+      // Keep current status but record the attempt
+      await ctx.db.patch(args.invoiceId, {
+        updatedAt: now,
+      });
+
+      // In a real implementation, you might:
+      // - Send a notification to the user
+      // - Schedule a retry
+      // - Update a paymentAttempts counter
+    }
+
+    return { success: true };
+  },
+});
 
 // ═════════════════════════════════════════════
 // INTERNAL HELPERS
@@ -1140,43 +1789,42 @@ async function scheduleRemindersInternal(
     {
       day: 3,
       tone: "friendly" as const,
-      scheduledFor: sentAt + 3 * 24 * 60 * 60 * 1000,
+      scheduledAt: sentAt + 3 * 24 * 60 * 60 * 1000,
       subject: `Friendly Reminder: Invoice ${invoice.invoiceNumber}`,
       body: `Hi there,\n\nThis is a friendly reminder that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is approaching its due date. If you've already processed the payment, please disregard this message.\n\nThank you for your prompt attention!\n\nBest regards`,
     },
     {
       day: 7,
-      tone: "professional" as const,
-      scheduledFor: sentAt + 7 * 24 * 60 * 60 * 1000,
+      tone: "firm" as const,
+      scheduledAt: sentAt + 7 * 24 * 60 * 60 * 1000,
       subject: `Payment Reminder: Invoice ${invoice.invoiceNumber}`,
       body: `Dear Client,\n\nWe would like to remind you that invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} is now past due. We kindly request that you process this payment at your earliest convenience.\n\nIf you have any questions regarding this invoice, please do not hesitate to reach out.\n\nKind regards`,
     },
     {
       day: 14,
-      tone: "firm" as const,
-      scheduledFor: sentAt + 14 * 24 * 60 * 60 * 1000,
+      tone: "urgent" as const,
+      scheduledAt: sentAt + 14 * 24 * 60 * 60 * 1000,
       subject: `URGENT: Overdue Invoice ${invoice.invoiceNumber}`,
       body: `Dear Client,\n\nDespite our previous reminders, invoice ${invoice.invoiceNumber} for ${invoice.currency ?? "USD"} ${invoice.total.toFixed(2)} remains unpaid and is now significantly overdue.\n\nWe must insist on immediate payment to avoid any further action. If payment has already been sent, please provide confirmation so we may update our records.\n\nSincerely`,
     },
   ];
 
   for (const config of reminderConfigs) {
-    // Only schedule if the scheduledFor time is still in the future
-    if (config.scheduledFor > now) {
+    // Only schedule if the scheduledAt time is still in the future
+    if (config.scheduledAt > now) {
       await ctx.db.insert("paymentReminders", {
         invoiceId,
         userId,
         workspaceId: invoice.workspaceId ?? undefined,
         createdBy: userId,
-        sequenceDay: config.day,
+        dayNumber: config.day,
         channel: "email",
         tone: config.tone,
         status: "scheduled",
         subject: config.subject,
         body: config.body,
-        scheduledFor: config.scheduledFor,
+        scheduledAt: config.scheduledAt,
         sentAt: undefined,
-        openedAt: undefined,
         createdAt: now,
       });
     }
@@ -1203,3 +1851,4 @@ async function cancelRemindersInternal(
     }
   }
 }
+

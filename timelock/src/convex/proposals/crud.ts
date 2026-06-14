@@ -1,5 +1,5 @@
 // @ts-nocheck — Convex backend file with schema types not yet in generated types
-import { query, mutation } from "../_generated/server";
+import { query, mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "../permissions";
@@ -339,13 +339,11 @@ export const signProposal = mutation({
       throw new Error("Proposal has already been signed");
     }
 
-    const now = Date.now();
-
     await ctx.db.patch(proposal._id, {
       status: "signed",
-      signedAt: now,
+      signedAt: Date.now(),
       signatureData,
-      updatedAt: now,
+      updatedAt: Date.now(),
     });
 
     // Cancel remaining follow-ups
@@ -357,109 +355,6 @@ export const signProposal = mutation({
     for (const fu of followUps) {
       if (fu.status === "scheduled") {
         await ctx.db.patch(fu._id, { status: "cancelled" });
-      }
-    }
-
-    // ── P1 FIX: Signed Proposal → Project + Scope Cascade ──
-    // When a proposal is signed, automatically create a project and scope definition
-    // This closes the "dead end" where signed proposals just sat with no downstream action.
-
-    // 1. Create a project from the signed proposal
-    let projectId: any = null;
-    try {
-      const projectName = proposal.title
-        ? `${proposal.title} — Signed Project`
-        : `Project from Proposal`;
-
-      // Parse sections for deliverables if available
-      const sections = (proposal as any).sections || [];
-      const totalEstimatedHours = sections.reduce(
-        (sum: number, s: any) => sum + (s.estimatedHours || 0),
-        0
-      );
-
-      projectId = await ctx.db.insert("projects", {
-        userId: proposal.userId,
-        clientId: proposal.clientId || undefined,
-        projectName,
-        hourlyRate: (proposal as any).hourlyRate || 0,
-        projectType: "milestone",
-        protectionLevel: "standard",
-        status: "active",
-        proposalId: proposal._id,
-        workspaceId: proposal.workspaceId,
-        teamId: proposal.teamId,
-        createdAt: now,
-        lastActivityAt: now,
-        // Initialize protection score fields
-        protectionScore: 0,
-        evidenceCount: 0,
-        totalHours: totalEstimatedHours,
-        totalValue: (proposal as any).totalValue || 0,
-        atRiskAmount: 0,
-        rejectedHours: 0,
-        pattern7Vulnerability: 0,
-        evidenceWithClientKeywords: 0,
-        activityDensity: 0,
-        memoQuality: 0,
-        hasClientSpecificRequirements: false,
-        upworkCompliance: 0,
-        fiverrCompliance: 0,
-        toptalCompliance: 0,
-      });
-
-      console.log("[Proposals] Auto-created project from signed proposal:", {
-        proposalId: proposal._id,
-        projectId,
-        projectName,
-      });
-    } catch (err) {
-      console.error("[Proposals] Failed to auto-create project from signed proposal:", err);
-      // Non-blocking — the proposal is still signed even if project creation fails
-    }
-
-    // 2. Create a scope definition from the proposal sections
-    if (projectId) {
-      try {
-        const sections = (proposal as any).sections || [];
-        const deliverables = sections.map((s: any, i: number) => ({
-          id: `del_${i + 1}`,
-          name: s.title || `Deliverable ${i + 1}`,
-          description: s.description || "",
-          estimatedHours: s.estimatedHours || undefined,
-          status: "pending" as const,
-        }));
-
-        const totalEstimatedHours = sections.reduce(
-          (sum: number, s: any) => sum + (s.estimatedHours || 0),
-          0
-        );
-
-        await ctx.db.insert("scopeDefinitions", {
-          userId: proposal.userId,
-          projectId,
-          proposalId: proposal._id,
-          title: `Scope: ${(proposal as any).title || "Signed Proposal"}`,
-          description: `Auto-generated scope from signed proposal. Client signed on ${new Date(now).toISOString().split('T')[0]}.`,
-          deliverables,
-          totalEstimatedHours: totalEstimatedHours > 0 ? totalEstimatedHours : undefined,
-          revisionLimit: 3,
-          revisionCount: 0,
-          status: "active",
-          workspaceId: proposal.workspaceId,
-          teamId: proposal.teamId,
-          createdAt: now,
-          updatedAt: now,
-        });
-
-        console.log("[Proposals] Auto-created scope definition from signed proposal:", {
-          proposalId: proposal._id,
-          projectId,
-          deliverableCount: deliverables.length,
-        });
-      } catch (err) {
-        console.error("[Proposals] Failed to auto-create scope from signed proposal:", err);
-        // Non-blocking — project is still created even if scope creation fails
       }
     }
   },
@@ -642,6 +537,270 @@ export const createProposalFromDeal = mutation({
     await ctx.db.patch(dealId, { proposalId, updatedAt: Date.now() });
 
     return proposalId;
+  },
+});
+
+// ─── FOLLOW-UP MANAGEMENT MUTATIONS ──────────────────────────────────────
+
+function getFollowUpSubject(dayNumber, title) {
+  if (dayNumber <= 3) return `Following up: ${title}`;
+  if (dayNumber <= 10) return `Checking in: ${title}`;
+  return `Final reminder: ${title}`;
+}
+
+function getFollowUpBody(dayNumber, title, clientName, sentAt) {
+  const name = clientName || "there";
+  const sentDate = new Date(sentAt).toLocaleDateString();
+  if (dayNumber <= 3) {
+    return `Hi ${name},\n\nI wanted to follow up on the proposal "${title}" I sent on ${sentDate}.\n\nI'd love to hear your thoughts and answer any questions you might have.\n\nBest regards`;
+  }
+  if (dayNumber <= 10) {
+    return `Hi ${name},\n\nI'm checking in on the proposal "${title}" I sent on ${sentDate}.\n\nPlease let me know if you need any additional information or would like to discuss any adjustments.\n\nBest regards`;
+  }
+  return `Hi ${name},\n\nThis is a final reminder regarding the proposal "${title}" I sent on ${sentDate}.\n\nThis proposal will expire soon. Please let me know if you have any questions or if you'd like to proceed.\n\nBest regards`;
+}
+
+export const startFollowUps = mutation({
+  args: {
+    proposalId: v.id("proposals"),
+    intervals: v.optional(v.array(v.number())),
+  },
+  handler: async (ctx, { proposalId, intervals }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const proposal = await ctx.db.get(proposalId);
+    if (!proposal) throw new Error("Proposal not found");
+
+    // Check workspace access or direct ownership
+    if (proposal.workspaceId) {
+      const access = await getRecordAccess(ctx, proposal, userId);
+      if (!access) throw new Error("Not authorized");
+    } else if (proposal.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Only allow for proposals with status "sent" or "viewed"
+    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+      throw new Error("Follow-ups can only be started for sent or viewed proposals");
+    }
+
+    // Cancel any existing scheduled follow-ups for this proposal
+    const existingFollowUps = await ctx.db
+      .query("proposalFollowUps")
+      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+      .collect();
+
+    for (const fu of existingFollowUps) {
+      if (fu.status === "scheduled") {
+        await ctx.db.patch(fu._id, { status: "cancelled" });
+      }
+    }
+
+    // Create new follow-ups based on provided intervals or defaults
+    const dayIntervals = intervals || [3, 7, 14];
+    const sentAt = proposal.sentAt || Date.now();
+
+    for (const dayNumber of dayIntervals) {
+      await ctx.db.insert("proposalFollowUps", {
+        userId: proposal.userId,
+        workspaceId: proposal.workspaceId ?? undefined,
+        proposalId,
+        dayNumber,
+        subject: getFollowUpSubject(dayNumber, proposal.title),
+        body: getFollowUpBody(dayNumber, proposal.title, proposal.clientName, sentAt),
+        channel: "email",
+        status: "scheduled",
+        scheduledAt: sentAt + dayNumber * 24 * 60 * 60 * 1000,
+        createdAt: Date.now(),
+      });
+    }
+
+    return { success: true, scheduledCount: dayIntervals.length };
+  },
+});
+
+export const stopFollowUps = mutation({
+  args: {
+    proposalId: v.id("proposals"),
+  },
+  handler: async (ctx, { proposalId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const proposal = await ctx.db.get(proposalId);
+    if (!proposal) throw new Error("Proposal not found");
+
+    // Check workspace access or direct ownership
+    if (proposal.workspaceId) {
+      const access = await getRecordAccess(ctx, proposal, userId);
+      if (!access) throw new Error("Not authorized");
+    } else if (proposal.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Find all scheduled follow-ups for this proposal and cancel them
+    const followUps = await ctx.db
+      .query("proposalFollowUps")
+      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+      .collect();
+
+    let cancelledCount = 0;
+    for (const fu of followUps) {
+      if (fu.status === "scheduled") {
+        await ctx.db.patch(fu._id, { status: "cancelled" });
+        cancelledCount++;
+      }
+    }
+
+    return { success: true, cancelledCount };
+  },
+});
+
+export const skipFollowUp = mutation({
+  args: {
+    followUpId: v.id("proposalFollowUps"),
+  },
+  handler: async (ctx, { followUpId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const followUp = await ctx.db.get(followUpId);
+    if (!followUp) throw new Error("Follow-up not found");
+
+    // Verify user owns the follow-up
+    if (followUp.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Only allow if status is "scheduled"
+    if (followUp.status !== "scheduled") {
+      throw new Error("Only scheduled follow-ups can be skipped");
+    }
+
+    await ctx.db.patch(followUpId, { status: "skipped" });
+
+    return { success: true };
+  },
+});
+
+export const getFollowUpSettings = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return {
+        autoFollowUpsEnabled: true,
+        day1Enabled: false,
+        day3Enabled: true,
+        day7Enabled: true,
+        day14Enabled: true,
+        day21Enabled: false,
+        customIntervals: [],
+        defaultChannel: "email",
+      };
+    }
+
+    const settings = await ctx.db
+      .query("proposalFollowUpSettings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!settings) {
+      return {
+        autoFollowUpsEnabled: true,
+        day1Enabled: false,
+        day3Enabled: true,
+        day7Enabled: true,
+        day14Enabled: true,
+        day21Enabled: false,
+        customIntervals: [],
+        defaultChannel: "email",
+      };
+    }
+
+    return {
+      autoFollowUpsEnabled: settings.autoFollowUpsEnabled,
+      day1Enabled: settings.day1Enabled ?? false,
+      day3Enabled: settings.day3Enabled ?? true,
+      day7Enabled: settings.day7Enabled ?? true,
+      day14Enabled: settings.day14Enabled ?? true,
+      day21Enabled: settings.day21Enabled ?? false,
+      customIntervals: settings.customIntervals ?? [],
+      defaultChannel: settings.defaultChannel ?? "email",
+    };
+  },
+});
+
+export const updateFollowUpSettings = mutation({
+  args: {
+    autoFollowUpsEnabled: v.optional(v.boolean()),
+    day1Enabled: v.optional(v.boolean()),
+    day3Enabled: v.optional(v.boolean()),
+    day7Enabled: v.optional(v.boolean()),
+    day14Enabled: v.optional(v.boolean()),
+    day21Enabled: v.optional(v.boolean()),
+    customIntervals: v.optional(v.array(v.number())),
+    defaultChannel: v.optional(v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"))),
+    workspaceId: v.optional(v.id("workspaces")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const existing = await ctx.db
+      .query("proposalFollowUpSettings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    const { workspaceId, ...updates } = args;
+
+    if (existing) {
+      // Update existing settings
+      const patchData = { ...updates, updatedAt: Date.now() };
+      await ctx.db.patch(existing._id, patchData);
+      return existing._id;
+    }
+
+    // Create new settings
+    return await ctx.db.insert("proposalFollowUpSettings", {
+      userId,
+      workspaceId: workspaceId ?? undefined,
+      autoFollowUpsEnabled: updates.autoFollowUpsEnabled ?? true,
+      day1Enabled: updates.day1Enabled ?? false,
+      day3Enabled: updates.day3Enabled ?? true,
+      day7Enabled: updates.day7Enabled ?? true,
+      day14Enabled: updates.day14Enabled ?? true,
+      day21Enabled: updates.day21Enabled ?? false,
+      customIntervals: updates.customIntervals ?? [],
+      defaultChannel: updates.defaultChannel ?? "email",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const processDueFollowUps = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // Find all follow-ups with status "scheduled" where scheduledAt < now
+    const dueFollowUps = await ctx.db
+      .query("proposalFollowUps")
+      .withIndex("by_status_and_date", (q) => q.eq("status", "scheduled").lt("scheduledAt", now))
+      .collect();
+
+    let processedCount = 0;
+    for (const fu of dueFollowUps) {
+      await ctx.db.patch(fu._id, {
+        status: "sent",
+        sentAt: Date.now(),
+      });
+      processedCount++;
+    }
+
+    return { processedCount };
   },
 });
 

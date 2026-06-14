@@ -72,7 +72,6 @@ export const evidenceTables = {
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
     sessionId: v.id("workSessions"),
-    evidenceSessionId: v.optional(v.id("evidenceSessions")),
     contextScore: v.number(), // 0-100
     complianceStatus: v.union(
       v.literal("compliant"),

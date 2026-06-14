@@ -42,22 +42,67 @@ export const projectTables = {
     teamId: v.optional(v.id("teams")),
     sharing: v.optional(v.array(sharingEntry)),
     customFields: v.optional(v.any()),
+
+    // ── Name fields ──────────────────────────────────────────────────────
+    // clientName is canonical (used by freelancer features & indexes).
+    // name is an alias used by CRM mutations — both should be kept in sync.
     clientName: v.string(),
-    platform: v.union(
+    name: v.optional(v.string()),
+
+    // ── CRM contact fields ───────────────────────────────────────────────
+    email: v.optional(v.string()),
+    company: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    industry: v.optional(v.string()),
+    website: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    address: v.optional(v.object({
+      street: v.optional(v.string()),
+      city: v.optional(v.string()),
+      state: v.optional(v.string()),
+      zip: v.optional(v.string()),
+      country: v.optional(v.string()),
+    })),
+
+    // ── CRM status & source ──────────────────────────────────────────────
+    status: v.optional(v.union(v.literal("active"), v.literal("archived"), v.literal("lead"))),
+    source: v.optional(v.string()),
+
+    // ── Freelancer platform fields (optional for CRM-created clients) ────
+    platform: v.optional(v.union(
       v.literal("upwork"),
       v.literal("fiverr"),
       v.literal("toptal"),
       v.literal("freelancer"),
       v.literal("direct")
-    ),
-    hourlyRate: v.number(),
-    contractType: v.union(v.literal("hourly"), v.literal("fixed")),
-    riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-    addedAt: v.number(),
-    lastActivityAt: v.number(),
+    )),
+    hourlyRate: v.optional(v.number()),
+    contractType: v.optional(v.union(v.literal("hourly"), v.literal("fixed"))),
+    riskLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
+
+    // ── Freelancer-specific contact fields ───────────────────────────────
+    contactEmail: v.optional(v.string()),
+    contactName: v.optional(v.string()),
+
+    // ── Payment behavior tracking ────────────────────────────────────────
+    avgPaymentDays: v.optional(v.number()),
+    onTimeRate: v.optional(v.number()), // 0-1
+    totalPaid: v.optional(v.number()),
+    totalInvoiced: v.optional(v.number()),
+    lastPaymentAt: v.optional(v.number()),
+
+    // ── Workspace assignment ─────────────────────────────────────────────
+    assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
+
+    // ── Timestamps ───────────────────────────────────────────────────────
+    addedAt: v.optional(v.number()),
+    lastActivityAt: v.optional(v.number()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "clientName"])
+    .index("by_user_and_status", ["userId", "status"])
     .index("by_workspace", ["workspaceId"])
     .index("by_team", ["teamId"]),
 
@@ -77,15 +122,7 @@ export const projectTables = {
     createdAt: v.number(),
     lastActivityAt: v.number(),
     
-    // P1 FIX: Link to proposal that created this project (nullable for manually created projects)
-    proposalId: v.optional(v.id("proposals")),
-    
     // Protection score metrics
-    protectionScore: v.optional(v.number()),
-    totalHours: v.optional(v.number()),
-    totalValue: v.optional(v.number()),
-    atRiskAmount: v.optional(v.number()),
-    rejectedHours: v.optional(v.number()),
     evidenceCount: v.optional(v.number()),
     evidenceWithClientKeywords: v.optional(v.number()),
     clientKeywords: v.optional(v.array(v.string())),
@@ -110,15 +147,13 @@ export const projectTables = {
     historicalSuccess: v.optional(v.number()),
     weeklyIncome: v.optional(v.number()),
     avgProjectValue: v.optional(v.number()),
-    activeSession: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "projectName"])
     .index("by_client", ["clientId"])
     .index("by_workspace", ["workspaceId"])
     .index("by_team", ["teamId"])
-    .index("by_creator", ["createdBy"])
-    .index("by_proposal", ["proposalId"]),
+    .index("by_creator", ["createdBy"]),
 
   clientCompanies: defineTable({
     workspaceId: v.optional(v.id("workspaces")),

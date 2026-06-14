@@ -115,6 +115,7 @@ export const autoSeed = mutation({
 
     let stageIds: string[] = [];
     if (existingStages.length === 0) {
+      // NOTE: Stage colors should match STAGE_COLORS in src/lib/tokens.ts
       const defaults = [
         { name: "Lead", color: "#6366f1" },
         { name: "Qualified", color: "#8b5cf6" },
@@ -168,6 +169,9 @@ export const autoSeed = mutation({
         { title: "TechCorp Website Redesign", value: 12000, probability: 100, source: "direct", contactName: "David Chen", contactEmail: "david@techcorp.io", expectedCloseDate: now - 5 * day, stageIdx: 4, description: "Complete website redesign with responsive design and CMS integration." },
         { title: "FinServe Analytics Platform", value: 22000, probability: 100, source: "upwork", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now - 10 * day, stageIdx: 4, description: "Financial analytics platform with real-time market data and portfolio tracking." },
         { title: "Social Media App (Lost)", value: 30000, probability: 0, source: "linkedin", contactName: "Kevin Park", contactEmail: "kevin@socialnext.com", expectedCloseDate: now - 20 * day, stageIdx: 5, description: "Social networking app that went to a competitor." },
+        { title: "Manufacturing QC System", value: 38000, probability: 60, source: "direct", contactName: "Ingrid Svensson", contactEmail: "ingrid@precisemfg.se", expectedCloseDate: now + 5 * day, stageIdx: 3, description: "IoT-connected quality control system with real-time defect detection." },
+        { title: "Retail Inventory System", value: 14000, probability: 0, source: "linkedin", contactName: "Amy Foster", contactEmail: "amy@retailpro.com", expectedCloseDate: now - 30 * day, stageIdx: 5, description: "Custom inventory management system with barcode scanning." },
+        { title: "Government Portal Redesign", value: 48000, probability: 0, source: "direct", contactName: "Director Helen Park", contactEmail: "helen.park@citygov.org", expectedCloseDate: now - 10 * day, stageIdx: 5, description: "Municipal government services portal with citizen authentication." },
       ];
 
       for (let i = 0; i < mockDeals.length; i++) {
@@ -211,6 +215,10 @@ export const autoSeed = mutation({
         { clientName: "Digital Marketing Co", platform: "freelancer" as const, hourlyRate: 45, contractType: "hourly" as const, riskLevel: "low" as const },
         { clientName: "Creative Studios", platform: "direct" as const, hourlyRate: 95, contractType: "fixed" as const, riskLevel: "medium" as const },
         { clientName: "FinServe Analytics", platform: "upwork" as const, hourlyRate: 110, contractType: "hourly" as const, riskLevel: "low" as const },
+        { clientName: "MediTech Inc", platform: "linkedin" as const, hourlyRate: 130, contractType: "hourly" as const, riskLevel: "low" as const },
+        { clientName: "LogiSync Supply Chain", platform: "upwork" as const, hourlyRate: 100, contractType: "hourly" as const, riskLevel: "medium" as const },
+        { clientName: "CloudMetrics SaaS", platform: "toptal" as const, hourlyRate: 115, contractType: "hourly" as const, riskLevel: "low" as const },
+        { clientName: "NovaTech Ventures", platform: "direct" as const, hourlyRate: 90, contractType: "fixed" as const, riskLevel: "medium" as const },
       ];
 
       for (const client of mockClients) {
@@ -245,13 +253,17 @@ export const autoSeed = mutation({
         { clientId: clientIds[5] as any, projectName: "FinServe Analytics Platform", hourlyRate: 110, projectType: "ongoing" as const, protectionLevel: "maximum" as const },
         { clientId: clientIds[0] as any, projectName: "TechCorp API Integration", hourlyRate: 85, projectType: "fixed" as const, protectionLevel: "enhanced" as const },
         { clientId: clientIds[1] as any, projectName: "StartupHub Landing Pages", hourlyRate: 65, projectType: "fixed" as const, protectionLevel: "standard" as const },
+        { clientId: clientIds[6] as any, projectName: "MediTech Patient Portal", hourlyRate: 130, projectType: "ongoing" as const, protectionLevel: "maximum" as const },
       ];
 
       for (const project of mockProjects) {
+        // Archive some projects for variety
+        const isArchived = project.projectName === "DigiMark Brand Identity" || project.projectName === "StartupHub Landing Pages";
         await ctx.db.insert("projects", {
           userId,
           ...project,
-          status: "active",
+          status: isArchived ? "archived" : "active",
+          workspaceId: personalWorkspaceId,
           createdAt: now - Math.floor(Math.random() * 60) * day,
           lastActivityAt: now,
         });
@@ -638,13 +650,19 @@ export const autoSeed = mutation({
         { name: "Design", color: "#ec4899", category: "project" },
         { name: "Branding", color: "#f59e0b", category: "client" },
         { name: "API Integration", color: "#10b981", category: "project" },
-        { name: "Data Visualization", color: "#06b6d4", category: "project" },
+        { name: "Data Visualization", color: "#475569", category: "project" },
         { name: "E-Commerce", color: "#f97316", category: "project" },
         { name: "Enterprise", color: "#6366f1", category: "client" },
-        { name: "MVP", color: "#14b8a6", category: "project" },
+        { name: "MVP", color: "#64748B", category: "project" },
         { name: "Healthcare", color: "#ef4444", category: "client" },
         { name: "Fintech", color: "#84cc16", category: "client" },
         { name: "Marketing", color: "#a855f7", category: "project" },
+        { name: "Urgent", color: "#dc2626", category: "priority" },
+        { name: "Recurring", color: "#2563eb", category: "engagement" },
+        { name: "High-Value", color: "#ca8a04", category: "priority" },
+        { name: "Remote", color: "#0891b2", category: "engagement" },
+        { name: "Long-Term", color: "#7c3aed", category: "engagement" },
+        { name: "New Client", color: "#059669", category: "client" },
       ];
 
       for (const tag of mockTags) {
@@ -949,6 +967,28 @@ export const autoSeed = mutation({
       });
 
       results.push("work_sessions");
+    }
+
+    // ─── 15. Seed Custom Field Definitions ──────────────────────────────────
+    // Schema: customFieldDefinitions { workspaceId, tableName, fieldName, label, type, options?, required?, order?, createdBy, createdAt }
+    const existingCustomFields = await ctx.db
+      .query("customFieldDefinitions")
+      .withIndex("by_workspace_table", (q: any) => q.eq("workspaceId", personalWorkspaceId).eq("tableName", "deals"))
+      .collect();
+
+    if (existingCustomFields.length === 0) {
+      const customFieldDefs = [
+        { workspaceId: personalWorkspaceId, tableName: "deals", fieldName: "referral_source", label: "Referral Source", type: "text", order: 0, required: false, createdBy: userId, createdAt: now },
+        { workspaceId: personalWorkspaceId, tableName: "deals", fieldName: "priority", label: "Priority", type: "select", options: ["High", "Medium", "Low"], order: 1, required: false, createdBy: userId, createdAt: now },
+        { workspaceId: personalWorkspaceId, tableName: "deals", fieldName: "renewal_date", label: "Renewal Date", type: "date", order: 2, required: false, createdBy: userId, createdAt: now },
+        { workspaceId: personalWorkspaceId, tableName: "deals", fieldName: "is_recurring", label: "Recurring Deal", type: "boolean", order: 3, required: false, createdBy: userId, createdAt: now },
+        { workspaceId: personalWorkspaceId, tableName: "deals", fieldName: "estimated_hours", label: "Estimated Hours", type: "number", order: 4, required: false, createdBy: userId, createdAt: now },
+      ];
+
+      for (const field of customFieldDefs) {
+        await ctx.db.insert("customFieldDefinitions", field);
+      }
+      results.push("custom_field_definitions");
     }
 
     return { seeded: true, items: results };

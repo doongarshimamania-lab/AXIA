@@ -9,6 +9,10 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const listAuthAccountsForEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY: Require authentication
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Authentication required");
+
     // Find user by email
     const user = await ctx.db
       .query("users")
@@ -51,6 +55,10 @@ export const listAuthAccountsForEmail = query({
 export const cleanOrphanedAuthAccounts = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY: Require authentication
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Authentication required");
+
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))

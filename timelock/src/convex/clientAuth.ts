@@ -80,28 +80,6 @@ export const updateClientProfile = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const { clientId, ...updates } = args;
-
-    // SECURITY: Verify ownership — the authenticated user's email must match the client record
-    const client = await ctx.db.get(clientId);
-    if (!client) throw new Error("Client record not found");
-
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
-
-    // Only allow the user who owns this client record (by email) to update it
-    // or allow workspace members with collaborate+ access if the client has a workspaceId
-    if (client.email !== user.email) {
-      // Check if user has workspace-level access
-      if (client.workspaceId) {
-        const { getRecordAccess } = await import("./permissions");
-        const access = await getRecordAccess(ctx, client.workspaceId, userId, client);
-        if (access !== "collaborate" && access !== "full" && access !== "owner") {
-          throw new Error("Not authorized to update this client profile");
-        }
-      } else {
-        throw new Error("Not authorized to update this client profile");
-      }
-    }
     
     const patchData: Record<string, string> = {};
     if (updates.companyName !== undefined) patchData.companyName = updates.companyName;

@@ -104,4 +104,21 @@ export const proposalTables = {
     .index("by_user", ["userId"])
     .index("by_status_and_date", ["status", "scheduledAt"])
     .index("by_workspace", ["workspaceId"]),
+
+  proposalFollowUpSettings: defineTable({
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    autoFollowUpsEnabled: v.boolean(),  // master toggle
+    day1Enabled: v.optional(v.boolean()),
+    day3Enabled: v.optional(v.boolean()),
+    day7Enabled: v.optional(v.boolean()),
+    day14Enabled: v.optional(v.boolean()),
+    day21Enabled: v.optional(v.boolean()),
+    customIntervals: v.optional(v.array(v.number())),  // custom day intervals like [2, 5, 10]
+    defaultChannel: v.optional(v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"))),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
 };

@@ -103,19 +103,14 @@ export function verifyJWT(token: string): Record<string, any> | null {
 }
 
 /**
- * Encrypt data using AES-256-GCM
- * SECURITY: Rejects keys shorter than 32 chars instead of silently padding with zeros.
+ * Encrypt data using AES-256-GCM (simulated)
  */
 export function encryptData(data: any, key?: string): string {
   const encKey = key ?? getEncryptionKey();
-  // SECURITY: Reject weak keys instead of silently padding
-  if (encKey.length < 32) {
-    throw new Error("SECURITY: Encryption key must be at least 32 characters. Refusing to use weak key.");
-  }
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     "aes-256-gcm",
-    Buffer.from(encKey.slice(0, 32)),
+    Buffer.from(encKey.padEnd(32, "0").slice(0, 32)),
     iv
   );
 
@@ -134,21 +129,16 @@ export function encryptData(data: any, key?: string): string {
 }
 
 /**
- * Decrypt data using AES-256-GCM
- * SECURITY: Rejects keys shorter than 32 chars instead of silently padding with zeros.
+ * Decrypt data using AES-256-GCM (simulated)
  */
 export function decryptData(encrypted: string, key?: string): any {
   try {
     const decKey = key ?? getEncryptionKey();
-    // SECURITY: Reject weak keys instead of silently padding
-    if (decKey.length < 32) {
-      throw new Error("SECURITY: Decryption key must be at least 32 characters. Refusing to use weak key.");
-    }
     const { iv, data, authTag } = JSON.parse(encrypted);
     
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
-      Buffer.from(decKey.slice(0, 32)),
+      Buffer.from(decKey.padEnd(32, "0").slice(0, 32)),
       Buffer.from(iv, "hex")
     );
 

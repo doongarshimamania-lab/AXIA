@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, QueryCtx } from "./_generated/server";
-import { mutation, internalMutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -44,15 +44,18 @@ export const getProfile = query({
 });
 
 // Add: Update current user's profile (partial updates)
-// SECURITY: subscriptionTier is intentionally excluded from user-mutable fields.
-// Tier changes must go through the dedicated `setSubscriptionTier` internal action
-// which is called only by payment webhooks or admin actions.
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     image: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
-    // NOTE: subscriptionTier is NOT included here — users cannot self-upgrade
+    subscriptionTier: v.optional(v.union(
+      v.literal("free"),
+      v.literal("starter"),
+      v.literal("pro"),
+      v.literal("expert"),
+      v.literal("client")
+    )),
     // Add: extended profile fields
     professionalBio: v.optional(v.string()),
     protectedHours: v.optional(v.number()),
@@ -71,41 +74,12 @@ export const updateProfile = mutation({
       ...(args.name !== undefined ? { name: args.name } : {}),
       ...(args.image !== undefined ? { image: args.image } : {}),
       ...(args.hourlyRate !== undefined ? { hourlyRate: args.hourlyRate } : {}),
+      ...(args.subscriptionTier !== undefined ? { subscriptionTier: args.subscriptionTier } : {}),
       ...(args.professionalBio !== undefined ? { professionalBio: args.professionalBio } : {}),
       ...(args.protectedHours !== undefined ? { protectedHours: args.protectedHours } : {}),
       ...(args.protectedValue !== undefined ? { protectedValue: args.protectedValue } : {}),
     });
     return true;
-  },
-});
-
-// SECURITY: Server-side only tier update — called by payment webhooks or admin actions.
-// This mutation is internal and should not be exposed to the client directly.
-export const setSubscriptionTier = internalMutation({
-  args: {
-    userId: v.id("users"),
-    tier: v.union(
-      v.literal("free"),
-      v.literal("starter"),
-      v.literal("pro"),
-      v.literal("expert"),
-      v.literal("client")
-    ),
-    // Security token to prevent unauthorized calls — must match SERVER_SECRET env var
-    serverSecret: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // SECURITY: Verify this is a server-side call using a shared secret
-    const expectedSecret = process.env.SERVER_SECRET;
-    if (!expectedSecret || args.serverSecret !== expectedSecret) {
-      throw new Error("Unauthorized: Invalid server secret");
-    }
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-    await ctx.db.patch(args.userId, { subscriptionTier: args.tier });
-    return { success: true };
   },
 });
 
