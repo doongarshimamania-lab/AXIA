@@ -25,7 +25,6 @@ export const trackingTables = {
     // Invoice linking fields
     clientId: v.optional(v.id("clients")),
     projectId_fk: v.optional(v.id("projects")),
-    invoiced: v.optional(v.boolean()),
     invoiceId: v.optional(v.id("invoices")),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
