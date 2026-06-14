@@ -1,0 +1,2002 @@
+     1→/**
+     2→ * Centralized Data Store for Axia
+     3→ *
+     4→ * All pages share this single source of truth. Every entity cross-references
+     5→ * others by ID so the UI can show connected data (e.g. which team members
+     6→ * are on a project, which projects belong to a client, etc.).
+     7→ *
+     8→ * HYBRID DATA SOURCE:
+     9→ * Pipeline deals and proposals use Convex as the primary data source when
+    10→ * the user is authenticated. When Convex returns no data (unauthenticated),
+    11→ * the mock data is used as a fallback. Other entities still use local state.
+    12→ */
+    13→
+    14→import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+    15→import { useConvexPipeline } from "./use-convex-pipeline";
+    16→import { useConvexProposals } from "./use-convex-proposals";
+    17→
+    18→// ─── Shared Types ────────────────────────────────────────────────────────────
+    19→
+    20→export type WorkspaceRole = "owner" | "manager" | "member";
+    21→export type MemberStatus = "active" | "invited" | "removed";
+    22→
+    23→export interface TeamMember {
+    24→  id: string;
+    25→  name: string;
+    26→  email: string;
+    27→  role: WorkspaceRole;
+    28→  status: MemberStatus;
+    29→  avatar?: string;
+    30→  joinedAt: number;
+    31→  lastActiveAt: number | null;
+    32→  title: string; // e.g. "Senior Developer", "UI Designer"
+    33→  hoursThisWeek: number;
+    34→}
+    35→
+    36→export interface Client {
+    37→  id: string;
+    38→  name: string;
+    39→  platform: "upwork" | "fiverr" | "toptal" | "freelancer" | "direct";
+    40→  hourlyRate: number;
+    41→  contractType: "hourly" | "fixed";
+    42→  riskLevel: "low" | "medium" | "high";
+    43→  protectionScore: number;
+    44→  totalHours: number;
+    45→  totalValue: number;
+    46→  addedAt: number;
+    47→  lastActivityAt: number;
+    48→  assignedMemberIds: string[];
+    49→  contactEmail: string;
+    50→  contactName: string;
+    51→  notes: string;
+    52→}
+    53→
+    54→export type ProjectStatus = "active" | "paused" | "completed" | "at_risk";
+    55→export type ProjectType = "ongoing" | "fixed" | "milestone";
+    56→
+    57→export interface Project {
+    58→  id: string;
+    59→  name: string;
+    60→  clientId: string;
+    61→  status: ProjectStatus;
+    62→  projectType: ProjectType;
+    63→  protectionLevel: "standard" | "enhanced" | "maximum";
+    64→  protectionScore: number;
+    65→  hourlyRate: number;
+    66→  totalHours: number;
+    67→  totalValue: number;
+    68→  atRiskAmount: number;
+    69→  rejectedHours: number;
+    70→  assignedMemberIds: string[];
+    71→  createdAt: number;
+    72→  lastActivityAt: number;
+    73→  deadline: number | null;
+    74→  description: string;
+    75→  tags: string[];
+    76→}
+    77→
+    78→export type InvoiceStatus = "draft" | "sent" | "viewed" | "paid" | "overdue";
+    79→
+    80→export interface InvoiceLineItem {
+    81→  id: string;
+    82→  description: string;
+    83→  quantity: number;
+    84→  rate: number;
+    85→  amount: number;
+    86→  hasProof?: boolean;
+    87→}
+    88→
+    89→export interface Invoice {
+    90→  id: string;
+    91→  invoiceNumber: string;
+    92→  clientId: string;
+    93→  projectId: string | null;
+    94→  status: InvoiceStatus;
+    95→  issueDate: number;
+    96→  dueDate: number;
+    97→  paidDate?: number;
+    98→  lineItems: InvoiceLineItem[];
+    99→  subtotal: number;
+   100→  taxRate: number;
+   101→  taxAmount: number;
+   102→  total: number;
+   103→  notes: string;
+   104→  proofCount: number;
+   105→}
+   106→
+   107→export interface TimeEntry {
+   108→  id: string;
+   109→  projectId: string;
+   110→  memberId: string;
+   111→  platform: "upwork" | "fiverr" | "toptal" | "manual";
+   112→  startTime: number;
+   113→  endTime: number | null;
+   114→  duration: number; // ms
+   115→  memo: string;
+   116→  compliance: "compliant" | "at_risk" | "flagged";
+   117→  tags: string[];
+   118→}
+   119→
+   120→export type DealStage = "lead" | "qualified" | "proposal" | "negotiation" | "won" | "lost";
+   121→
+   122→export interface RichClient {
+   123→  id: string;
+   124→  name: string;
+   125→  platform: string;
+   126→  contactEmail: string | null;
+   127→  contactName: string | null;
+   128→}
+   129→
+   130→export interface RichMember {
+   131→  id: string;
+   132→  name: string;
+   133→  email: string;
+   134→  image: string | null;
+   135→  role: string;
+   136→  title: string | null;
+   137→}
+   138→
+   139→export interface RichProposal {
+   140→  id: string;
+   141→  title: string;
+   142→  status: string;
+   143→  totalValue: number;
+   144→}
+   145→
+   146→export interface RichDeal {
+   147→  id: string;
+   148→  title: string;
+   149→  value: number;
+   150→  stageName: string;
+   151→  stageColor: string;
+   152→}
+   153→
+   154→export interface PipelineDeal {
+   155→  id: string;
+   156→  title: string;
+   157→  clientId: string | null;
+   158→  stage: DealStage;
+   159→  value: number;
+   160→  probability: number;
+   161→  source: string;
+   162→  contactName: string;
+   163→  contactEmail: string;
+   164→  expectedCloseDate: number | null;
+   165→  assignedMemberId: string | null;
+   166→  notes: string;
+   167→  createdAt: number;
+   168→  proposalId?: string | null;
+   169→  description?: string;
+   170→  workspaceId?: string | null;
+   171→  // Enriched fields (resolved server-side from Convex)
+   172→  client?: RichClient | null;
+   173→  assignedMember?: RichMember | null;
+   174→  linkedProposal?: RichProposal | null;
+   175→  stageName?: string;
+   176→  stageColor?: string;
+   177→}
+   178→
+   179→export type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
+   180→
+   181→export interface Proposal {
+   182→  id: string;
+   183→  title: string;
+   184→  clientId: string | null;
+   185→  status: ProposalStatus;
+   186→  totalValue: number;
+   187→  clientEmail: string;
+   188→  assignedMemberId: string | null;
+   189→  sentAt: number | null;
+   190→  viewedAt: number | null;
+   191→  signedAt: number | null;
+   192→  validUntil: number | null;
+   193→  createdAt: number;
+   194→  dealId?: string | null;
+   195→  workspaceId?: string | null;
+   196→  // Enriched fields (resolved server-side from Convex)
+   197→  client?: RichClient | null;
+   198→  assignedMember?: RichMember | null;
+   199→  linkedDeal?: RichDeal | null;
+   200→}
+   201→
+   202→// ─── Rich Mock Data ──────────────────────────────────────────────────────────
+   203→
+   204→const INITIAL_TEAM_MEMBERS: TeamMember[] = [
+   205→  {
+   206→    id: "mem_001",
+   207→    name: "Alex Rivera",
+   208→    email: "alex.rivera@axiaagency.com",
+   209→    role: "owner",
+   210→    status: "active",
+   211→    joinedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   212→    lastActiveAt: Date.now() - 5 * 60 * 1000,
+   213→    title: "Founder & Creative Director",
+   214→    hoursThisWeek: 34.5,
+   215→  },
+   216→  {
+   217→    id: "mem_002",
+   218→    name: "Priya Sharma",
+   219→    email: "priya.sharma@axiaagency.com",
+   220→    role: "manager",
+   221→    status: "active",
+   222→    joinedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   223→    lastActiveAt: Date.now() - 15 * 60 * 1000,
+   224→    title: "Senior Project Manager",
+   225→    hoursThisWeek: 28.0,
+   226→  },
+   227→  {
+   228→    id: "mem_003",
+   229→    name: "Jordan Kim",
+   230→    email: "jordan.kim@axiaagency.com",
+   231→    role: "manager",
+   232→    status: "active",
+   233→    joinedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+   234→    lastActiveAt: Date.now() - 2 * 60 * 60 * 1000,
+   235→    title: "Account Manager",
+   236→    hoursThisWeek: 22.5,
+   237→  },
+   238→  {
+   239→    id: "mem_004",
+   240→    name: "Sam Chen",
+   241→    email: "sam.chen@axiaagency.com",
+   242→    role: "member",
+   243→    status: "active",
+   244→    joinedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   245→    lastActiveAt: Date.now() - 1 * 60 * 60 * 1000,
+   246→    title: "Full-Stack Developer",
+   247→    hoursThisWeek: 40.0,
+   248→  },
+   249→  {
+   250→    id: "mem_005",
+   251→    name: "Elena Volkov",
+   252→    email: "elena.volkov@axiaagency.com",
+   253→    role: "member",
+   254→    status: "active",
+   255→    joinedAt: Date.now() - 21 * 24 * 60 * 60 * 1000,
+   256→    lastActiveAt: Date.now() - 30 * 60 * 1000,
+   257→    title: "UI/UX Designer",
+   258→    hoursThisWeek: 35.0,
+   259→  },
+   260→  {
+   261→    id: "mem_006",
+   262→    name: "Marcus Thompson",
+   263→    email: "marcus.t@axiaagency.com",
+   264→    role: "member",
+   265→    status: "active",
+   266→    joinedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+   267→    lastActiveAt: Date.now() - 4 * 60 * 60 * 1000,
+   268→    title: "Brand Strategist",
+   269→    hoursThisWeek: 18.0,
+   270→  },
+   271→  {
+   272→    id: "mem_007",
+   273→    name: "Aisha Patel",
+   274→    email: "aisha.patel@axiaagency.com",
+   275→    role: "member",
+   276→    status: "invited",
+   277→    joinedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+   278→    lastActiveAt: null,
+   279→    title: "Motion Designer",
+   280→    hoursThisWeek: 0,
+   281→  },
+   282→  {
+   283→    id: "mem_008",
+   284→    name: "Lucas Weber",
+   285→    email: "lucas.w@freelance.dev",
+   286→    role: "member",
+   287→    status: "invited",
+   288→    joinedAt: Date.now() - 6 * 60 * 60 * 1000,
+   289→    lastActiveAt: null,
+   290→    title: "Backend Developer",
+   291→    hoursThisWeek: 0,
+   292→  },
+   293→];
+   294→
+   295→const INITIAL_CLIENTS: Client[] = [
+   296→  {
+   297→    id: "client_1",
+   298→    name: "TechCorp Solutions",
+   299→    platform: "upwork",
+   300→    hourlyRate: 85,
+   301→    contractType: "hourly",
+   302→    riskLevel: "low",
+   303→    protectionScore: 94,
+   304→    totalHours: 127.5,
+   305→    totalValue: 10837.5,
+   306→    addedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   307→    lastActivityAt: Date.now() - 2 * 60 * 60 * 1000,
+   308→    assignedMemberIds: ["mem_001", "mem_002", "mem_004"],
+   309→    contactEmail: "david.chen@techcorp.io",
+   310→    contactName: "David Chen",
+   311→    notes: "Long-term enterprise client. Prefers weekly check-ins.",
+   312→  },
+   313→  {
+   314→    id: "client_2",
+   315→    name: "StartupHub Inc",
+   316→    platform: "fiverr",
+   317→    hourlyRate: 65,
+   318→    contractType: "fixed",
+   319→    riskLevel: "medium",
+   320→    protectionScore: 78,
+   321→    totalHours: 89.0,
+   322→    totalValue: 5785.0,
+   323→    addedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+   324→    lastActivityAt: Date.now() - 15 * 60 * 1000,
+   325→    assignedMemberIds: ["mem_002", "mem_005"],
+   326→    contactEmail: "sarah@startuphub.co",
+   327→    contactName: "Sarah Mitchell",
+   328→    notes: "Startup with tight deadlines. Responsive on Slack.",
+   329→  },
+   330→  {
+   331→    id: "client_3",
+   332→    name: "Global Enterprises",
+   333→    platform: "toptal",
+   334→    hourlyRate: 120,
+   335→    contractType: "hourly",
+   336→    riskLevel: "high",
+   337→    protectionScore: 65,
+   338→    totalHours: 156.0,
+   339→    totalValue: 18720.0,
+   340→    addedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+   341→    lastActivityAt: Date.now() - 24 * 60 * 60 * 1000,
+   342→    assignedMemberIds: ["mem_003", "mem_004"],
+   343→    contactEmail: "procurement@globalent.com",
+   344→    contactName: "Richard Holmes",
+   345→    notes: "High-value but slow payer. Requires detailed invoices and milestones.",
+   346→  },
+   347→  {
+   348→    id: "client_4",
+   349→    name: "Digital Marketing Co",
+   350→    platform: "freelancer",
+   351→    hourlyRate: 45,
+   352→    contractType: "hourly",
+   353→    riskLevel: "low",
+   354→    protectionScore: 88,
+   355→    totalHours: 67.0,
+   356→    totalValue: 3015.0,
+   357→    addedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   358→    lastActivityAt: Date.now() - 48 * 60 * 60 * 1000,
+   359→    assignedMemberIds: ["mem_006"],
+   360→    contactEmail: "lisa@digitalmarketingco.com",
+   361→    contactName: "Lisa Park",
+   362→    notes: "Small but reliable client. Focuses on branding work.",
+   363→  },
+   364→  {
+   365→    id: "client_5",
+   366→    name: "Creative Studios",
+   367→    platform: "direct",
+   368→    hourlyRate: 95,
+   369→    contractType: "fixed",
+   370→    riskLevel: "medium",
+   371→    protectionScore: 72,
+   372→    totalHours: 103.5,
+   373→    totalValue: 9832.5,
+   374→    addedAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
+   375→    lastActivityAt: Date.now() - 72 * 60 * 60 * 1000,
+   376→    assignedMemberIds: ["mem_001", "mem_005", "mem_006"],
+   377→    contactEmail: "tom@creativestudios.art",
+   378→    contactName: "Tom Bradley",
+   379→    notes: "Design-focused client. Needs brand and motion design work.",
+   380→  },
+   381→  {
+   382→    id: "client_6",
+   383→    name: "FinServe Analytics",
+   384→    platform: "upwork",
+   385→    hourlyRate: 110,
+   386→    contractType: "hourly",
+   387→    riskLevel: "low",
+   388→    protectionScore: 91,
+   389→    totalHours: 84.0,
+   390→    totalValue: 9240.0,
+   391→    addedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   392→    lastActivityAt: Date.now() - 6 * 60 * 60 * 1000,
+   393→    assignedMemberIds: ["mem_003", "mem_004"],
+   394→    contactEmail: "cto@finserve.io",
+   395→    contactName: "Michael Torres",
+   396→    notes: "Fintech client. Needs data visualization dashboards.",
+   397→  },
+   398→];
+   399→
+   400→const INITIAL_PROJECTS: Project[] = [
+   401→  {
+   402→    id: "proj_1",
+   403→    name: "TechCorp Website Redesign",
+   404→    clientId: "client_1",
+   405→    status: "active",
+   406→    projectType: "fixed",
+   407→    protectionLevel: "enhanced",
+   408→    protectionScore: 92,
+   409→    hourlyRate: 85,
+   410→    totalHours: 64.5,
+   411→    totalValue: 5482.5,
+   412→    atRiskAmount: 0,
+   413→    rejectedHours: 0,
+   414→    assignedMemberIds: ["mem_001", "mem_004", "mem_005"],
+   415→    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   416→    lastActivityAt: Date.now() - 2 * 60 * 60 * 1000,
+   417→    deadline: Date.now() + 30 * 24 * 60 * 60 * 1000,
+   418→    description: "Complete redesign of TechCorp corporate website with responsive design, new brand identity, and CMS integration.",
+   419→    tags: ["web", "design", "development"],
+   420→  },
+   421→  {
+   422→    id: "proj_2",
+   423→    name: "StartupHub Mobile App MVP",
+   424→    clientId: "client_2",
+   425→    status: "active",
+   426→    projectType: "milestone",
+   427→    protectionLevel: "enhanced",
+   428→    protectionScore: 78,
+   429→    hourlyRate: 65,
+   430→    totalHours: 45.0,
+   431→    totalValue: 2925.0,
+   432→    atRiskAmount: 650,
+   433→    rejectedHours: 2.5,
+   434→    assignedMemberIds: ["mem_002", "mem_004"],
+   435→    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+   436→    lastActivityAt: Date.now() - 15 * 60 * 1000,
+   437→    deadline: Date.now() + 14 * 24 * 60 * 60 * 1000,
+   438→    description: "Mobile app MVP for StartupHub — includes user auth, dashboard, and notification system.",
+   439→    tags: ["mobile", "backend", "api"],
+   440→  },
+   441→  {
+   442→    id: "proj_3",
+   443→    name: "GlobalEnt Data Dashboard",
+   444→    clientId: "client_3",
+   445→    status: "at_risk",
+   446→    projectType: "ongoing",
+   447→    protectionLevel: "maximum",
+   448→    protectionScore: 58,
+   449→    hourlyRate: 120,
+   450→    totalHours: 89.0,
+   451→    totalValue: 10680.0,
+   452→    atRiskAmount: 4320,
+   453→    rejectedHours: 12,
+   454→    assignedMemberIds: ["mem_003", "mem_004"],
+   455→    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+   456→    lastActivityAt: Date.now() - 24 * 60 * 60 * 1000,
+   457→    deadline: Date.now() - 5 * 24 * 60 * 60 * 1000, // overdue
+   458→    description: "Enterprise analytics dashboard with real-time data streaming, complex visualizations, and role-based access.",
+   459→    tags: ["data-viz", "enterprise", "dashboard"],
+   460→  },
+   461→  {
+   462→    id: "proj_4",
+   463→    name: "DigiMark Brand Identity",
+   464→    clientId: "client_4",
+   465→    status: "active",
+   466→    projectType: "fixed",
+   467→    protectionLevel: "standard",
+   468→    protectionScore: 88,
+   469→    hourlyRate: 45,
+   470→    totalHours: 32.0,
+   471→    totalValue: 1440.0,
+   472→    atRiskAmount: 0,
+   473→    rejectedHours: 0,
+   474→    assignedMemberIds: ["mem_006"],
+   475→    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   476→    lastActivityAt: Date.now() - 48 * 60 * 60 * 1000,
+   477→    deadline: Date.now() + 45 * 24 * 60 * 60 * 1000,
+   478→    description: "Complete brand identity package — logo, color palette, typography, and brand guidelines document.",
+   479→    tags: ["branding", "design"],
+   480→  },
+   481→  {
+   482→    id: "proj_5",
+   483→    name: "Creative Studios Motion Reel",
+   484→    clientId: "client_5",
+   485→    status: "paused",
+   486→    projectType: "fixed",
+   487→    protectionLevel: "enhanced",
+   488→    protectionScore: 72,
+   489→    hourlyRate: 95,
+   490→    totalHours: 28.0,
+   491→    totalValue: 2660.0,
+   492→    atRiskAmount: 950,
+   493→    rejectedHours: 3,
+   494→    assignedMemberIds: ["mem_001", "mem_005"],
+   495→    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   496→    lastActivityAt: Date.now() - 72 * 60 * 60 * 1000,
+   497→    deadline: null,
+   498→    description: "Motion graphics reel and video content for social media campaigns. Paused pending client feedback.",
+   499→    tags: ["motion", "video", "social"],
+   500→  },
+   501→  {
+   502→    id: "proj_6",
+   503→    name: "FinServe Analytics Platform",
+   504→    clientId: "client_6",
+   505→    status: "active",
+   506→    projectType: "ongoing",
+   507→    protectionLevel: "maximum",
+   508→    protectionScore: 91,
+   509→    hourlyRate: 110,
+   510→    totalHours: 52.0,
+   511→    totalValue: 5720.0,
+   512→    atRiskAmount: 0,
+   513→    rejectedHours: 0,
+   514→    assignedMemberIds: ["mem_003", "mem_004"],
+   515→    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   516→    lastActivityAt: Date.now() - 6 * 60 * 60 * 1000,
+   517→    deadline: Date.now() + 60 * 24 * 60 * 60 * 1000,
+   518→    description: "Financial analytics platform with real-time market data, portfolio tracking, and compliance reporting.",
+   519→    tags: ["fintech", "data-viz", "compliance"],
+   520→  },
+   521→  {
+   522→    id: "proj_7",
+   523→    name: "TechCorp API Integration",
+   524→    clientId: "client_1",
+   525→    status: "completed",
+   526→    projectType: "fixed",
+   527→    protectionLevel: "enhanced",
+   528→    protectionScore: 96,
+   529→    hourlyRate: 85,
+   530→    totalHours: 63.0,
+   531→    totalValue: 5355.0,
+   532→    atRiskAmount: 0,
+   533→    rejectedHours: 0,
+   534→    assignedMemberIds: ["mem_004"],
+   535→    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+   536→    lastActivityAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+   537→    deadline: null,
+   538→    description: "REST API integration layer connecting TechCorp's CRM, ERP, and marketing automation systems.",
+   539→    tags: ["api", "integration", "backend"],
+   540→  },
+   541→  {
+   542→    id: "proj_8",
+   543→    name: "StartupHub Landing Pages",
+   544→    clientId: "client_2",
+   545→    status: "active",
+   546→    projectType: "fixed",
+   547→    protectionLevel: "standard",
+   548→    protectionScore: 82,
+   549→    hourlyRate: 65,
+   550→    totalHours: 44.0,
+   551→    totalValue: 2860.0,
+   552→    atRiskAmount: 0,
+   553→    rejectedHours: 1,
+   554→    assignedMemberIds: ["mem_002", "mem_005"],
+   555→    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+   556→    lastActivityAt: Date.now() - 3 * 60 * 60 * 1000,
+   557→    deadline: Date.now() + 7 * 24 * 60 * 60 * 1000,
+   558→    description: "A/B tested landing pages for StartupHub's product launch campaign. 5 variants with analytics tracking.",
+   559→    tags: ["web", "marketing", "design"],
+   560→  },
+   561→];
+   562→
+   563→const INITIAL_TIME_ENTRIES: TimeEntry[] = [
+   564→  {
+   565→    id: "time_1",
+   566→    projectId: "proj_1",
+   567→    memberId: "mem_004",
+   568→    platform: "upwork",
+   569→    startTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
+   570→    endTime: Date.now() - 7 * 24 * 60 * 60 * 1000 + 4.5 * 60 * 60 * 1000,
+   571→    duration: 4.5 * 60 * 60 * 1000,
+   572→    memo: "Implemented responsive navigation and hero section",
+   573→    compliance: "compliant",
+   574→    tags: ["development", "frontend"],
+   575→  },
+   576→  {
+   577→    id: "time_2",
+   578→    projectId: "proj_2",
+   579→    memberId: "mem_004",
+   580→    platform: "fiverr",
+   581→    startTime: Date.now() - 6 * 24 * 60 * 60 * 1000,
+   582→    endTime: Date.now() - 6 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000,
+   583→    duration: 3 * 60 * 60 * 1000,
+   584→    memo: "API integration and data fetching layer",
+   585→    compliance: "compliant",
+   586→    tags: ["development", "backend"],
+   587→  },
+   588→  {
+   589→    id: "time_3",
+   590→    projectId: "proj_4",
+   591→    memberId: "mem_006",
+   592→    platform: "upwork",
+   593→    startTime: Date.now() - 5 * 24 * 60 * 60 * 1000,
+   594→    endTime: Date.now() - 5 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000,
+   595→    duration: 2.5 * 60 * 60 * 1000,
+   596→    memo: "Logo variations and color palette exploration",
+   597→    compliance: "at_risk",
+   598→    tags: ["design"],
+   599→  },
+   600→  {
+   601→    id: "time_4",
+   602→    projectId: "proj_6",
+   603→    memberId: "mem_004",
+   604→    platform: "toptal",
+   605→    startTime: Date.now() - 4 * 24 * 60 * 60 * 1000,
+   606→    endTime: Date.now() - 4 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000,
+   607→    duration: 6 * 60 * 60 * 1000,
+   608→    memo: "Chart components and real-time data streaming",
+   609→    compliance: "compliant",
+   610→    tags: ["development", "frontend", "data-viz"],
+   611→  },
+   612→  {
+   613→    id: "time_5",
+   614→    projectId: "proj_3",
+   615→    memberId: "mem_004",
+   616→    platform: "upwork",
+   617→    startTime: Date.now() - 3 * 24 * 60 * 60 * 1000,
+   618→    endTime: Date.now() - 3 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000,
+   619→    duration: 1.5 * 60 * 60 * 1000,
+   620→    memo: "Low activity period - minimal keyboard/mouse events",
+   621→    compliance: "flagged",
+   622→    tags: ["development"],
+   623→  },
+   624→  {
+   625→    id: "time_6",
+   626→    projectId: "proj_1",
+   627→    memberId: "mem_005",
+   628→    platform: "upwork",
+   629→    startTime: Date.now() - 2 * 24 * 60 * 60 * 1000,
+   630→    endTime: Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000,
+   631→    duration: 5 * 60 * 60 * 1000,
+   632→    memo: "UI component library and design system updates",
+   633→    compliance: "compliant",
+   634→    tags: ["design", "frontend"],
+   635→  },
+   636→  {
+   637→    id: "time_7",
+   638→    projectId: "proj_8",
+   639→    memberId: "mem_005",
+   640→    platform: "fiverr",
+   641→    startTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
+   642→    endTime: Date.now() - 1 * 24 * 60 * 60 * 1000 + 3.5 * 60 * 60 * 1000,
+   643→    duration: 3.5 * 60 * 60 * 1000,
+   644→    memo: "Landing page designs — variant A and B",
+   645→    compliance: "compliant",
+   646→    tags: ["design", "marketing"],
+   647→  },
+   648→  {
+   649→    id: "time_8",
+   650→    projectId: "proj_6",
+   651→    memberId: "mem_003",
+   652→    platform: "upwork",
+   653→    startTime: Date.now() - 8 * 60 * 60 * 1000,
+   654→    endTime: Date.now() - 3 * 60 * 60 * 1000,
+   655→    duration: 5 * 60 * 60 * 1000,
+   656→    memo: "Client meeting + project scope review + reporting setup",
+   657→    compliance: "compliant",
+   658→    tags: ["management", "client"],
+   659→  },
+   660→];
+   661→
+   662→const INITIAL_INVOICES: Invoice[] = [
+   663→  {
+   664→    id: "inv_1",
+   665→    invoiceNumber: "INV-2024-001",
+   666→    clientId: "client_1",
+   667→    projectId: "proj_1",
+   668→    status: "paid",
+   669→    issueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   670→    dueDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   671→    paidDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
+   672→    lineItems: [
+   673→      { id: "li_1", description: "Website Redesign — Phase 1: Discovery & Wireframes", quantity: 20, rate: 85, amount: 1700, hasProof: true },
+   674→      { id: "li_2", description: "Website Redesign — Phase 2: UI Design", quantity: 25, rate: 85, amount: 2125, hasProof: true },
+   675→    ],
+   676→    subtotal: 3825,
+   677→    taxRate: 0,
+   678→    taxAmount: 0,
+   679→    total: 3825,
+   680→    notes: "Net-30 terms. Payment received on time.",
+   681→    proofCount: 8,
+   682→  },
+   683→  {
+   684→    id: "inv_2",
+   685→    invoiceNumber: "INV-2024-002",
+   686→    clientId: "client_3",
+   687→    projectId: "proj_3",
+   688→    status: "overdue",
+   689→    issueDate: Date.now() - 45 * 24 * 60 * 60 * 1000,
+   690→    dueDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+   691→    lineItems: [
+   692→      { id: "li_3", description: "Data Dashboard — Backend Architecture", quantity: 40, rate: 120, amount: 4800, hasProof: true },
+   693→      { id: "li_4", description: "Data Dashboard — Frontend Components", quantity: 30, rate: 120, amount: 3600, hasProof: false },
+   694→    ],
+   695→    subtotal: 8400,
+   696→    taxRate: 0,
+   697→    taxAmount: 0,
+   698→    total: 8400,
+   699→    notes: "Payment 15 days overdue. Follow-up sent.",
+   700→    proofCount: 3,
+   701→  },
+   702→  {
+   703→    id: "inv_3",
+   704→    invoiceNumber: "INV-2024-003",
+   705→    clientId: "client_2",
+   706→    projectId: "proj_2",
+   707→    status: "sent",
+   708→    issueDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+   709→    dueDate: Date.now() + 23 * 24 * 60 * 60 * 1000,
+   710→    lineItems: [
+   711→      { id: "li_5", description: "Mobile App MVP — Sprint 1: Auth & Dashboard", quantity: 30, rate: 65, amount: 1950, hasProof: true },
+   712→    ],
+   713→    subtotal: 1950,
+   714→    taxRate: 0,
+   715→    taxAmount: 0,
+   716→    total: 1950,
+   717→    notes: "",
+   718→    proofCount: 4,
+   719→  },
+   720→  {
+   721→    id: "inv_4",
+   722→    invoiceNumber: "INV-2024-004",
+   723→    clientId: "client_6",
+   724→    projectId: "proj_6",
+   725→    status: "sent",
+   726→    issueDate: Date.now() - 5 * 24 * 60 * 60 * 1000,
+   727→    dueDate: Date.now() + 25 * 24 * 60 * 60 * 1000,
+   728→    lineItems: [
+   729→      { id: "li_6", description: "Analytics Platform — Month 1 Retainer", quantity: 52, rate: 110, amount: 5720, hasProof: true },
+   730→    ],
+   731→    subtotal: 5720,
+   732→    taxRate: 0,
+   733→    taxAmount: 0,
+   734→    total: 5720,
+   735→    notes: "Monthly retainer. Auto-invoiced.",
+   736→    proofCount: 6,
+   737→  },
+   738→  {
+   739→    id: "inv_5",
+   740→    invoiceNumber: "INV-2024-005",
+   741→    clientId: "client_4",
+   742→    projectId: "proj_4",
+   743→    status: "draft",
+   744→    issueDate: Date.now(),
+   745→    dueDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+   746→    lineItems: [
+   747→      { id: "li_7", description: "Brand Identity — Logo & Guidelines", quantity: 32, rate: 45, amount: 1440, hasProof: false },
+   748→    ],
+   749→    subtotal: 1440,
+   750→    taxRate: 0,
+   751→    taxAmount: 0,
+   752→    total: 1440,
+   753→    notes: "Pending final review before sending.",
+   754→    proofCount: 0,
+   755→  },
+   756→  {
+   757→    id: "inv_6",
+   758→    invoiceNumber: "INV-2024-006",
+   759→    clientId: "client_1",
+   760→    projectId: "proj_7",
+   761→    status: "paid",
+   762→    issueDate: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   763→    dueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   764→    paidDate: Date.now() - 55 * 24 * 60 * 60 * 1000,
+   765→    lineItems: [
+   766→      { id: "li_8", description: "API Integration — CRM Connector", quantity: 25, rate: 85, amount: 2125, hasProof: true },
+   767→      { id: "li_9", description: "API Integration — ERP Sync Module", quantity: 38, rate: 85, amount: 3230, hasProof: true },
+   768→    ],
+   769→    subtotal: 5355,
+   770→    taxRate: 0,
+   771→    taxAmount: 0,
+   772→    total: 5355,
+   773→    notes: "Completed project. Final invoice.",
+   774→    proofCount: 12,
+   775→  },
+   776→];
+   777→
+   778→const INITIAL_PIPELINE_DEALS: PipelineDeal[] = [
+   779→  // ── Lead stage (5 deals) ──
+   780→  {
+   781→    id: "deal_1",
+   782→    title: "E-Commerce Platform Build",
+   783→    clientId: "client_5",
+   784→    stage: "lead",
+   785→    value: 12000,
+   786→    probability: 10,
+   787→    source: "upwork",
+   788→    contactName: "Tom Bradley",
+   789→    contactEmail: "tom@creativestudios.art",
+   790→    expectedCloseDate: Date.now() + 60 * 24 * 60 * 60 * 1000,
+   791→    assignedMemberId: "mem_001",
+   792→    notes: "Initial inquiry received. Needs scoping call scheduled for next week. Client wants Shopify-like functionality with custom checkout flow.",
+   793→    description: "Full e-commerce platform with product catalog, cart, checkout, and admin dashboard for a boutique retail brand.",
+   794→    createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+   795→    proposalId: null,
+   796→    workspaceId: null,
+   797→    client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
+   798→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+   799→    linkedProposal: null,
+   800→    stageName: "Lead",
+   801→    stageColor: "#6366f1",
+   802→  },
+   803→  {
+   804→    id: "deal_7",
+   805→    title: "AI Chatbot Integration",
+   806→    clientId: null,
+   807→    stage: "lead",
+   808→    value: 6000,
+   809→    probability: 10,
+   810→    source: "fiverr",
+   811→    contactName: "Nina Patel",
+   812→    contactEmail: "nina@smartassist.ai",
+   813→    expectedCloseDate: Date.now() + 75 * 24 * 60 * 60 * 1000,
+   814→    assignedMemberId: "mem_004",
+   815→    notes: "Inbound lead from Fiverr. Wants to integrate a custom AI chatbot into their existing SaaS product. Early stage exploration.",
+   816→    description: "Custom AI chatbot with NLP capabilities for customer support automation in a SaaS product.",
+   817→    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+   818→    proposalId: null,
+   819→    workspaceId: null,
+   820→    client: null,
+   821→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+   822→    linkedProposal: null,
+   823→    stageName: "Lead",
+   824→    stageColor: "#6366f1",
+   825→  },
+   826→  {
+   827→    id: "deal_13",
+   828→    title: "Real Estate Listing Portal",
+   829→    clientId: null,
+   830→    stage: "lead",
+   831→    value: 18000,
+   832→    probability: 15,
+   833→    source: "linkedin",
+   834→    contactName: "Marcus Rivera",
+   835→    contactEmail: "marcus@primeproperty.com",
+   836→    expectedCloseDate: Date.now() + 90 * 24 * 60 * 60 * 1000,
+   837→    assignedMemberId: "mem_003",
+   838→    notes: "Found us on LinkedIn. Currently using an off-the-shelf solution and wants something custom. Budget not confirmed yet.",
+   839→    description: "Property listing portal with map search, virtual tours, and agent management for a regional real estate firm.",
+   840→    createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+   841→    proposalId: null,
+   842→    workspaceId: null,
+   843→    client: null,
+   844→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+   845→    linkedProposal: null,
+   846→    stageName: "Lead",
+   847→    stageColor: "#6366f1",
+   848→  },
+   849→  {
+   850→    id: "deal_14",
+   851→    title: "EdTech Course Platform",
+   852→    clientId: null,
+   853→    stage: "lead",
+   854→    value: 9500,
+   855→    probability: 10,
+   856→    source: "referral",
+   857→    contactName: "Prof. Anika Desai",
+   858→    contactEmail: "anika@learnvista.edu",
+   859→    expectedCloseDate: Date.now() + 50 * 24 * 60 * 60 * 1000,
+   860→    assignedMemberId: "mem_004",
+   861→    notes: "Referred by Priya at FinServe. University setting, so compliance and accessibility are critical. Long sales cycle expected.",
+   862→    description: "Online course platform with video hosting, quizzes, progress tracking, and certificate generation.",
+   863→    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+   864→    proposalId: null,
+   865→    workspaceId: null,
+   866→    client: null,
+   867→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+   868→    linkedProposal: null,
+   869→    stageName: "Lead",
+   870→    stageColor: "#6366f1",
+   871→  },
+   872→  {
+   873→    id: "deal_15",
+   874→    title: "Fitness App MVP",
+   875→    clientId: null,
+   876→    stage: "lead",
+   877→    value: 7500,
+   878→    probability: 8,
+   879→    source: "upwork",
+   880→    contactName: "Jake Morrison",
+   881→    contactEmail: "jake@fittrack.app",
+   882→    expectedCloseDate: Date.now() + 40 * 24 * 60 * 60 * 1000,
+   883→    assignedMemberId: "mem_005",
+   884→    notes: "Startup founder with limited budget. Exploring options. May need phased approach to fit their funding timeline.",
+   885→    description: "MVP fitness tracking app with workout plans, progress photos, and social features.",
+   886→    createdAt: Date.now() - 4 * 24 * 60 * 60 * 1000,
+   887→    proposalId: null,
+   888→    workspaceId: null,
+   889→    client: null,
+   890→    assignedMember: { id: "mem_005", name: "Elena Volkov", email: "elena.volkov@axiaagency.com", image: null, role: "member", title: "UI/UX Designer" },
+   891→    linkedProposal: null,
+   892→    stageName: "Lead",
+   893→    stageColor: "#6366f1",
+   894→  },
+   895→
+   896→  // ── Qualified stage (4 deals) ──
+   897→  {
+   898→    id: "deal_2",
+   899→    title: "SaaS Dashboard Redesign",
+   900→    clientId: null,
+   901→    stage: "qualified",
+   902→    value: 8500,
+   903→    probability: 25,
+   904→    source: "linkedin",
+   905→    contactName: "Jennifer Wu",
+   906→    contactEmail: "jen@cloudmetrics.io",
+   907→    expectedCloseDate: Date.now() + 45 * 24 * 60 * 60 * 1000,
+   908→    assignedMemberId: "mem_003",
+   909→    notes: "Qualified lead. Demo scheduled for next week. They are comparing 3 agencies and we are shortlisted. CTO is our champion internally.",
+   910→    description: "Complete redesign of analytics dashboard with real-time data visualization, team collaboration, and role-based views.",
+   911→    createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+   912→    proposalId: null,
+   913→    workspaceId: null,
+   914→    client: null,
+   915→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+   916→    linkedProposal: null,
+   917→    stageName: "Qualified",
+   918→    stageColor: "#8b5cf6",
+   919→  },
+   920→  {
+   921→    id: "deal_8",
+   922→    title: "Digital Marketing Landing Pages",
+   923→    clientId: "client_4",
+   924→    stage: "qualified",
+   925→    value: 4500,
+   926→    probability: 25,
+   927→    source: "upwork",
+   928→    contactName: "Lisa Park",
+   929→    contactEmail: "lisa@digitalmarketingco.com",
+   930→    expectedCloseDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+   931→    assignedMemberId: "mem_006",
+   932→    notes: "Returning client. Budget approved internally. Wants to start as soon as proposal is approved. Quick turnaround expected.",
+   933→    description: "5 A/B tested landing pages with analytics tracking and conversion optimization for product launch campaign.",
+   934→    createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+   935→    proposalId: null,
+   936→    workspaceId: null,
+   937→    client: { id: "client_4", name: "Digital Marketing Co", platform: "freelancer", contactEmail: "lisa@digitalmarketingco.com", contactName: "Lisa Park" },
+   938→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+   939→    linkedProposal: null,
+   940→    stageName: "Qualified",
+   941→    stageColor: "#8b5cf6",
+   942→  },
+   943→  {
+   944→    id: "deal_16",
+   945→    title: "Supply Chain Management System",
+   946→    clientId: null,
+   947→    stage: "qualified",
+   948→    value: 32000,
+   949→    probability: 30,
+   950→    source: "direct",
+   951→    contactName: "Robert Chang",
+   952→    contactEmail: "rchang@logisync.com",
+   953→    expectedCloseDate: Date.now() + 60 * 24 * 60 * 60 * 1000,
+   954→    assignedMemberId: "mem_002",
+   955→    notes: "Enterprise client. Very thorough evaluation process. We presented our capabilities deck and they were impressed. Decision expected in 3 weeks.",
+   956→    description: "End-to-end supply chain management with inventory tracking, vendor management, and predictive analytics.",
+   957→    createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
+   958→    proposalId: null,
+   959→    workspaceId: null,
+   960→    client: null,
+   961→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+   962→    linkedProposal: null,
+   963→    stageName: "Qualified",
+   964→    stageColor: "#8b5cf6",
+   965→  },
+   966→  {
+   967→    id: "deal_17",
+   968→    title: "Restaurant POS & Ordering System",
+   969→    clientId: null,
+   970→    stage: "qualified",
+   971→    value: 14000,
+   972→    probability: 20,
+   973→    source: "referral",
+   974→    contactName: "Maria Santos",
+   975→    contactEmail: "maria@freshbites.co",
+   976→    expectedCloseDate: Date.now() + 35 * 24 * 60 * 60 * 1000,
+   977→    assignedMemberId: "mem_004",
+   978→    notes: "Referred by Sam from TechCorp. Chain of 12 restaurants. Needs consistent system across all locations. Pilot at 2 locations first.",
+   979→    description: "Point-of-sale system with online ordering, table management, and kitchen display integration.",
+   980→    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+   981→    proposalId: null,
+   982→    workspaceId: null,
+   983→    client: null,
+   984→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+   985→    linkedProposal: null,
+   986→    stageName: "Qualified",
+   987→    stageColor: "#8b5cf6",
+   988→  },
+   989→
+   990→  // ── Proposal stage (4 deals) ──
+   991→  {
+   992→    id: "deal_3",
+   993→    title: "Mobile Banking App",
+   994→    clientId: "client_6",
+   995→    stage: "proposal",
+   996→    value: 25000,
+   997→    probability: 50,
+   998→    source: "referral",
+   999→    contactName: "Michael Torres",
+  1000→    contactEmail: "cto@finserve.io",
+  1001→    expectedCloseDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+  1002→    assignedMemberId: "mem_002",
+  1003→    notes: "Proposal sent. Awaiting board approval. CTO is our champion internally. Decision expected within 2 weeks. Very strong relationship.",
+  1004→    description: "Full-featured mobile banking app with biometric auth, real-time transactions, and compliance reporting.",
+  1005→    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+  1006→    proposalId: "prop_2",
+  1007→    workspaceId: null,
+  1008→    client: { id: "client_6", name: "FinServe Analytics", platform: "upwork", contactEmail: "cto@finserve.io", contactName: "Michael Torres" },
+  1009→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1010→    linkedProposal: { id: "prop_2", title: "Mobile Banking App — Full Development", status: "sent", totalValue: 25000 },
+  1011→    stageName: "Proposal",
+  1012→    stageColor: "#a855f7",
+  1013→  },
+  1014→  {
+  1015→    id: "deal_9",
+  1016→    title: "Creative Studios Motion Design Package",
+  1017→    clientId: "client_5",
+  1018→    stage: "proposal",
+  1019→    value: 7500,
+  1020→    probability: 50,
+  1021→    source: "direct",
+  1022→    contactName: "Tom Bradley",
+  1023→    contactEmail: "tom@creativestudios.art",
+  1024→    expectedCloseDate: Date.now() + 21 * 24 * 60 * 60 * 1000,
+  1025→    assignedMemberId: "mem_001",
+  1026→    notes: "Existing client expanding scope. Proposal includes motion graphics, social media content, and brand animations. They viewed it within 2 hours of sending.",
+  1027→    description: "Motion graphics reel and social media content package for brand launch campaign.",
+  1028→    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1029→    proposalId: "prop_4",
+  1030→    workspaceId: null,
+  1031→    client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
+  1032→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1033→    linkedProposal: { id: "prop_4", title: "Creative Studios Motion Design Package", status: "viewed", totalValue: 7500 },
+  1034→    stageName: "Proposal",
+  1035→    stageColor: "#a855f7",
+  1036→  },
+  1037→  {
+  1038→    id: "deal_18",
+  1039→    title: "Healthcare Patient Portal",
+  1040→    clientId: null,
+  1041→    stage: "proposal",
+  1042→    value: 35000,
+  1043→    probability: 45,
+  1044→    source: "direct",
+  1045→    contactName: "Dr. Robert Singh",
+  1046→    contactEmail: "robert@medportal.health",
+  1047→    expectedCloseDate: Date.now() + 28 * 24 * 60 * 60 * 1000,
+  1048→    assignedMemberId: "mem_003",
+  1049→    notes: "Proposal sent with detailed compliance section. Their CIO requested additional security documentation. Providing supplemental materials this week.",
+  1050→    description: "HIPAA-compliant patient portal with appointment scheduling, secure messaging, and medical records access.",
+  1051→    createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+  1052→    proposalId: "prop_3",
+  1053→    workspaceId: null,
+  1054→    client: null,
+  1055→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1056→    linkedProposal: { id: "prop_3", title: "Healthcare Patient Portal", status: "draft", totalValue: 18000 },
+  1057→    stageName: "Proposal",
+  1058→    stageColor: "#a855f7",
+  1059→  },
+  1060→  {
+  1061→    id: "deal_19",
+  1062→    title: "Brand Identity for NovaTech",
+  1063→    clientId: null,
+  1064→    stage: "proposal",
+  1065→    value: 8500,
+  1066→    probability: 55,
+  1067→    source: "fiverr",
+  1068→    contactName: "Aisha Khan",
+  1069→    contactEmail: "aisha@novatech.io",
+  1070→    expectedCloseDate: Date.now() + 14 * 24 * 60 * 60 * 1000,
+  1071→    assignedMemberId: "mem_006",
+  1072→    notes: "Startup rebranding after Series A. They love our portfolio. Decision maker is the CEO who we have a direct line to. Close date is tight.",
+  1073→    description: "Complete brand identity package: logo, color palette, typography, brand guidelines, and marketing collateral templates.",
+  1074→    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+  1075→    proposalId: "prop_7",
+  1076→    workspaceId: null,
+  1077→    client: null,
+  1078→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1079→    linkedProposal: { id: "prop_7", title: "Brand Identity for NovaTech", status: "sent", totalValue: 8500 },
+  1080→    stageName: "Proposal",
+  1081→    stageColor: "#a855f7",
+  1082→  },
+  1083→
+  1084→  // ── Negotiation stage (3 deals) ──
+  1085→  {
+  1086→    id: "deal_4",
+  1087→    title: "Full-Stack SaaS Platform",
+  1088→    clientId: null,
+  1089→    stage: "negotiation",
+  1090→    value: 45000,
+  1091→    probability: 70,
+  1092→    source: "referral",
+  1093→    contactName: "Rachel Green",
+  1094→    contactEmail: "rachel@scaleup.io",
+  1095→    expectedCloseDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+  1096→    assignedMemberId: "mem_003",
+  1097→    notes: "Close to agreement. Their legal team is reviewing our contract terms. Only sticking point is the IP ownership clause. Our lawyer is preparing a compromise.",
+  1098→    description: "Multi-tenant SaaS platform with subscription billing, analytics, and white-label capabilities.",
+  1099→    createdAt: Date.now() - 35 * 24 * 60 * 60 * 1000,
+  1100→    proposalId: "prop_8",
+  1101→    workspaceId: null,
+  1102→    client: null,
+  1103→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1104→    linkedProposal: { id: "prop_8", title: "Full-Stack SaaS Platform", status: "sent", totalValue: 45000 },
+  1105→    stageName: "Negotiation",
+  1106→    stageColor: "#c084fc",
+  1107→  },
+  1108→  {
+  1109→    id: "deal_10",
+  1110→    title: "StartupHub Mobile App MVP — Phase 2",
+  1111→    clientId: "client_2",
+  1112→    stage: "negotiation",
+  1113→    value: 9500,
+  1114→    probability: 70,
+  1115→    source: "fiverr",
+  1116→    contactName: "Sarah Mitchell",
+  1117→    contactEmail: "sarah@startuphub.co",
+  1118→    expectedCloseDate: Date.now() + 10 * 24 * 60 * 60 * 1000,
+  1119→    assignedMemberId: "mem_002",
+  1120→    notes: "Phase 1 was successful. Client wants to add push notifications, payment integration, and analytics. Negotiating final scope and timeline.",
+  1121→    description: "Phase 2 of StartupHub mobile app: push notifications, payment integration, and analytics dashboard.",
+  1122→    createdAt: Date.now() - 18 * 24 * 60 * 60 * 1000,
+  1123→    proposalId: null,
+  1124→    workspaceId: null,
+  1125→    client: { id: "client_2", name: "StartupHub Inc", platform: "fiverr", contactEmail: "sarah@startuphub.co", contactName: "Sarah Mitchell" },
+  1126→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1127→    linkedProposal: null,
+  1128→    stageName: "Negotiation",
+  1129→    stageColor: "#c084fc",
+  1130→  },
+  1131→  {
+  1132→    id: "deal_20",
+  1133→    title: "Insurance Claims Platform",
+  1134→    clientId: null,
+  1135→    stage: "negotiation",
+  1136→    value: 28000,
+  1137→    probability: 65,
+  1138→    source: "linkedin",
+  1139→    contactName: "Vikram Mehta",
+  1140→    contactEmail: "vikram@insureflow.com",
+  1141→    expectedCloseDate: Date.now() + 14 * 24 * 60 * 60 * 1000,
+  1142→    assignedMemberId: "mem_002",
+  1143→    notes: "Very promising. Budget approved by CFO. Final negotiation on maintenance terms and SLA guarantees. They want 99.9% uptime commitment.",
+  1144→    description: "Claims processing platform with document OCR, automated workflows, and regulatory compliance engine.",
+  1145→    createdAt: Date.now() - 25 * 24 * 60 * 60 * 1000,
+  1146→    proposalId: "prop_9",
+  1147→    workspaceId: null,
+  1148→    client: null,
+  1149→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1150→    linkedProposal: { id: "prop_9", title: "Insurance Claims Processing Platform", status: "sent", totalValue: 28000 },
+  1151→    stageName: "Negotiation",
+  1152→    stageColor: "#c084fc",
+  1153→  },
+  1154→
+  1155→  // ── Negotiation stage (additional 1 deal) ──
+  1156→  {
+  1157→    id: "deal_23",
+  1158→    title: "Manufacturing Quality Control System",
+  1159→    clientId: null,
+  1160→    stage: "negotiation",
+  1161→    value: 38000,
+  1162→    probability: 60,
+  1163→    source: "direct",
+  1164→    contactName: "Ingrid Svensson",
+  1165→    contactEmail: "ingrid@precisemfg.se",
+  1166→    expectedCloseDate: Date.now() + 5 * 24 * 60 * 60 * 1000,
+  1167→    assignedMemberId: "mem_001",
+  1168→    notes: "Final negotiation on change order process. They want Agile sprints but their procurement team prefers fixed-scope contracts. Proposing a hybrid model. Decision imminent.",
+  1169→    description: "IoT-connected quality control system for a precision manufacturing plant with real-time defect detection, statistical process control, and compliance reporting.",
+  1170→    createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
+  1171→    proposalId: "prop_16",
+  1172→    workspaceId: null,
+  1173→    client: null,
+  1174→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1175→    linkedProposal: { id: "prop_16", title: "Manufacturing Quality Control System Proposal", status: "viewed", totalValue: 38000 },
+  1176→    stageName: "Negotiation",
+  1177→    stageColor: "#c084fc",
+  1178→  },
+  1179→
+  1180→  // ── Won stage (6 deals) ──
+  1181→  {
+  1182→    id: "deal_5",
+  1183→    title: "TechCorp Phase 2 — CMS & Marketing Automation",
+  1184→    clientId: "client_1",
+  1185→    stage: "won",
+  1186→    value: 15000,
+  1187→    probability: 100,
+  1188→    source: "upwork",
+  1189→    contactName: "David Chen",
+  1190→    contactEmail: "david.chen@techcorp.io",
+  1191→    expectedCloseDate: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  1192→    assignedMemberId: "mem_002",
+  1193→    notes: "Won! Phase 2 approved. CMS integration and marketing automation modules confirmed. Kickoff meeting scheduled for next Monday.",
+  1194→    description: "Phase 2 of TechCorp website: CMS integration, marketing automation, and analytics dashboard.",
+  1195→    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+  1196→    proposalId: "prop_1",
+  1197→    workspaceId: null,
+  1198→    client: { id: "client_1", name: "TechCorp Solutions", platform: "upwork", contactEmail: "david.chen@techcorp.io", contactName: "David Chen" },
+  1199→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1200→    linkedProposal: { id: "prop_1", title: "TechCorp Phase 2 — CMS & Marketing Automation", status: "signed", totalValue: 15000 },
+  1201→    stageName: "Won",
+  1202→    stageColor: "#22c55e",
+  1203→  },
+  1204→  {
+  1205→    id: "deal_11",
+  1206→    title: "FinServe Analytics Platform",
+  1207→    clientId: "client_6",
+  1208→    stage: "won",
+  1209→    value: 5720,
+  1210→    probability: 100,
+  1211→    source: "upwork",
+  1212→    contactName: "Michael Torres",
+  1213→    contactEmail: "cto@finserve.io",
+  1214→    expectedCloseDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1215→    assignedMemberId: "mem_003",
+  1216→    notes: "Monthly retainer won. Ongoing engagement for analytics platform. First invoice paid. Excellent client relationship.",
+  1217→    description: "Financial analytics platform with real-time market data, portfolio tracking, and compliance reporting.",
+  1218→    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+  1219→    proposalId: null,
+  1220→    workspaceId: null,
+  1221→    client: { id: "client_6", name: "FinServe Analytics", platform: "upwork", contactEmail: "cto@finserve.io", contactName: "Michael Torres" },
+  1222→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1223→    linkedProposal: null,
+  1224→    stageName: "Won",
+  1225→    stageColor: "#22c55e",
+  1226→  },
+  1227→  {
+  1228→    id: "deal_21",
+  1229→    title: "GlobalEnt Data Dashboard",
+  1230→    clientId: "client_3",
+  1231→    stage: "won",
+  1232→    value: 22000,
+  1233→    probability: 100,
+  1234→    source: "toptal",
+  1235→    contactName: "Anna Schmidt",
+  1236→    contactEmail: "anna@insightdata.de",
+  1237→    expectedCloseDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
+  1238→    assignedMemberId: "mem_004",
+  1239→    notes: "Won after 3-month sales cycle. Enterprise contract with annual renewal. Dedicated team of 3 assigned. First sprint starting next week.",
+  1240→    description: "Enterprise analytics dashboard with real-time data streaming, complex visualizations, and role-based access control.",
+  1241→    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+  1242→    proposalId: null,
+  1243→    workspaceId: null,
+  1244→    client: { id: "client_3", name: "Global Enterprises", platform: "toptal", contactEmail: "anna@insightdata.de", contactName: "Anna Schmidt" },
+  1245→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1246→    linkedProposal: null,
+  1247→    stageName: "Won",
+  1248→    stageColor: "#22c55e",
+  1249→  },
+  1250→  {
+  1251→    id: "deal_22",
+  1252→    title: "DigiMark Brand Identity",
+  1253→    clientId: "client_4",
+  1254→    stage: "won",
+  1255→    value: 3200,
+  1256→    probability: 100,
+  1257→    source: "freelancer",
+  1258→    contactName: "Lisa Park",
+  1259→    contactEmail: "lisa@digitalmarketingco.com",
+  1260→    expectedCloseDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+  1261→    assignedMemberId: "mem_006",
+  1262→    notes: "Small but reliable client. Quick project, already delivered. They loved the work and are referring us to their network.",
+  1263→    description: "Complete brand identity package: logo, color palette, typography, and brand guidelines document.",
+  1264→    createdAt: Date.now() - 25 * 24 * 60 * 60 * 1000,
+  1265→    proposalId: "prop_10",
+  1266→    workspaceId: null,
+  1267→    client: { id: "client_4", name: "Digital Marketing Co", platform: "freelancer", contactEmail: "lisa@digitalmarketingco.com", contactName: "Lisa Park" },
+  1268→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1269→    linkedProposal: { id: "prop_10", title: "DigiMark Brand Identity Package", status: "signed", totalValue: 3200 },
+  1270→    stageName: "Won",
+  1271→    stageColor: "#22c55e",
+  1272→  },
+  1273→
+  1274→  // ── Lost stage (4 deals) ──
+  1275→  {
+  1276→    id: "deal_6",
+  1277→    title: "Legacy System Migration",
+  1278→    clientId: null,
+  1279→    stage: "lost",
+  1280→    value: 22000,
+  1281→    probability: 0,
+  1282→    source: "toptal",
+  1283→    contactName: "Frank Miller",
+  1284→    contactEmail: "frank@oldtech.com",
+  1285→    expectedCloseDate: null,
+  1286→    assignedMemberId: "mem_003",
+  1287→    notes: "Lost to competitor. Budget constraints cited by client. Went with a cheaper offshore alternative. Follow up in 6 months when they likely need fixes.",
+  1288→    description: "Legacy .NET system migration to modern React/Node.js stack with zero downtime.",
+  1289→    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+  1290→    proposalId: null,
+  1291→    workspaceId: null,
+  1292→    client: null,
+  1293→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1294→    linkedProposal: null,
+  1295→    stageName: "Lost",
+  1296→    stageColor: "#ef4444",
+  1297→  },
+  1298→  {
+  1299→    id: "deal_12",
+  1300→    title: "Retail Inventory System",
+  1301→    clientId: null,
+  1302→    stage: "lost",
+  1303→    value: 14000,
+  1304→    probability: 0,
+  1305→    source: "linkedin",
+  1306→    contactName: "Amy Foster",
+  1307→    contactEmail: "amy@retailpro.com",
+  1308→    expectedCloseDate: null,
+  1309→    assignedMemberId: "mem_001",
+  1310→    notes: "Lost due to project scope mismatch. Client needed an off-the-shelf solution rather than custom development. Good learning for future retail leads.",
+  1311→    description: "Custom inventory management system with barcode scanning and supplier integration.",
+  1312→    createdAt: Date.now() - 55 * 24 * 60 * 60 * 1000,
+  1313→    proposalId: null,
+  1314→    workspaceId: null,
+  1315→    client: null,
+  1316→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1317→    linkedProposal: null,
+  1318→    stageName: "Lost",
+  1319→    stageColor: "#ef4444",
+  1320→  },
+  1321→  {
+  1322→    id: "deal_24",
+  1323→    title: "Government Portal Redesign",
+  1324→    clientId: null,
+  1325→    stage: "lost",
+  1326→    value: 48000,
+  1327→    probability: 0,
+  1328→    source: "direct",
+  1329→    contactName: "Director Helen Park",
+  1330→    contactEmail: "helen.park@citygov.org",
+  1331→    expectedCloseDate: null,
+  1332→    assignedMemberId: "mem_002",
+  1333→    notes: "Lost due to procurement process favoring incumbent vendor. Our proposal scored highest on technical merit but the incumbent had a 5-year relationship. Will bid on next cycle.",
+  1334→    description: "Municipal government services portal with citizen authentication, document submission, and payment processing for city services.",
+  1335→    createdAt: Date.now() - 65 * 24 * 60 * 60 * 1000,
+  1336→    proposalId: null,
+  1337→    workspaceId: null,
+  1338→    client: null,
+  1339→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1340→    linkedProposal: null,
+  1341→    stageName: "Lost",
+  1342→    stageColor: "#ef4444",
+  1343→  },
+  1344→  {
+  1345→    id: "deal_25",
+  1346→    title: "Crypto Exchange Dashboard",
+  1347→    clientId: null,
+  1348→    stage: "lost",
+  1349→    value: 19000,
+  1350→    probability: 0,
+  1351→    source: "fiverr",
+  1352→    contactName: "Dmitri Volkov",
+  1353→    contactEmail: "dmitri@cointrack.io",
+  1354→    expectedCloseDate: null,
+  1355→    assignedMemberId: "mem_004",
+  1356→    notes: "Lost — client paused all development due to regulatory uncertainty in their jurisdiction. Good prospect to re-engage when regulations clear.",
+  1357→    description: "Real-time cryptocurrency trading dashboard with portfolio analytics, price alerts, and multi-exchange aggregation.",
+  1358→    createdAt: Date.now() - 40 * 24 * 60 * 60 * 1000,
+  1359→    proposalId: null,
+  1360→    workspaceId: null,
+  1361→    client: null,
+  1362→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1363→    linkedProposal: null,
+  1364→    stageName: "Lost",
+  1365→    stageColor: "#ef4444",
+  1366→  },
+  1367→
+  1368→  // ── Additional Lead deals (2) ──
+  1369→  {
+  1370→    id: "deal_26",
+  1371→    title: "Nonprofit Donation Platform",
+  1372→    clientId: null,
+  1373→    stage: "lead",
+  1374→    value: 8000,
+  1375→    probability: 12,
+  1376→    source: "referral",
+  1377→    contactName: "Dr. Sarah Okonkwo",
+  1378→    contactEmail: "sarah@givehope.org",
+  1379→    expectedCloseDate: Date.now() + 55 * 24 * 60 * 60 * 1000,
+  1380→    assignedMemberId: "mem_006",
+  1381→    notes: "Referred by Marcus at Digital Marketing Co. Nonprofit has limited budget but strong mission. Exploring grant funding to cover development costs. Warm introduction.",
+  1382→    description: "Donation and volunteer management platform for a mid-size nonprofit with event registration, recurring donations, and impact reporting.",
+  1383→    createdAt: Date.now() - 6 * 24 * 60 * 60 * 1000,
+  1384→    proposalId: null,
+  1385→    workspaceId: null,
+  1386→    client: null,
+  1387→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1388→    linkedProposal: null,
+  1389→    stageName: "Lead",
+  1390→    stageColor: "#6366f1",
+  1391→  },
+  1392→  {
+  1393→    id: "deal_27",
+  1394→    title: "Travel Booking Engine",
+  1395→    clientId: null,
+  1396→    stage: "lead",
+  1397→    value: 22000,
+  1398→    probability: 8,
+  1399→    source: "upwork",
+  1400→    contactName: "Carlos Mendez",
+  1401→    contactEmail: "carlos@wanderlust.travel",
+  1402→    expectedCloseDate: Date.now() + 70 * 24 * 60 * 60 * 1000,
+  1403→    assignedMemberId: "mem_004",
+  1404→    notes: "Inbound Upwork inquiry. Client currently reselling a competitor's platform and wants their own. Needs GDS integration expertise. Early discovery stage.",
+  1405→    description: "White-label travel booking engine with flight, hotel, and activity search API integrations plus custom itinerary builder.",
+  1406→    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+  1407→    proposalId: null,
+  1408→    workspaceId: null,
+  1409→    client: null,
+  1410→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1411→    linkedProposal: null,
+  1412→    stageName: "Lead",
+  1413→    stageColor: "#6366f1",
+  1414→  },
+  1415→
+  1416→  // ── Additional Qualified deal (1) ──
+  1417→  {
+  1418→    id: "deal_28",
+  1419→    title: "Legal Practice Management",
+  1420→    clientId: null,
+  1421→    stage: "qualified",
+  1422→    value: 16000,
+  1423→    probability: 28,
+  1424→    source: "linkedin",
+  1425→    contactName: "Attorney James Whitfield",
+  1426→    contactEmail: "james@whitfieldlaw.com",
+  1427→    expectedCloseDate: Date.now() + 40 * 24 * 60 * 60 * 1000,
+  1428→    assignedMemberId: "mem_003",
+  1429→    notes: "LinkedIn prospect. Met at a legal tech conference. Very interested in modernizing their 15-year-old system. They want a demo with their partners next Thursday.",
+  1430→    description: "Practice management system for a mid-size law firm with case management, time tracking, billing, document assembly, and court deadline calendaring.",
+  1431→    createdAt: Date.now() - 18 * 24 * 60 * 60 * 1000,
+  1432→    proposalId: null,
+  1433→    workspaceId: null,
+  1434→    client: null,
+  1435→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1436→    linkedProposal: null,
+  1437→    stageName: "Qualified",
+  1438→    stageColor: "#8b5cf6",
+  1439→  },
+  1440→
+  1441→  // ── Additional Won deals (2) ──
+  1442→  {
+  1443→    id: "deal_29",
+  1444→    title: "Creative Studios Brand Refresh",
+  1445→    clientId: "client_5",
+  1446→    stage: "won",
+  1447→    value: 5500,
+  1448→    probability: 100,
+  1449→    source: "direct",
+  1450→    contactName: "Tom Bradley",
+  1451→    contactEmail: "tom@creativestudios.art",
+  1452→    expectedCloseDate: Date.now() - 1 * 24 * 60 * 60 * 1000,
+  1453→    assignedMemberId: "mem_001",
+  1454→    notes: "Won! Existing client expanding relationship. Quick brand refresh project to align with their upcoming product launch. Kickoff tomorrow.",
+  1455→    description: "Brand refresh for Creative Studios including updated visual identity, social media templates, and brand animation toolkit.",
+  1456→    createdAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
+  1457→    proposalId: "prop_14",
+  1458→    workspaceId: null,
+  1459→    client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
+  1460→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1461→    linkedProposal: { id: "prop_14", title: "Creative Studios Brand Refresh", status: "signed", totalValue: 5500 },
+  1462→    stageName: "Won",
+  1463→    stageColor: "#22c55e",
+  1464→  },
+  1465→  {
+  1466→    id: "deal_30",
+  1467→    title: "CloudMetrics SaaS Dashboard",
+  1468→    clientId: null,
+  1469→    stage: "won",
+  1470→    value: 8500,
+  1471→    probability: 100,
+  1472→    source: "linkedin",
+  1473→    contactName: "Jennifer Wu",
+  1474→    contactEmail: "jen@cloudmetrics.io",
+  1475→    expectedCloseDate: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1476→    assignedMemberId: "mem_003",
+  1477→    notes: "Won after competitive evaluation against 2 other agencies. Their CTO championed us. 3-month engagement starting next week. Potential for expansion into their mobile app.",
+  1478→    description: "Analytics dashboard redesign with real-time data visualization, team collaboration features, and role-based access views.",
+  1479→    createdAt: Date.now() - 55 * 24 * 60 * 60 * 1000,
+  1480→    proposalId: "prop_15",
+  1481→    workspaceId: null,
+  1482→    client: null,
+  1483→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1484→    linkedProposal: { id: "prop_15", title: "CloudMetrics SaaS Dashboard Proposal", status: "signed", totalValue: 8500 },
+  1485→    stageName: "Won",
+  1486→    stageColor: "#22c55e",
+  1487→  },
+  1488→];
+  1489→
+  1490→const INITIAL_PROPOSALS: Proposal[] = [
+  1491→  // ── Signed proposals (5) ──
+  1492→  {
+  1493→    id: "prop_1",
+  1494→    title: "TechCorp Phase 2 — CMS & Marketing Automation",
+  1495→    clientId: "client_1",
+  1496→    status: "signed",
+  1497→    totalValue: 15000,
+  1498→    clientEmail: "david.chen@techcorp.io",
+  1499→    assignedMemberId: "mem_002",
+  1500→    sentAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+  1501→    viewedAt: Date.now() - 18 * 24 * 60 * 60 * 1000,
+  1502→    signedAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1503→    validUntil: Date.now() + 15 * 24 * 60 * 60 * 1000,
+  1504→    createdAt: Date.now() - 25 * 24 * 60 * 60 * 1000,
+  1505→    dealId: "deal_5",
+  1506→    workspaceId: null,
+  1507→    client: { id: "client_1", name: "TechCorp Solutions", platform: "upwork", contactEmail: "david.chen@techcorp.io", contactName: "David Chen" },
+  1508→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1509→    linkedDeal: { id: "deal_5", title: "TechCorp Phase 2 — CMS & Marketing Automation", value: 15000, stageName: "Won", stageColor: "#22c55e" },
+  1510→  },
+  1511→  {
+  1512→    id: "prop_6",
+  1513→    title: "E-Commerce Platform Redesign",
+  1514→    clientId: null,
+  1515→    status: "signed",
+  1516→    totalValue: 28000,
+  1517→    clientEmail: "sarah@acmecorp.com",
+  1518→    assignedMemberId: "mem_002",
+  1519→    sentAt: Date.now() - 25 * 24 * 60 * 60 * 1000,
+  1520→    viewedAt: Date.now() - 22 * 24 * 60 * 60 * 1000,
+  1521→    signedAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+  1522→    validUntil: Date.now() + 10 * 24 * 60 * 60 * 1000,
+  1523→    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+  1524→    dealId: null,
+  1525→    workspaceId: null,
+  1526→    client: null,
+  1527→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1528→    linkedDeal: null,
+  1529→  },
+  1530→  {
+  1531→    id: "prop_10",
+  1532→    title: "DigiMark Brand Identity Package",
+  1533→    clientId: "client_4",
+  1534→    status: "signed",
+  1535→    totalValue: 3200,
+  1536→    clientEmail: "lisa@digitalmarketingco.com",
+  1537→    assignedMemberId: "mem_006",
+  1538→    sentAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
+  1539→    viewedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+  1540→    signedAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  1541→    validUntil: Date.now() + 15 * 24 * 60 * 60 * 1000,
+  1542→    createdAt: Date.now() - 18 * 24 * 60 * 60 * 1000,
+  1543→    dealId: "deal_22",
+  1544→    workspaceId: null,
+  1545→    client: { id: "client_4", name: "Digital Marketing Co", platform: "freelancer", contactEmail: "lisa@digitalmarketingco.com", contactName: "Lisa Park" },
+  1546→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1547→    linkedDeal: { id: "deal_22", title: "DigiMark Brand Identity", value: 3200, stageName: "Won", stageColor: "#22c55e" },
+  1548→  },
+  1549→
+  1550→  // ── Sent proposals (2) ──
+  1551→  {
+  1552→    id: "prop_2",
+  1553→    title: "Mobile Banking App — Full Development",
+  1554→    clientId: "client_6",
+  1555→    status: "sent",
+  1556→    totalValue: 25000,
+  1557→    clientEmail: "cto@finserve.io",
+  1558→    assignedMemberId: "mem_002",
+  1559→    sentAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1560→    viewedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  1561→    signedAt: null,
+  1562→    validUntil: Date.now() + 25 * 24 * 60 * 60 * 1000,
+  1563→    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1564→    dealId: "deal_3",
+  1565→    workspaceId: null,
+  1566→    client: { id: "client_6", name: "FinServe Analytics", platform: "upwork", contactEmail: "cto@finserve.io", contactName: "Michael Torres" },
+  1567→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1568→    linkedDeal: { id: "deal_3", title: "Mobile Banking App", value: 25000, stageName: "Proposal", stageColor: "#a855f7" },
+  1569→  },
+  1570→  {
+  1571→    id: "prop_9",
+  1572→    title: "Insurance Claims Processing Platform",
+  1573→    clientId: null,
+  1574→    status: "sent",
+  1575→    totalValue: 28000,
+  1576→    clientEmail: "vikram@insureflow.com",
+  1577→    assignedMemberId: "mem_002",
+  1578→    sentAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  1579→    viewedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+  1580→    signedAt: null,
+  1581→    validUntil: Date.now() + 27 * 24 * 60 * 60 * 1000,
+  1582→    createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  1583→    dealId: "deal_20",
+  1584→    workspaceId: null,
+  1585→    client: null,
+  1586→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1587→    linkedDeal: { id: "deal_20", title: "Insurance Claims Platform", value: 28000, stageName: "Negotiation", stageColor: "#c084fc" },
+  1588→  },
+  1589→
+  1590→  // ── Viewed proposals (2) ──
+  1591→  {
+  1592→    id: "prop_4",
+  1593→    title: "Creative Studios Motion Design Package",
+  1594→    clientId: "client_5",
+  1595→    status: "viewed",
+  1596→    totalValue: 7500,
+  1597→    clientEmail: "tom@creativestudios.art",
+  1598→    assignedMemberId: "mem_001",
+  1599→    sentAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  1600→    viewedAt: Date.now() - 6 * 24 * 60 * 60 * 1000,
+  1601→    signedAt: null,
+  1602→    validUntil: Date.now() + 10 * 24 * 60 * 60 * 1000,
+  1603→    createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+  1604→    dealId: "deal_9",
+  1605→    workspaceId: null,
+  1606→    client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
+  1607→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1608→    linkedDeal: { id: "deal_9", title: "Creative Studios Motion Design Package", value: 7500, stageName: "Proposal", stageColor: "#a855f7" },
+  1609→  },
+  1610→  {
+  1611→    id: "prop_11",
+  1612→    title: "Brand Identity for HealthTech Startup",
+  1613→    clientId: null,
+  1614→    status: "viewed",
+  1615→    totalValue: 12000,
+  1616→    clientEmail: "marketing@meditech.org",
+  1617→    assignedMemberId: "mem_006",
+  1618→    sentAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+  1619→    viewedAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1620→    signedAt: null,
+  1621→    validUntil: Date.now() + 23 * 24 * 60 * 60 * 1000,
+  1622→    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1623→    dealId: null,
+  1624→    workspaceId: null,
+  1625→    client: null,
+  1626→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1627→    linkedDeal: null,
+  1628→  },
+  1629→
+  1630→  // ── Draft proposals (3) ──
+  1631→  {
+  1632→    id: "prop_3",
+  1633→    title: "Healthcare Patient Portal",
+  1634→    clientId: null,
+  1635→    status: "draft",
+  1636→    totalValue: 18000,
+  1637→    clientEmail: "robert@medportal.health",
+  1638→    assignedMemberId: "mem_003",
+  1639→    sentAt: null,
+  1640→    viewedAt: null,
+  1641→    signedAt: null,
+  1642→    validUntil: null,
+  1643→    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+  1644→    dealId: "deal_18",
+  1645→    workspaceId: null,
+  1646→    client: null,
+  1647→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1648→    linkedDeal: { id: "deal_18", title: "Healthcare Patient Portal", value: 35000, stageName: "Proposal", stageColor: "#a855f7" },
+  1649→  },
+  1650→  {
+  1651→    id: "prop_12",
+  1652→    title: "Supply Chain Management System",
+  1653→    clientId: null,
+  1654→    status: "draft",
+  1655→    totalValue: 32000,
+  1656→    clientEmail: "rchang@logisync.com",
+  1657→    assignedMemberId: "mem_002",
+  1658→    sentAt: null,
+  1659→    viewedAt: null,
+  1660→    signedAt: null,
+  1661→    validUntil: null,
+  1662→    createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1663→    dealId: "deal_16",
+  1664→    workspaceId: null,
+  1665→    client: null,
+  1666→    assignedMember: { id: "mem_002", name: "Priya Sharma", email: "priya.sharma@axiaagency.com", image: null, role: "manager", title: "Senior Project Manager" },
+  1667→    linkedDeal: { id: "deal_16", title: "Supply Chain Management System", value: 32000, stageName: "Qualified", stageColor: "#8b5cf6" },
+  1668→  },
+  1669→  {
+  1670→    id: "prop_13",
+  1671→    title: "Restaurant POS & Ordering System",
+  1672→    clientId: null,
+  1673→    status: "draft",
+  1674→    totalValue: 14000,
+  1675→    clientEmail: "maria@freshbites.co",
+  1676→    assignedMemberId: "mem_004",
+  1677→    sentAt: null,
+  1678→    viewedAt: null,
+  1679→    signedAt: null,
+  1680→    validUntil: null,
+  1681→    createdAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  1682→    dealId: "deal_17",
+  1683→    workspaceId: null,
+  1684→    client: null,
+  1685→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1686→    linkedDeal: { id: "deal_17", title: "Restaurant POS & Ordering System", value: 14000, stageName: "Qualified", stageColor: "#8b5cf6" },
+  1687→  },
+  1688→
+  1689→  // ── Declined proposal (1) ──
+  1690→  {
+  1691→    id: "prop_5",
+  1692→    title: "Social Platform MVP",
+  1693→    clientId: null,
+  1694→    status: "declined",
+  1695→    totalValue: 35000,
+  1696→    clientEmail: "founders@socialnext.com",
+  1697→    assignedMemberId: "mem_003",
+  1698→    sentAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+  1699→    viewedAt: Date.now() - 28 * 24 * 60 * 60 * 1000,
+  1700→    signedAt: null,
+  1701→    validUntil: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1702→    createdAt: Date.now() - 35 * 24 * 60 * 60 * 1000,
+  1703→    dealId: null,
+  1704→    workspaceId: null,
+  1705→    client: null,
+  1706→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1707→    linkedDeal: null,
+  1708→  },
+  1709→
+  1710→  // ── Expired proposal (1) ──
+  1711→  {
+  1712→    id: "prop_14",
+  1713→    title: "EdTech Course Platform Proposal",
+  1714→    clientId: null,
+  1715→    status: "expired",
+  1716→    totalValue: 9500,
+  1717→    clientEmail: "anika@learnvista.edu",
+  1718→    assignedMemberId: "mem_004",
+  1719→    sentAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+  1720→    viewedAt: Date.now() - 43 * 24 * 60 * 60 * 1000,
+  1721→    signedAt: null,
+  1722→    validUntil: Date.now() - 15 * 24 * 60 * 60 * 1000,
+  1723→    createdAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
+  1724→    dealId: "deal_14",
+  1725→    workspaceId: null,
+  1726→    client: null,
+  1727→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1728→    linkedDeal: { id: "deal_14", title: "EdTech Course Platform", value: 9500, stageName: "Lead", stageColor: "#6366f1" },
+  1729→  },
+  1730→
+  1731→  // ── Additional Signed proposals (2) ──
+  1732→  {
+  1733→    id: "prop_14",
+  1734→    title: "Creative Studios Brand Refresh",
+  1735→    clientId: "client_5",
+  1736→    status: "signed",
+  1737→    totalValue: 5500,
+  1738→    clientEmail: "tom@creativestudios.art",
+  1739→    assignedMemberId: "mem_001",
+  1740→    sentAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+  1741→    viewedAt: Date.now() - 11 * 24 * 60 * 60 * 1000,
+  1742→    signedAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1743→    validUntil: Date.now() + 18 * 24 * 60 * 60 * 1000,
+  1744→    createdAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
+  1745→    dealId: "deal_29",
+  1746→    workspaceId: null,
+  1747→    client: { id: "client_5", name: "Creative Studios", platform: "direct", contactEmail: "tom@creativestudios.art", contactName: "Tom Bradley" },
+  1748→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1749→    linkedDeal: { id: "deal_29", title: "Creative Studios Brand Refresh", value: 5500, stageName: "Won", stageColor: "#22c55e" },
+  1750→  },
+  1751→  {
+  1752→    id: "prop_15",
+  1753→    title: "CloudMetrics SaaS Dashboard Proposal",
+  1754→    clientId: null,
+  1755→    status: "signed",
+  1756→    totalValue: 8500,
+  1757→    clientEmail: "jen@cloudmetrics.io",
+  1758→    assignedMemberId: "mem_003",
+  1759→    sentAt: Date.now() - 18 * 24 * 60 * 60 * 1000,
+  1760→    viewedAt: Date.now() - 16 * 24 * 60 * 60 * 1000,
+  1761→    signedAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  1762→    validUntil: Date.now() + 12 * 24 * 60 * 60 * 1000,
+  1763→    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+  1764→    dealId: "deal_30",
+  1765→    workspaceId: null,
+  1766→    client: null,
+  1767→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1768→    linkedDeal: { id: "deal_30", title: "CloudMetrics SaaS Dashboard", value: 8500, stageName: "Won", stageColor: "#22c55e" },
+  1769→  },
+  1770→
+  1771→  // ── Additional Sent proposals (2) ──
+  1772→  {
+  1773→    id: "prop_16",
+  1774→    title: "Nonprofit Donation Platform Proposal",
+  1775→    clientId: null,
+  1776→    status: "sent",
+  1777→    totalValue: 8000,
+  1778→    clientEmail: "sarah@givehope.org",
+  1779→    assignedMemberId: "mem_006",
+  1780→    sentAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+  1781→    viewedAt: null,
+  1782→    signedAt: null,
+  1783→    validUntil: Date.now() + 28 * 24 * 60 * 60 * 1000,
+  1784→    createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+  1785→    dealId: "deal_26",
+  1786→    workspaceId: null,
+  1787→    client: null,
+  1788→    assignedMember: { id: "mem_006", name: "Marcus Thompson", email: "marcus.t@axiaagency.com", image: null, role: "member", title: "Brand Strategist" },
+  1789→    linkedDeal: { id: "deal_26", title: "Nonprofit Donation Platform", value: 8000, stageName: "Lead", stageColor: "#6366f1" },
+  1790→  },
+  1791→  {
+  1792→    id: "prop_17",
+  1793→    title: "Legal Practice Management Proposal",
+  1794→    clientId: null,
+  1795→    status: "sent",
+  1796→    totalValue: 16000,
+  1797→    clientEmail: "james@whitfieldlaw.com",
+  1798→    assignedMemberId: "mem_003",
+  1799→    sentAt: Date.now() - 4 * 24 * 60 * 60 * 1000,
+  1800→    viewedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+  1801→    signedAt: null,
+  1802→    validUntil: Date.now() + 26 * 24 * 60 * 60 * 1000,
+  1803→    createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000,
+  1804→    dealId: "deal_28",
+  1805→    workspaceId: null,
+  1806→    client: null,
+  1807→    assignedMember: { id: "mem_003", name: "Jordan Kim", email: "jordan.kim@axiaagency.com", image: null, role: "manager", title: "Account Manager" },
+  1808→    linkedDeal: { id: "deal_28", title: "Legal Practice Management", value: 16000, stageName: "Qualified", stageColor: "#8b5cf6" },
+  1809→  },
+  1810→
+  1811→  // ── Additional Viewed proposal (1) ──
+  1812→  {
+  1813→    id: "prop_18",
+  1814→    title: "Manufacturing Quality Control System Proposal",
+  1815→    clientId: null,
+  1816→    status: "viewed",
+  1817→    totalValue: 38000,
+  1818→    clientEmail: "ingrid@precisemfg.se",
+  1819→    assignedMemberId: "mem_001",
+  1820→    sentAt: Date.now() - 6 * 24 * 60 * 60 * 1000,
+  1821→    viewedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+  1822→    signedAt: null,
+  1823→    validUntil: Date.now() + 24 * 24 * 60 * 60 * 1000,
+  1824→    createdAt: Date.now() - 10 * 24 * 60 * 60 * 1000,
+  1825→    dealId: "deal_23",
+  1826→    workspaceId: null,
+  1827→    client: null,
+  1828→    assignedMember: { id: "mem_001", name: "Alex Rivera", email: "alex.rivera@axiaagency.com", image: null, role: "owner", title: "Founder & Creative Director" },
+  1829→    linkedDeal: { id: "deal_23", title: "Manufacturing Quality Control System", value: 38000, stageName: "Negotiation", stageColor: "#c084fc" },
+  1830→  },
+  1831→
+  1832→  // ── Additional Draft proposal (1) ──
+  1833→  {
+  1834→    id: "prop_19",
+  1835→    title: "Travel Booking Engine Proposal",
+  1836→    clientId: null,
+  1837→    status: "draft",
+  1838→    totalValue: 22000,
+  1839→    clientEmail: "carlos@wanderlust.travel",
+  1840→    assignedMemberId: "mem_004",
+  1841→    sentAt: null,
+  1842→    viewedAt: null,
+  1843→    signedAt: null,
+  1844→    validUntil: null,
+  1845→    createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+  1846→    dealId: "deal_27",
+  1847→    workspaceId: null,
+  1848→    client: null,
+  1849→    assignedMember: { id: "mem_004", name: "Sam Chen", email: "sam.chen@axiaagency.com", image: null, role: "member", title: "Full-Stack Developer" },
+  1850→    linkedDeal: { id: "deal_27", title: "Travel Booking Engine", value: 22000, stageName: "Lead", stageColor: "#6366f1" },
+  1851→  },
+  1852→];
+  1853→
+  1854→// ─── Context Interface ───────────────────────────────────────────────────────
+  1855→
+  1856→interface AppDataContext {
+  1857→  // Data
+  1858→  teamMembers: TeamMember[];
+  1859→  clients: Client[];
+  1860→  projects: Project[];
+  1861→  timeEntries: TimeEntry[];
+  1862→  invoices: Invoice[];
+  1863→  pipelineDeals: PipelineDeal[];
+  1864→  proposals: Proposal[];
+  1865→
+  1866→  // Convex status
+  1867→  isConvexDataAvailable: boolean;
+  1868→  isConvexLoading: boolean;
+  1869→
+  1870→  // Lookup helpers
+  1871→  getClient: (id: string) => Client | undefined;
+  1872→  getProject: (id: string) => Project | undefined;
+  1873→  getMember: (id: string) => TeamMember | undefined;
+  1874→  getProjectsForClient: (clientId: string) => Project[];
+  1875→  getProjectsForMember: (memberId: string) => Project[];
+  1876→  getClientsForMember: (memberId: string) => Client[];
+  1877→  getInvoicesForClient: (clientId: string) => Invoice[];
+  1878→  getInvoicesForProject: (projectId: string) => Invoice[];
+  1879→  getTimeEntriesForProject: (projectId: string) => TimeEntry[];
+  1880→  getTimeEntriesForMember: (memberId: string) => TimeEntry[];
+  1881→  getDealsForClient: (clientId: string) => PipelineDeal[];
+  1882→  getProposalsForClient: (clientId: string) => Proposal[];
+  1883→
+  1884→  // Mutations (update local state)
+  1885→  assignMemberToProject: (projectId: string, memberId: string) => void;
+  1886→  unassignMemberFromProject: (projectId: string, memberId: string) => void;
+  1887→  assignMemberToClient: (clientId: string, memberId: string) => void;
+  1888→  unassignMemberFromClient: (clientId: string, memberId: string) => void;
+  1889→  updateProjectStatus: (projectId: string, status: ProjectStatus) => void;
+  1890→  updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => void;
+  1891→  addTimeEntry: (entry: Omit<TimeEntry, "id">) => void;
+  1892→  addProject: (project: Omit<Project, "id" | "createdAt" | "lastActivityAt">) => void;
+  1893→  addClient: (client: Omit<Client, "id" | "addedAt" | "lastActivityAt">) => void;
+  1894→  moveDealToStage: (dealId: string, stage: DealStage) => void;
+  1895→  updateProposalStatus: (proposalId: string, status: ProposalStatus) => void;
+  1896→}
+  1897→
+  1898→const AppDataCtx = createContext<AppDataContext | null>(null);
+  1899→
+  1900→export function useAppData() {
+  1901→  const ctx = useContext(AppDataCtx);
+  1902→  if (!ctx) throw new Error("useAppData must be used within AppDataProvider");
+  1903→  return ctx;
+  1904→}
+  1905→
+  1906→// ─── Provider ────────────────────────────────────────────────────────────────
+  1907→
+  1908→export function AppDataProvider({ children }: { children: ReactNode }) {
+  1909→  const [teamMembers] = useState<TeamMember[]>(INITIAL_TEAM_MEMBERS);
+  1910→  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
+  1911→  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  1912→  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(INITIAL_TIME_ENTRIES);
+  1913→  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
+  1914→  const [mockPipelineDeals, setMockPipelineDeals] = useState<PipelineDeal[]>(INITIAL_PIPELINE_DEALS);
+  1915→  const [mockProposals, setMockProposals] = useState<Proposal[]>(INITIAL_PROPOSALS);
+  1916→
+  1917→  // ── Convex Hooks ──
+  1918→  const convexPipeline = useConvexPipeline();
+  1919→  const convexProposals = useConvexProposals();
+  1920→
+  1921→  // ── Hybrid data: use Convex per-source when available, fall back to mock ──
+  1922→  // Each data source (pipeline / proposals) independently decides whether
+  1923→  // to use Convex or mock data. Previously, OR logic caused both to use
+  1924→  // Convex if either had data, leading to empty pages when one source
+  1925→  // returned [] from an unauthenticated session.
+  1926→  const isPipelineConvexAvailable = convexPipeline.isConvexAvailable;
+  1927→  const isProposalsConvexAvailable = convexProposals.isConvexAvailable;
+  1928→  const isConvexDataAvailable = isPipelineConvexAvailable || isProposalsConvexAvailable;
+  1929→  const isConvexLoading = convexPipeline.isLoading || convexProposals.isLoading;
+  1930→
+  1931→  const pipelineDeals = isPipelineConvexAvailable ? convexPipeline.deals : mockPipelineDeals;
+  1932→  const proposals = isProposalsConvexAvailable ? convexProposals.proposals : mockProposals;
+  1933→
+  1934→  // ── Lookup helpers ──
+  1935→  const getClient = useCallback((id: string) => clients.find(c => c.id === id), [clients]);
+  1936→  const getProject = useCallback((id: string) => projects.find(p => p.id === id), [projects]);
+  1937→  const getMember = useCallback((id: string) => teamMembers.find(m => m.id === id), [teamMembers]);
+  1938→
+  1939→  const getProjectsForClient = useCallback((clientId: string) =>
+  1940→    projects.filter(p => p.clientId === clientId), [projects]);
+  1941→
+  1942→  const getProjectsForMember = useCallback((memberId: string) =>
+  1943→    projects.filter(p => p.assignedMemberIds.includes(memberId)), [projects]);
+  1944→
+  1945→  const getClientsForMember = useCallback((memberId: string) =>
+  1946→    clients.filter(c => c.assignedMemberIds.includes(memberId)), [clients]);
+  1947→
+  1948→  const getInvoicesForClient = useCallback((clientId: string) =>
+  1949→    invoices.filter(i => i.clientId === clientId), [invoices]);
+  1950→
+  1951→  const getInvoicesForProject = useCallback((projectId: string) =>
+  1952→    invoices.filter(i => i.projectId === projectId), [invoices]);
+  1953→
+  1954→  const getTimeEntriesForProject = useCallback((projectId: string) =>
+  1955→    timeEntries.filter(t => t.projectId === projectId), [timeEntries]);
+  1956→
+  1957→  const getTimeEntriesForMember = useCallback((memberId: string) =>
+  1958→    timeEntries.filter(t => t.memberId === memberId), [timeEntries]);
+  1959→
+  1960→  const getDealsForClient = useCallback((clientId: string) =>
+  1961→    pipelineDeals.filter(d => d.clientId === clientId), [pipelineDeals]);
+  1962→
+  1963→  const getProposalsForClient = useCallback((clientId: string) =>
+  1964→    proposals.filter(p => p.clientId === clientId), [proposals]);
+  1965→
+  1966→  // ── Mutations ──
+  1967→  const assignMemberToProject = useCallback((projectId: string, memberId: string) => {
+  1968→    setProjects(prev => prev.map(p =>
+  1969→      p.id === projectId && !p.assignedMemberIds.includes(memberId)
+  1970→        ? { ...p, assignedMemberIds: [...p.assignedMemberIds, memberId] }
+  1971→        : p
+  1972→    ));
+  1973→  }, []);
+  1974→
+  1975→  const unassignMemberFromProject = useCallback((projectId: string, memberId: string) => {
+  1976→    setProjects(prev => prev.map(p =>
+  1977→      p.id === projectId
+  1978→        ? { ...p, assignedMemberIds: p.assignedMemberIds.filter(id => id !== memberId) }
+  1979→        : p
+  1980→    ));
+  1981→  }, []);
+  1982→
+  1983→  const assignMemberToClient = useCallback((clientId: string, memberId: string) => {
+  1984→    setClients(prev => prev.map(c =>
+  1985→      c.id === clientId && !c.assignedMemberIds.includes(memberId)
+  1986→        ? { ...c, assignedMemberIds: [...c.assignedMemberIds, memberId] }
+  1987→        : c
+  1988→    ));
+  1989→  }, []);
+  1990→
+  1991→  const unassignMemberFromClient = useCallback((clientId: string, memberId: string) => {
+  1992→    setClients(prev => prev.map(c =>
+  1993→      c.id === clientId
+  1994→        ? { ...c, assignedMemberIds: c.assignedMemberIds.filter(id => id !== memberId) }
+  1995→        : c
+  1996→    ));
+  1997→  }, []);
+  1998→
+  1999→  const updateProjectStatus = useCallback((projectId: string, status: ProjectStatus) => {
+  2000→    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status } : p));
+
+[showing lines 1-2000 of 2088; use offset=2001 with limit to continue reading]

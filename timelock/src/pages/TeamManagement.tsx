@@ -52,6 +52,7 @@ import { api } from "@/convex/_generated/api";
 import {
   useWorkspaceContext,
 } from "@/hooks/use-workspace";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Demo Mode Banner ────────────────────────────────────────
 function DemoModeBanner() {
@@ -136,16 +137,10 @@ export default function TeamManagement() {
   ) as any[] | undefined;
 
   // ─── Teams queries ─────────────────────────────────────────────────────────
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamsApi = !!teamsApi?.getTeams;
-
   const convexTeams = useQuery(
-    hasTeamsApi && hasRealWorkspaceId ? teamsApi.getTeams : "skip",
+    hasRealWorkspaceId ? api.teams.crud.getTeams : "skip",
     hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
   ) as any[] | undefined;
-
-  // ─── Team Members per team ──────────────────────────────────────────────────
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
 
   // ─── Mutations ─────────────────────────────────────────────────────────────
   const inviteMemberMutation = useMutation(api.workspaces.invitations.createInvitation);
@@ -154,11 +149,11 @@ export default function TeamManagement() {
   const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
 
   // Team mutations
-  const createTeamMutation = useMutation(hasTeamsApi ? teamsApi.createTeam : null);
-  const updateTeamMutation = useMutation(hasTeamsApi ? teamsApi.updateTeam : null);
-  const deleteTeamMutation = useMutation(hasTeamsApi ? teamsApi.deleteTeam : null);
-  const addTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.addTeamMember : null);
-  const removeTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.removeTeamMember : null);
+  const createTeamMutation = useMutation(api.teams.crud.createTeam);
+  const updateTeamMutation = useMutation(api.teams.crud.updateTeam);
+  const deleteTeamMutation = useMutation(api.teams.crud.deleteTeam);
+  const addTeamMemberMutation = useMutation(api.teams.crud.addTeamMember);
+  const removeTeamMemberMutation = useMutation(api.teams.crud.removeTeamMember);
 
   // ─── State ─────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<string>("members");
@@ -484,8 +479,8 @@ export default function TeamManagement() {
   };
 
   return (
-    <div className="p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <PageLayout>
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1300,7 +1295,7 @@ export default function TeamManagement() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -1325,10 +1320,8 @@ function TeamCard({
   const [expanded, setExpanded] = useState(false);
 
   // Fetch team members
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
   const teamMembers = useQuery(
-    hasTeamMembersApi ? teamsApi.getTeamMembers : "skip",
+    api.teams.crud.getTeamMembers,
     { teamId: team._id }
   ) as any[] | undefined;
 
@@ -1489,8 +1482,8 @@ function SoloModePrompt() {
   };
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl mx-auto">
+    <PageLayout>
+      <div className="max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Teams Workspace</h1>
           <p className="text-muted-foreground">
@@ -1547,6 +1540,6 @@ function SoloModePrompt() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -94,203 +94,9 @@ interface TeamMember {
 }
 
 // ---------------------------------------------------------------------------
-// Demo Data (used when token starts with "demo-")
+// No demo data — all data comes from Convex via the client token
 // ---------------------------------------------------------------------------
 
-const DEMO_PROJECTS: ProjectData[] = [
-  {
-    _id: "demo_proj_1",
-    projectName: "TechCorp Website Redesign",
-    projectType: "fixed",
-    status: "active",
-    hourlyRate: 85,
-    completionPct: 68,
-    totalDeliverables: 12,
-    completedDeliverables: 8,
-    lastActivity: Date.now() - 2 * 60 * 60 * 1000,
-    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    teamMembers: [
-      { name: "Alex Rivera", email: "alex@axiaagency.com", role: "owner", title: "Creative Director" },
-      { name: "Sam Chen", email: "sam@axiaagency.com", role: "member", title: "Full-Stack Developer" },
-      { name: "Elena Volkov", email: "elena@axiaagency.com", role: "member", title: "UI/UX Designer" },
-    ],
-    milestones: [
-      { name: "Discovery & Research", status: "completed" },
-      { name: "Wireframes & Architecture", status: "completed" },
-      { name: "UI Design System", status: "completed" },
-      { name: "Frontend Development", status: "in_progress" },
-      { name: "Backend Integration", status: "pending" },
-      { name: "QA & Launch", status: "pending" },
-    ],
-  },
-  {
-    _id: "demo_proj_2",
-    projectName: "Mobile App MVP",
-    projectType: "milestone",
-    status: "active",
-    hourlyRate: 65,
-    completionPct: 42,
-    totalDeliverables: 10,
-    completedDeliverables: 4,
-    lastActivity: Date.now() - 15 * 60 * 1000,
-    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    teamMembers: [
-      { name: "Priya Sharma", email: "priya@axiaagency.com", role: "manager", title: "Project Manager" },
-      { name: "Sam Chen", email: "sam@axiaagency.com", role: "member", title: "Full-Stack Developer" },
-    ],
-    milestones: [
-      { name: "Auth & User System", status: "completed" },
-      { name: "Dashboard UI", status: "completed" },
-      { name: "Push Notifications", status: "in_progress" },
-      { name: "Payment Integration", status: "pending" },
-      { name: "App Store Submission", status: "pending" },
-    ],
-  },
-  {
-    _id: "demo_proj_3",
-    projectName: "Brand Identity Package",
-    projectType: "fixed",
-    status: "completed",
-    hourlyRate: 95,
-    completionPct: 100,
-    totalDeliverables: 8,
-    completedDeliverables: 8,
-    lastActivity: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
-    teamMembers: [
-      { name: "Alex Rivera", email: "alex@axiaagency.com", role: "owner", title: "Creative Director" },
-      { name: "Marcus Thompson", email: "marcus@axiaagency.com", role: "member", title: "Brand Strategist" },
-    ],
-    milestones: [
-      { name: "Brand Discovery", status: "completed" },
-      { name: "Logo Concepts", status: "completed" },
-      { name: "Color & Typography", status: "completed" },
-      { name: "Brand Guidelines", status: "completed" },
-    ],
-  },
-];
-
-const DEMO_PROPOSALS: ProposalData[] = [
-  {
-    _id: "demo_prop_1",
-    title: "E-Commerce Platform Build",
-    status: "sent",
-    totalValue: 12000,
-    currency: "USD",
-    publicToken: "demo-prop-token-1",
-    createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    sentAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    validUntil: Date.now() + 25 * 24 * 60 * 60 * 1000,
-    sections: [
-      { type: "heading", content: "Project Overview" },
-      { type: "text", content: "A full-featured e-commerce platform with product catalog, shopping cart, checkout flow, and admin dashboard. Built with modern technologies for scalability and performance." },
-      { type: "milestone", content: "Phase 1: Core Platform — $5,000" },
-      { type: "milestone", content: "Phase 2: Payment & Checkout — $3,500" },
-      { type: "milestone", content: "Phase 3: Admin Dashboard & Launch — $3,500" },
-      { type: "terms", content: "Payment due upon completion of each milestone. 30-day warranty on all deliverables." },
-    ],
-  },
-  {
-    _id: "demo_prop_2",
-    title: "Mobile Banking App — Full Development",
-    status: "viewed",
-    totalValue: 25000,
-    currency: "USD",
-    publicToken: "demo-prop-token-2",
-    createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
-    sentAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
-    validUntil: Date.now() + 15 * 24 * 60 * 60 * 1000,
-    sections: [
-      { type: "heading", content: "Executive Summary" },
-      { type: "text", content: "Full-featured mobile banking application with biometric authentication, real-time transactions, and compliance reporting. Designed for security-first financial services." },
-      { type: "pricing", content: "Total Investment: $25,000 (estimated 12-week timeline)" },
-      { type: "terms", content: "Net-15 payment terms. 60-day post-launch support included." },
-    ],
-  },
-];
-
-const DEMO_INVOICES: InvoiceData[] = [
-  {
-    _id: "demo_inv_1",
-    invoiceNumber: "INV-2024-001",
-    status: "paid",
-    issueDate: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    dueDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    paidDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
-    clientName: "TechCorp Solutions",
-    lineItems: [
-      { id: "li_1", description: "Website Redesign — Phase 1: Discovery & Wireframes", quantity: 20, rate: 85, amount: 1700, hasProof: true },
-      { id: "li_2", description: "Website Redesign — Phase 2: UI Design", quantity: 25, rate: 85, amount: 2125, hasProof: true },
-    ],
-    subtotal: 3825,
-    taxRate: 0,
-    taxAmount: 0,
-    total: 3825,
-    currency: "USD",
-    notes: "Net-30 terms. Payment received on time.",
-    proofCount: 8,
-    hasValidatedBilling: true,
-    workProofs: [
-      { _id: "wp_1", proofType: "time_session", title: "Discovery Workshop", description: "4.5h discovery session with stakeholders", hours: 4.5, date: Date.now() - 58 * 24 * 60 * 60 * 1000, value: 382.5, verified: true },
-      { _id: "wp_2", proofType: "time_session", title: "Wireframe Design", description: "8h wireframe creation and review", hours: 8, date: Date.now() - 50 * 24 * 60 * 60 * 1000, value: 680, verified: true },
-    ],
-    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "demo_inv_2",
-    invoiceNumber: "INV-2024-003",
-    status: "sent",
-    issueDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    dueDate: Date.now() + 23 * 24 * 60 * 60 * 1000,
-    clientName: "StartupHub Inc",
-    lineItems: [
-      { id: "li_5", description: "Mobile App MVP — Sprint 1: Auth & Dashboard", quantity: 30, rate: 65, amount: 1950, hasProof: true },
-    ],
-    subtotal: 1950,
-    taxRate: 0,
-    taxAmount: 0,
-    total: 1950,
-    currency: "USD",
-    proofCount: 4,
-    hasValidatedBilling: true,
-    workProofs: [
-      { _id: "wp_3", proofType: "time_session", title: "Sprint 1 Development", description: "Authentication system and dashboard UI", hours: 30, date: Date.now() - 10 * 24 * 60 * 60 * 1000, value: 1950, verified: true },
-    ],
-    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "demo_inv_3",
-    invoiceNumber: "INV-2024-005",
-    status: "overdue",
-    issueDate: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    dueDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
-    clientName: "Global Enterprises",
-    lineItems: [
-      { id: "li_3", description: "Data Dashboard — Backend Architecture", quantity: 40, rate: 120, amount: 4800, hasProof: true },
-      { id: "li_4", description: "Data Dashboard — Frontend Components", quantity: 30, rate: 120, amount: 3600, hasProof: false },
-    ],
-    subtotal: 8400,
-    taxRate: 0,
-    taxAmount: 0,
-    total: 8400,
-    currency: "USD",
-    notes: "Payment 15 days overdue. Follow-up sent.",
-    proofCount: 3,
-    hasValidatedBilling: false,
-    workProofs: [
-      { _id: "wp_4", proofType: "time_session", title: "Backend API Development", description: "RESTful API endpoints and database schema", hours: 40, date: Date.now() - 40 * 24 * 60 * 60 * 1000, value: 4800, verified: true },
-    ],
-    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-  },
-];
-
-const DEMO_TEAM: TeamMember[] = [
-  { name: "Alex Rivera", email: "alex@axiaagency.com", role: "owner", title: "Creative Director", projects: ["TechCorp Website Redesign", "Brand Identity Package"] },
-  { name: "Priya Sharma", email: "priya@axiaagency.com", role: "manager", title: "Project Manager", projects: ["Mobile App MVP"] },
-  { name: "Sam Chen", email: "sam@axiaagency.com", role: "member", title: "Full-Stack Developer", projects: ["TechCorp Website Redesign", "Mobile App MVP"] },
-  { name: "Elena Volkov", email: "elena@axiaagency.com", role: "member", title: "UI/UX Designer", projects: ["TechCorp Website Redesign"] },
-  { name: "Marcus Thompson", email: "marcus@axiaagency.com", role: "member", title: "Brand Strategist", projects: ["Brand Identity Package"] },
-];
 
 // ---------------------------------------------------------------------------
 // Status Configs
@@ -387,58 +193,49 @@ export default function ClientWorkspace() {
   const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Check if this is a demo token
-  const isDemo = token?.startsWith("demo-") ?? false;
-
-  // Validate token (skip for demo tokens)
+  // Validate token
   const validation = useQuery(
     api.clients.clientWorkspace.validateWorkspaceToken,
-    (!isDemo && token) ? { token } : "skip"
+    token ? { token } : "skip"
   );
 
-  // Fetch data (only if token is valid OR if demo)
-  const shouldFetch = isDemo || validation?.valid;
+  // Fetch data (only if token is valid)
+  const shouldFetch = validation?.valid;
 
   const projects = useQuery(
     api.clients.clientWorkspace.getClientProjects,
-    shouldFetch && !isDemo ? { token: token! } : "skip"
+    shouldFetch ? { token: token! } : "skip"
   ) as ProjectData[] | undefined;
 
   const proposals = useQuery(
     api.clients.clientWorkspace.getClientProposals,
-    shouldFetch && !isDemo ? { token: token! } : "skip"
+    shouldFetch ? { token: token! } : "skip"
   ) as ProposalData[] | undefined;
 
   const invoices = useQuery(
     api.clients.clientWorkspace.getClientInvoices,
-    shouldFetch && !isDemo ? { token: token! } : "skip"
+    shouldFetch ? { token: token! } : "skip"
   ) as InvoiceData[] | undefined;
 
   const team = useQuery(
     api.clients.clientWorkspace.getClientTeamMembers,
-    shouldFetch && !isDemo ? { token: token! } : "skip"
+    shouldFetch ? { token: token! } : "skip"
   ) as TeamMember[] | undefined;
 
-  // For demo mode, use static mock data
-  const effectiveProjects = isDemo ? DEMO_PROJECTS : projects;
-  const effectiveProposals = isDemo ? DEMO_PROPOSALS : proposals;
-  const effectiveInvoices = isDemo ? DEMO_INVOICES : invoices;
-  const effectiveTeam = isDemo ? DEMO_TEAM : team;
-
-  // Record access (only for real tokens)
+  // Record access
   const recordAccess = useMutation(api.clients.clientWorkspace.recordWorkspaceAccess);
   useEffect(() => {
-    if (!isDemo && validation?.valid && token) {
+    if (validation?.valid && token) {
       recordAccess({ token });
     }
-  }, [isDemo, validation?.valid, token]);
+  }, [validation?.valid, token]);
 
-  // Mark proposals/invoices as viewed (only for real tokens)
+  // Mark proposals/invoices as viewed
   const markProposalViewed = useMutation(api.clients.clientWorkspace.markProposalViewedByClient);
   const markInvoiceViewed = useMutation(api.clients.clientWorkspace.markInvoiceViewedByClient);
 
   useEffect(() => {
-    if (!isDemo && proposals) {
+    if (proposals) {
       proposals.forEach((p) => {
         if (p.status === "sent") {
           markProposalViewed({ proposalId: p._id as any });
@@ -448,7 +245,7 @@ export default function ClientWorkspace() {
   }, [proposals]);
 
   useEffect(() => {
-    if (!isDemo && invoices) {
+    if (invoices) {
       invoices.forEach((inv) => {
         if (inv.status === "sent") {
           markInvoiceViewed({ invoiceId: inv._id as any });
@@ -468,11 +265,10 @@ export default function ClientWorkspace() {
 
   // Timeout fallback for validation query
   const { isDisconnected } = useConvexConnectionState();
-  const validationLoading = !isDemo && validation === undefined;
+  const validationLoading = validation === undefined;
   const validationTimedOut = useQueryTimeout(validationLoading, 3000);
   const showValidationLoading = validationLoading && !validationTimedOut && !isDisconnected;
 
-  // Demo tokens are always valid
   if (showValidationLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center">
@@ -484,7 +280,7 @@ export default function ClientWorkspace() {
     );
   }
 
-  if (!isDemo && !validation?.valid) {
+  if (!validation?.valid) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-6">
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-10 max-w-md text-center">
@@ -509,30 +305,24 @@ export default function ClientWorkspace() {
     );
   }
 
-  const clientName = isDemo ? "Demo Client" : validation?.clientName ?? "Client";
-  const projectCount = effectiveProjects?.length ?? 0;
-  const activeProposals = effectiveProposals?.filter((p) => p.status === "sent" || p.status === "viewed").length ?? 0;
-  const outstandingAmount = effectiveInvoices
+  const clientName = validation?.clientName ?? "Client";
+  const projectCount = projects?.length ?? 0;
+  const activeProposals = proposals?.filter((p) => p.status === "sent" || p.status === "viewed").length ?? 0;
+  const outstandingAmount = invoices
     ?.filter((i) => i.status !== "paid" && i.status !== "cancelled" && i.status !== "draft")
     .reduce((sum, i) => sum + i.total, 0) ?? 0;
 
   // ---- Tab Config ----
   const tabs = [
     { id: "projects" as const, label: "Projects", icon: FolderKanban, count: projectCount },
-    { id: "proposals" as const, label: "Proposals", icon: FileText, count: effectiveProposals?.length ?? 0 },
-    { id: "invoices" as const, label: "Invoices", icon: Receipt, count: effectiveInvoices?.length ?? 0 },
-    { id: "team" as const, label: "Team", icon: Users, count: effectiveTeam?.length ?? 0 },
+    { id: "proposals" as const, label: "Proposals", icon: FileText, count: proposals?.length ?? 0 },
+    { id: "invoices" as const, label: "Invoices", icon: Receipt, count: invoices?.length ?? 0 },
+    { id: "team" as const, label: "Team", icon: Users, count: team?.length ?? 0 },
   ];
 
   // ---- Render ----
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50 dark:from-gray-950 dark:to-gray-900">
-      {/* Demo Banner */}
-      {isDemo && (
-        <div className="bg-violet-600 text-white text-center py-2 px-4 text-xs font-medium">
-          This is a demo preview. Real share links will show live project data from your agency.
-        </div>
-      )}
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
@@ -546,7 +336,7 @@ export default function ClientWorkspace() {
                   {clientName}
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Client Workspace{isDemo ? " · Demo Preview" : ""}
+                  Client Workspace
                 </p>
               </div>
             </div>
@@ -592,7 +382,7 @@ export default function ClientWorkspace() {
               <Users className="w-4 h-4 text-amber-500" />
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Team</span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{effectiveTeam?.length ?? 0}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{team?.length ?? 0}</p>
           </div>
         </div>
 
@@ -626,10 +416,10 @@ export default function ClientWorkspace() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === "projects" && <ProjectsTab projects={effectiveProjects} expanded={expandedProject} setExpanded={setExpandedProject} />}
-        {activeTab === "proposals" && <ProposalsTab proposals={effectiveProposals} expanded={expandedProposal} setExpanded={setExpandedProposal} />}
-        {activeTab === "invoices" && <InvoicesTab invoices={effectiveInvoices} expanded={expandedInvoice} setExpanded={setExpandedInvoice} />}
-        {activeTab === "team" && <TeamTab team={effectiveTeam} />}
+        {activeTab === "projects" && <ProjectsTab projects={projects} expanded={expandedProject} setExpanded={setExpandedProject} />}
+        {activeTab === "proposals" && <ProposalsTab proposals={proposals} expanded={expandedProposal} setExpanded={setExpandedProposal} />}
+        {activeTab === "invoices" && <InvoicesTab invoices={invoices} expanded={expandedInvoice} setExpanded={setExpandedInvoice} />}
+        {activeTab === "team" && <TeamTab team={team} />}
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-800 text-center">

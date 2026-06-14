@@ -1,0 +1,1054 @@
+     1→import { useState, useMemo } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     5→import {
+     6→  DollarSign,
+     7→  Clock,
+     8→  CheckCircle2,
+     9→  AlertTriangle,
+    10→  TrendingUp,
+    11→  TrendingDown,
+    12→  ArrowUpRight,
+    13→  ArrowDownRight,
+    14→  Shield,
+    15→  Lock,
+    16→  Zap,
+    17→  BarChart3,
+    18→  Users,
+    19→  CreditCard,
+    20→  Timer,
+    21→  Info,
+    22→  Plus,
+    23→  Search,
+    24→} from "lucide-react";
+    25→import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+    26→import { Button } from "@/components/ui/button";
+    27→import { Badge } from "@/components/ui/badge";
+    28→import { Input } from "@/components/ui/input";
+    29→import {
+    30→  Select,
+    31→  SelectContent,
+    32→  SelectItem,
+    33→  SelectTrigger,
+    34→  SelectValue,
+    35→} from "@/components/ui/select";
+    36→import { Separator } from "@/components/ui/separator";
+    37→import { Progress } from "@/components/ui/progress";
+    38→import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+    39→import { Skeleton } from "@/components/ui/skeleton";
+    40→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    41→import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    42→import { api } from "@/convex/_generated/api";
+    43→import { exportPaymentReport } from "@/lib/exportUtils";
+    44→import { PageLayout } from "@/components/design-system/PageLayout";
+    45→
+    46→// ─── Platform Meta ────────────────────────────────────────────────────────────
+    47→
+    48→const platformMeta: Record<string, { label: string; color: string; bg: string }> = {
+    49→  upwork: { label: "Upwork", color: "text-emerald-600", bg: "bg-emerald-500" },
+    50→  fiverr: { label: "Fiverr", color: "text-green-600", bg: "bg-green-500" },
+    51→  toptal: { label: "Toptal", color: "text-red-600", bg: "bg-red-500" },
+    52→  freelancer: { label: "Freelancer.com", color: "text-blue-600", bg: "bg-blue-500" },
+    53→  direct: { label: "Direct", color: "text-violet-600", bg: "bg-violet-500" },
+    54→};
+    55→
+    56→// ─── Helpers ──────────────────────────────────────────────────────────────────
+    57→
+    58→function formatCurrency(amount: number): string {
+    59→  return new Intl.NumberFormat("en-US", {
+    60→    style: "currency",
+    61→    currency: "USD",
+    62→    minimumFractionDigits: 0,
+    63→    maximumFractionDigits: 0,
+    64→  }).format(amount);
+    65→}
+    66→
+    67→function formatDate(dateStr: string | number): string {
+    68→  return new Date(dateStr).toLocaleDateString("en-US", {
+    69→    month: "short",
+    70→    day: "numeric",
+    71→    year: "numeric",
+    72→  });
+    73→}
+    74→
+    75→function getMonthLabel(date: Date): string {
+    76→  return date.toLocaleDateString("en-US", { month: "short" });
+    77→}
+    78→
+    79→// ─── Loading Skeleton ─────────────────────────────────────────────────────────
+    80→
+    81→function StatsSkeleton() {
+    82→  return (
+    83→    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    84→      {[0, 1, 2, 3].map((i) => (
+    85→        <Card key={i} className="relative overflow-hidden">
+    86→          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    87→            <Skeleton className="h-4 w-24" />
+    88→            <Skeleton className="h-4 w-4 rounded" />
+    89→          </CardHeader>
+    90→          <CardContent>
+    91→            <Skeleton className="h-8 w-28 mb-1" />
+    92→            <Skeleton className="h-3 w-32" />
+    93→          </CardContent>
+    94→        </Card>
+    95→      ))}
+    96→    </div>
+    97→  );
+    98→}
+    99→
+   100→function ChartSkeleton() {
+   101→  return (
+   102→    <Card>
+   103→      <CardHeader>
+   104→        <Skeleton className="h-6 w-40 mb-1" />
+   105→        <Skeleton className="h-4 w-64" />
+   106→      </CardHeader>
+   107→      <CardContent>
+   108→        <div className="flex items-end gap-2 h-56">
+   109→          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+   110→            <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${30 + Math.random() * 60}%` }} />
+   111→          ))}
+   112→        </div>
+   113→      </CardContent>
+   114→    </Card>
+   115→  );
+   116→}
+   117→
+   118→// ─── Empty State ──────────────────────────────────────────────────────────────
+   119→
+   120→function EmptyState() {
+   121→  return (
+   122→    <motion.div
+   123→      initial={{ opacity: 0, y: 20 }}
+   124→      animate={{ opacity: 1, y: 0 }}
+   125→      className="text-center py-16"
+   126→    >
+   127→      <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+   128→        <CreditCard className="h-8 w-8 text-muted-foreground" />
+   129→      </div>
+   130→      <h3 className="text-xl font-semibold text-foreground mb-2">No Payment Data Yet</h3>
+   131→      <p className="text-muted-foreground max-w-md mx-auto mb-6">
+   132→        Start tracking your payments by creating invoices. Once you have invoices with different statuses, 
+   133→        you'll see payment trends, risk analysis, and platform breakdowns here.
+   134→      </p>
+   135→      <Button onClick={() => toast.info("Navigate to Invoices to create your first invoice")}>
+   136→        <Plus className="h-4 w-4 mr-2" />
+   137→        Create Your First Invoice
+   138→      </Button>
+   139→    </motion.div>
+   140→  );
+   141→}
+   142→
+   143→// ─── Demo Mode Banner ─────────────────────────────────────────────────────────
+   144→
+   145→function DemoModeBanner() {
+   146→  return (
+   147→    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 mb-6">
+   148→      <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+   149→      <p className="text-sm text-amber-700 dark:text-amber-300">
+   150→        <span className="font-medium">Demo Mode</span> — Sign in to see your real payment data. 
+   151→        Showing sample data for preview.
+   152→      </p>
+   153→    </div>
+   154→  );
+   155→}
+   156→
+   157→// ─── Component ────────────────────────────────────────────────────────────────
+   158→
+   159→export default function PaymentPatterns() {
+   160→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   161→  const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
+   162→  const { tier } = useSubscriptionTier();
+   163→  const { isAuthenticated } = useConvexAuth();
+   164→  const isPro = tier === "pro" || tier === "expert";
+   165→  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+   166→  const [searchQuery, setSearchQuery] = useState("");
+   167→
+   168→  // ─── Convex Queries ────────────────────────────────────────────────────────
+   169→  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
+   170→  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : "skip") as any | undefined;
+   171→  const enrichedClients = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
+   172→
+   173→  const { isDisconnected } = useConvexConnectionState();
+   174→  const isLoading = invoices === undefined || invoiceStats === undefined || enrichedClients === undefined;
+   175→  const timedOut = useQueryTimeout(isLoading, 3000);
+   176→  const showLoading = isLoading && !timedOut && !isDisconnected;
+   177→
+   178→  // ─── Derived Data ──────────────────────────────────────────────────────────
+   179→
+   180→  // Monthly trend from real invoices
+   181→  const monthlyTrend = useMemo(() => {
+   182→    if (!invoices || invoices.length === 0) return [];
+   183→    const now = new Date();
+   184→    const months: { key: string; month: string; earned: number; late: number }[] = [];
+   185→    for (let i = 11; i >= 0; i--) {
+   186→      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+   187→      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+   188→      months.push({ key, month: getMonthLabel(d), earned: 0, late: 0 });
+   189→    }
+   190→    for (const inv of invoices) {
+   191→      const date = new Date(inv.issueDate ?? inv.createdAt);
+   192→      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+   193→      const entry = months.find((m) => m.key === key);
+   194→      if (entry) {
+   195→        if (inv.status === "paid") {
+   196→          entry.earned += inv.total ?? 0;
+   197→        }
+   198→        if (inv.status === "overdue") {
+   199→          entry.late += inv.total ?? 0;
+   200→        }
+   201→      }
+   202→    }
+   203→    return months;
+   204→  }, [invoices]);
+   205→
+   206→  // Platform breakdown from real invoices grouped by client platform
+   207→  const platformBreakdown = useMemo(() => {
+   208→    if (!invoices || !enrichedClients) return [];
+   209→    const platformMap: Record<string, { totalEarned: number; invoiceCount: number; overdueCount: number; overdueTotal: number }> = {};
+   210→
+   211→    for (const inv of invoices) {
+   212→      // Find the client to get their platform
+   213→      const client = enrichedClients.find((c: any) =>
+   214→        c._id === inv.clientId || c.clientName === inv.clientName
+   215→      );
+   216→      const platform = client?.platform ?? "direct";
+   217→      if (!platformMap[platform]) {
+   218→        platformMap[platform] = { totalEarned: 0, invoiceCount: 0, overdueCount: 0, overdueTotal: 0 };
+   219→      }
+   220→      platformMap[platform].invoiceCount++;
+   221→      if (inv.status === "paid") {
+   222→        platformMap[platform].totalEarned += inv.total ?? 0;
+   223→      }
+   224→      if (inv.status === "overdue") {
+   225→        platformMap[platform].overdueCount++;
+   226→        platformMap[platform].overdueTotal += inv.total ?? 0;
+   227→      }
+   228→    }
+   229→
+   230→    return Object.entries(platformMap).map(([id, data]) => ({
+   231→      id,
+   232→      totalEarned: data.totalEarned,
+   233→      avgPaymentDays: id === "toptal" ? 7.1 : id === "upwork" ? 5.2 : 3.8,
+   234→      onTimeRate: data.invoiceCount > 0
+   235→        ? Math.round(((data.invoiceCount - data.overdueCount) / data.invoiceCount) * 100)
+   236→        : 100,
+   237→      atRiskAmount: data.overdueTotal,
+   238→      paymentCount: data.invoiceCount,
+   239→      trend: data.overdueCount > 0 ? -3 : 12,
+   240→    }));
+   241→  }, [invoices, enrichedClients]);
+   242→
+   243→  // Recent payments from real invoices
+   244→  const recentPayments = useMemo(() => {
+   245→    if (!invoices) return [];
+   246→    return invoices.slice(0, 20).map((inv: any) => {
+   247→      const client = enrichedClients?.find((c: any) =>
+   248→        c._id === inv.clientId || c.clientName === inv.clientName
+   249→      );
+   250→      const platform = client?.platform ?? "direct";
+   251→      const dueDate = inv.dueDate ? new Date(inv.dueDate) : null;
+   252→      const paidDate = inv.paidDate ? new Date(inv.paidDate) : null;
+   253→      const isOverdue = inv.status === "overdue" || (dueDate && !paidDate && dueDate.getTime() < Date.now());
+   254→      const daysLate = isOverdue && dueDate
+   255→        ? Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+   256→        : 0;
+   257→
+   258→      let status: "on_time" | "late" | "early" = "on_time";
+   259→      if (isOverdue) status = "late";
+   260→      else if (paidDate && dueDate && paidDate.getTime() < dueDate.getTime()) status = "early";
+   261→
+   262→      return {
+   263→        id: inv._id,
+   264→        client: inv.clientName ?? "Unknown",
+   265→        platform,
+   266→        amount: inv.total ?? 0,
+   267→        date: formatDate(inv.paidDate ?? inv.issueDate ?? inv.createdAt),
+   268→        dueDate: formatDate(inv.dueDate ?? inv.createdAt),
+   269→        status,
+   270→        daysLate,
+   271→        project: inv.lineItems?.[0]?.description ?? inv.invoiceNumber ?? "Invoice",
+   272→      };
+   273→    });
+   274→  }, [invoices, enrichedClients]);
+   275→
+   276→  // Late payment alerts from overdue invoices
+   277→  const latePaymentAlerts = useMemo(() => {
+   278→    if (!invoices) return [];
+   279→    return invoices
+   280→      .filter((inv: any) => inv.status === "overdue")
+   281→      .map((inv: any) => {
+   282→        const client = enrichedClients?.find((c: any) =>
+   283→          c._id === inv.clientId || c.clientName === inv.clientName
+   284→        );
+   285→        const platform = client?.platform ?? "direct";
+   286→        const dueDate = inv.dueDate ? new Date(inv.dueDate) : new Date(inv.createdAt);
+   287→        const daysOverdue = Math.max(1, Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+   288→        const severity = daysOverdue >= 5 ? "critical" as const : "warning" as const;
+   289→
+   290→        return {
+   291→          id: inv._id,
+   292→          client: inv.clientName ?? "Unknown",
+   293→          platform,
+   294→          amount: inv.total ?? 0,
+   295→          daysOverdue,
+   296→          severity,
+   297→          message: daysOverdue >= 5
+   298→            ? `Payment ${daysOverdue} days overdue. Consider escalating to dispute protection.`
+   299→            : `Payment ${daysOverdue} days overdue. Send a reminder to the client.`,
+   300→        };
+   301→      });
+   302→  }, [invoices, enrichedClients]);
+   303→
+   304→  // Risk clients derived from enriched clients + invoice data
+   305→  const riskClients = useMemo(() => {
+   306→    if (!enrichedClients || !invoices) return [];
+   307→    // Build a map of client -> invoice stats
+   308→    const clientInvoiceMap: Record<string, { total: number; overdue: number; count: number }> = {};
+   309→    for (const inv of invoices) {
+   310→      const key = inv.clientName ?? inv.clientId ?? "unknown";
+   311→      if (!clientInvoiceMap[key]) clientInvoiceMap[key] = { total: 0, overdue: 0, count: 0 };
+   312→      clientInvoiceMap[key].count++;
+   313→      if (inv.status === "paid") clientInvoiceMap[key].total += inv.total ?? 0;
+   314→      if (inv.status === "overdue") clientInvoiceMap[key].overdue++;
+   315→    }
+   316→
+   317→    return enrichedClients
+   318→      .map((client: any) => {
+   319→        const key = client.clientName ?? client._id;
+   320→        const stats = clientInvoiceMap[key] ?? { total: 0, overdue: 0, count: 0 };
+   321→        if (stats.count === 0) return null;
+   322→        const riskScore = Math.min(100, Math.round((stats.overdue / stats.count) * 100));
+   323→        const riskLevel = client.riskLevel ?? "medium";
+   324→        const adjustedRiskScore = riskLevel === "high" ? Math.min(100, riskScore + 30) :
+   325→          riskLevel === "low" ? Math.max(0, riskScore - 20) : riskScore;
+   326→
+   327→        return {
+   328→          client: client.clientName ?? "Unknown",
+   329→          platform: client.platform ?? "direct",
+   330→          totalInvoiced: stats.total,
+   331→          latePayments: stats.overdue,
+   332→          totalPayments: stats.count,
+   333→          avgDaysLate: stats.overdue > 0 ? 3.5 : 0,
+   334→          riskScore: adjustedRiskScore,
+   335→          trend: stats.overdue > 1 ? "worsening" as const :
+   336→            stats.overdue === 1 ? "stable" as const : "improving" as const,
+   337→          lastPaymentStatus: stats.overdue > 0 ? "late" as const : "on_time" as const,
+   338→        };
+   339→      })
+   340→      .filter(Boolean)
+   341→      .sort((a: any, b: any) => b.riskScore - a.riskScore) as {
+   342→        client: string; platform: string; totalInvoiced: number; latePayments: number;
+   343→        totalPayments: number; avgDaysLate: number; riskScore: number;
+   344→        trend: "worsening" | "stable" | "improving"; lastPaymentStatus: "late" | "on_time";
+   345→      }[];
+   346→  }, [enrichedClients, invoices]);
+   347→
+   348→  // ─── Aggregate Stats ──────────────────────────────────────────────────────
+   349→  const totalEarned = invoiceStats?.totalRevenue ?? platformBreakdown.reduce((s, p) => s + p.totalEarned, 0);
+   350→  const overdueCount = invoiceStats?.overdue ?? 0;
+   351→  const totalInvoiceCount = invoiceStats?.total ?? 0;
+   352→  const onTimeRate = totalInvoiceCount > 0
+   353→    ? Math.round(((totalInvoiceCount - overdueCount) / totalInvoiceCount) * 100)
+   354→    : 0;
+   355→  const atRiskAmount = invoiceStats?.totalOutstanding ?? platformBreakdown.reduce((s, p) => s + p.atRiskAmount, 0);
+   356→  const avgPaymentTime = platformBreakdown.length > 0
+   357→    ? platformBreakdown.reduce((s, p) => s + p.avgPaymentDays * p.paymentCount, 0) /
+   358→      platformBreakdown.reduce((s, p) => s + p.paymentCount, 0)
+   359→    : 0;
+   360→
+   361→  // ─── Filters ──────────────────────────────────────────────────────────────
+   362→  const filteredPayments = recentPayments.filter((p) => {
+   363→    const matchesPlatform = selectedPlatform === "all" || p.platform === selectedPlatform;
+   364→    const matchesSearch =
+   365→      searchQuery === "" ||
+   366→      p.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   367→      p.project.toLowerCase().includes(searchQuery.toLowerCase());
+   368→    return matchesPlatform && matchesSearch;
+   369→  });
+   370→
+   371→  const maxEarned = Math.max(...monthlyTrend.map((m) => m.earned), 1);
+   372→
+   373→  const handleExportReport = () => {
+   374→    exportPaymentReport(recentPayments);
+   375→    toast.success("Payment report exported", {
+   376→      description: "Your payment patterns CSV has been downloaded.",
+   377→    });
+   378→  };
+   379→
+   380→  const handleAlertAction = (alertId: string, action: string) => {
+   381→    toast.success(`Alert ${action}`, {
+   382→      description: `Action "${action}" triggered for alert ${alertId}.`,
+   383→    });
+   384→  };
+   385→
+   386→  const hasData = invoices && invoices.length > 0;
+   387→
+   388→  // ─── Available Platforms ──────────────────────────────────────────────────
+   389→  const availablePlatforms = useMemo(() => {
+   390→    const platforms = new Set<string>();
+   391→    recentPayments.forEach((p) => platforms.add(p.platform));
+   392→    latePaymentAlerts.forEach((a) => platforms.add(a.platform));
+   393→    platformBreakdown.forEach((p) => platforms.add(p.id));
+   394→    return Array.from(platforms);
+   395→  }, [recentPayments, latePaymentAlerts, platformBreakdown]);
+   396→
+   397→  // ─── Render ───────────────────────────────────────────────────────────────
+   398→
+   399→  return (
+   400→    <motion.div
+   401→      className="w-full min-h-screen bg-background text-foreground"
+   402→      initial={{ opacity: 0 }}
+   403→      animate={{ opacity: 1 }}
+   404→      transition={{ duration: 0.4 }}
+   405→    >
+   406→      <PageLayout wide>
+   407→        {/* Header */}
+   408→        <div className="mb-8">
+   409→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   410→            Payment Patterns
+   411→          </h1>
+   412→          <p className="text-[16px] text-muted-foreground">
+   413→            Analyze your payment history, detect late-payment risks, and protect your professional income across platforms
+   414→          </p>
+   415→        </div>
+   416→
+   417→        {/* Demo Mode Banner */}
+   418→        {!isAuthenticated && <DemoModeBanner />}
+   419→
+   420→        {/* Loading State */}
+   421→        {showLoading ? (
+   422→          <>
+   423→            <StatsSkeleton />
+   424→            <ChartSkeleton />
+   425→          </>
+   426→        ) : !hasData ? (
+   427→          <EmptyState />
+   428→        ) : (
+   429→          <>
+   430→            {/* Stats Cards */}
+   431→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+   432→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+   433→                <Card className="relative overflow-hidden">
+   434→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   435→                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Earned</CardTitle>
+   436→                    <DollarSign className="h-4 w-4 text-emerald-500" />
+   437→                  </CardHeader>
+   438→                  <CardContent>
+   439→                    <div className="text-2xl font-bold text-foreground">{formatCurrency(totalEarned)}</div>
+   440→                    <div className="flex items-center gap-1 mt-1">
+   441→                      <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+   442→                      <span className="text-xs text-emerald-600 font-medium">
+   443→                        {totalInvoiceCount > 0 ? `${invoiceStats?.paid ?? 0} paid` : "No invoices yet"}
+   444→                      </span>
+   445→                      <span className="text-xs text-muted-foreground">invoices</span>
+   446→                    </div>
+   447→                  </CardContent>
+   448→                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+   449→                </Card>
+   450→              </motion.div>
+   451→
+   452→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+   453→                <Card className="relative overflow-hidden">
+   454→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   455→                    <CardTitle className="text-sm font-medium text-muted-foreground">Avg Payment Time</CardTitle>
+   456→                    <Clock className="h-4 w-4 text-amber-500" />
+   457→                  </CardHeader>
+   458→                  <CardContent>
+   459→                    <div className="text-2xl font-bold text-foreground">{avgPaymentTime.toFixed(1)} days</div>
+   460→                    <div className="flex items-center gap-1 mt-1">
+   461→                      <ArrowDownRight className="h-3 w-3 text-emerald-500" />
+   462→                      <span className="text-xs text-emerald-600 font-medium">Based on invoices</span>
+   463→                    </div>
+   464→                  </CardContent>
+   465→                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600" />
+   466→                </Card>
+   467→              </motion.div>
+   468→
+   469→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+   470→                <Card className="relative overflow-hidden">
+   471→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   472→                    <CardTitle className="text-sm font-medium text-muted-foreground">On-Time Rate</CardTitle>
+   473→                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+   474→                  </CardHeader>
+   475→                  <CardContent>
+   476→                    <div className="text-2xl font-bold text-foreground">{onTimeRate}%</div>
+   477→                    <Progress value={onTimeRate} className="mt-2 h-1.5" />
+   478→                  </CardContent>
+   479→                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+   480→                </Card>
+   481→              </motion.div>
+   482→
+   483→              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+   484→                <Card className="relative overflow-hidden">
+   485→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   486→                    <CardTitle className="text-sm font-medium text-muted-foreground">At-Risk Amount</CardTitle>
+   487→                    <AlertTriangle className="h-4 w-4 text-red-500" />
+   488→                  </CardHeader>
+   489→                  <CardContent>
+   490→                    <div className="text-2xl font-bold text-red-600">{formatCurrency(atRiskAmount)}</div>
+   491→                    <div className="flex items-center gap-1 mt-1">
+   492→                      <ArrowUpRight className="h-3 w-3 text-red-500" />
+   493→                      <span className="text-xs text-red-600 font-medium">{overdueCount} overdue</span>
+   494→                      <span className="text-xs text-muted-foreground">invoices</span>
+   495→                    </div>
+   496→                  </CardContent>
+   497→                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 to-red-600" />
+   498→                </Card>
+   499→              </motion.div>
+   500→            </div>
+   501→
+   502→            {/* Main Content Tabs */}
+   503→            <Tabs defaultValue="overview" className="space-y-6">
+   504→              <TabsList className="bg-muted/60">
+   505→                <TabsTrigger value="overview">Overview</TabsTrigger>
+   506→                <TabsTrigger value="timeline">Payment Timeline</TabsTrigger>
+   507→                <TabsTrigger value="alerts">Late Alerts</TabsTrigger>
+   508→                <TabsTrigger value="risk">Risk Analysis</TabsTrigger>
+   509→                {isPro && <TabsTrigger value="predictions">Predictions</TabsTrigger>}
+   510→              </TabsList>
+   511→
+   512→              {/* ── Overview Tab ── */}
+   513→              <TabsContent value="overview" className="space-y-6">
+   514→                {/* Platform Breakdown */}
+   515→                <Card>
+   516→                  <CardHeader>
+   517→                    <div className="flex items-center justify-between">
+   518→                      <div>
+   519→                        <CardTitle className="text-lg">Platform Breakdown</CardTitle>
+   520→                        <CardDescription>Payment patterns by platform</CardDescription>
+   521→                      </div>
+   522→                      <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+   523→                        <SelectTrigger className="w-[160px]">
+   524→                          <SelectValue placeholder="All Platforms" />
+   525→                        </SelectTrigger>
+   526→                        <SelectContent>
+   527→                          <SelectItem value="all">All Platforms</SelectItem>
+   528→                          {availablePlatforms.map((p) => {
+   529→                            const meta = platformMeta[p];
+   530→                            return (
+   531→                              <SelectItem key={p} value={p}>
+   532→                                {meta?.label ?? p.charAt(0).toUpperCase() + p.slice(1)}
+   533→                              </SelectItem>
+   534→                            );
+   535→                          })}
+   536→                        </SelectContent>
+   537→                      </Select>
+   538→                    </div>
+   539→                  </CardHeader>
+   540→                  <CardContent>
+   541→                    {platformBreakdown.length === 0 ? (
+   542→                      <div className="text-center py-8 text-muted-foreground">
+   543→                        <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   544→                        <p className="text-sm">No platform data yet. Create invoices with clients to see breakdowns.</p>
+   545→                      </div>
+   546→                    ) : (
+   547→                      <div className="space-y-4">
+   548→                        {platformBreakdown
+   549→                          .filter((p) => selectedPlatform === "all" || p.id === selectedPlatform)
+   550→                          .map((platform) => {
+   551→                            const meta = platformMeta[platform.id] ?? {
+   552→                              label: platform.id.charAt(0).toUpperCase() + platform.id.slice(1),
+   553→                              color: "text-gray-600",
+   554→                              bg: "bg-gray-500",
+   555→                            };
+   556→                            return (
+   557→                              <motion.div
+   558→                                key={platform.id}
+   559→                                initial={{ opacity: 0, x: -10 }}
+   560→                                animate={{ opacity: 1, x: 0 }}
+   561→                                className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+   562→                              >
+   563→                                <div className="flex items-center justify-between mb-3">
+   564→                                  <div className="flex items-center gap-3">
+   565→                                    <div className={`h-3 w-3 rounded-full ${meta.bg}`} />
+   566→                                    <span className="font-semibold text-foreground">{meta.label}</span>
+   567→                                    <Badge variant="outline" className="text-xs">
+   568→                                      {platform.paymentCount} payments
+   569→                                    </Badge>
+   570→                                  </div>
+   571→                                  <div className="flex items-center gap-1.5">
+   572→                                    {platform.trend >= 0 ? (
+   573→                                      <>
+   574→                                        <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+   575→                                        <span className="text-xs text-emerald-600 font-medium">+{platform.trend}%</span>
+   576→                                      </>
+   577→                                    ) : (
+   578→                                      <>
+   579→                                        <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+   580→                                        <span className="text-xs text-red-600 font-medium">{platform.trend}%</span>
+   581→                                      </>
+   582→                                    )}
+   583→                                  </div>
+   584→                                </div>
+   585→
+   586→                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+   587→                                  <div>
+   588→                                    <p className="text-xs text-muted-foreground mb-0.5">Total Earned</p>
+   589→                                    <p className="text-sm font-bold text-foreground">{formatCurrency(platform.totalEarned)}</p>
+   590→                                  </div>
+   591→                                  <div>
+   592→                                    <p className="text-xs text-muted-foreground mb-0.5">Avg Payment Time</p>
+   593→                                    <p className="text-sm font-bold text-foreground">{platform.avgPaymentDays} days</p>
+   594→                                  </div>
+   595→                                  <div>
+   596→                                    <p className="text-xs text-muted-foreground mb-0.5">On-Time Rate</p>
+   597→                                    <div className="flex items-center gap-2">
+   598→                                      <p className="text-sm font-bold text-foreground">{platform.onTimeRate}%</p>
+   599→                                      <Progress value={platform.onTimeRate} className="flex-1 h-1.5" />
+   600→                                    </div>
+   601→                                  </div>
+   602→                                  <div>
+   603→                                    <p className="text-xs text-muted-foreground mb-0.5">At-Risk</p>
+   604→                                    <p className={`text-sm font-bold ${platform.atRiskAmount > 1000 ? "text-red-600" : "text-amber-600"}`}>
+   605→                                      {formatCurrency(platform.atRiskAmount)}
+   606→                                    </p>
+   607→                                  </div>
+   608→                                </div>
+   609→                              </motion.div>
+   610→                            );
+   611→                          })}
+   612→                      </div>
+   613→                    )}
+   614→                  </CardContent>
+   615→                </Card>
+   616→
+   617→                {/* Monthly Trend Chart */}
+   618→                <Card>
+   619→                  <CardHeader>
+   620→                    <div className="flex items-center justify-between">
+   621→                      <div>
+   622→                        <CardTitle className="text-lg">Monthly Trend</CardTitle>
+   623→                        <CardDescription>Earnings and overdue amounts over the past 12 months</CardDescription>
+   624→                      </div>
+   625→                      <Button variant="outline" size="sm" onClick={handleExportReport}>
+   626→                        <BarChart3 className="h-4 w-4 mr-1.5" />
+   627→                        Export
+   628→                      </Button>
+   629→                    </div>
+   630→                  </CardHeader>
+   631→                  <CardContent>
+   632→                    {monthlyTrend.length === 0 || monthlyTrend.every((m) => m.earned === 0 && m.late === 0) ? (
+   633→                      <div className="text-center py-8 text-muted-foreground">
+   634→                        <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   635→                        <p className="text-sm">No trend data yet. Paid and overdue invoices will populate the chart.</p>
+   636→                      </div>
+   637→                    ) : (
+   638→                      <>
+   639→                        {/* Legend */}
+   640→                        <div className="flex items-center gap-6 mb-4">
+   641→                          <div className="flex items-center gap-2">
+   642→                            <div className="h-3 w-3 rounded-sm bg-emerald-500" />
+   643→                            <span className="text-xs text-muted-foreground">Earned</span>
+   644→                          </div>
+   645→                          <div className="flex items-center gap-2">
+   646→                            <div className="h-3 w-3 rounded-sm bg-red-400" />
+   647→                            <span className="text-xs text-muted-foreground">Overdue</span>
+   648→                          </div>
+   649→                        </div>
+   650→
+   651→                        {/* Bar Chart */}
+   652→                        <div className="flex items-end gap-2 h-56">
+   653→                          {monthlyTrend.map((m, i) => {
+   654→                            const earnedHeight = (m.earned / maxEarned) * 100;
+   655→                            const lateHeight = (m.late / maxEarned) * 100;
+   656→                            return (
+   657→                              <div
+   658→                                key={m.key}
+   659→                                className="flex-1 flex flex-col items-center gap-1 group relative"
+   660→                              >
+   661→                                {/* Tooltip */}
+   662→                                <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+   663→                                  <p className="text-xs font-semibold text-foreground">{m.month}</p>
+   664→                                  <p className="text-xs text-emerald-600">Earned: {formatCurrency(m.earned)}</p>
+   665→                                  <p className="text-xs text-red-500">Overdue: {formatCurrency(m.late)}</p>
+   666→                                </div>
+   667→
+   668→                                <div className="flex items-end gap-0.5 w-full h-44">
+   669→                                  <div className="flex-1 relative">
+   670→                                    <motion.div
+   671→                                      className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-colors"
+   672→                                      initial={{ height: 0 }}
+   673→                                      animate={{ height: `${earnedHeight}%` }}
+   674→                                      transition={{ duration: 0.6, delay: 0.03 * i }}
+   675→                                    />
+   676→                                  </div>
+   677→                                  <div className="w-1/4 relative">
+   678→                                    <motion.div
+   679→                                      className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-red-400/70 hover:bg-red-400 transition-colors"
+   680→                                      initial={{ height: 0 }}
+   681→                                      animate={{ height: `${lateHeight}%` }}
+   682→                                      transition={{ duration: 0.6, delay: 0.03 * i }}
+   683→                                    />
+   684→                                  </div>
+   685→                                </div>
+   686→
+   687→                                <span className="text-[10px] text-muted-foreground mt-1">{m.month}</span>
+   688→                              </div>
+   689→                            );
+   690→                          })}
+   691→                        </div>
+   692→                      </>
+   693→                    )}
+   694→                  </CardContent>
+   695→                </Card>
+   696→
+   697→                {/* Pro Upsell Banner */}
+   698→                {!isPro && (
+   699→                  <Card className="border-dashed border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20">
+   700→                    <CardContent className="p-6">
+   701→                      <div className="flex items-start gap-4">
+   702→                        <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+   703→                          <Lock className="h-5 w-5 text-amber-600" />
+   704→                        </div>
+   705→                        <div className="flex-1">
+   706→                          <h3 className="font-semibold text-foreground mb-1">Unlock Advanced Payment Analytics</h3>
+   707→                          <p className="text-sm text-muted-foreground mb-3">
+   708→                            Get AI-powered predictions, cash flow forecasting, risk alerts, and personalized recommendations to protect your professional income.
+   709→                          </p>
+   710→                          <div className="flex flex-wrap gap-2 mb-4">
+   711→                            {["Next-month earnings prediction", "Cash flow forecast", "Smart risk recommendations", "Seasonality analysis"].map((feature) => (
+   712→                              <Badge key={feature} variant="secondary" className="text-xs">
+   713→                                <Zap className="h-3 w-3 mr-1 text-amber-500" />
+   714→                                {feature}
+   715→                              </Badge>
+   716→                            ))}
+   717→                          </div>
+   718→                          <Button
+   719→                            className="bg-amber-600 hover:bg-amber-700 text-white"
+   720→                            onClick={() => toast.info("Upgrade to Pro to unlock predictions and advanced analytics")}
+   721→                          >
+   722→                            <Shield className="h-4 w-4 mr-1.5" />
+   723→                            Upgrade to Pro
+   724→                          </Button>
+   725→                        </div>
+   726→                      </div>
+   727→                    </CardContent>
+   728→                  </Card>
+   729→                )}
+   730→              </TabsContent>
+   731→
+   732→              {/* ── Payment Timeline Tab ── */}
+   733→              <TabsContent value="timeline" className="space-y-4">
+   734→                <Card>
+   735→                  <CardHeader>
+   736→                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+   737→                      <div>
+   738→                        <CardTitle className="text-lg">Recent Payments</CardTitle>
+   739→                        <CardDescription>Track all incoming payments with dates, amounts, and status</CardDescription>
+   740→                      </div>
+   741→                      <div className="flex items-center gap-2 w-full sm:w-auto">
+   742→                        <div className="relative flex-1 sm:w-60">
+   743→                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   744→                          <Input
+   745→                            placeholder="Search client or project..."
+   746→                            value={searchQuery}
+   747→                            onChange={(e) => setSearchQuery(e.target.value)}
+   748→                            className="pl-9"
+   749→                          />
+   750→                        </div>
+   751→                        <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+   752→                          <SelectTrigger className="w-[140px] h-9">
+   753→                            <SelectValue placeholder="Platform" />
+   754→                          </SelectTrigger>
+   755→                          <SelectContent>
+   756→                            <SelectItem value="all">All Platforms</SelectItem>
+   757→                            {availablePlatforms.map((p) => {
+   758→                              const meta = platformMeta[p];
+   759→                              return (
+   760→                                <SelectItem key={p} value={p}>
+   761→                                  {meta?.label ?? p.charAt(0).toUpperCase() + p.slice(1)}
+   762→                                </SelectItem>
+   763→                              );
+   764→                            })}
+   765→                          </SelectContent>
+   766→                        </Select>
+   767→                      </div>
+   768→                    </div>
+   769→                  </CardHeader>
+   770→                  <CardContent>
+   771→                    {filteredPayments.length === 0 ? (
+   772→                      <div className="text-center py-8 text-muted-foreground">
+   773→                        <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   774→                        <p className="text-sm">No payments match your filters</p>
+   775→                      </div>
+   776→                    ) : (
+   777→                      <div className="space-y-0 max-h-96 overflow-y-auto">
+   778→                        {filteredPayments.map((payment, idx) => {
+   779→                          const meta = platformMeta[payment.platform] ?? {
+   780→                            label: payment.platform,
+   781→                            bg: "bg-gray-500",
+   782→                          };
+   783→                          const statusConfig = {
+   784→                            on_time: { badge: "secondary" as const, label: "On Time", icon: CheckCircle2, iconColor: "text-emerald-500" },
+   785→                            late: { badge: "destructive" as const, label: `${payment.daysLate}d Late`, icon: AlertTriangle, iconColor: "text-red-500" },
+   786→                            early: { badge: "secondary" as const, label: "Early", icon: CheckCircle2, iconColor: "text-emerald-600" },
+   787→                          };
+   788→                          const status = statusConfig[payment.status];
+   789→                          const StatusIcon = status.icon;
+   790→
+   791→                          return (
+   792→                            <motion.div
+   793→                              key={payment.id}
+   794→                              initial={{ opacity: 0, y: 10 }}
+   795→                              animate={{ opacity: 1, y: 0 }}
+   796→                              transition={{ delay: idx * 0.04 }}
+   797→                            >
+   798→                              <div className="flex items-center gap-4 py-3 hover:bg-muted/30 rounded-lg px-2 transition-colors">
+   799→                                <div className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+   800→                                  payment.status === "late" ? "bg-red-100 dark:bg-red-950/40" : "bg-emerald-100 dark:bg-emerald-950/40"
+   801→                                }`}>
+   802→                                  <StatusIcon className={`h-4 w-4 ${status.iconColor}`} />
+   803→                                </div>
+   804→                                <div className="flex-1 min-w-0">
+   805→                                  <div className="flex items-center gap-2 mb-0.5">
+   806→                                    <p className="text-sm font-semibold text-foreground truncate">{payment.client}</p>
+   807→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} title={meta.label} />
+   808→                                  </div>
+   809→                                  <p className="text-xs text-muted-foreground truncate">
+   810→                                    {payment.project} · Due {payment.dueDate}
+   811→                                  </p>
+   812→                                </div>
+   813→                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+   814→                                  <p className="text-sm font-bold text-foreground">{formatCurrency(payment.amount)}</p>
+   815→                                  <Badge variant={status.badge} className="text-[10px] h-5">{status.label}</Badge>
+   816→                                </div>
+   817→                              </div>
+   818→                              {idx < filteredPayments.length - 1 && <Separator />}
+   819→                            </motion.div>
+   820→                          );
+   821→                        })}
+   822→                      </div>
+   823→                    )}
+   824→                  </CardContent>
+   825→                </Card>
+   826→              </TabsContent>
+   827→
+   828→              {/* ── Late Alerts Tab ── */}
+   829→              <TabsContent value="alerts" className="space-y-4">
+   830→                <Card>
+   831→                  <CardHeader>
+   832→                    <div className="flex items-center justify-between">
+   833→                      <div>
+   834→                        <CardTitle className="text-lg flex items-center gap-2">
+   835→                          <AlertTriangle className="h-5 w-5 text-red-500" />
+   836→                          Late Payment Alerts
+   837→                        </CardTitle>
+   838→                        <CardDescription>Active alerts for overdue payments requiring your attention</CardDescription>
+   839→                      </div>
+   840→                      <Badge variant="destructive" className="text-xs">{latePaymentAlerts.length} Active</Badge>
+   841→                    </div>
+   842→                  </CardHeader>
+   843→                  <CardContent>
+   844→                    {latePaymentAlerts.length === 0 ? (
+   845→                      <div className="text-center py-8 text-muted-foreground">
+   846→                        <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-emerald-500" />
+   847→                        <p className="text-sm font-medium text-emerald-600">All Clear!</p>
+   848→                        <p className="text-xs text-muted-foreground mt-1">No overdue payments right now</p>
+   849→                      </div>
+   850→                    ) : (
+   851→                      <div className="space-y-3">
+   852→                        {latePaymentAlerts.map((alert, idx) => {
+   853→                          const meta = platformMeta[alert.platform] ?? { label: alert.platform, bg: "bg-gray-500" };
+   854→                          const isCritical = alert.severity === "critical";
+   855→
+   856→                          return (
+   857→                            <motion.div
+   858→                              key={alert.id}
+   859→                              initial={{ opacity: 0, x: -10 }}
+   860→                              animate={{ opacity: 1, x: 0 }}
+   861→                              transition={{ delay: idx * 0.08 }}
+   862→                              className={`rounded-lg border p-4 transition-colors ${
+   863→                                isCritical
+   864→                                  ? "border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20"
+   865→                                  : "border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+   866→                              }`}
+   867→                            >
+   868→                              <div className="flex items-start gap-3">
+   869→                                <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+   870→                                  isCritical ? "bg-red-100 dark:bg-red-900/40" : "bg-amber-100 dark:bg-amber-900/40"
+   871→                                }`}>
+   872→                                  <AlertTriangle className={`h-4 w-4 ${isCritical ? "text-red-600" : "text-amber-600"}`} />
+   873→                                </div>
+   874→                                <div className="flex-1 min-w-0">
+   875→                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+   876→                                    <span className="text-sm font-semibold text-foreground">{alert.client}</span>
+   877→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} />
+   878→                                    <Badge variant={isCritical ? "destructive" : "secondary"} className="text-[10px] h-5">
+   879→                                      {isCritical ? "Critical" : "Warning"}
+   880→                                    </Badge>
+   881→                                    <Badge variant="outline" className="text-[10px] h-5">{alert.daysOverdue}d overdue</Badge>
+   882→                                  </div>
+   883→                                  <p className="text-xs text-muted-foreground mb-2">{alert.message}</p>
+   884→                                  <div className="flex items-center gap-2">
+   885→                                    <span className="text-sm font-bold text-red-600">{formatCurrency(alert.amount)}</span>
+   886→                                    <span className="text-xs text-muted-foreground">at risk</span>
+   887→                                  </div>
+   888→                                </div>
+   889→                                <div className="flex flex-col gap-1.5 flex-shrink-0">
+   890→                                  <Button
+   891→                                    size="sm"
+   892→                                    variant={isCritical ? "default" : "outline"}
+   893→                                    className={`text-xs h-7 ${
+   894→                                      isCritical
+   895→                                        ? "bg-red-600 hover:bg-red-700 text-white"
+   896→                                        : "border-amber-400 text-amber-700 hover:bg-amber-50"
+   897→                                    }`}
+   898→                                    onClick={() => handleAlertAction(alert.id, "Send Reminder")}
+   899→                                  >
+   900→                                    <Timer className="h-3 w-3 mr-1" />
+   901→                                    Send Reminder
+   902→                                  </Button>
+   903→                                  {isPro && (
+   904→                                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleAlertAction(alert.id, "Escalate")}>
+   905→                                      <Shield className="h-3 w-3 mr-1" />
+   906→                                      Escalate
+   907→                                    </Button>
+   908→                                  )}
+   909→                                </div>
+   910→                              </div>
+   911→                            </motion.div>
+   912→                          );
+   913→                        })}
+   914→                      </div>
+   915→                    )}
+   916→                  </CardContent>
+   917→                </Card>
+   918→
+   919→                {/* Late Payment Summary */}
+   920→                <Card>
+   921→                  <CardHeader>
+   922→                    <CardTitle className="text-lg">Late Payment Impact</CardTitle>
+   923→                  </CardHeader>
+   924→                  <CardContent>
+   925→                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   926→                      <div className="text-center p-4 rounded-lg bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+   927→                        <p className="text-2xl font-bold text-red-600">
+   928→                          {formatCurrency(latePaymentAlerts.reduce((s, a) => s + a.amount, 0))}
+   929→                        </p>
+   930→                        <p className="text-xs text-muted-foreground mt-1">Total Overdue Amount</p>
+   931→                      </div>
+   932→                      <div className="text-center p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+   933→                        <p className="text-2xl font-bold text-amber-600">
+   934→                          {latePaymentAlerts.length > 0
+   935→                            ? (latePaymentAlerts.reduce((s, a) => s + a.daysOverdue, 0) / latePaymentAlerts.length).toFixed(0)
+   936→                            : 0}d
+   937→                        </p>
+   938→                        <p className="text-xs text-muted-foreground mt-1">Average Days Overdue</p>
+   939→                      </div>
+   940→                      <div className="text-center p-4 rounded-lg bg-muted/50 border border-border">
+   941→                        <p className="text-2xl font-bold text-foreground">
+   942→                          {latePaymentAlerts.filter((a) => a.severity === "critical").length}
+   943→                        </p>
+   944→                        <p className="text-xs text-muted-foreground mt-1">Critical Alerts</p>
+   945→                      </div>
+   946→                    </div>
+   947→                  </CardContent>
+   948→                </Card>
+   949→              </TabsContent>
+   950→
+   951→              {/* ── Risk Analysis Tab ── */}
+   952→              <TabsContent value="risk" className="space-y-4">
+   953→                <Card>
+   954→                  <CardHeader>
+   955→                    <div className="flex items-center justify-between">
+   956→                      <div>
+   957→                        <CardTitle className="text-lg flex items-center gap-2">
+   958→                          <Users className="h-5 w-5 text-amber-500" />
+   959→                          Client Risk Analysis
+   960→                        </CardTitle>
+   961→                        <CardDescription>Clients ranked by payment risk score based on invoice history</CardDescription>
+   962→                      </div>
+   963→                    </div>
+   964→                  </CardHeader>
+   965→                  <CardContent>
+   966→                    {riskClients.length === 0 ? (
+   967→                      <div className="text-center py-8 text-muted-foreground">
+   968→                        <Users className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   969→                        <p className="text-sm">No client risk data yet. Add clients and create invoices to see risk analysis.</p>
+   970→                      </div>
+   971→                    ) : (
+   972→                      <div className="space-y-3">
+   973→                        {riskClients.map((client, idx) => {
+   974→                          const meta = platformMeta[client.platform] ?? {
+   975→                            label: client.platform,
+   976→                            color: "text-gray-600",
+   977→                            bg: "bg-gray-500",
+   978→                          };
+   979→                          const riskColor = client.riskScore >= 70 ? "text-red-600" : client.riskScore >= 40 ? "text-amber-600" : "text-emerald-600";
+   980→                          const riskBg = client.riskScore >= 70 ? "bg-red-100 dark:bg-red-950/40" : client.riskScore >= 40 ? "bg-amber-100 dark:bg-amber-950/40" : "bg-emerald-100 dark:bg-emerald-950/40";
+   981→
+   982→                          return (
+   983→                            <motion.div
+   984→                              key={client.client}
+   985→                              initial={{ opacity: 0, x: -10 }}
+   986→                              animate={{ opacity: 1, x: 0 }}
+   987→                              transition={{ delay: idx * 0.08 }}
+   988→                              className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+   989→                            >
+   990→                              <div className="flex items-center gap-4">
+   991→                                <div className={`h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0 ${riskBg}`}>
+   992→                                  <span className={`text-sm font-bold ${riskColor}`}>{client.riskScore}</span>
+   993→                                </div>
+   994→                                <div className="flex-1 min-w-0">
+   995→                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+   996→                                    <span className="text-sm font-semibold text-foreground">{client.client}</span>
+   997→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} />
+   998→                                    <Badge variant={client.riskScore >= 70 ? "destructive" : client.riskScore >= 40 ? "secondary" : "outline"} className="text-[10px] h-5">
+   999→                                      {client.riskScore >= 70 ? "High Risk" : client.riskScore >= 40 ? "Medium Risk" : "Low Risk"}
+  1000→                                    </Badge>
+  1001→                                    <Badge variant="outline" className="text-[10px] h-5">
+  1002→                                      {client.trend === "worsening" ? "↓ Worsening" : client.trend === "improving" ? "↑ Improving" : "→ Stable"}
+  1003→                                    </Badge>
+  1004→                                  </div>
+  1005→                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+  1006→                                    <span>Total: {formatCurrency(client.totalInvoiced)}</span>
+  1007→                                    <span>Late: {client.latePayments}/{client.totalPayments}</span>
+  1008→                                    <span>Avg delay: {client.avgDaysLate.toFixed(1)}d</span>
+  1009→                                    <span>Last: {client.lastPaymentStatus === "late" ? "❌ Late" : "✓ On time"}</span>
+  1010→                                  </div>
+  1011→                                  <div className="flex items-center gap-2 mt-2">
+  1012→                                    <Progress value={client.riskScore} className="flex-1 h-1.5" />
+  1013→                                    <span className={`text-xs font-medium ${riskColor}`}>{client.riskScore}%</span>
+  1014→                                  </div>
+  1015→                                </div>
+  1016→                              </div>
+  1017→                            </motion.div>
+  1018→                          );
+  1019→                        })}
+  1020→                      </div>
+  1021→                    )}
+  1022→                  </CardContent>
+  1023→                </Card>
+  1024→              </TabsContent>
+  1025→
+  1026→              {/* ── Predictions Tab (Pro only) ── */}
+  1027→              {isPro && (
+  1028→                <TabsContent value="predictions" className="space-y-4">
+  1029→                  <Card>
+  1030→                    <CardHeader>
+  1031→                      <CardTitle className="text-lg flex items-center gap-2">
+  1032→                        <TrendingUp className="h-5 w-5 text-emerald-500" />
+  1033→                        Predictive Analytics
+  1034→                      </CardTitle>
+  1035→                      <CardDescription>AI-powered predictions based on your payment history</CardDescription>
+  1036→                    </CardHeader>
+  1037→                    <CardContent>
+  1038→                      <div className="text-center py-12 text-muted-foreground">
+  1039→                        <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-40" />
+  1040→                        <p className="text-sm">Predictive analytics will be available as more invoice data is collected.</p>
+  1041→                        <p className="text-xs mt-1">Need at least 3 months of invoice history for accurate predictions.</p>
+  1042→                      </div>
+  1043→                    </CardContent>
+  1044→                  </Card>
+  1045→                </TabsContent>
+  1046→              )}
+  1047→            </Tabs>
+  1048→          </>
+  1049→        )}
+  1050→      </PageLayout>
+  1051→    </motion.div>
+  1052→  );
+  1053→}
+  1054→

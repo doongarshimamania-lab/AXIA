@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -132,42 +133,7 @@ const filterTabs: { key: "all" | ProposalStatus; label: string }[] = [
   { key: "declined", label: "Declined" },
 ];
 
-// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
-
-const mockNow = Date.now();
-const mockDay = 86400000;
-
-const MOCK_PROPOSALS: Proposal[] = [
-  // Signed
-  { _id: "prop_1", userId: "", title: "TechCorp Phase 2 — CMS & Marketing Automation", status: "signed", clientName: "David Chen", clientEmail: "david.chen@techcorp.io", totalValue: 15000, sections: [{ id: "1", type: "heading", content: "TechCorp Phase 2" }, { id: "2", type: "text", content: "CMS integration, marketing automation workflows, and analytics dashboard." }, { id: "3", type: "pricing", content: "Phase 2 Package", metadata: { items: [{ name: "CMS Integration", price: 5000 }, { name: "Marketing Automation", price: 4000 }, { name: "Analytics Dashboard", price: 3500 }, { name: "QA & Deployment", price: 2500 }] } }, { id: "4", type: "terms", content: "30% upfront, 40% at CMS milestone, 30% on delivery." }], sentAt: mockNow - 20 * mockDay, viewedAt: mockNow - 18 * mockDay, signedAt: mockNow - 10 * mockDay, createdAt: mockNow - 25 * mockDay, updatedAt: mockNow },
-  { _id: "prop_6", userId: "", title: "E-Commerce Platform Redesign", status: "signed", clientName: "Acme Corp", clientEmail: "sarah@acmecorp.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "E-Commerce Redesign" }, { id: "2", type: "text", content: "Complete redesign with modern UX, mobile-first approach, and optimized checkout." }], sentAt: mockNow - 25 * mockDay, viewedAt: mockNow - 22 * mockDay, signedAt: mockNow - 12 * mockDay, createdAt: mockNow - 30 * mockDay, updatedAt: mockNow },
-  { _id: "prop_10", userId: "", title: "DigiMark Brand Identity Package", status: "signed", clientName: "Lisa Park", clientEmail: "lisa@digitalmarketingco.com", totalValue: 3200, sections: [{ id: "1", type: "heading", content: "Brand Identity" }, { id: "2", type: "text", content: "Complete brand identity refresh including logo, color palette, and guidelines." }], sentAt: mockNow - 15 * mockDay, viewedAt: mockNow - 14 * mockDay, signedAt: mockNow - 8 * mockDay, createdAt: mockNow - 18 * mockDay, updatedAt: mockNow },
-  // Sent
-  { _id: "prop_2", userId: "", title: "Mobile Banking App — Full Development", status: "sent", clientName: "Michael Torres", clientEmail: "cto@finserve.io", totalValue: 25000, sections: [{ id: "1", type: "heading", content: "FinServe Mobile Banking" }, { id: "2", type: "text", content: "Secure mobile banking app with biometric auth and real-time transactions." }, { id: "3", type: "pricing", content: "Enterprise Package", metadata: { items: [{ name: "React Native App", price: 12000 }, { name: "Backend API & Security", price: 8000 }, { name: "Admin Dashboard", price: 3000 }, { name: "Penetration Testing", price: 2000 }] } }], sentAt: mockNow - 5 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  { _id: "prop_9", userId: "", title: "Insurance Claims Processing Platform", status: "sent", clientName: "Vikram Mehta", clientEmail: "vikram@insureflow.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "InsureFlow Claims Platform" }, { id: "2", type: "text", content: "Claims processing with document OCR, automated workflows, and compliance engine." }], sentAt: mockNow - 3 * mockDay, viewedAt: mockNow - 1 * mockDay, createdAt: mockNow - 8 * mockDay, updatedAt: mockNow },
-  { _id: "prop_16", userId: "", title: "Nonprofit Donation Platform Proposal", status: "sent", clientName: "Dr. Sarah Okonkwo", clientEmail: "sarah@givehope.org", totalValue: 8000, sections: [{ id: "1", type: "heading", content: "Donation Platform" }, { id: "2", type: "text", content: "Donation and volunteer management platform with recurring donations and impact reporting." }], sentAt: mockNow - 2 * mockDay, createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
-  // Viewed
-  { _id: "prop_4", userId: "", title: "Creative Studios Motion Design Package", status: "viewed", clientName: "Tom Bradley", clientEmail: "tom@creativestudios.art", totalValue: 7500, sections: [{ id: "1", type: "heading", content: "Motion Design Package" }, { id: "2", type: "text", content: "Motion graphics reel and social media content for brand launch campaign." }], sentAt: mockNow - 8 * mockDay, viewedAt: mockNow - 6 * mockDay, createdAt: mockNow - 12 * mockDay, updatedAt: mockNow },
-  { _id: "prop_11", userId: "", title: "Brand Identity for HealthTech Startup", status: "viewed", clientName: "MediTech Inc", clientEmail: "marketing@meditech.org", totalValue: 12000, sections: [{ id: "1", type: "heading", content: "HealthTech Branding" }, { id: "2", type: "text", content: "Complete brand identity for healthcare technology startup with accessible design." }], sentAt: mockNow - 7 * mockDay, viewedAt: mockNow - 5 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  { _id: "prop_18", userId: "", title: "Manufacturing Quality Control System Proposal", status: "viewed", clientName: "Ingrid Svensson", clientEmail: "ingrid@precisemfg.se", totalValue: 38000, sections: [{ id: "1", type: "heading", content: "Quality Control System" }, { id: "2", type: "text", content: "IoT-connected quality control system with real-time defect detection." }], sentAt: mockNow - 6 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  // Draft
-  { _id: "prop_3", userId: "", title: "Healthcare Patient Portal", status: "draft", clientName: "Dr. Robert Singh", clientEmail: "robert@medportal.health", totalValue: 18000, sections: [{ id: "1", type: "heading", content: "Patient Portal" }, { id: "2", type: "text", content: "HIPAA-compliant patient portal with appointment scheduling and secure messaging." }], createdAt: mockNow - 2 * mockDay, updatedAt: mockNow },
-  { _id: "prop_12", userId: "", title: "Supply Chain Management System", status: "draft", clientName: "Robert Chang", clientEmail: "rchang@logisync.com", totalValue: 32000, sections: [{ id: "1", type: "heading", content: "Supply Chain Platform" }, { id: "2", type: "text", content: "End-to-end supply chain management with inventory tracking and predictive analytics." }], createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
-  { _id: "prop_13", userId: "", title: "Restaurant POS & Ordering System", status: "draft", clientName: "Maria Santos", clientEmail: "maria@freshbites.co", totalValue: 14000, sections: [{ id: "1", type: "heading", content: "Restaurant POS" }, { id: "2", type: "text", content: "Point-of-sale and online ordering system for a 12-location restaurant chain." }], createdAt: mockNow - 3 * mockDay, updatedAt: mockNow },
-  // Declined
-  { _id: "prop_5", userId: "", title: "Social Platform MVP", status: "declined", clientName: "SocialNext", clientEmail: "founders@socialnext.com", totalValue: 35000, sections: [{ id: "1", type: "heading", content: "SocialNext MVP" }, { id: "2", type: "text", content: "Complete social networking MVP with user profiles, feed algorithm, and messaging." }], sentAt: mockNow - 30 * mockDay, viewedAt: mockNow - 28 * mockDay, createdAt: mockNow - 35 * mockDay, updatedAt: mockNow },
-  // Expired
-  { _id: "prop_14exp", userId: "", title: "EdTech Course Platform Proposal", status: "expired", clientName: "Prof. Anika Desai", clientEmail: "anika@learnvista.edu", totalValue: 9500, sections: [{ id: "1", type: "heading", content: "EdTech Platform" }, { id: "2", type: "text", content: "Online course platform with video hosting, quizzes, and certificate generation." }], sentAt: mockNow - 45 * mockDay, viewedAt: mockNow - 43 * mockDay, validUntil: mockNow - 15 * mockDay, createdAt: mockNow - 50 * mockDay, updatedAt: mockNow },
-];
-
-const MOCK_STATS = {
-  total: MOCK_PROPOSALS.length,
-  sent: MOCK_PROPOSALS.filter(p => p.status === "sent").length,
-  signed: MOCK_PROPOSALS.filter(p => p.status === "signed").length,
-  draft: MOCK_PROPOSALS.filter(p => p.status === "draft").length,
-  signatureRate: MOCK_PROPOSALS.length > 0 ? Math.round((MOCK_PROPOSALS.filter(p => p.status === "signed").length / (MOCK_PROPOSALS.filter(p => p.status === "signed").length + MOCK_PROPOSALS.filter(p => p.status === "declined").length + MOCK_PROPOSALS.filter(p => p.status === "expired").length || 1)) * 100) : 0,
-  totalValue: MOCK_PROPOSALS.reduce((s, p) => s + p.totalValue, 0),
-};
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Proposals() {
   const navigate = useNavigate();
@@ -188,8 +154,8 @@ export default function Proposals() {
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
 
   // Convex queries
   const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : "skip") as Proposal[] | undefined;
@@ -211,30 +177,22 @@ export default function Proposals() {
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
 
-  // Track whether we're using mock data (mock IDs are not valid Convex IDs)
-  const isUsingMockData = !convexProposals || convexProposals.length === 0;
-
   const { isDisconnected } = useConvexConnectionState();
   const isLoading = convexProposals === undefined || convexStats === undefined;
   const timedOut = useQueryTimeout(isLoading, 3000);
   const showLoading = isLoading && !timedOut && !isDisconnected;
 
-  // Use Convex data when available, fall back to mock data
+  // Use Convex data only
   const proposals = useMemo(() => {
-    if (convexProposals && convexProposals.length > 0) return convexProposals;
-    // Filter mock data by activeFilter
-    if (activeFilter === "all") return MOCK_PROPOSALS;
-    return MOCK_PROPOSALS.filter(p => p.status === activeFilter);
-  }, [convexProposals, activeFilter]);
+    return convexProposals ?? [];
+  }, [convexProposals]);
 
   const stats = useMemo(() => {
-    if (convexStats && convexStats.total > 0) return convexStats;
-    return MOCK_STATS;
+    return convexStats ?? { total: 0, sent: 0, signed: 0, draft: 0, signatureRate: 0, totalValue: 0 };
   }, [convexStats]);
 
   const allProposals = useMemo(() => {
-    if (convexAllProposals && convexAllProposals.length > 0) return convexAllProposals;
-    return MOCK_PROPOSALS;
+    return convexAllProposals ?? [];
   }, [convexAllProposals]);
 
   const filterCounts = useMemo(() => {
@@ -327,11 +285,11 @@ export default function Proposals() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <PageLayout wide>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
               Proposals
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -562,7 +520,7 @@ export default function Proposals() {
                   key={proposal._id}
                   proposal={proposal}
                   idx={idx}
-                  isMock={isUsingMockData}
+                  isMock={false}
                   formatCurrency={formatCurrency}
                   formatDate={formatDate}
                   onSend={handleSend}
@@ -590,7 +548,7 @@ export default function Proposals() {
         </div>
         </>
         )}
-      </div>
+      </PageLayout>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>

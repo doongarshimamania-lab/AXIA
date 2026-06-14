@@ -29,3 +29,7 @@ export type { ErrorBoundaryProps } from "./ErrorBoundary";
 // Tab Navigation — standardized tab bar (underline & pill variants)
 export { TabNav } from "./TabNav";
 export type { TabNavProps, TabNavTab } from "./TabNav";
+
+// Page Layout — centralized layout wrapper for sidebar pages
+export { PageLayout } from "./PageLayout";
+export type { PageLayoutProps } from "./PageLayout";

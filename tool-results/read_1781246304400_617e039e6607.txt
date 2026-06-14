@@ -1,0 +1,751 @@
+     1→import { query, mutation } from "../_generated/server";
+     2→import { v } from "convex/values";
+     3→import { getAuthUserId } from "@convex-dev/auth/server";
+     4→import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
+     5→
+     6→// ─── QUERIES ──────────────────────────────────────────────────────────────
+     7→
+     8→export const getInvoices = query({
+     9→  args: { workspaceId: v.optional(v.id("workspaces")), status: v.optional(v.string()) },
+    10→  handler: async (ctx, { workspaceId, status }) => {
+    11→    const userId = await getAuthUserId(ctx);
+    12→    if (!userId) return [];
+    13→
+    14→    // If workspaceId provided, filter by workspace with membership check
+    15→    if (workspaceId) {
+    16→      const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
+    17→      if (!membership) return [];
+    18→
+    19→      const allInvoices = await ctx.db
+    20→        .query("invoices")
+    21→        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    22→        .order("desc")
+    23→        .collect();
+    24→
+    25→      if (status) return allInvoices.filter((i: any) => i.status === status);
+    26→      return allInvoices;
+    27→    }
+    28→
+    29→    if (status) {
+    30→      return await ctx.db
+    31→        .query("invoices")
+    32→        .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", status as any))
+    33→        .order("desc")
+    34→        .collect();
+    35→    }
+    36→    return await ctx.db
+    37→      .query("invoices")
+    38→      .withIndex("by_user", (q) => q.eq("userId", userId))
+    39→      .order("desc")
+    40→      .collect();
+    41→  },
+    42→});
+    43→
+    44→export const getInvoice = query({
+    45→  args: { invoiceId: v.id("invoices") },
+    46→  handler: async (ctx, { invoiceId }) => {
+    47→    const userId = await getAuthUserId(ctx);
+    48→    if (!userId) return null;
+    49→    const invoice = await ctx.db.get(invoiceId);
+    50→    if (!invoice) return null;
+    51→
+    52→    // Check workspace membership or direct ownership
+    53→    if (invoice.workspaceId) {
+    54→      const access = await getRecordAccess(ctx, invoice, userId);
+    55→      if (!access) return null;
+    56→    } else if (invoice.userId !== userId) {
+    57→      return null;
+    58→    }
+    59→    return invoice;
+    60→  },
+    61→});
+    62→
+    63→export const getInvoiceByToken = query({
+    64→  args: { publicToken: v.string() },
+    65→  handler: async (ctx, { publicToken }) => {
+    66→    return await ctx.db
+    67→      .query("invoices")
+    68→      .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
+    69→      .first();
+    70→  },
+    71→});
+    72→
+    73→export const getWorkLinks = query({
+    74→  args: { invoiceId: v.id("invoices") },
+    75→  handler: async (ctx, { invoiceId }) => {
+    76→    return await ctx.db
+    77→      .query("invoiceWorkLinks")
+    78→      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+    79→      .collect();
+    80→  },
+    81→});
+    82→
+    83→export const getPaymentReminders = query({
+    84→  args: { invoiceId: v.optional(v.id("invoices")) },
+    85→  handler: async (ctx, { invoiceId }) => {
+    86→    const userId = await getAuthUserId(ctx);
+    87→    if (!userId) return [];
+    88→
+    89→    if (invoiceId) {
+    90→      return await ctx.db
+    91→        .query("paymentReminders")
+    92→        .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+    93→        .collect();
+    94→    }
+    95→
+    96→    return await ctx.db
+    97→      .query("paymentReminders")
+    98→      .withIndex("by_user", (q) => q.eq("userId", userId))
+    99→      .collect();
+   100→  },
+   101→});
+   102→
+   103→export const getInvoiceStats = query({
+   104→  args: { workspaceId: v.optional(v.id("workspaces")) },
+   105→  handler: async (ctx, { workspaceId }) => {
+   106→    const userId = await getAuthUserId(ctx);
+   107→    if (!userId) return { total: 0, paid: 0, pending: 0, overdue: 0, totalRevenue: 0, withProof: 0 };
+   108→
+   109→    let invoices;
+   110→    if (workspaceId) {
+   111→      const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
+   112→      if (!membership) return { total: 0, paid: 0, pending: 0, overdue: 0, totalRevenue: 0, withProof: 0 };
+   113→      invoices = await ctx.db
+   114→        .query("invoices")
+   115→        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+   116→        .collect();
+   117→    } else {
+   118→      invoices = await ctx.db
+   119→        .query("invoices")
+   120→        .withIndex("by_user", (q) => q.eq("userId", userId))
+   121→        .collect();
+   122→    }
+   123→
+   124→    return {
+   125→      total: invoices.length,
+   126→      paid: invoices.filter(i => i.status === "paid").length,
+   127→      pending: invoices.filter(i => i.status === "sent" || i.status === "viewed").length,
+   128→      overdue: invoices.filter(i => i.status === "overdue").length,
+   129→      draft: invoices.filter(i => i.status === "draft").length,
+   130→      totalRevenue: invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.total, 0),
+   131→      totalOutstanding: invoices.filter(i => ["sent", "viewed", "overdue"].includes(i.status)).reduce((s, i) => s + i.total, 0),
+   132→      withProof: invoices.filter(i => (i.proofCount ?? 0) > 0).length,
+   133→    };
+   134→  },
+   135→});
+   136→
+   137→// ─── MUTATIONS ────────────────────────────────────────────────────────────
+   138→
+   139→function generateInvoiceNumber(existing: any[]): string {
+   140→  const nums = existing.map(inv => {
+   141→    const match = inv.invoiceNumber?.match(/INV-(\d+)/);
+   142→    return match ? parseInt(match[1]) : 0;
+   143→  });
+   144→  const max = nums.length > 0 ? Math.max(...nums) : 0;
+   145→  return `INV-${String(max + 1).padStart(3, "0")}`;
+   146→}
+   147→
+   148→function generateToken(): string {
+   149→  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+   150→  let result = "";
+   151→  for (let i = 0; i < 32; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+   152→  return result;
+   153→}
+   154→
+   155→export const createInvoice = mutation({
+   156→  args: {
+   157→    workspaceId: v.optional(v.id("workspaces")),
+   158→    teamId: v.optional(v.id("teams")),
+   159→    clientId: v.optional(v.id("clients")),
+   160→    clientName: v.optional(v.string()),
+   161→    clientEmail: v.optional(v.string()),
+   162→    lineItems: v.array(v.object({
+   163→      id: v.string(),
+   164→      description: v.string(),
+   165→      quantity: v.number(),
+   166→      rate: v.number(),
+   167→      amount: v.number(),
+   168→      workLinkId: v.optional(v.string()),
+   169→      hasProof: v.optional(v.boolean()),
+   170→    })),
+   171→    subtotal: v.number(),
+   172→    taxRate: v.optional(v.number()),
+   173→    taxAmount: v.optional(v.number()),
+   174→    total: v.number(),
+   175→    dueDate: v.number(),
+   176→    issueDate: v.optional(v.number()),
+   177→    notes: v.optional(v.string()),
+   178→    currency: v.optional(v.string()),
+   179→    customFields: v.optional(v.any()),
+   180→  },
+   181→  handler: async (ctx, args) => {
+   182→    const userId = await getAuthUserId(ctx);
+   183→    if (!userId) throw new Error("Not authenticated");
+   184→
+   185→    // If workspaceId provided, verify membership
+   186→    if (args.workspaceId) {
+   187→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+   188→    }
+   189→
+   190→    const { workspaceId, teamId, customFields, ...invoiceArgs } = args;
+   191→
+   192→    const existing = await ctx.db
+   193→      .query("invoices")
+   194→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   195→      .collect();
+   196→
+   197→    const invoiceNumber = generateInvoiceNumber(existing);
+   198→    const proofCount = args.lineItems.filter(li => li.hasProof).length;
+   199→
+   200→    return await ctx.db.insert("invoices", {
+   201→      userId,
+   202→      workspaceId: workspaceId ?? undefined,
+   203→      createdBy: userId,
+   204→      teamId: teamId ?? undefined,
+   205→      customFields: customFields ?? undefined,
+   206→      ...invoiceArgs,
+   207→      invoiceNumber,
+   208→      publicToken: generateToken(),
+   209→      status: "draft",
+   210→      issueDate: args.issueDate ?? Date.now(),
+   211→      proofCount,
+   212→      hasValidatedBilling: proofCount > 0,
+   213→      createdAt: Date.now(),
+   214→      updatedAt: Date.now(),
+   215→    });
+   216→  },
+   217→});
+   218→
+   219→export const updateInvoice = mutation({
+   220→  args: {
+   221→    invoiceId: v.id("invoices"),
+   222→    clientName: v.optional(v.string()),
+   223→    clientEmail: v.optional(v.string()),
+   224→    lineItems: v.optional(v.array(v.object({
+   225→      id: v.string(),
+   226→      description: v.string(),
+   227→      quantity: v.number(),
+   228→      rate: v.number(),
+   229→      amount: v.number(),
+   230→      workLinkId: v.optional(v.string()),
+   231→      hasProof: v.optional(v.boolean()),
+   232→    }))),
+   233→    subtotal: v.optional(v.number()),
+   234→    taxRate: v.optional(v.number()),
+   235→    taxAmount: v.optional(v.number()),
+   236→    total: v.optional(v.number()),
+   237→    dueDate: v.optional(v.number()),
+   238→    notes: v.optional(v.string()),
+   239→    teamId: v.optional(v.id("teams")),
+   240→    customFields: v.optional(v.any()),
+   241→  },
+   242→  handler: async (ctx, { invoiceId, ...updates }) => {
+   243→    const userId = await getAuthUserId(ctx);
+   244→    if (!userId) throw new Error("Not authenticated");
+   245→
+   246→    const invoice = await ctx.db.get(invoiceId);
+   247→    if (!invoice) throw new Error("Invoice not found");
+   248→
+   249→    // Check workspace membership or direct ownership
+   250→    if (invoice.workspaceId) {
+   251→      const access = await getRecordAccess(ctx, invoice, userId);
+   252→      if (!access || access === "read" || access === "comment") {
+   253→        throw new Error("Not authorized — need collaborate or higher access");
+   254→      }
+   255→    } else if (invoice.userId !== userId) {
+   256→      throw new Error("Not authorized");
+   257→    }
+   258→
+   259→    if (updates.lineItems) {
+   260→      const proofCount = updates.lineItems.filter(li => li.hasProof).length;
+   261→      (updates as any).proofCount = proofCount;
+   262→      (updates as any).hasValidatedBilling = proofCount > 0;
+   263→    }
+   264→
+   265→    await ctx.db.patch(invoiceId, { ...updates, updatedAt: Date.now() });
+   266→  },
+   267→});
+   268→
+   269→export const sendInvoice = mutation({
+   270→  args: { invoiceId: v.id("invoices") },
+   271→  handler: async (ctx, { invoiceId }) => {
+   272→    const userId = await getAuthUserId(ctx);
+   273→    if (!userId) throw new Error("Not authenticated");
+   274→
+   275→    const invoice = await ctx.db.get(invoiceId);
+   276→    if (!invoice) throw new Error("Invoice not found");
+   277→
+   278→    // Check workspace membership or direct ownership
+   279→    if (invoice.workspaceId) {
+   280→      const access = await getRecordAccess(ctx, invoice, userId);
+   281→      if (!access || access === "read" || access === "comment") {
+   282→        throw new Error("Not authorized");
+   283→      }
+   284→    } else if (invoice.userId !== userId) {
+   285→      throw new Error("Not authorized");
+   286→    }
+   287→
+   288→    await ctx.db.patch(invoiceId, {
+   289→      status: "sent",
+   290→      sentAt: Date.now(),
+   291→      updatedAt: Date.now(),
+   292→    });
+   293→
+   294→    // Schedule payment reminders
+   295→    const reminderSchedule = [
+   296→      { day: 3, tone: "friendly" as const, subject: `Invoice ${invoice.invoiceNumber} - Friendly Reminder` },
+   297→      { day: 7, tone: "firm" as const, subject: `Invoice ${invoice.invoiceNumber} - Payment Due` },
+   298→      { day: 14, tone: "urgent" as const, subject: `Invoice ${invoice.invoiceNumber} - URGENT: Overdue Payment` },
+   299→    ];
+   300→
+   301→    for (const reminder of reminderSchedule) {
+   302→      const body = reminder.tone === "friendly"
+   303→        ? `Hi ${invoice.clientName || "there"},\n\nJust a friendly reminder that invoice ${invoice.invoiceNumber} for $${invoice.total} is due.\n\nThank you!`
+   304→        : reminder.tone === "firm"
+   305→        ? `Hi ${invoice.clientName || "there"},\n\nInvoice ${invoice.invoiceNumber} for $${invoice.total} is now past due. Please process payment at your earliest convenience.\n\nThank you.`
+   306→        : `Hi ${invoice.clientName || "there"},\n\nInvoice ${invoice.invoiceNumber} for $${invoice.total} is significantly overdue. Please process payment immediately.\n\nThank you.`;
+   307→
+   308→      await ctx.db.insert("paymentReminders", {
+   309→        userId,
+   310→        workspaceId: invoice.workspaceId ?? undefined,
+   311→        createdBy: userId,
+   312→        invoiceId,
+   313→        dayNumber: reminder.day,
+   314→        channel: "email",
+   315→        tone: reminder.tone,
+   316→        subject: reminder.subject,
+   317→        body,
+   318→        status: "scheduled",
+   319→        scheduledAt: Date.now() + reminder.day * 24 * 60 * 60 * 1000,
+   320→        createdAt: Date.now(),
+   321→      });
+   322→    }
+   323→  },
+   324→});
+   325→
+   326→export const markInvoicePaid = mutation({
+   327→  args: { invoiceId: v.id("invoices") },
+   328→  handler: async (ctx, { invoiceId }) => {
+   329→    const userId = await getAuthUserId(ctx);
+   330→    if (!userId) throw new Error("Not authenticated");
+   331→
+   332→    const invoice = await ctx.db.get(invoiceId);
+   333→    if (!invoice) throw new Error("Invoice not found");
+   334→
+   335→    // Check workspace membership or direct ownership
+   336→    if (invoice.workspaceId) {
+   337→      const access = await getRecordAccess(ctx, invoice, userId);
+   338→      if (!access || access === "read" || access === "comment") {
+   339→        throw new Error("Not authorized");
+   340→      }
+   341→    } else if (invoice.userId !== userId) {
+   342→      throw new Error("Not authorized");
+   343→    }
+   344→
+   345→    await ctx.db.patch(invoiceId, {
+   346→      status: "paid",
+   347→      paidDate: Date.now(),
+   348→      updatedAt: Date.now(),
+   349→    });
+   350→
+   351→    // Cancel remaining reminders
+   352→    const reminders = await ctx.db
+   353→      .query("paymentReminders")
+   354→      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+   355→      .collect();
+   356→
+   357→    for (const r of reminders) {
+   358→      if (r.status === "scheduled") {
+   359→        await ctx.db.patch(r._id, { status: "cancelled" });
+   360→      }
+   361→    }
+   362→  },
+   363→});
+   364→
+   365→export const deleteInvoice = mutation({
+   366→  args: { invoiceId: v.id("invoices") },
+   367→  handler: async (ctx, { invoiceId }) => {
+   368→    const userId = await getAuthUserId(ctx);
+   369→    if (!userId) throw new Error("Not authenticated");
+   370→
+   371→    const invoice = await ctx.db.get(invoiceId);
+   372→    if (!invoice) throw new Error("Invoice not found");
+   373→
+   374→    // Check workspace ownership or direct ownership
+   375→    if (invoice.workspaceId) {
+   376→      const access = await getRecordAccess(ctx, invoice, userId);
+   377→      if (access !== "owner") {
+   378→        throw new Error("Not authorized — only owners can delete invoices");
+   379→      }
+   380→    } else if (invoice.userId !== userId) {
+   381→      throw new Error("Not authorized");
+   382→    }
+   383→
+   384→    // Delete work links and reminders
+   385→    const workLinks = await ctx.db
+   386→      .query("invoiceWorkLinks")
+   387→      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+   388→      .collect();
+   389→    for (const wl of workLinks) await ctx.db.delete(wl._id);
+   390→
+   391→    const reminders = await ctx.db
+   392→      .query("paymentReminders")
+   393→      .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
+   394→      .collect();
+   395→    for (const r of reminders) await ctx.db.delete(r._id);
+   396→
+   397→    await ctx.db.delete(invoiceId);
+   398→  },
+   399→});
+   400→
+   401→// ─── WORK LINKS ───────────────────────────────────────────────────────────
+   402→
+   403→export const addWorkLink = mutation({
+   404→  args: {
+   405→    invoiceId: v.id("invoices"),
+   406→    lineItemId: v.string(),
+   407→    proofType: v.union(
+   408→      v.literal("time_entry"),
+   409→      v.literal("task_completion"),
+   410→      v.literal("milestone_delivery"),
+   411→      v.literal("deliverable_file"),
+   412→      v.literal("deliverable_url"),
+   413→      v.literal("expense_record")
+   414→    ),
+   415→    title: v.string(),
+   416→    description: v.optional(v.string()),
+   417→    hours: v.optional(v.number()),
+   418→    date: v.number(),
+   419→    value: v.optional(v.number()),
+   420→    url: v.optional(v.string()),
+   421→    fileName: v.optional(v.string()),
+   422→  },
+   423→  handler: async (ctx, args) => {
+   424→    const userId = await getAuthUserId(ctx);
+   425→    if (!userId) throw new Error("Not authenticated");
+   426→
+   427→    const invoice = await ctx.db.get(args.invoiceId);
+   428→    if (!invoice) throw new Error("Invoice not found");
+   429→
+   430→    // Check workspace membership or direct ownership
+   431→    if (invoice.workspaceId) {
+   432→      const access = await getRecordAccess(ctx, invoice, userId);
+   433→      if (!access || access === "read" || access === "comment") {
+   434→        throw new Error("Not authorized");
+   435→      }
+   436→    } else if (invoice.userId !== userId) {
+   437→      throw new Error("Not authorized");
+   438→    }
+   439→
+   440→    const workLinkId = await ctx.db.insert("invoiceWorkLinks", {
+   441→      userId,
+   442→      workspaceId: invoice.workspaceId ?? undefined,
+   443→      createdBy: userId,
+   444→      ...args,
+   445→      verified: false,
+   446→      createdAt: Date.now(),
+   447→    });
+   448→
+   449→    // Update the line item's hasProof flag
+   450→    const updatedLineItems = invoice.lineItems.map(li =>
+   451→      li.id === args.lineItemId ? { ...li, hasProof: true, workLinkId: workLinkId.toString() } : li
+   452→    );
+   453→    const proofCount = updatedLineItems.filter(li => li.hasProof).length;
+   454→
+   455→    await ctx.db.patch(args.invoiceId, {
+   456→      lineItems: updatedLineItems,
+   457→      proofCount,
+   458→      hasValidatedBilling: proofCount > 0,
+   459→      updatedAt: Date.now(),
+   460→    });
+   461→
+   462→    return workLinkId;
+   463→  },
+   464→});
+   465→
+   466→export const removeWorkLink = mutation({
+   467→  args: { workLinkId: v.id("invoiceWorkLinks") },
+   468→  handler: async (ctx, { workLinkId }) => {
+   469→    const userId = await getAuthUserId(ctx);
+   470→    if (!userId) throw new Error("Not authenticated");
+   471→
+   472→    const workLink = await ctx.db.get(workLinkId);
+   473→    if (!workLink) throw new Error("Work link not found");
+   474→
+   475→    // Check workspace membership or direct ownership
+   476→    if (workLink.workspaceId) {
+   477→      const access = await getRecordAccess(ctx, workLink, userId);
+   478→      if (!access || access === "read" || access === "comment") {
+   479→        throw new Error("Not authorized");
+   480→      }
+   481→    } else if (workLink.userId !== userId) {
+   482→      throw new Error("Not authorized");
+   483→    }
+   484→
+   485→    const invoice = await ctx.db.get(workLink.invoiceId);
+   486→    if (invoice) {
+   487→      const updatedLineItems = invoice.lineItems.map(li =>
+   488→        li.id === workLink.lineItemId ? { ...li, hasProof: false, workLinkId: undefined } : li
+   489→      );
+   490→      const proofCount = updatedLineItems.filter(li => li.hasProof).length;
+   491→      await ctx.db.patch(invoice._id, {
+   492→        lineItems: updatedLineItems,
+   493→        proofCount,
+   494→        hasValidatedBilling: proofCount > 0,
+   495→        updatedAt: Date.now(),
+   496→      });
+   497→    }
+   498→
+   499→    await ctx.db.delete(workLinkId);
+   500→  },
+   501→});
+   502→
+   503→// ─── SEED MOCK DATA ───────────────────────────────────────────────────────
+   504→
+   505→export const seedMockInvoices = mutation({
+   506→  args: {},
+   507→  handler: async (ctx) => {
+   508→    const userId = await getAuthUserId(ctx);
+   509→    if (!userId) throw new Error("Not authenticated");
+   510→
+   511→    const existing = await ctx.db
+   512→      .query("invoices")
+   513→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   514→      .collect();
+   515→
+   516→    if (existing.length > 0) return { seeded: false, count: existing.length };
+   517→
+   518→    const now = Date.now();
+   519→    const day = 86400000;
+   520→
+   521→    const mockInvoices = [
+   522→      {
+   523→        clientName: "Acme Corp",
+   524→        clientEmail: "billing@acmecorp.com",
+   525→        status: "paid" as const,
+   526→        lineItems: [
+   527→          { id: "li1", description: "Frontend Development - Homepage", quantity: 40, rate: 125, amount: 5000, hasProof: true },
+   528→          { id: "li2", description: "UI/UX Design - Dashboard", quantity: 20, rate: 150, amount: 3000, hasProof: true },
+   529→        ],
+   530→        subtotal: 8000, taxRate: 10, taxAmount: 800, total: 8800,
+   531→        issueDate: now - 30 * day, dueDate: now - 15 * day, paidDate: now - 12 * day,
+   532→        proofCount: 2, hasValidatedBilling: true,
+   533→      },
+   534→      {
+   535→        clientName: "TechStart Inc",
+   536→        clientEmail: "finance@techstart.io",
+   537→        status: "sent" as const,
+   538→        lineItems: [
+   539→          { id: "li1", description: "API Development - User Service", quantity: 60, rate: 150, amount: 9000, hasProof: true },
+   540→          { id: "li2", description: "Database Architecture", quantity: 15, rate: 175, amount: 2625, hasProof: false },
+   541→        ],
+   542→        subtotal: 11625, taxRate: 8, taxAmount: 930, total: 12555,
+   543→        issueDate: now - 5 * day, dueDate: now + 10 * day,
+   544→        proofCount: 1, hasValidatedBilling: true,
+   545→      },
+   546→      {
+   547→        clientName: "GlobalMedia",
+   548→        clientEmail: "accounts@globalmedia.com",
+   549→        status: "overdue" as const,
+   550→        lineItems: [
+   551→          { id: "li1", description: "Mobile App - iOS & Android", quantity: 80, rate: 125, amount: 10000, hasProof: true },
+   552→          { id: "li2", description: "QA Testing", quantity: 20, rate: 100, amount: 2000, hasProof: true },
+   553→          { id: "li3", description: "App Store Deployment", quantity: 5, rate: 200, amount: 1000, hasProof: false },
+   554→        ],
+   555→        subtotal: 13000, taxRate: 10, taxAmount: 1300, total: 14300,
+   556→        issueDate: now - 45 * day, dueDate: now - 15 * day,
+   557→        proofCount: 2, hasValidatedBilling: true,
+   558→      },
+   559→      {
+   560→        clientName: "DesignHub",
+   561→        clientEmail: "pay@designhub.co",
+   562→        status: "draft" as const,
+   563→        lineItems: [
+   564→          { id: "li1", description: "Brand Identity Package", quantity: 1, rate: 4500, amount: 4500, hasProof: false },
+   565→          { id: "li2", description: "Social Media Kit", quantity: 1, rate: 2000, amount: 2000, hasProof: false },
+   566→        ],
+   567→        subtotal: 6500, taxRate: 10, taxAmount: 650, total: 7150,
+   568→        issueDate: now, dueDate: now + 30 * day,
+   569→        proofCount: 0, hasValidatedBilling: false,
+   570→      },
+   571→    ];
+   572→
+   573→    for (let i = 0; i < mockInvoices.length; i++) {
+   574→      const inv = mockInvoices[i];
+   575→      await ctx.db.insert("invoices", {
+   576→        userId,
+   577→        invoiceNumber: `INV-${String(i + 1).padStart(3, "0")}`,
+   578→        publicToken: generateToken(),
+   579→        currency: "USD",
+   580→        notes: "",
+   581→        sentAt: inv.status !== "draft" ? inv.issueDate : undefined,
+   582→        viewedAt: inv.status === "paid" ? inv.issueDate + day : undefined,
+   583→        createdAt: inv.issueDate,
+   584→        updatedAt: now,
+   585→        ...inv,
+   586→      });
+   587→    }
+   588→
+   589→    return { seeded: true, count: mockInvoices.length };
+   590→  },
+   591→});
+   592→
+   593→// ─── INVOICE TEMPLATES ─────────────────────────────────────────────────────
+   594→
+   595→export const getInvoiceTemplates = query({
+   596→  args: { workspaceId: v.optional(v.id("workspaces")) },
+   597→  handler: async (ctx, { workspaceId }) => {
+   598→    const userId = await getAuthUserId(ctx);
+   599→    const systemTemplates = await ctx.db
+   600→      .query("invoiceTemplates")
+   601→      .withIndex("by_system", (q) => q.eq("isSystem", true))
+   602→      .collect();
+   603→
+   604→    let userTemplates: any[] = [];
+   605→    if (userId) {
+   606→      if (workspaceId) {
+   607→        userTemplates = await ctx.db
+   608→          .query("invoiceTemplates")
+   609→          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+   610→          .collect();
+   611→        // Also get user's own templates
+   612→        const personalTemplates = await ctx.db
+   613→          .query("invoiceTemplates")
+   614→          .withIndex("by_user", (q) => q.eq("userId", userId))
+   615→          .collect();
+   616→        const ids = new Set(userTemplates.map((t: any) => t._id));
+   617→        for (const t of personalTemplates) {
+   618→          if (!ids.has(t._id)) userTemplates.push(t);
+   619→        }
+   620→      } else {
+   621→        userTemplates = await ctx.db
+   622→          .query("invoiceTemplates")
+   623→          .withIndex("by_user", (q) => q.eq("userId", userId))
+   624→          .collect();
+   625→      }
+   626→    }
+   627→
+   628→    return [...systemTemplates, ...userTemplates];
+   629→  },
+   630→});
+   631→
+   632→export const saveUploadedInvoiceTemplate = mutation({
+   633→  args: {
+   634→    name: v.string(),
+   635→    sections: v.array(v.object({
+   636→      id: v.string(),
+   637→      type: v.union(
+   638→        v.literal("heading"),
+   639→        v.literal("text"),
+   640→        v.literal("line_items"),
+   641→        v.literal("subtotal"),
+   642→        v.literal("tax"),
+   643→        v.literal("discount"),
+   644→        v.literal("terms"),
+   645→        v.literal("bank_details"),
+   646→        v.literal("divider"),
+   647→        v.literal("client_info"),
+   648→        v.literal("sender_info"),
+   649→        v.literal("invoice_meta"),
+   650→        v.literal("total"),
+   651→        v.literal("notes")
+   652→      ),
+   653→      content: v.string(),
+   654→      metadata: v.optional(v.any()),
+   655→    })),
+   656→    industry: v.optional(v.string()),
+   657→    description: v.optional(v.string()),
+   658→    workspaceId: v.optional(v.id("workspaces")),
+   659→  },
+   660→  handler: async (ctx, { name, sections, industry, description, workspaceId }) => {
+   661→    const userId = await getAuthUserId(ctx);
+   662→    if (!userId) throw new Error("Not authenticated");
+   663→
+   664→    // If workspaceId provided, verify membership
+   665→    if (workspaceId) {
+   666→      await requireWorkspaceAccess(ctx, workspaceId, "member");
+   667→    }
+   668→
+   669→    return await ctx.db.insert("invoiceTemplates", {
+   670→      userId,
+   671→      workspaceId: workspaceId ?? undefined,
+   672→      createdBy: userId,
+   673→      name,
+   674→      sections,
+   675→      industry,
+   676→      description,
+   677→      usageCount: 0,
+   678→      createdAt: Date.now(),
+   679→    });
+   680→  },
+   681→});
+   682→
+   683→export const seedInvoiceTemplates = mutation({
+   684→  args: {},
+   685→  handler: async (ctx) => {
+   686→    const existing = await ctx.db
+   687→      .query("invoiceTemplates")
+   688→      .withIndex("by_system", (q) => q.eq("isSystem", true))
+   689→      .collect();
+   690→
+   691→    if (existing.length > 0) return;
+   692→
+   693→    const templates = [
+   694→      {
+   695→        name: "Standard Service Invoice",
+   696→        industry: "Technology",
+   697→        description: "Standard invoice template for service-based businesses",
+   698→        sections: [
+   699→          { id: "1", type: "heading" as const, content: "Invoice" },
+   700→          { id: "2", type: "text" as const, content: "Invoice Number: {{invoice_number}}\nDate: {{issue_date}}\nDue Date: {{due_date}}" },
+   701→          { id: "3", type: "text" as const, content: "Bill To:\n{{client_name}}\n{{client_email}}" },
+   702→          { id: "4", type: "line_items" as const, content: "Line Items" },
+   703→          { id: "5", type: "subtotal" as const, content: "Subtotal" },
+   704→          { id: "6", type: "tax" as const, content: "Tax" },
+   705→          { id: "7", type: "terms" as const, content: "Payment is due within 30 days of the invoice date. Late payments may be subject to a 1.5% monthly interest charge." },
+   706→          { id: "8", type: "bank_details" as const, content: "Bank Details:\nBank Name: {{bank_name}}\nAccount Name: {{account_name}}\nAccount Number: {{account_number}}\nRouting Number: {{routing_number}}" },
+   707→        ],
+   708→      },
+   709→      {
+   710→        name: "Hourly Consulting Invoice",
+   711→        industry: "Consulting",
+   712→        description: "Invoice template for hourly consulting work with time tracking",
+   713→        sections: [
+   714→          { id: "1", type: "heading" as const, content: "Consulting Invoice" },
+   715→          { id: "2", type: "text" as const, content: "Invoice #: {{invoice_number}}\nDate: {{issue_date}}\nDue: {{due_date}}" },
+   716→          { id: "3", type: "line_items" as const, content: "Time Entries" },
+   717→          { id: "4", type: "subtotal" as const, content: "Subtotal" },
+   718→          { id: "5", type: "tax" as const, content: "Tax" },
+   719→          { id: "6", type: "terms" as const, content: "Payment Terms: Net 15. Please reference invoice number in your payment." },
+   720→          { id: "7", type: "bank_details" as const, content: "Payment via bank transfer:\n{{bank_name}}\n{{account_number}}" },
+   721→        ],
+   722→      },
+   723→      {
+   724→        name: "Creative Services Invoice",
+   725→        industry: "Design",
+   726→        description: "Invoice template for design and creative agencies",
+   727→        sections: [
+   728→          { id: "1", type: "heading" as const, content: "Invoice" },
+   729→          { id: "2", type: "text" as const, content: "Project: {{project_name}}\nClient: {{client_name}}\nInvoice Date: {{issue_date}}" },
+   730→          { id: "3", type: "line_items" as const, content: "Services" },
+   731→          { id: "4", type: "subtotal" as const, content: "Subtotal" },
+   732→          { id: "5", type: "tax" as const, content: "Tax" },
+   733→          { id: "6", type: "terms" as const, content: "Payment due within 14 days. All deliverables remain the property of the designer until full payment is received." },
+   734→        ],
+   735→      },
+   736→    ];
+   737→
+   738→    for (const t of templates) {
+   739→      await ctx.db.insert("invoiceTemplates", {
+   740→        name: t.name,
+   741→        industry: t.industry,
+   742→        description: t.description,
+   743→        sections: t.sections,
+   744→        isSystem: true,
+   745→        usageCount: 0,
+   746→        createdAt: Date.now(),
+   747→      });
+   748→    }
+   749→  },
+   750→});
+   751→

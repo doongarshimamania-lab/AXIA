@@ -13,9 +13,9 @@ interface EvidenceHealthScoreProps {
 }
 
 export function EvidenceHealthScore({ protectedHours, healthScore }: EvidenceHealthScoreProps) {
-  const score = healthScore?.score || 87;
-  const quality = healthScore?.overallQuality || 87;
-  const improvement = healthScore?.possibleImprovement || 13;
+  const score = healthScore?.score ?? 0;
+  const quality = healthScore?.overallQuality ?? 0;
+  const improvement = healthScore?.possibleImprovement ?? 0;
 
   return (
     <Card className="p-6 bg-[#1E293B] border-[#334155]">
@@ -50,7 +50,7 @@ export function EvidenceHealthScore({ protectedHours, healthScore }: EvidenceHea
                 Improvement Opportunity
               </div>
               <div className="text-xs text-slate-400">
-                {healthScore?.improvementOpportunity || "Add more memo entries during work sessions to improve context clarity by 8%"}
+                {healthScore?.improvementOpportunity ?? "No improvement data available"}
               </div>
             </div>
           </div>

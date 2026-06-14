@@ -1,6 +1,6 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { auth } from "./helpers";
+import { getAuthenticatedUser } from "./helpers";
 
 /**
  * Message mutations — send, edit, delete, react, pin, mark read.
@@ -26,7 +26,7 @@ export const sendMessage = mutation({
     }))),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -91,7 +91,7 @@ export const editMessage = mutation({
     body: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
     if (message.authorId !== userId) throw new Error("Can only edit your own messages");
@@ -108,7 +108,7 @@ export const editMessage = mutation({
 export const deleteMessage = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
@@ -137,7 +137,7 @@ export const toggleReaction = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
 
     const existing = await ctx.db
       .query("reactions")
@@ -165,7 +165,7 @@ export const toggleReaction = mutation({
 export const togglePinMessage = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
@@ -207,7 +207,7 @@ export const togglePinMessage = mutation({
 export const markChannelRead = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const member = await ctx.db
       .query("channelMembers")
       .withIndex("by_channel_and_user", (q) =>
@@ -226,7 +226,7 @@ export const getOrCreateDMChannel = mutation({
     otherUserId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
 
     // Verify both users are workspace members
     const myMembership = await ctx.db

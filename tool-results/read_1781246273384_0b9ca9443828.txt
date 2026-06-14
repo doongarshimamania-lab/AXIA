@@ -1,0 +1,843 @@
+     1→// @ts-nocheck — Convex backend file with schema types not yet in generated types
+     2→import { mutation, query } from "./_generated/server";
+     3→import { v } from "convex/values";
+     4→import { getAuthUserId } from "@convex-dev/auth/server";
+     5→import { ConvexError } from "convex/values";
+     6→import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
+     7→import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
+     8→
+     9→// ─────────────────────────────────────────────
+    10→// Shared validators
+    11→// ─────────────────────────────────────────────
+    12→
+    13→const deliverableValidator = v.object({
+    14→  id: v.string(),
+    15→  name: v.string(),
+    16→  description: v.string(),
+    17→  revisionLimit: v.number(),
+    18→  revisionsUsed: v.number(),
+    19→  status: v.union(
+    20→    v.literal("pending"),
+    21→    v.literal("in_progress"),
+    22→    v.literal("completed"),
+    23→    v.literal("revisions_exceeded"),
+    24→  ),
+    25→});
+    26→
+    27→const scopeStatusValidator = v.union(
+    28→  v.literal("draft"),
+    29→  v.literal("active"),
+    30→  v.literal("completed"),
+    31→  v.literal("archived"),
+    32→);
+    33→
+    34→const changeOrderStatusValidator = v.union(
+    35→  v.literal("pending"),
+    36→  v.literal("approved"),
+    37→  v.literal("rejected"),
+    38→  v.literal("expired"),
+    39→);
+    40→
+    41→// ═════════════════════════════════════════════
+    42→// SCOPE DEFINITIONS
+    43→// ═════════════════════════════════════════════
+    44→
+    45→// ─────────────────────────────────────────────
+    46→// 1. CREATE
+    47→// ─────────────────────────────────────────────
+    48→export const create = mutation({
+    49→  args: {
+    50→    workspaceId: v.optional(v.id("workspaces")),
+    51→    teamId: v.optional(v.id("teams")),
+    52→    projectId: v.optional(v.id("projects")),
+    53→    proposalId: v.optional(v.id("proposals")),
+    54→    clientId: v.optional(v.id("clients")),
+    55→    deliverables: v.array(deliverableValidator),
+    56→    exclusions: v.optional(v.array(v.string())),
+    57→    assumptions: v.optional(v.array(v.string())),
+    58→    customFields: v.optional(v.any()),
+    59→  },
+    60→  handler: async (ctx, args) => {
+    61→    const userId = await getAuthUserId(ctx);
+    62→    if (!userId) throw new ConvexError("Not authenticated");
+    63→
+    64→    // If workspaceId provided, verify membership
+    65→    if (args.workspaceId) {
+    66→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+    67→    }
+    68→
+    69→    // Validate deliverables are not empty
+    70→    if (args.deliverables.length === 0) {
+    71→      throw new ConvexError("Scope must have at least one deliverable");
+    72→    }
+    73→
+    74→    // Validate each deliverable
+    75→    for (const d of args.deliverables) {
+    76→      if (d.name.trim().length === 0) {
+    77→        throw new ConvexError("Deliverable name cannot be empty");
+    78→      }
+    79→      if (d.revisionLimit < 0) {
+    80→        throw new ConvexError("Revision limit cannot be negative");
+    81→      }
+    82→      if (d.revisionsUsed < 0) {
+    83→        throw new ConvexError("Revisions used cannot be negative");
+    84→      }
+    85→      if (d.revisionsUsed > d.revisionLimit) {
+    86→        throw new ConvexError("Revisions used cannot exceed revision limit");
+    87→      }
+    88→    }
+    89→
+    90→    // Validate project access if provided
+    91→    if (args.projectId) {
+    92→      const project = await ctx.db.get(args.projectId);
+    93→      if (!project) throw new ConvexError("Project not found");
+    94→      if (project.workspaceId) {
+    95→        const access = await getRecordAccess(ctx, project, userId);
+    96→        if (!access) throw new ConvexError("Project does not belong to this workspace");
+    97→      } else if (project.userId !== userId) {
+    98→        throw new ConvexError("Project does not belong to this user");
+    99→      }
+   100→    }
+   101→
+   102→    // Validate proposal access if provided
+   103→    if (args.proposalId) {
+   104→      const proposal = await ctx.db.get(args.proposalId);
+   105→      if (!proposal) throw new ConvexError("Proposal not found");
+   106→      if (proposal.workspaceId) {
+   107→        const access = await getRecordAccess(ctx, proposal, userId);
+   108→        if (!access) throw new ConvexError("Proposal does not belong to this workspace");
+   109→      } else if (proposal.userId !== userId) {
+   110→        throw new ConvexError("Proposal does not belong to this user");
+   111→      }
+   112→    }
+   113→
+   114→    // Validate client access if provided
+   115→    if (args.clientId) {
+   116→      const client = await ctx.db.get(args.clientId);
+   117→      if (!client) throw new ConvexError("Client not found");
+   118→      if (client.workspaceId) {
+   119→        const access = await getRecordAccess(ctx, client, userId);
+   120→        if (!access) throw new ConvexError("Client does not belong to this workspace");
+   121→      } else if (client.userId !== userId) {
+   122→        throw new ConvexError("Client does not belong to this user");
+   123→      }
+   124→    }
+   125→
+   126→    // Generate approval token
+   127→    const clientApprovalToken = crypto.randomUUID();
+   128→
+   129→    const now = Date.now();
+   130→    const { workspaceId, teamId, customFields, ...rest } = args;
+   131→
+   132→    const scopeId = await ctx.db.insert("scopeDefinitions", {
+   133→      userId,
+   134→      workspaceId: workspaceId ?? undefined,
+   135→      createdBy: userId,
+   136→      teamId: teamId ?? undefined,
+   137→      customFields: customFields ?? undefined,
+   138→      ...rest,
+   139→      clientApprovedAt: undefined,
+   140→      clientApprovalToken,
+   141→      status: "draft",
+   142→      createdAt: now,
+   143→      updatedAt: now,
+   144→    });
+   145→
+   146→    return scopeId;
+   147→  },
+   148→});
+   149→
+   150→// ─────────────────────────────────────────────
+   151→// 2. UPDATE (only draft scopes)
+   152→// ─────────────────────────────────────────────
+   153→export const update = mutation({
+   154→  args: {
+   155→    scopeDefinitionId: v.id("scopeDefinitions"),
+   156→    projectId: v.optional(v.id("projects")),
+   157→    proposalId: v.optional(v.id("proposals")),
+   158→    clientId: v.optional(v.id("clients")),
+   159→    deliverables: v.optional(v.array(deliverableValidator)),
+   160→    exclusions: v.optional(v.array(v.string())),
+   161→    assumptions: v.optional(v.array(v.string())),
+   162→    teamId: v.optional(v.id("teams")),
+   163→  },
+   164→  handler: async (ctx, args) => {
+   165→    const userId = await getAuthUserId(ctx);
+   166→    if (!userId) throw new ConvexError("Not authenticated");
+   167→
+   168→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   169→    if (!scope) throw new ConvexError("Scope definition not found");
+   170→
+   171→    // Check workspace access or direct ownership
+   172→    if (scope.workspaceId) {
+   173→      await requireRecordAccess(ctx, scope, "collaborate");
+   174→    } else if (scope.userId !== userId) {
+   175→      throw new ConvexError("Not authorized to update this scope definition");
+   176→    }
+   177→
+   178→    // Only draft scopes can be edited
+   179→    if (scope.status !== "draft") {
+   180→      throw new ConvexError("Only draft scope definitions can be edited");
+   181→    }
+   182→
+   183→    // Validate deliverables if provided
+   184→    if (args.deliverables !== undefined) {
+   185→      if (args.deliverables.length === 0) {
+   186→        throw new ConvexError("Scope must have at least one deliverable");
+   187→      }
+   188→      for (const d of args.deliverables) {
+   189→        if (d.name.trim().length === 0) {
+   190→          throw new ConvexError("Deliverable name cannot be empty");
+   191→        }
+   192→        if (d.revisionLimit < 0) {
+   193→          throw new ConvexError("Revision limit cannot be negative");
+   194→        }
+   195→        if (d.revisionsUsed < 0) {
+   196→          throw new ConvexError("Revisions used cannot be negative");
+   197→        }
+   198→      }
+   199→    }
+   200→
+   201→    // Validate project access if changing
+   202→    if (args.projectId !== undefined) {
+   203→      const project = await ctx.db.get(args.projectId);
+   204→      if (!project) throw new ConvexError("Project not found");
+   205→      if (project.workspaceId) {
+   206→        const access = await getRecordAccess(ctx, project, userId);
+   207→        if (!access) throw new ConvexError("Project does not belong to this workspace");
+   208→      } else if (project.userId !== userId) {
+   209→        throw new ConvexError("Project does not belong to this user");
+   210→      }
+   211→    }
+   212→
+   213→    // Validate proposal access if changing
+   214→    if (args.proposalId !== undefined) {
+   215→      const proposal = await ctx.db.get(args.proposalId);
+   216→      if (!proposal) throw new ConvexError("Proposal not found");
+   217→      if (proposal.workspaceId) {
+   218→        const access = await getRecordAccess(ctx, proposal, userId);
+   219→        if (!access) throw new ConvexError("Proposal does not belong to this workspace");
+   220→      } else if (proposal.userId !== userId) {
+   221→        throw new ConvexError("Proposal does not belong to this user");
+   222→      }
+   223→    }
+   224→
+   225→    // Validate client access if changing
+   226→    if (args.clientId !== undefined) {
+   227→      const client = await ctx.db.get(args.clientId);
+   228→      if (!client) throw new ConvexError("Client not found");
+   229→      if (client.workspaceId) {
+   230→        const access = await getRecordAccess(ctx, client, userId);
+   231→        if (!access) throw new ConvexError("Client does not belong to this workspace");
+   232→      } else if (client.userId !== userId) {
+   233→        throw new ConvexError("Client does not belong to this user");
+   234→      }
+   235→    }
+   236→
+   237→    // Build partial update object
+   238→    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+   239→
+   240→    if (args.projectId !== undefined) updates.projectId = args.projectId;
+   241→    if (args.proposalId !== undefined) updates.proposalId = args.proposalId;
+   242→    if (args.clientId !== undefined) updates.clientId = args.clientId;
+   243→    if (args.deliverables !== undefined) updates.deliverables = args.deliverables;
+   244→    if (args.exclusions !== undefined) updates.exclusions = args.exclusions;
+   245→    if (args.assumptions !== undefined) updates.assumptions = args.assumptions;
+   246→    if (args.teamId !== undefined) updates.teamId = args.teamId;
+   247→
+   248→    await ctx.db.patch(args.scopeDefinitionId, updates);
+   249→
+   250→    return args.scopeDefinitionId;
+   251→  },
+   252→});
+   253→
+   254→// ─────────────────────────────────────────────
+   255→// 3. ACTIVATE (set status to "active")
+   256→// ─────────────────────────────────────────────
+   257→export const activate = mutation({
+   258→  args: {
+   259→    scopeDefinitionId: v.id("scopeDefinitions"),
+   260→  },
+   261→  handler: async (ctx, args) => {
+   262→    const userId = await getAuthUserId(ctx);
+   263→    if (!userId) throw new ConvexError("Not authenticated");
+   264→
+   265→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   266→    if (!scope) throw new ConvexError("Scope definition not found");
+   267→
+   268→    // Check workspace access or direct ownership
+   269→    if (scope.workspaceId) {
+   270→      await requireRecordAccess(ctx, scope, "collaborate");
+   271→    } else if (scope.userId !== userId) {
+   272→      throw new ConvexError("Not authorized to activate this scope definition");
+   273→    }
+   274→
+   275→    // Only draft scopes can be activated
+   276→    if (scope.status !== "draft") {
+   277→      throw new ConvexError("Only draft scope definitions can be activated");
+   278→    }
+   279→
+   280→    const now = Date.now();
+   281→
+   282→    const updates: Record<string, unknown> = {
+   283→      status: "active",
+   284→      updatedAt: now,
+   285→    };
+   286→
+   287→    await ctx.db.patch(args.scopeDefinitionId, updates);
+   288→
+   289→    return args.scopeDefinitionId;
+   290→  },
+   291→});
+   292→
+   293→// ─────────────────────────────────────────────
+   294→// 4. CLIENT APPROVE (via approvalToken, no auth)
+   295→// ─────────────────────────────────────────────
+   296→export const clientApprove = mutation({
+   297→  args: {
+   298→    approvalToken: v.string(),
+   299→  },
+   300→  handler: async (ctx, args) => {
+   301→    const scope = await ctx.db
+   302→      .query("scopeDefinitions")
+   303→      .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
+   304→      .first();
+   305→
+   306→    if (!scope) throw new ConvexError("Invalid or expired approval link");
+   307→
+   308→    // Only draft or active scopes can be approved
+   309→    if (scope.status !== "draft" && scope.status !== "active") {
+   310→      throw new ConvexError("This scope definition cannot be approved in its current state");
+   311→    }
+   312→
+   313→    // Check if already approved
+   314→    if (scope.clientApprovedAt) {
+   315→      throw new ConvexError("This scope definition has already been approved");
+   316→    }
+   317→
+   318→    const now = Date.now();
+   319→
+   320→    await ctx.db.patch(scope._id, {
+   321→      clientApprovedAt: now,
+   322→      updatedAt: now,
+   323→    });
+   324→
+   325→    return { success: true, scopeDefinitionId: scope._id };
+   326→  },
+   327→});
+   328→
+   329→// ─────────────────────────────────────────────
+   330→// 5. RECORD REVISION
+   331→// ─────────────────────────────────────────────
+   332→export const recordRevision = mutation({
+   333→  args: {
+   334→    scopeDefinitionId: v.id("scopeDefinitions"),
+   335→    deliverableId: v.string(),
+   336→  },
+   337→  handler: async (ctx, args) => {
+   338→    const userId = await getAuthUserId(ctx);
+   339→    if (!userId) throw new ConvexError("Not authenticated");
+   340→
+   341→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   342→    if (!scope) throw new ConvexError("Scope definition not found");
+   343→
+   344→    // Check workspace access or direct ownership
+   345→    if (scope.workspaceId) {
+   346→      await requireRecordAccess(ctx, scope, "collaborate");
+   347→    } else if (scope.userId !== userId) {
+   348→      throw new ConvexError("Not authorized to record revisions for this scope");
+   349→    }
+   350→
+   351→    // Only active scopes can have revisions recorded
+   352→    if (scope.status !== "active") {
+   353→      throw new ConvexError("Revisions can only be recorded for active scope definitions");
+   354→    }
+   355→
+   356→    // Find the deliverable
+   357→    const deliverableIndex = scope.deliverables.findIndex((d) => d.id === args.deliverableId);
+   358→    if (deliverableIndex === -1) {
+   359→      throw new ConvexError("Deliverable not found in this scope definition");
+   360→    }
+   361→
+   362→    const deliverable = scope.deliverables[deliverableIndex];
+   363→
+   364→    // Check if already exceeded
+   365→    if (deliverable.status === "revisions_exceeded") {
+   366→      throw new ConvexError("Revision limit already exceeded for this deliverable");
+   367→    }
+   368→
+   369→    // Increment revisionsUsed
+   370→    const newRevisionsUsed = deliverable.revisionsUsed + 1;
+   371→    const updatedDeliverables = [...scope.deliverables];
+   372→    const now = Date.now();
+   373→
+   374→    let autoCreatedChangeOrder = false;
+   375→
+   376→    if (newRevisionsUsed >= deliverable.revisionLimit) {
+   377→      // Set status to revisions_exceeded
+   378→      updatedDeliverables[deliverableIndex] = {
+   379→        ...deliverable,
+   380→        revisionsUsed: newRevisionsUsed,
+   381→        status: "revisions_exceeded",
+   382→      };
+   383→
+   384→      // Auto-generate a change order
+   385→      const changeOrderApprovalToken = crypto.randomUUID();
+   386→
+   387→      await ctx.db.insert("scopeChangeOrders", {
+   388→        userId,
+   389→        workspaceId: scope.workspaceId ?? undefined,
+   390→        createdBy: userId,
+   391→        teamId: scope.teamId ?? undefined,
+   392→        scopeDefinitionId: args.scopeDefinitionId,
+   393→        clientId: scope.clientId,
+   394→        deliverableId: args.deliverableId,
+   395→        requestedBy: "freelancer",
+   396→        description: `Revision limit exceeded for "${deliverable.name}". ${newRevisionsUsed} of ${deliverable.revisionLimit} allowed revisions have been used. Additional revisions require a change order.`,
+   397→        costImpact: undefined,
+   398→        timelineImpactDays: undefined,
+   399→        additionalRevisions: undefined,
+   400→        status: "pending",
+   401→        clientApprovedAt: undefined,
+   402→        clientApprovalToken: changeOrderApprovalToken,
+   403→        clientRejectedAt: undefined,
+   404→        rejectionReason: undefined,
+   405→        invoiceId: undefined,
+   406→        createdAt: now,
+   407→        updatedAt: now,
+   408→      });
+   409→
+   410→      autoCreatedChangeOrder = true;
+   411→    } else {
+   412→      updatedDeliverables[deliverableIndex] = {
+   413→        ...deliverable,
+   414→        revisionsUsed: newRevisionsUsed,
+   415→      };
+   416→    }
+   417→
+   418→    await ctx.db.patch(args.scopeDefinitionId, {
+   419→      deliverables: updatedDeliverables,
+   420→      updatedAt: now,
+   421→    });
+   422→
+   423→    return {
+   424→      scopeDefinitionId: args.scopeDefinitionId,
+   425→      deliverableId: args.deliverableId,
+   426→      revisionsUsed: newRevisionsUsed,
+   427→      revisionLimit: deliverable.revisionLimit,
+   428→      status: updatedDeliverables[deliverableIndex].status,
+   429→      autoCreatedChangeOrder,
+   430→    };
+   431→  },
+   432→});
+   433→
+   434→// ─────────────────────────────────────────────
+   435→// 6. CHECK REVISION STATUS
+   436→// ─────────────────────────────────────────────
+   437→export const checkRevisionStatus = query({
+   438→  args: {
+   439→    scopeDefinitionId: v.id("scopeDefinitions"),
+   440→  },
+   441→  handler: async (ctx, args) => {
+   442→    const userId = await getAuthUserId(ctx);
+   443→    if (!userId) throw new ConvexError("Not authenticated");
+   444→
+   445→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   446→    if (!scope) throw new ConvexError("Scope definition not found");
+   447→
+   448→    // Check workspace membership or direct ownership
+   449→    if (scope.workspaceId) {
+   450→      const access = await getRecordAccess(ctx, scope, userId);
+   451→      if (!access) throw new ConvexError("Not authorized to view this scope definition");
+   452→    } else if (scope.userId !== userId) {
+   453→      throw new ConvexError("Not authorized to view this scope definition");
+   454→    }
+   455→
+   456→    return scope.deliverables.map((d) => ({
+   457→      id: d.id,
+   458→      name: d.name,
+   459→      revisionLimit: d.revisionLimit,
+   460→      revisionsUsed: d.revisionsUsed,
+   461→      remainingRevisions: Math.max(0, d.revisionLimit - d.revisionsUsed),
+   462→      revisionUtilization: d.revisionLimit > 0
+   463→        ? Math.round((d.revisionsUsed / d.revisionLimit) * 100)
+   464→        : 0,
+   465→      status: d.status,
+   466→      isOverLimit: d.revisionsUsed >= d.revisionLimit,
+   467→    }));
+   468→  },
+   469→});
+   470→
+   471→// ─────────────────────────────────────────────
+   472→// 7. CREATE CHANGE ORDER
+   473→// ─────────────────────────────────────────────
+   474→export const createChangeOrder = mutation({
+   475→  args: {
+   476→    scopeDefinitionId: v.id("scopeDefinitions"),
+   477→    clientId: v.optional(v.id("clients")),
+   478→    deliverableId: v.optional(v.string()),
+   479→    requestedBy: v.union(v.literal("client"), v.literal("freelancer")),
+   480→    description: v.string(),
+   481→    costImpact: v.optional(v.number()),
+   482→    timelineImpactDays: v.optional(v.number()),
+   483→    additionalRevisions: v.optional(v.number()),
+   484→  },
+   485→  handler: async (ctx, args) => {
+   486→    const userId = await getAuthUserId(ctx);
+   487→    if (!userId) throw new ConvexError("Not authenticated");
+   488→
+   489→    // Validate scope definition access
+   490→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   491→    if (!scope) throw new ConvexError("Scope definition not found");
+   492→
+   493→    // Check workspace access or direct ownership
+   494→    if (scope.workspaceId) {
+   495→      await requireRecordAccess(ctx, scope, "collaborate");
+   496→    } else if (scope.userId !== userId) {
+   497→      throw new ConvexError("Not authorized to create change orders for this scope");
+   498→    }
+   499→
+   500→    // Only active scopes can have change orders
+   501→    if (scope.status !== "active") {
+   502→      throw new ConvexError("Change orders can only be created for active scope definitions");
+   503→    }
+   504→
+   505→    // Validate description is not empty
+   506→    if (args.description.trim().length === 0) {
+   507→      throw new ConvexError("Change order description cannot be empty");
+   508→    }
+   509→
+   510→    // Validate costImpact is non-negative if provided
+   511→    if (args.costImpact !== undefined && args.costImpact < 0) {
+   512→      throw new ConvexError("Cost impact cannot be negative");
+   513→    }
+   514→
+   515→    // Validate timelineImpactDays is non-negative if provided
+   516→    if (args.timelineImpactDays !== undefined && args.timelineImpactDays < 0) {
+   517→      throw new ConvexError("Timeline impact cannot be negative");
+   518→    }
+   519→
+   520→    // Validate additionalRevisions is non-negative if provided
+   521→    if (args.additionalRevisions !== undefined && args.additionalRevisions < 0) {
+   522→      throw new ConvexError("Additional revisions cannot be negative");
+   523→    }
+   524→
+   525→    // Validate deliverableId exists in the scope if provided
+   526→    if (args.deliverableId) {
+   527→      const deliverable = scope.deliverables.find((d) => d.id === args.deliverableId);
+   528→      if (!deliverable) {
+   529→        throw new ConvexError("Deliverable not found in this scope definition");
+   530→      }
+   531→    }
+   532→
+   533→    // Validate client access if provided
+   534→    if (args.clientId) {
+   535→      const client = await ctx.db.get(args.clientId);
+   536→      if (!client) throw new ConvexError("Client not found");
+   537→      if (client.workspaceId) {
+   538→        const access = await getRecordAccess(ctx, client, userId);
+   539→        if (!access) throw new ConvexError("Client does not belong to this workspace");
+   540→      } else if (client.userId !== userId) {
+   541→        throw new ConvexError("Client does not belong to this user");
+   542→      }
+   543→    }
+   544→
+   545→    // Generate approval token
+   546→    const clientApprovalToken = crypto.randomUUID();
+   547→
+   548→    const now = Date.now();
+   549→
+   550→    const changeOrderId = await ctx.db.insert("scopeChangeOrders", {
+   551→      userId,
+   552→      workspaceId: scope.workspaceId ?? undefined,
+   553→      createdBy: userId,
+   554→      teamId: scope.teamId ?? undefined,
+   555→      scopeDefinitionId: args.scopeDefinitionId,
+   556→      clientId: args.clientId ?? scope.clientId,
+   557→      deliverableId: args.deliverableId,
+   558→      requestedBy: args.requestedBy,
+   559→      description: args.description.trim(),
+   560→      costImpact: args.costImpact,
+   561→      timelineImpactDays: args.timelineImpactDays,
+   562→      additionalRevisions: args.additionalRevisions,
+   563→      status: "pending",
+   564→      clientApprovedAt: undefined,
+   565→      clientApprovalToken,
+   566→      clientRejectedAt: undefined,
+   567→      rejectionReason: undefined,
+   568→      invoiceId: undefined,
+   569→      createdAt: now,
+   570→      updatedAt: now,
+   571→    });
+   572→
+   573→    return changeOrderId;
+   574→  },
+   575→});
+   576→
+   577→// ─────────────────────────────────────────────
+   578→// 8. CLIENT APPROVE CHANGE ORDER (no auth)
+   579→// ─────────────────────────────────────────────
+   580→export const clientApproveChangeOrder = mutation({
+   581→  args: {
+   582→    approvalToken: v.string(),
+   583→  },
+   584→  handler: async (ctx, args) => {
+   585→    const changeOrder = await ctx.db
+   586→      .query("scopeChangeOrders")
+   587→      .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
+   588→      .first();
+   589→
+   590→    if (!changeOrder) throw new ConvexError("Invalid or expired change order approval link");
+   591→
+   592→    // Only pending change orders can be approved
+   593→    if (changeOrder.status !== "pending") {
+   594→      throw new ConvexError("This change order cannot be approved in its current state");
+   595→    }
+   596→
+   597→    const now = Date.now();
+   598→
+   599→    await ctx.db.patch(changeOrder._id, {
+   600→      status: "approved",
+   601→      clientApprovedAt: now,
+   602→      updatedAt: now,
+   603→    });
+   604→
+   605→    // If additionalRevisions is specified, update the scope deliverable's revision limit
+   606→    if (changeOrder.additionalRevisions && changeOrder.additionalRevisions > 0 && changeOrder.deliverableId) {
+   607→      const scope = await ctx.db.get(changeOrder.scopeDefinitionId);
+   608→      if (scope) {
+   609→        const updatedDeliverables = scope.deliverables.map((d) => {
+   610→          if (d.id === changeOrder.deliverableId) {
+   611→            return {
+   612→              ...d,
+   613→              revisionLimit: d.revisionLimit + changeOrder.additionalRevisions!,
+   614→              // If status was revisions_exceeded, reset to in_progress since we now have more revisions
+   615→              status: d.status === "revisions_exceeded" ? "in_progress" as const : d.status,
+   616→            };
+   617→          }
+   618→          return d;
+   619→        });
+   620→
+   621→        await ctx.db.patch(changeOrder.scopeDefinitionId, {
+   622→          deliverables: updatedDeliverables,
+   623→          updatedAt: now,
+   624→        });
+   625→      }
+   626→    }
+   627→
+   628→    return { success: true, changeOrderId: changeOrder._id };
+   629→  },
+   630→});
+   631→
+   632→// ─────────────────────────────────────────────
+   633→// 9. CLIENT REJECT CHANGE ORDER (no auth)
+   634→// ─────────────────────────────────────────────
+   635→export const clientRejectChangeOrder = mutation({
+   636→  args: {
+   637→    approvalToken: v.string(),
+   638→    rejectionReason: v.optional(v.string()),
+   639→  },
+   640→  handler: async (ctx, args) => {
+   641→    const changeOrder = await ctx.db
+   642→      .query("scopeChangeOrders")
+   643→      .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
+   644→      .first();
+   645→
+   646→    if (!changeOrder) throw new ConvexError("Invalid or expired change order approval link");
+   647→
+   648→    // Only pending change orders can be rejected
+   649→    if (changeOrder.status !== "pending") {
+   650→      throw new ConvexError("This change order cannot be rejected in its current state");
+   651→    }
+   652→
+   653→    const now = Date.now();
+   654→
+   655→    await ctx.db.patch(changeOrder._id, {
+   656→      status: "rejected",
+   657→      clientRejectedAt: now,
+   658→      rejectionReason: args.rejectionReason,
+   659→      updatedAt: now,
+   660→    });
+   661→
+   662→    return { success: true, changeOrderId: changeOrder._id };
+   663→  },
+   664→});
+   665→
+   666→// ─────────────────────────────────────────────
+   667→// 10. GET SCOPE DEFINITION
+   668→// ─────────────────────────────────────────────
+   669→export const get = query({
+   670→  args: {
+   671→    scopeDefinitionId: v.id("scopeDefinitions"),
+   672→  },
+   673→  handler: async (ctx, args) => {
+   674→    const userId = await getAuthUserId(ctx);
+   675→    if (!userId) throw new ConvexError("Not authenticated");
+   676→
+   677→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   678→    if (!scope) throw new ConvexError("Scope definition not found");
+   679→
+   680→    // Check workspace membership or direct ownership
+   681→    if (scope.workspaceId) {
+   682→      const access = await getRecordAccess(ctx, scope, userId);
+   683→      if (!access) throw new ConvexError("Not authorized to view this scope definition");
+   684→    } else if (scope.userId !== userId) {
+   685→      throw new ConvexError("Not authorized to view this scope definition");
+   686→    }
+   687→
+   688→    return scope;
+   689→  },
+   690→});
+   691→
+   692→// ─────────────────────────────────────────────
+   693→// 11. LIST SCOPE DEFINITIONS (workspace-aware)
+   694→// ─────────────────────────────────────────────
+   695→export const list = query({
+   696→  args: {
+   697→    workspaceId: v.optional(v.id("workspaces")),
+   698→    status: v.optional(scopeStatusValidator),
+   699→  },
+   700→  handler: async (ctx, args) => {
+   701→    const userId = await getAuthUserId(ctx);
+   702→    if (!userId) throw new ConvexError("Not authenticated");
+   703→
+   704→    // If workspaceId provided, filter by workspace with team-aware visibility
+   705→    if (args.workspaceId) {
+   706→      const visibility = await getUserVisibility(ctx, args.workspaceId);
+   707→      if (!visibility) throw new ConvexError("Not a member of this workspace");
+   708→
+   709→      const allScopes = await ctx.db
+   710→        .query("scopeDefinitions")
+   711→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+   712→        .collect();
+   713→
+   714→      let visible = allScopes.filter((s) => isRecordVisible(s, visibility));
+   715→
+   716→      if (args.status) {
+   717→        visible = visible.filter((s) => s.status === args.status);
+   718→      }
+   719→
+   720→      return visible.sort((a, b) => b.updatedAt - a.updatedAt);
+   721→    }
+   722→
+   723→    // Backward compat: no workspaceId
+   724→    const allScopes = await ctx.db
+   725→      .query("scopeDefinitions")
+   726→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   727→      .collect();
+   728→
+   729→    if (args.status) {
+   730→      return allScopes.filter((s) => s.status === args.status);
+   731→    }
+   732→
+   733→    return allScopes.sort((a, b) => b.updatedAt - a.updatedAt);
+   734→  },
+   735→});
+   736→
+   737→// ─────────────────────────────────────────────
+   738→// 12. GET CHANGE ORDERS (for a scope definition)
+   739→// ─────────────────────────────────────────────
+   740→export const getChangeOrders = query({
+   741→  args: {
+   742→    scopeDefinitionId: v.id("scopeDefinitions"),
+   743→  },
+   744→  handler: async (ctx, args) => {
+   745→    const userId = await getAuthUserId(ctx);
+   746→    if (!userId) throw new ConvexError("Not authenticated");
+   747→
+   748→    // Validate scope access
+   749→    const scope = await ctx.db.get(args.scopeDefinitionId);
+   750→    if (!scope) throw new ConvexError("Scope definition not found");
+   751→
+   752→    // Check workspace membership or direct ownership
+   753→    if (scope.workspaceId) {
+   754→      const access = await getRecordAccess(ctx, scope, userId);
+   755→      if (!access) throw new ConvexError("Not authorized to view this scope definition");
+   756→    } else if (scope.userId !== userId) {
+   757→      throw new ConvexError("Not authorized to view this scope definition");
+   758→    }
+   759→
+   760→    const changeOrders = await ctx.db
+   761→      .query("scopeChangeOrders")
+   762→      .withIndex("by_scope", (q) => q.eq("scopeDefinitionId", args.scopeDefinitionId))
+   763→      .collect();
+   764→
+   765→    return changeOrders.sort((a, b) => b.createdAt - a.createdAt);
+   766→  },
+   767→});
+   768→
+   769→// ─────────────────────────────────────────────
+   770→// 13. GET CHANGE ORDER (single)
+   771→// ─────────────────────────────────────────────
+   772→export const getChangeOrder = query({
+   773→  args: {
+   774→    changeOrderId: v.id("scopeChangeOrders"),
+   775→  },
+   776→  handler: async (ctx, args) => {
+   777→    const userId = await getAuthUserId(ctx);
+   778→    if (!userId) throw new ConvexError("Not authenticated");
+   779→
+   780→    const changeOrder = await ctx.db.get(args.changeOrderId);
+   781→    if (!changeOrder) throw new ConvexError("Change order not found");
+   782→
+   783→    // Check workspace membership or direct ownership
+   784→    if (changeOrder.workspaceId) {
+   785→      const access = await getRecordAccess(ctx, changeOrder, userId);
+   786→      if (!access) throw new ConvexError("Not authorized to view this change order");
+   787→    } else if (changeOrder.userId !== userId) {
+   788→      throw new ConvexError("Not authorized to view this change order");
+   789→    }
+   790→
+   791→    return changeOrder;
+   792→  },
+   793→});
+   794→
+   795→// ─────────────────────────────────────────────
+   796→// 14. LINK CHANGE ORDER TO INVOICE
+   797→// ─────────────────────────────────────────────
+   798→export const linkChangeOrderToInvoice = mutation({
+   799→  args: {
+   800→    changeOrderId: v.id("scopeChangeOrders"),
+   801→    invoiceId: v.id("invoices"),
+   802→  },
+   803→  handler: async (ctx, args) => {
+   804→    const userId = await getAuthUserId(ctx);
+   805→    if (!userId) throw new ConvexError("Not authenticated");
+   806→
+   807→    const changeOrder = await ctx.db.get(args.changeOrderId);
+   808→    if (!changeOrder) throw new ConvexError("Change order not found");
+   809→
+   810→    // Check workspace access or direct ownership
+   811→    if (changeOrder.workspaceId) {
+   812→      await requireRecordAccess(ctx, changeOrder, "collaborate");
+   813→    } else if (changeOrder.userId !== userId) {
+   814→      throw new ConvexError("Not authorized to update this change order");
+   815→    }
+   816→
+   817→    // Change order must be approved before linking to invoice
+   818→    if (changeOrder.status !== "approved") {
+   819→      throw new ConvexError("Only approved change orders can be linked to invoices");
+   820→    }
+   821→
+   822→    // Validate invoice access
+   823→    const invoice = await ctx.db.get(args.invoiceId);
+   824→    if (!invoice) throw new ConvexError("Invoice not found");
+   825→
+   826→    if (invoice.workspaceId) {
+   827→      const access = await getRecordAccess(ctx, invoice, userId);
+   828→      if (!access) throw new ConvexError("Invoice does not belong to this workspace");
+   829→    } else if (invoice.userId !== userId) {
+   830→      throw new ConvexError("Invoice does not belong to this user");
+   831→    }
+   832→
+   833→    const now = Date.now();
+   834→
+   835→    await ctx.db.patch(args.changeOrderId, {
+   836→      invoiceId: args.invoiceId,
+   837→      updatedAt: now,
+   838→    });
+   839→
+   840→    return args.changeOrderId;
+   841→  },
+   842→});
+   843→

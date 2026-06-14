@@ -40,13 +40,20 @@ export function VerificationRequestSystem({ clientId }: VerificationRequestSyste
     }
 
     try {
-      // For now, use a placeholder professional ID since we don't have email lookup
-      // In production, you'd look up the professional by email first
-      const placeholderFreelancerId = "jx7a2ngnp07n3yxxtxqfsaw95h7trnc9";
+      // SECURITY: Look up the professional by email instead of using a hardcoded ID.
+      // The hardcoded ID allowed impersonation of a specific user for all verification requests.
+      // Until a proper email-to-userId lookup endpoint exists, pass the email as the identifier
+      // and let the backend resolve it.
+      if (!freelancerEmail) {
+        toast.error("Freelancer email is required to create a verification request");
+        return;
+      }
+      // Use the email as identifier — the backend should resolve email to userId
+      const freelancerUserId = freelancerEmail;
       
       await createRequest({
         clientId,
-        freelancerUserId: placeholderFreelancerId,
+        freelancerUserId,
         projectName,
         projectDescription,
         workPeriodStart: startDate.getTime(),

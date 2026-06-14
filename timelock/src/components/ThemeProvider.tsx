@@ -12,9 +12,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // Apply dark class synchronously BEFORE React renders to prevent flash
 // This runs immediately on module load — no light-mode flash
+// Brand audit recommendation: respect OS preference on first visit
 if (typeof document !== "undefined") {
   const stored = localStorage.getItem("axia_theme") as Theme | null;
-  const initial = stored || "dark";
+  // If user has never set a preference, defer to their OS setting
+  let initial: Theme;
+  if (stored) {
+    initial = stored;
+  } else {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    initial = prefersDark ? "dark" : "light";
+  }
   if (initial === "dark") {
     document.documentElement.classList.add("dark");
   } else {
@@ -37,7 +45,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof localStorage !== "undefined") {
       const stored = localStorage.getItem("axia_theme") as Theme | null;
-      return stored || "dark";
+      if (stored) return stored;
+      // Brand audit: respect OS preference on first visit
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      return prefersDark ? "dark" : "light";
     }
     return "dark";
   });

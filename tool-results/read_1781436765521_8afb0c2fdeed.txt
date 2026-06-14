@@ -1,0 +1,1239 @@
+     1→// @ts-nocheck — Convex backend file with schema types not yet in generated types
+     2→import { mutation, query, internalMutation } from "./_generated/server";
+     3→import { v } from "convex/values";
+     4→import { getAuthUserId } from "@convex-dev/auth/server";
+     5→import { ConvexError } from "convex/values";
+     6→import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
+     7→import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
+     8→
+     9→// ─────────────────────────────────────────────
+    10→// Shared validators
+    11→// ─────────────────────────────────────────────
+    12→
+    13→const contentSectionValidator = v.object({
+    14→  id: v.string(),
+    15→  type: v.union(
+    16→    v.literal("heading"),
+    17→    v.literal("text"),
+    18→    v.literal("image"),
+    19→    v.literal("pricing_table"),
+    20→    v.literal("delimiter"),
+    21→    v.literal("terms"),
+    22→  ),
+    23→  data: v.any(),
+    24→});
+    25→
+    26→const proposalStatusValidator = v.union(
+    27→  v.literal("draft"),
+    28→  v.literal("sent"),
+    29→  v.literal("viewed"),
+    30→  v.literal("signed"),
+    31→  v.literal("expired"),
+    32→  v.literal("declined"),
+    33→);
+    34→
+    35→// ═════════════════════════════════════════════
+    36→// PROPOSALS
+    37→// ═════════════════════════════════════════════
+    38→
+    39→// ─────────────────────────────────────────────
+    40→// 1. CREATE
+    41→// ─────────────────────────────────────────────
+    42→export const create = mutation({
+    43→  args: {
+    44→    workspaceId: v.optional(v.id("workspaces")),
+    45→    teamId: v.optional(v.id("teams")),
+    46→    clientId: v.id("clients"),
+    47→    dealId: v.optional(v.id("deals")),
+    48→    title: v.string(),
+    49→    content: v.array(contentSectionValidator),
+    50→    templateId: v.optional(v.id("proposalTemplates")),
+    51→    totalValue: v.optional(v.number()),
+    52→    currency: v.optional(v.string()),
+    53→    validUntil: v.optional(v.number()),
+    54→    customFields: v.optional(v.any()),
+    55→  },
+    56→  handler: async (ctx, args) => {
+    57→    const userId = await getAuthUserId(ctx);
+    58→    if (!userId) throw new ConvexError("Not authenticated");
+    59→
+    60→    // If workspaceId provided, verify membership
+    61→    if (args.workspaceId) {
+    62→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+    63→    }
+    64→
+    65→    // Verify client access
+    66→    const client = await ctx.db.get(args.clientId);
+    67→    if (!client) throw new ConvexError("Client not found");
+    68→    if (client.workspaceId) {
+    69→      const access = await getRecordAccess(ctx, client, userId);
+    70→      if (!access) throw new ConvexError("Not authorized: client belongs to another workspace");
+    71→    } else if (client.userId !== userId) {
+    72→      throw new ConvexError("Not authorized: client belongs to another user");
+    73→    }
+    74→
+    75→    // Verify deal access if provided
+    76→    if (args.dealId) {
+    77→      const deal = await ctx.db.get(args.dealId);
+    78→      if (!deal) throw new ConvexError("Deal not found");
+    79→      if (deal.workspaceId) {
+    80→        const access = await getRecordAccess(ctx, deal, userId);
+    81→        if (!access) throw new ConvexError("Not authorized: deal belongs to another workspace");
+    82→      } else if (deal.userId !== userId) {
+    83→        throw new ConvexError("Not authorized: deal belongs to another user");
+    84→      }
+    85→    }
+    86→
+    87→    // Verify template exists if provided
+    88→    if (args.templateId) {
+    89→      const template = await ctx.db.get(args.templateId);
+    90→      if (!template) throw new ConvexError("Template not found");
+    91→    }
+    92→
+    93→    // Validate title is not empty
+    94→    if (args.title.trim().length === 0) {
+    95→      throw new ConvexError("Title cannot be empty");
+    96→    }
+    97→
+    98→    // Validate totalValue is non-negative if provided
+    99→    if (args.totalValue !== undefined && args.totalValue < 0) {
+   100→      throw new ConvexError("Total value cannot be negative");
+   101→    }
+   102→
+   103→    // Generate unique publicToken using crypto
+   104→    const publicToken = crypto.randomUUID();
+   105→
+   106→    const now = Date.now();
+   107→    const { workspaceId, teamId, customFields, ...rest } = args;
+   108→
+   109→    const proposalId = await ctx.db.insert("proposals", {
+   110→      userId,
+   111→      workspaceId: workspaceId ?? undefined,
+   112→      createdBy: userId,
+   113→      teamId: teamId ?? undefined,
+   114→      customFields: customFields ?? undefined,
+   115→      clientId: rest.clientId,
+   116→      dealId: rest.dealId,
+   117→      title: rest.title.trim(),
+   118→      content: rest.content,
+   119→      templateId: rest.templateId,
+   120→      status: "draft",
+   121→      totalValue: rest.totalValue,
+   122→      currency: rest.currency ?? "USD",
+   123→      validUntil: rest.validUntil,
+   124→      sentAt: undefined,
+   125→      viewedAt: undefined,
+   126→      viewedCount: 0,
+   127→      signedAt: undefined,
+   128→      signedIp: undefined,
+   129→      signedName: undefined,
+   130→      declinedAt: undefined,
+   131→      declinedReason: undefined,
+   132→      publicToken,
+   133→      version: 1,
+   134→      createdAt: now,
+   135→      updatedAt: now,
+   136→    });
+   137→
+   138→    // Increment template usage count if a template was used
+   139→    if (args.templateId) {
+   140→      const template = await ctx.db.get(args.templateId);
+   141→      if (template) {
+   142→        await ctx.db.patch(args.templateId, {
+   143→          usageCount: (template.usageCount ?? 0) + 1,
+   144→        });
+   145→      }
+   146→    }
+   147→
+   148→    return proposalId;
+   149→  },
+   150→});
+   151→
+   152→// ─────────────────────────────────────────────
+   153→// 2. UPDATE (partial — only draft proposals)
+   154→// ─────────────────────────────────────────────
+   155→export const update = mutation({
+   156→  args: {
+   157→    proposalId: v.id("proposals"),
+   158→    clientId: v.optional(v.id("clients")),
+   159→    dealId: v.optional(v.id("deals")),
+   160→    title: v.optional(v.string()),
+   161→    content: v.optional(v.array(contentSectionValidator)),
+   162→    templateId: v.optional(v.id("proposalTemplates")),
+   163→    totalValue: v.optional(v.number()),
+   164→    currency: v.optional(v.string()),
+   165→    validUntil: v.optional(v.number()),
+   166→    teamId: v.optional(v.id("teams")),
+   167→  },
+   168→  handler: async (ctx, args) => {
+   169→    const userId = await getAuthUserId(ctx);
+   170→    if (!userId) throw new ConvexError("Not authenticated");
+   171→
+   172→    const proposal = await ctx.db.get(args.proposalId);
+   173→    if (!proposal) throw new ConvexError("Proposal not found");
+   174→
+   175→    // Check workspace access or direct ownership
+   176→    if (proposal.workspaceId) {
+   177→      await requireRecordAccess(ctx, proposal, "collaborate");
+   178→    } else if (proposal.userId !== userId) {
+   179→      throw new ConvexError("Not authorized to update this proposal");
+   180→    }
+   181→
+   182→    // Only draft proposals can be edited
+   183→    if (proposal.status !== "draft") {
+   184→      throw new ConvexError("Only draft proposals can be edited");
+   185→    }
+   186→
+   187→    // Validate title if provided
+   188→    if (args.title !== undefined && args.title.trim().length === 0) {
+   189→      throw new ConvexError("Title cannot be empty");
+   190→    }
+   191→
+   192→    // Validate totalValue if provided
+   193→    if (args.totalValue !== undefined && args.totalValue < 0) {
+   194→      throw new ConvexError("Total value cannot be negative");
+   195→    }
+   196→
+   197→    // Verify client access if changing client
+   198→    if (args.clientId !== undefined) {
+   199→      const client = await ctx.db.get(args.clientId);
+   200→      if (!client) throw new ConvexError("Client not found");
+   201→      if (client.workspaceId) {
+   202→        const access = await getRecordAccess(ctx, client, userId);
+   203→        if (!access) throw new ConvexError("Not authorized: client belongs to another workspace");
+   204→      } else if (client.userId !== userId) {
+   205→        throw new ConvexError("Not authorized: client belongs to another user");
+   206→      }
+   207→    }
+   208→
+   209→    // Verify deal access if changing deal
+   210→    if (args.dealId !== undefined) {
+   211→      const deal = await ctx.db.get(args.dealId);
+   212→      if (!deal) throw new ConvexError("Deal not found");
+   213→      if (deal.workspaceId) {
+   214→        const access = await getRecordAccess(ctx, deal, userId);
+   215→        if (!access) throw new ConvexError("Not authorized: deal belongs to another workspace");
+   216→      } else if (deal.userId !== userId) {
+   217→        throw new ConvexError("Not authorized: deal belongs to another user");
+   218→      }
+   219→    }
+   220→
+   221→    // Build partial update object
+   222→    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+   223→
+   224→    if (args.clientId !== undefined) updates.clientId = args.clientId;
+   225→    if (args.dealId !== undefined) updates.dealId = args.dealId;
+   226→    if (args.title !== undefined) updates.title = args.title.trim();
+   227→    if (args.content !== undefined) updates.content = args.content;
+   228→    if (args.templateId !== undefined) updates.templateId = args.templateId;
+   229→    if (args.totalValue !== undefined) updates.totalValue = args.totalValue;
+   230→    if (args.currency !== undefined) updates.currency = args.currency;
+   231→    if (args.validUntil !== undefined) updates.validUntil = args.validUntil;
+   232→    if (args.teamId !== undefined) updates.teamId = args.teamId;
+   233→
+   234→    await ctx.db.patch(args.proposalId, updates);
+   235→
+   236→    return args.proposalId;
+   237→  },
+   238→});
+   239→
+   240→// ─────────────────────────────────────────────
+   241→// 3. SEND (draft → sent)
+   242→// ─────────────────────────────────────────────
+   243→export const send = mutation({
+   244→  args: {
+   245→    proposalId: v.id("proposals"),
+   246→  },
+   247→  handler: async (ctx, args) => {
+   248→    const userId = await getAuthUserId(ctx);
+   249→    if (!userId) throw new ConvexError("Not authenticated");
+   250→
+   251→    const proposal = await ctx.db.get(args.proposalId);
+   252→    if (!proposal) throw new ConvexError("Proposal not found");
+   253→
+   254→    // Check workspace access or direct ownership
+   255→    if (proposal.workspaceId) {
+   256→      await requireRecordAccess(ctx, proposal, "collaborate");
+   257→    } else if (proposal.userId !== userId) {
+   258→      throw new ConvexError("Not authorized to send this proposal");
+   259→    }
+   260→
+   261→    // Only draft proposals can be sent
+   262→    if (proposal.status !== "draft") {
+   263→      throw new ConvexError("Only draft proposals can be sent");
+   264→    }
+   265→
+   266→    const now = Date.now();
+   267→
+   268→    await ctx.db.patch(args.proposalId, {
+   269→      status: "sent",
+   270→      sentAt: now,
+   271→      updatedAt: now,
+   272→    });
+   273→
+   274→    // Schedule follow-ups for Day 3, 7, and 14
+   275→    await scheduleFollowUpsInternal(ctx, args.proposalId, userId, proposal.title, proposal.totalValue, now);
+   276→
+   277→    return args.proposalId;
+   278→  },
+   279→});
+   280→
+   281→// ─────────────────────────────────────────────
+   282→// 4. MARK VIEWED (publicToken-based, no auth)
+   283→// ─────────────────────────────────────────────
+   284→export const markViewed = mutation({
+   285→  args: {
+   286→    publicToken: v.string(),
+   287→  },
+   288→  handler: async (ctx, args) => {
+   289→    const proposal = await ctx.db
+   290→      .query("proposals")
+   291→      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
+   292→      .first();
+   293→
+   294→    if (!proposal) throw new ConvexError("Invalid or expired proposal link");
+   295→
+   296→    // Only sent or viewed proposals can be marked as viewed
+   297→    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+   298→      throw new ConvexError("Proposal cannot be viewed in its current state");
+   299→    }
+   300→
+   301→    const now = Date.now();
+   302→    const currentCount = proposal.viewedCount ?? 0;
+   303→
+   304→    await ctx.db.patch(proposal._id, {
+   305→      status: "viewed",
+   306→      viewedAt: proposal.viewedAt ?? now, // Keep first view time
+   307→      viewedCount: currentCount + 1,
+   308→      updatedAt: now,
+   309→    });
+   310→
+   311→    return { success: true };
+   312→  },
+   313→});
+   314→
+   315→// ─────────────────────────────────────────────
+   316→// 5. SIGN (publicToken-based, no auth)
+   317→// ─────────────────────────────────────────────
+   318→export const sign = mutation({
+   319→  args: {
+   320→    publicToken: v.string(),
+   321→    signedIp: v.optional(v.string()),
+   322→    signedName: v.string(),
+   323→  },
+   324→  handler: async (ctx, args) => {
+   325→    const proposal = await ctx.db
+   326→      .query("proposals")
+   327→      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
+   328→      .first();
+   329→
+   330→    if (!proposal) throw new ConvexError("Invalid or expired proposal link");
+   331→
+   332→    // Only sent or viewed proposals can be signed
+   333→    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+   334→      throw new ConvexError("Proposal cannot be signed in its current state");
+   335→    }
+   336→
+   337→    // Check if proposal has expired
+   338→    if (proposal.validUntil && proposal.validUntil < Date.now()) {
+   339→      throw new ConvexError("This proposal has expired and can no longer be signed");
+   340→    }
+   341→
+   342→    if (args.signedName.trim().length === 0) {
+   343→      throw new ConvexError("Signed name is required");
+   344→    }
+   345→
+   346→    const now = Date.now();
+   347→
+   348→    await ctx.db.patch(proposal._id, {
+   349→      status: "signed",
+   350→      signedAt: now,
+   351→      signedIp: args.signedIp,
+   352→      signedName: args.signedName.trim(),
+   353→      updatedAt: now,
+   354→    });
+   355→
+   356→    // Cancel all pending follow-ups for this proposal
+   357→    await cancelFollowUpsInternal(ctx, proposal._id);
+   358→
+   359→    // Auto-create scope definition from proposal content
+   360→    await convertToScopeInternal(ctx, proposal.userId, proposal._id, proposal.clientId, proposal.content, proposal.title);
+   361→
+   362→    return { success: true };
+   363→  },
+   364→});
+   365→
+   366→// ─────────────────────────────────────────────
+   367→// 6. DECLINE (publicToken-based, no auth)
+   368→// ─────────────────────────────────────────────
+   369→export const decline = mutation({
+   370→  args: {
+   371→    publicToken: v.string(),
+   372→    declinedReason: v.optional(v.string()),
+   373→  },
+   374→  handler: async (ctx, args) => {
+   375→    const proposal = await ctx.db
+   376→      .query("proposals")
+   377→      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
+   378→      .first();
+   379→
+   380→    if (!proposal) throw new ConvexError("Invalid or expired proposal link");
+   381→
+   382→    // Only sent or viewed proposals can be declined
+   383→    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+   384→      throw new ConvexError("Proposal cannot be declined in its current state");
+   385→    }
+   386→
+   387→    const now = Date.now();
+   388→
+   389→    await ctx.db.patch(proposal._id, {
+   390→      status: "declined",
+   391→      declinedAt: now,
+   392→      declinedReason: args.declinedReason,
+   393→      updatedAt: now,
+   394→    });
+   395→
+   396→    // Cancel all pending follow-ups for this proposal
+   397→    await cancelFollowUpsInternal(ctx, proposal._id);
+   398→
+   399→    return { success: true };
+   400→  },
+   401→});
+   402→
+   403→// ─────────────────────────────────────────────
+   404→// 7. EXPIRE (batch — mark expired proposals)
+   405→// ─────────────────────────────────────────────
+   406→export const expire = mutation({
+   407→  args: {},
+   408→  handler: async (ctx) => {
+   409→    const now = Date.now();
+   410→
+   411→    // Query all sent proposals and filter for expired ones
+   412→    const sentProposals = await ctx.db
+   413→      .query("proposals")
+   414→      .filter((q) => q.eq(q.field("status"), "sent"))
+   415→      .collect();
+   416→
+   417→    let expiredCount = 0;
+   418→
+   419→    for (const proposal of sentProposals) {
+   420→      if (proposal.validUntil && proposal.validUntil < now) {
+   421→        await ctx.db.patch(proposal._id, {
+   422→          status: "expired",
+   423→          updatedAt: now,
+   424→        });
+   425→
+   426→        // Cancel pending follow-ups for expired proposals
+   427→        await cancelFollowUpsInternal(ctx, proposal._id);
+   428→
+   429→        expiredCount++;
+   430→      }
+   431→    }
+   432→
+   433→    return { expiredCount };
+   434→  },
+   435→});
+   436→
+   437→// ─────────────────────────────────────────────
+   438→// 8. GET (single proposal by ID with access check)
+   439→// ─────────────────────────────────────────────
+   440→export const get = query({
+   441→  args: {
+   442→    proposalId: v.id("proposals"),
+   443→  },
+   444→  handler: async (ctx, args) => {
+   445→    const userId = await getAuthUserId(ctx);
+   446→    if (!userId) throw new ConvexError("Not authenticated");
+   447→
+   448→    const proposal = await ctx.db.get(args.proposalId);
+   449→    if (!proposal) throw new ConvexError("Proposal not found");
+   450→
+   451→    // Check workspace membership or direct ownership
+   452→    if (proposal.workspaceId) {
+   453→      const access = await getRecordAccess(ctx, proposal, userId);
+   454→      if (!access) throw new ConvexError("Not authorized to view this proposal");
+   455→    } else if (proposal.userId !== userId) {
+   456→      throw new ConvexError("Not authorized to view this proposal");
+   457→    }
+   458→
+   459→    return proposal;
+   460→  },
+   461→});
+   462→
+   463→// ─────────────────────────────────────────────
+   464→// 9. LIST (workspace-aware, with optional status filter)
+   465→// ─────────────────────────────────────────────
+   466→export const list = query({
+   467→  args: {
+   468→    workspaceId: v.optional(v.id("workspaces")),
+   469→    status: v.optional(proposalStatusValidator),
+   470→  },
+   471→  handler: async (ctx, args) => {
+   472→    const userId = await getAuthUserId(ctx);
+   473→    if (!userId) throw new ConvexError("Not authenticated");
+   474→
+   475→    // If workspaceId provided, filter by workspace with team-aware visibility
+   476→    if (args.workspaceId) {
+   477→      const visibility = await getUserVisibility(ctx, args.workspaceId);
+   478→      if (!visibility) throw new ConvexError("Not a member of this workspace");
+   479→
+   480→      const allProposals = await ctx.db
+   481→        .query("proposals")
+   482→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+   483→        .collect();
+   484→
+   485→      let visible = allProposals.filter((p) => isRecordVisible(p, visibility));
+   486→
+   487→      if (args.status) {
+   488→        visible = visible.filter((p) => p.status === args.status);
+   489→      }
+   490→
+   491→      return visible.sort((a, b) => b.updatedAt - a.updatedAt);
+   492→    }
+   493→
+   494→    // Backward compat: no workspaceId
+   495→    if (args.status) {
+   496→      const proposals = await ctx.db
+   497→        .query("proposals")
+   498→        .withIndex("by_user_and_status", (q) =>
+   499→          q.eq("userId", userId).eq("status", args.status!)
+   500→        )
+   501→        .order("desc")
+   502→        .collect();
+   503→      return proposals;
+   504→    }
+   505→
+   506→    // No status filter — return all proposals for this user
+   507→    const proposals = await ctx.db
+   508→      .query("proposals")
+   509→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   510→      .order("desc")
+   511→      .collect();
+   512→
+   513→    // Sort by updatedAt descending (index order is by creation)
+   514→    return proposals.sort((a, b) => b.updatedAt - a.updatedAt);
+   515→  },
+   516→});
+   517→
+   518→// ─────────────────────────────────────────────
+   519→// 10. GET BY PUBLIC TOKEN (client view, limited fields)
+   520→// ─────────────────────────────────────────────
+   521→export const getByPublicToken = query({
+   522→  args: {
+   523→    publicToken: v.string(),
+   524→  },
+   525→  handler: async (ctx, args) => {
+   526→    const proposal = await ctx.db
+   527→      .query("proposals")
+   528→      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
+   529→      .first();
+   530→
+   531→    if (!proposal) return null;
+   532→
+   533→    // Only allow viewing sent/viewed/signed/declined proposals via public link
+   534→    if (proposal.status === "draft") return null;
+   535→
+   536→    // Return limited fields for client view — exclude internal tracking and user data
+   537→    return {
+   538→      _id: proposal._id,
+   539→      title: proposal.title,
+   540→      content: proposal.content,
+   541→      totalValue: proposal.totalValue,
+   542→      currency: proposal.currency,
+   543→      validUntil: proposal.validUntil,
+   544→      status: proposal.status,
+   545→      signedAt: proposal.signedAt,
+   546→      signedName: proposal.signedName,
+   547→      declinedAt: proposal.declinedAt,
+   548→      declinedReason: proposal.declinedReason,
+   549→      createdAt: proposal.createdAt,
+   550→    };
+   551→  },
+   552→});
+   553→
+   554→// ─────────────────────────────────────────────
+   555→// 11. CONVERT TO SCOPE (auto-create scopeDefinition)
+   556→// ─────────────────────────────────────────────
+   557→export const convertToScope = mutation({
+   558→  args: {
+   559→    proposalId: v.id("proposals"),
+   560→  },
+   561→  handler: async (ctx, args) => {
+   562→    const userId = await getAuthUserId(ctx);
+   563→    if (!userId) throw new ConvexError("Not authenticated");
+   564→
+   565→    const proposal = await ctx.db.get(args.proposalId);
+   566→    if (!proposal) throw new ConvexError("Proposal not found");
+   567→
+   568→    // Check workspace access or direct ownership
+   569→    if (proposal.workspaceId) {
+   570→      await requireRecordAccess(ctx, proposal, "collaborate");
+   571→    } else if (proposal.userId !== userId) {
+   572→      throw new ConvexError("Not authorized");
+   573→    }
+   574→
+   575→    if (proposal.status !== "signed") {
+   576→      throw new ConvexError("Only signed proposals can be converted to scope definitions");
+   577→    }
+   578→
+   579→    const scopeId = await convertToScopeInternal(
+   580→      ctx, userId, proposal._id, proposal.clientId, proposal.content, proposal.title
+   581→    );
+   582→
+   583→    return scopeId;
+   584→  },
+   585→});
+   586→
+   587→// ─────────────────────────────────────────────
+   588→// 12. GET STATS (workspace-aware)
+   589→// ─────────────────────────────────────────────
+   590→export const getStats = query({
+   591→  args: {
+   592→    workspaceId: v.optional(v.id("workspaces")),
+   593→  },
+   594→  handler: async (ctx, args) => {
+   595→    const userId = await getAuthUserId(ctx);
+   596→    if (!userId) throw new ConvexError("Not authenticated");
+   597→
+   598→    let allProposals;
+   599→
+   600→    if (args.workspaceId) {
+   601→      const visibility = await getUserVisibility(ctx, args.workspaceId);
+   602→      if (!visibility) return {
+   603→        counts: { draft: 0, sent: 0, viewed: 0, signed: 0, expired: 0, declined: 0, total: 0 },
+   604→        totalSignedValue: 0,
+   605→        closeRate: 0,
+   606→        viewToSignRate: 0,
+   607→        avgDaysToSign: 0,
+   608→      };
+   609→
+   610→      const workspaceProposals = await ctx.db
+   611→        .query("proposals")
+   612→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+   613→        .collect();
+   614→      allProposals = workspaceProposals.filter((p) => isRecordVisible(p, visibility));
+   615→    } else {
+   616→      allProposals = await ctx.db
+   617→        .query("proposals")
+   618→        .withIndex("by_user", (q) => q.eq("userId", userId))
+   619→        .collect();
+   620→    }
+   621→
+   622→    const draft = allProposals.filter((p) => p.status === "draft").length;
+   623→    const sent = allProposals.filter((p) => p.status === "sent").length;
+   624→    const viewed = allProposals.filter((p) => p.status === "viewed").length;
+   625→    const signed = allProposals.filter((p) => p.status === "signed").length;
+   626→    const expired = allProposals.filter((p) => p.status === "expired").length;
+   627→    const declined = allProposals.filter((p) => p.status === "declined").length;
+   628→
+   629→    // Total value of signed proposals
+   630→    const totalSignedValue = allProposals
+   631→      .filter((p) => p.status === "signed")
+   632→      .reduce((sum, p) => sum + (p.totalValue ?? 0), 0);
+   633→
+   634→    // Average close rate: signed / (signed + declined + expired) for proposals that have reached a terminal state
+   635→    const terminalStates = signed + declined + expired;
+   636→    const closeRate = terminalStates > 0 ? signed / terminalStates : 0;
+   637→
+   638→    // Average view-to-sign conversion
+   639→    const viewedOrBeyond = allProposals.filter(
+   640→      (p) => p.status === "viewed" || p.status === "signed" || p.status === "declined"
+   641→    );
+   642→    const viewToSignRate = viewedOrBeyond.length > 0
+   643→      ? signed / viewedOrBeyond.length
+   644→      : 0;
+   645→
+   646→    // Average days to sign (from sent to signed)
+   647→    const signedProposals = allProposals.filter((p) => p.status === "signed" && p.sentAt && p.signedAt);
+   648→    const avgDaysToSign = signedProposals.length > 0
+   649→      ? signedProposals.reduce((sum, p) => {
+   650→          const days = (p.signedAt! - p.sentAt!) / (1000 * 60 * 60 * 24);
+   651→          return sum + days;
+   652→        }, 0) / signedProposals.length
+   653→      : 0;
+   654→
+   655→    return {
+   656→      counts: { draft, sent, viewed, signed, expired, declined, total: allProposals.length },
+   657→      totalSignedValue,
+   658→      closeRate: Math.round(closeRate * 100) / 100,
+   659→      viewToSignRate: Math.round(viewToSignRate * 100) / 100,
+   660→      avgDaysToSign: Math.round(avgDaysToSign * 10) / 10,
+   661→    };
+   662→  },
+   663→});
+   664→
+   665→// ─────────────────────────────────────────────
+   666→// 13. DUPLICATE (create a copy as new draft)
+   667→// ─────────────────────────────────────────────
+   668→export const duplicate = mutation({
+   669→  args: {
+   670→    proposalId: v.id("proposals"),
+   671→  },
+   672→  handler: async (ctx, args) => {
+   673→    const userId = await getAuthUserId(ctx);
+   674→    if (!userId) throw new ConvexError("Not authenticated");
+   675→
+   676→    const original = await ctx.db.get(args.proposalId);
+   677→    if (!original) throw new ConvexError("Proposal not found");
+   678→
+   679→    // Check workspace access or direct ownership
+   680→    if (original.workspaceId) {
+   681→      await requireRecordAccess(ctx, original, "collaborate");
+   682→    } else if (original.userId !== userId) {
+   683→      throw new ConvexError("Not authorized to duplicate this proposal");
+   684→    }
+   685→
+   686→    const now = Date.now();
+   687→    const publicToken = crypto.randomUUID();
+   688→
+   689→    const newProposalId = await ctx.db.insert("proposals", {
+   690→      userId,
+   691→      workspaceId: original.workspaceId ?? undefined,
+   692→      createdBy: userId,
+   693→      teamId: original.teamId ?? undefined,
+   694→      clientId: original.clientId,
+   695→      dealId: original.dealId,
+   696→      title: `${original.title} (Copy)`,
+   697→      content: original.content,
+   698→      templateId: original.templateId,
+   699→      status: "draft",
+   700→      totalValue: original.totalValue,
+   701→      currency: original.currency,
+   702→      validUntil: undefined, // Reset validUntil — user should set a new one
+   703→      sentAt: undefined,
+   704→      viewedAt: undefined,
+   705→      viewedCount: 0,
+   706→      signedAt: undefined,
+   707→      signedIp: undefined,
+   708→      signedName: undefined,
+   709→      declinedAt: undefined,
+   710→      declinedReason: undefined,
+   711→      publicToken,
+   712→      version: 1, // New version starts at 1
+   713→      createdAt: now,
+   714→      updatedAt: now,
+   715→    });
+   716→
+   717→    return newProposalId;
+   718→  },
+   719→});
+   720→
+   721→// ─────────────────────────────────────────────
+   722→// 14. REMOVE (hard delete, draft only)
+   723→// ─────────────────────────────────────────────
+   724→export const remove = mutation({
+   725→  args: {
+   726→    proposalId: v.id("proposals"),
+   727→  },
+   728→  handler: async (ctx, args) => {
+   729→    const userId = await getAuthUserId(ctx);
+   730→    if (!userId) throw new ConvexError("Not authenticated");
+   731→
+   732→    const proposal = await ctx.db.get(args.proposalId);
+   733→    if (!proposal) throw new ConvexError("Proposal not found");
+   734→
+   735→    // Check workspace access (owner level) or direct ownership
+   736→    if (proposal.workspaceId) {
+   737→      await requireRecordAccess(ctx, proposal, "owner");
+   738→    } else if (proposal.userId !== userId) {
+   739→      throw new ConvexError("Not authorized to delete this proposal");
+   740→    }
+   741→
+   742→    // Cannot delete sent/signed proposals
+   743→    if (proposal.status !== "draft") {
+   744→      throw new ConvexError("Cannot delete a proposal that has been sent or signed. Only draft proposals can be deleted.");
+   745→    }
+   746→
+   747→    // Delete all follow-ups associated with this proposal
+   748→    const followUps = await ctx.db
+   749→      .query("proposalFollowUps")
+   750→      .withIndex("by_proposal", (q) => q.eq("proposalId", args.proposalId))
+   751→      .collect();
+   752→
+   753→    for (const followUp of followUps) {
+   754→      await ctx.db.delete(followUp._id);
+   755→    }
+   756→
+   757→    await ctx.db.delete(args.proposalId);
+   758→
+   759→    return { success: true, deletedId: args.proposalId };
+   760→  },
+   761→});
+   762→
+   763→
+   764→// ═════════════════════════════════════════════
+   765→// PROPOSAL TEMPLATES
+   766→// ═════════════════════════════════════════════
+   767→
+   768→// ─────────────────────────────────────────────
+   769→// 15. CREATE TEMPLATE
+   770→// ─────────────────────────────────────────────
+   771→export const createTemplate = mutation({
+   772→  args: {
+   773→    name: v.string(),
+   774→    industry: v.optional(v.string()),
+   775→    category: v.optional(v.string()),
+   776→    content: v.array(contentSectionValidator),
+   777→    isDefault: v.optional(v.boolean()),
+   778→    workspaceId: v.optional(v.id("workspaces")),
+   779→  },
+   780→  handler: async (ctx, args) => {
+   781→    const userId = await getAuthUserId(ctx);
+   782→    if (!userId) throw new ConvexError("Not authenticated");
+   783→
+   784→    if (args.name.trim().length === 0) {
+   785→      throw new ConvexError("Template name cannot be empty");
+   786→    }
+   787→
+   788→    // If workspaceId provided, verify membership
+   789→    if (args.workspaceId) {
+   790→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+   791→    }
+   792→
+   793→    const templateId = await ctx.db.insert("proposalTemplates", {
+   794→      userId, // User-created template (system templates have userId = null)
+   795→      workspaceId: args.workspaceId ?? undefined,
+   796→      createdBy: userId,
+   797→      name: args.name.trim(),
+   798→      industry: args.industry,
+   799→      category: args.category,
+   800→      content: args.content,
+   801→      isDefault: args.isDefault ?? false,
+   802→      usageCount: 0,
+   803→      createdAt: Date.now(),
+   804→    });
+   805→
+   806→    return templateId;
+   807→  },
+   808→});
+   809→
+   810→// ─────────────────────────────────────────────
+   811→// 16. LIST TEMPLATES (user's own + system, workspace-aware)
+   812→// ─────────────────────────────────────────────
+   813→export const listTemplates = query({
+   814→  args: {
+   815→    industry: v.optional(v.string()),
+   816→    workspaceId: v.optional(v.id("workspaces")),
+   817→  },
+   818→  handler: async (ctx, args) => {
+   819→    const userId = await getAuthUserId(ctx);
+   820→    if (!userId) throw new ConvexError("Not authenticated");
+   821→
+   822→    // Get user's own templates
+   823→    const userTemplates = await ctx.db
+   824→      .query("proposalTemplates")
+   825→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   826→      .collect();
+   827→
+   828→    // Get workspace templates if provided
+   829→    let workspaceTemplates: any[] = [];
+   830→    if (args.workspaceId) {
+   831→      workspaceTemplates = await ctx.db
+   832→        .query("proposalTemplates")
+   833→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+   834→        .collect();
+   835→    }
+   836→
+   837→    // Get system templates (userId is null)
+   838→    let systemTemplates: any[] = [];
+   839→
+   840→    if (args.industry) {
+   841→      systemTemplates = await ctx.db
+   842→        .query("proposalTemplates")
+   843→        .withIndex("by_industry", (q) => q.eq("industry", args.industry!))
+   844→        .collect();
+   845→      // Filter to only system templates (null userId)
+   846→      systemTemplates = systemTemplates.filter((t) => t.userId === undefined);
+   847→    } else {
+   848→      const industries = ["web_design", "consulting", "marketing", "development"];
+   849→      for (const ind of industries) {
+   850→        const templates = await ctx.db
+   851→          .query("proposalTemplates")
+   852→          .withIndex("by_industry", (q) => q.eq("industry", ind))
+   853→          .collect();
+   854→        systemTemplates.push(...templates.filter((t) => t.userId === undefined));
+   855→      }
+   856→    }
+   857→
+   858→    // Combine and deduplicate
+   859→    const allTemplateIds = new Set<string>();
+   860→    const combined: any[] = [];
+   861→
+   862→    for (const t of [...userTemplates, ...workspaceTemplates, ...systemTemplates]) {
+   863→      if (!allTemplateIds.has(t._id)) {
+   864→        allTemplateIds.add(t._id);
+   865→        combined.push(t);
+   866→      }
+   867→    }
+   868→
+   869→    // Sort: system templates first, then by usage count descending
+   870→    combined.sort((a, b) => {
+   871→      const aIsSystem = a.userId === undefined ? 0 : 1;
+   872→      const bIsSystem = b.userId === undefined ? 0 : 1;
+   873→      if (aIsSystem !== bIsSystem) return aIsSystem - bIsSystem;
+   874→      return (b.usageCount ?? 0) - (a.usageCount ?? 0);
+   875→    });
+   876→
+   877→    return combined;
+   878→  },
+   879→});
+   880→
+   881→// ─────────────────────────────────────────────
+   882→// 17. GET TEMPLATE
+   883→// ─────────────────────────────────────────────
+   884→export const getTemplate = query({
+   885→  args: {
+   886→    templateId: v.id("proposalTemplates"),
+   887→  },
+   888→  handler: async (ctx, args) => {
+   889→    const userId = await getAuthUserId(ctx);
+   890→    if (!userId) throw new ConvexError("Not authenticated");
+   891→
+   892→    const template = await ctx.db.get(args.templateId);
+   893→    if (!template) throw new ConvexError("Template not found");
+   894→
+   895→    // Users can view their own templates or system templates or workspace templates
+   896→    if (template.userId !== undefined && template.userId !== userId) {
+   897→      // Check workspace access if template belongs to a workspace
+   898→      if (template.workspaceId) {
+   899→        const membership = await getWorkspaceMembership(ctx, template.workspaceId, userId);
+   900→        if (!membership) throw new ConvexError("Not authorized to view this template");
+   901→      } else {
+   902→        throw new ConvexError("Not authorized to view this template");
+   903→      }
+   904→    }
+   905→
+   906→    return template;
+   907→  },
+   908→});
+   909→
+   910→// ─────────────────────────────────────────────
+   911→// 18. INCREMENT USAGE
+   912→// ─────────────────────────────────────────────
+   913→export const incrementUsage = mutation({
+   914→  args: {
+   915→    templateId: v.id("proposalTemplates"),
+   916→  },
+   917→  handler: async (ctx, args) => {
+   918→    const userId = await getAuthUserId(ctx);
+   919→    if (!userId) throw new ConvexError("Not authenticated");
+   920→
+   921→    const template = await ctx.db.get(args.templateId);
+   922→    if (!template) throw new ConvexError("Template not found");
+   923→
+   924→    // Users can use their own templates or system templates
+   925→    if (template.userId !== undefined && template.userId !== userId) {
+   926→      if (template.workspaceId) {
+   927→        const membership = await getWorkspaceMembership(ctx, template.workspaceId, userId);
+   928→        if (!membership) throw new ConvexError("Not authorized to use this template");
+   929→      } else {
+   930→        throw new ConvexError("Not authorized to use this template");
+   931→      }
+   932→    }
+   933→
+   934→    await ctx.db.patch(args.templateId, {
+   935→      usageCount: (template.usageCount ?? 0) + 1,
+   936→    });
+   937→
+   938→    return { success: true, usageCount: (template.usageCount ?? 0) + 1 };
+   939→  },
+   940→});
+   941→
+   942→// ─────────────────────────────────────────────
+   943→// 19. SEED DEFAULT TEMPLATES (onboarding)
+   944→// ─────────────────────────────────────────────
+   945→export const seedDefaultTemplates = mutation({
+   946→  args: {},
+   947→  handler: async (ctx) => {
+   948→    const userId = await getAuthUserId(ctx);
+   949→    if (!userId) throw new ConvexError("Not authenticated");
+   950→
+   951→    // Check if system templates already exist (userId = null)
+   952→    const existingSystemTemplates = await ctx.db
+   953→      .query("proposalTemplates")
+   954→      .withIndex("by_industry", (q) => q.eq("industry", "web_design"))
+   955→      .collect();
+   956→
+   957→    const alreadySeeded = existingSystemTemplates.some((t) => t.userId === undefined);
+   958→    if (alreadySeeded) {
+   959→      return { seeded: false, message: "Default templates already exist" };
+   960→    }
+   961→
+   962→    const now = Date.now();
+   963→    let count = 0;
+   964→
+   965→    // ── Web Design Template ──
+   966→    await ctx.db.insert("proposalTemplates", {
+   967→      userId: undefined,
+   968→      name: "Web Design Proposal",
+   969→      industry: "web_design",
+   970→      category: "web_design",
+   971→      content: [
+   972→        { id: "wd-heading-1", type: "heading", data: { text: "Website Design & Development Proposal", level: 1 } },
+   973→        { id: "wd-text-1", type: "text", data: { text: "Thank you for considering our team for your website design and development project. Below you'll find a comprehensive proposal outlining our approach, deliverables, and pricing." } },
+   974→        { id: "wd-heading-2", type: "heading", data: { text: "Project Overview", level: 2 } },
+   975→        { id: "wd-text-2", type: "text", data: { text: "We will design and develop a modern, responsive website that reflects your brand identity and engages your target audience." } },
+   976→        { id: "wd-heading-3", type: "heading", data: { text: "Deliverables", level: 2 } },
+   977→        { id: "wd-text-3", type: "text", data: { text: "• Custom UI/UX design with up to 3 revision rounds\n• Responsive front-end development (mobile, tablet, desktop)\n• CMS integration (WordPress, Webflow, or headless CMS)\n• SEO optimization and performance tuning\n• Launch support and 30-day post-launch bug fixes" } },
+   978→        { id: "wd-pricing-1", type: "pricing_table", data: { rows: [{ item: "UI/UX Design", quantity: 1, rate: 3000, amount: 3000 }, { item: "Front-end Development", quantity: 1, rate: 5000, amount: 5000 }, { item: "CMS Integration", quantity: 1, rate: 2000, amount: 2000 }, { item: "SEO & Performance", quantity: 1, rate: 1000, amount: 1000 }], total: 11000 } },
+   979→        { id: "wd-delimiter-1", type: "delimiter", data: {} },
+   980→        { id: "wd-terms-1", type: "terms", data: { text: "50% deposit required before work begins. Remaining 50% due upon launch. Proposal valid for 30 days. Additional revisions beyond the included rounds will be billed at $150/hour." } },
+   981→      ],
+   982→      isDefault: true,
+   983→      usageCount: 0,
+   984→      createdAt: now,
+   985→    });
+   986→    count++;
+   987→
+   988→    // ── Consulting Template ──
+   989→    await ctx.db.insert("proposalTemplates", {
+   990→      userId: undefined,
+   991→      name: "Consulting Engagement Proposal",
+   992→      industry: "consulting",
+   993→      category: "consulting",
+   994→      content: [
+   995→        { id: "c-heading-1", type: "heading", data: { text: "Consulting Engagement Proposal", level: 1 } },
+   996→        { id: "c-text-1", type: "text", data: { text: "We appreciate the opportunity to support your organization. This proposal outlines our consulting approach, methodology, and investment required." } },
+   997→        { id: "c-heading-2", type: "heading", data: { text: "Engagement Scope", level: 2 } },
+   998→        { id: "c-text-2", type: "text", data: { text: "Our consulting engagement will include discovery, analysis, recommendations, and implementation support tailored to your business objectives." } },
+   999→        { id: "c-heading-3", type: "heading", data: { text: "Methodology", level: 2 } },
+  1000→        { id: "c-text-3", type: "text", data: { text: "• Phase 1: Discovery & Stakeholder Interviews (Week 1-2)\n• Phase 2: Current State Analysis & Gap Assessment (Week 3-4)\n• Phase 3: Strategy Development & Recommendations (Week 5-6)\n• Phase 4: Implementation Roadmap & Support (Week 7-8)" } },
+  1001→        { id: "c-pricing-1", type: "pricing_table", data: { rows: [{ item: "Discovery & Analysis", quantity: 40, rate: 200, amount: 8000 }, { item: "Strategy Development", quantity: 30, rate: 200, amount: 6000 }, { item: "Implementation Support", quantity: 20, rate: 200, amount: 4000 }], total: 18000 } },
+  1002→        { id: "c-delimiter-1", type: "delimiter", data: {} },
+  1003→        { id: "c-terms-1", type: "terms", data: { text: "Engagement begins upon signed agreement and initial payment. Billed bi-weekly based on hours worked. Proposal valid for 30 days. Travel expenses billed separately at cost." } },
+  1004→      ],
+  1005→      isDefault: true,
+  1006→      usageCount: 0,
+  1007→      createdAt: now,
+  1008→    });
+  1009→    count++;
+  1010→
+  1011→    // ── Marketing Template ──
+  1012→    await ctx.db.insert("proposalTemplates", {
+  1013→      userId: undefined,
+  1014→      name: "Digital Marketing Proposal",
+  1015→      industry: "marketing",
+  1016→      category: "marketing",
+  1017→      content: [
+  1018→        { id: "m-heading-1", type: "heading", data: { text: "Digital Marketing Strategy Proposal", level: 1 } },
+  1019→        { id: "m-text-1", type: "text", data: { text: "We're excited to help you grow your digital presence. This proposal outlines a comprehensive marketing strategy designed to increase your visibility, engagement, and conversions." } },
+  1020→        { id: "m-heading-2", type: "heading", data: { text: "Campaign Strategy", level: 2 } },
+  1021→        { id: "m-text-2", type: "text", data: { text: "Our approach combines data-driven insights with creative execution to deliver measurable results across all digital channels." } },
+  1022→        { id: "m-heading-3", type: "heading", data: { text: "Included Services", level: 2 } },
+  1023→        { id: "m-text-3", type: "text", data: { text: "• Brand audit and competitive analysis\n• Social media strategy and content calendar\n• Paid advertising setup and management (Google Ads, Meta Ads)\n• Email marketing campaign design\n• Monthly analytics reporting and optimization" } },
+  1024→        { id: "m-pricing-1", type: "pricing_table", data: { rows: [{ item: "Brand Audit & Strategy", quantity: 1, rate: 2500, amount: 2500 }, { item: "Social Media Management (Monthly)", quantity: 3, rate: 1500, amount: 4500 }, { item: "Paid Ads Management (Monthly)", quantity: 3, rate: 1000, amount: 3000 }, { item: "Email Marketing Setup", quantity: 1, rate: 1500, amount: 1500 }], total: 11500 } },
+  1025→        { id: "m-delimiter-1", type: "delimiter", data: {} },
+  1026→        { id: "m-terms-1", type: "terms", data: { text: "3-month minimum engagement. Ad spend is separate and paid directly to platforms. Monthly retainer billed at the start of each month. Proposal valid for 30 days." } },
+  1027→      ],
+  1028→      isDefault: true,
+  1029→      usageCount: 0,
+  1030→      createdAt: now,
+  1031→    });
+  1032→    count++;
+  1033→
+  1034→    // ── Development Template ──
+  1035→    await ctx.db.insert("proposalTemplates", {
+  1036→      userId: undefined,
+  1037→      name: "Software Development Proposal",
+  1038→      industry: "development",
+  1039→      category: "development",
+  1040→      content: [
+  1041→        { id: "d-heading-1", type: "heading", data: { text: "Custom Software Development Proposal", level: 1 } },
+  1042→        { id: "d-text-1", type: "text", data: { text: "Thank you for the opportunity to propose on your software development project. We specialize in building scalable, maintainable solutions that drive business value." } },
+  1043→        { id: "d-heading-2", type: "heading", data: { text: "Technical Approach", level: 2 } },
+  1044→        { id: "d-text-2", type: "text", data: { text: "We follow an agile development methodology with 2-week sprints, continuous integration, and regular stakeholder demos to ensure alignment throughout the project." } },
+  1045→        { id: "d-heading-3", type: "heading", data: { text: "Project Phases", level: 2 } },
+  1046→        { id: "d-text-3", type: "text", data: { text: "• Requirements gathering & technical specification\n• Architecture design & technology stack selection\n• Core feature development (Sprint 1-4)\n• Integration, testing & QA (Sprint 5-6)\n• Deployment, documentation & handover" } },
+  1047→        { id: "d-pricing-1", type: "pricing_table", data: { rows: [{ item: "Requirements & Architecture", quantity: 1, rate: 5000, amount: 5000 }, { item: "Core Development (6 sprints)", quantity: 6, rate: 4000, amount: 24000 }, { item: "QA & Testing", quantity: 1, rate: 3000, amount: 3000 }, { item: "Deployment & Documentation", quantity: 1, rate: 2000, amount: 2000 }], total: 34000 } },
+  1048→        { id: "d-delimiter-1", type: "delimiter", data: {} },
+  1049→        { id: "d-terms-1", type: "terms", data: { text: "Sprint-based billing: each sprint is billed upon completion. 30% deposit required before development begins. Scope changes require a formal change order. 90-day warranty on delivered code. Proposal valid for 30 days." } },
+  1050→      ],
+  1051→      isDefault: true,
+  1052→      usageCount: 0,
+  1053→      createdAt: now,
+  1054→    });
+  1055→    count++;
+  1056→
+  1057→    return { seeded: true, count };
+  1058→  },
+  1059→});
+  1060→
+  1061→
+  1062→// ═════════════════════════════════════════════
+  1063→// PROPOSAL FOLLOW-UPS
+  1064→// ═════════════════════════════════════════════
+  1065→
+  1066→// ─────────────────────────────────────────────
+  1067→// 20. SCHEDULE FOLLOW-UPS (Day 3/7/14)
+  1068→// ─────────────────────────────────────────────
+  1069→export const scheduleFollowUps = mutation({
+  1070→  args: {
+  1071→    proposalId: v.id("proposals"),
+  1072→  },
+  1073→  handler: async (ctx, args) => {
+  1074→    const userId = await getAuthUserId(ctx);
+  1075→    if (!userId) throw new ConvexError("Not authenticated");
+  1076→
+  1077→    const proposal = await ctx.db.get(args.proposalId);
+  1078→    if (!proposal) throw new ConvexError("Proposal not found");
+  1079→
+  1080→    // Check workspace access or direct ownership
+  1081→    if (proposal.workspaceId) {
+  1082→      await requireRecordAccess(ctx, proposal, "collaborate");
+  1083→    } else if (proposal.userId !== userId) {
+  1084→      throw new ConvexError("Not authorized");
+  1085→    }
+  1086→
+  1087→    if (proposal.status !== "sent") {
+  1088→      throw new ConvexError("Follow-ups can only be scheduled for sent proposals");
+  1089→    }
+  1090→
+  1091→    if (!proposal.sentAt) {
+  1092→      throw new ConvexError("Proposal has not been sent yet");
+  1093→    }
+  1094→
+  1095→    await scheduleFollowUpsInternal(
+  1096→      ctx, args.proposalId, userId, proposal.title, proposal.totalValue, proposal.sentAt
+  1097→    );
+  1098→
+  1099→    return { success: true };
+  1100→  },
+  1101→});
+  1102→
+  1103→
+  1104→// ─────────────────────────────────────────────
+  1105→// 20. PROCESS DUE FOLLOW-UPS (cron job handler)
+  1106→// ─────────────────────────────────────────────
+  1107→
+  1108→export const processDueFollowUps = internalMutation({
+  1109→  args: {},
+  1110→  handler: async (ctx) => {
+  1111→    const now = Date.now();
+  1112→
+  1113→    // Find all scheduled follow-ups that are due
+  1114→    const allFollowUps = await ctx.db
+  1115→      .query("proposalFollowUps")
+  1116→      .filter((q) => q.eq(q.field("status"), "scheduled"))
+  1117→      .collect();
+  1118→
+  1119→    const dueFollowUps = allFollowUps.filter(
+  1120→      (fu) => fu.scheduledFor <= now
+  1121→    );
+  1122→
+  1123→    let processedCount = 0;
+  1124→    for (const fu of dueFollowUps) {
+  1125→      // Mark as sent (in a real system, this would also send an email)
+  1126→      await ctx.db.patch(fu._id, {
+  1127→        status: "sent",
+  1128→        sentAt: now,
+  1129→      });
+  1130→      processedCount++;
+  1131→    }
+  1132→
+  1133→    return { processedCount, totalDue: dueFollowUps.length };
+  1134→  },
+  1135→});
+  1136→
+  1137→// ═════════════════════════════════════════════
+  1138→// INTERNAL HELPERS
+  1139→// ═════════════════════════════════════════════
+  1140→
+  1141→async function scheduleFollowUpsInternal(
+  1142→  ctx: any,
+  1143→  proposalId: string,
+  1144→  userId: string,
+  1145→  title: string,
+  1146→  totalValue: number | undefined,
+  1147→  sentAt: number
+  1148→): Promise<void> {
+  1149→  const now = Date.now();
+  1150→
+  1151→  const configs = [
+  1152→    { day: 3, subject: `Friendly Reminder: ${title}`, tone: "friendly" as const },
+  1153→    { day: 7, subject: `Checking In: ${title}`, tone: "professional" as const },
+  1154→    { day: 14, subject: `Final Follow-Up: ${title}`, tone: "firm" as const },
+  1155→  ];
+  1156→
+  1157→  for (const config of configs) {
+  1158→    const scheduledFor = sentAt + config.day * 24 * 60 * 60 * 1000;
+  1159→    if (scheduledFor > now) {
+  1160→      await ctx.db.insert("proposalFollowUps", {
+  1161→        proposalId,
+  1162→        userId,
+  1163→        dayNumber: config.day,
+  1164→        subject: config.subject,
+  1165→        body: `Hi there,\n\nThis is a ${config.tone} reminder about the proposal "${title}" sent on ${new Date(sentAt).toLocaleDateString()}.\n\nPlease let us know if you have any questions.\n\nBest regards`,
+  1166→        channel: "email",
+  1167→        tone: config.tone,
+  1168→        status: "scheduled",
+  1169→        scheduledFor,
+  1170→        createdAt: now,
+  1171→      });
+  1172→    }
+  1173→  }
+  1174→}
+  1175→
+  1176→async function cancelFollowUpsInternal(
+  1177→  ctx: any,
+  1178→  proposalId: string
+  1179→): Promise<void> {
+  1180→  const followUps = await ctx.db
+  1181→    .query("proposalFollowUps")
+  1182→    .withIndex("by_proposal", (q: any) => q.eq("proposalId", proposalId))
+  1183→    .collect();
+  1184→
+  1185→  for (const fu of followUps) {
+  1186→    if (fu.status === "scheduled") {
+  1187→      await ctx.db.patch(fu._id, { status: "cancelled" });
+  1188→    }
+  1189→  }
+  1190→}
+  1191→
+  1192→async function convertToScopeInternal(
+  1193→  ctx: any,
+  1194→  userId: string,
+  1195→  proposalId: string,
+  1196→  clientId: string | undefined,
+  1197→  content: any[],
+  1198→  title: string
+  1199→): Promise<string> {
+  1200→  // Extract deliverables from pricing sections
+  1201→  const deliverables: any[] = [];
+  1202→  let totalValue = 0;
+  1203→
+  1204→  for (const section of content) {
+  1205→    if (section.type === "pricing_table" && section.data?.rows) {
+  1206→      for (const row of section.data.rows) {
+  1207→        deliverables.push({
+  1208→          id: `del-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  1209→          name: row.item,
+  1210→          description: `${row.quantity} × $${row.rate}`,
+  1211→          estimatedHours: undefined,
+  1212→          status: "pending",
+  1213→        });
+  1214→        totalValue += row.amount;
+  1215→      }
+  1216→    }
+  1217→  }
+  1218→
+  1219→  const scopeId = await ctx.db.insert("scopeDefinitions", {
+  1220→    userId,
+  1221→    proposalId,
+  1222→    clientId,
+  1223→    title: `Scope: ${title}`,
+  1224→    description: `Auto-generated scope from proposal: ${title}`,
+  1225→    deliverables: deliverables.length > 0 ? deliverables : [
+  1226→      { id: `del-${Date.now()}`, name: title, description: "Main deliverable", estimatedHours: undefined, status: "pending" }
+  1227→    ],
+  1228→    totalEstimatedHours: undefined,
+  1229→    revisionLimit: 3,
+  1230→    revisionCount: 0,
+  1231→    status: "active",
+  1232→    approvalToken: crypto.randomUUID(),
+  1233→    createdAt: Date.now(),
+  1234→    updatedAt: Date.now(),
+  1235→  });
+  1236→
+  1237→  return scopeId;
+  1238→}
+  1239→

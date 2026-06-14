@@ -11,9 +11,9 @@ interface EvidenceQualityScorecardProps {
 }
 
 export function EvidenceQualityScorecard({ hasAccess, healthScore }: EvidenceQualityScorecardProps) {
-  const workContext = healthScore?.workContextScore || 92;
-  const timeConsistency = healthScore?.evidenceConsistency || 85;
-  const platformCompliance = healthScore?.platformCompliance || 94;
+  const workContext = healthScore?.workContextScore ?? 0;
+  const timeConsistency = healthScore?.evidenceConsistency ?? 0;
+  const platformCompliance = healthScore?.platformCompliance ?? 0;
 
   return (
     <Card className="p-6 bg-[#1E293B] border-[#334155]">

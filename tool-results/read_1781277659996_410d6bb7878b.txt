@@ -1,0 +1,664 @@
+     1→@import "tailwindcss";
+     2→@import "tw-animate-css";
+     3→
+     4→@custom-variant dark (&:is(.dark *));
+     5→
+     6→/* ============================================================
+     7→   V2 DESIGN SYSTEM — AXIA Brand Tokens
+     8→   Source: axia_brand_identity_system_v2.pdf
+     9→   85/10/5 rule: 85% neutral, 10% teal brand, 5% accent
+    10→   
+    11→   Tailwind 4 strategy: @theme = LIGHT mode values (emits :root CSS vars)
+    12→   Dark mode overrides go in @layer base .dark { ... }
+    13→   NOTE: Must use @theme (NOT @theme inline) for dark mode to work.
+    14→   @theme inline inlines values into utilities, making them immune to
+    15→   CSS custom property overrides from .dark — dark mode breaks entirely.
+    16→   ============================================================ */
+    17→
+    18→@theme {
+    19→  /* ── Shadcn semantic bridge (light mode defaults) ── */
+    20→  --color-background: #F8FAFC;
+    21→  --color-foreground: #1E293B;
+    22→  --color-card: #FFFFFF;
+    23→  --color-card-foreground: #1E293B;
+    24→  --color-popover: #FFFFFF;
+    25→  --color-popover-foreground: #1E293B;
+    26→  --color-primary: #0D9488;
+    27→  --color-primary-foreground: #F1F5F9;
+    28→  --color-secondary: #F1F5F9;
+    29→  --color-secondary-foreground: #1E293B;
+    30→  --color-muted: #F1F5F9;
+    31→  --color-muted-foreground: #64748B;
+    32→  --color-accent: #0D9488;
+    33→  --color-accent-foreground: #F1F5F9;
+    34→  --color-destructive: #EF4444;
+    35→  --color-border: #E2E8F0;
+    36→  --color-input: #E2E8F0;
+    37→  --color-ring: #0D9488;
+    38→  --color-chart-1: #475993;
+    39→  --color-chart-2: #0D9488;
+    40→  --color-chart-3: #94A3B8;
+    41→  --color-chart-4: #7DD3FC;
+    42→  --color-chart-5: #64748B;
+    43→  --color-sidebar: #F8FAFC;
+    44→  --color-sidebar-foreground: #1E293B;
+    45→  --color-sidebar-primary: #0D9488;
+    46→  --color-sidebar-primary-foreground: #F1F5F9;
+    47→  --color-sidebar-accent: #F1F5F9;
+    48→  --color-sidebar-accent-foreground: #1E293B;
+    49→  --color-sidebar-border: #E2E8F0;
+    50→  --color-sidebar-ring: #0D9488;
+    51→
+    52→  /* ── Radius ── */
+    53→  --radius-sm: calc(var(--radius) - 4px);
+    54→  --radius-md: calc(var(--radius) - 2px);
+    55→  --radius-lg: var(--radius);
+    56→  --radius-xl: calc(var(--radius) + 4px);
+    57→
+    58→  /* ── Brand Primary: Deep Teal Scale (10% of visible area) ── */
+    59→  --color-axia-teal-50: #F0FDFA;
+    60→  --color-axia-teal-100: #CCFBF1;
+    61→  --color-axia-teal-200: #99F6E4;
+    62→  --color-axia-teal-300: #5EEAD4;
+    63→  --color-axia-teal-400: #2DD4BF;
+    64→  --color-axia-teal-500: #14B8A6;
+    65→  --color-axia-teal-600: #0D9488;
+    66→  --color-axia-teal-700: #0F766E;
+    67→  --color-axia-teal-800: #115E59;
+    68→  --color-axia-teal-900: #134E4A;
+    69→
+    70→  /* ── Brand Secondary: Platinum Silver Scale (5% accent) ── */
+    71→  --color-platinum-50: #F8FAFC;
+    72→  --color-platinum-100: #F1F5F9;
+    73→  --color-platinum-200: #E2E8F0;
+    74→  --color-platinum-300: #CBD5E1;
+    75→  --color-platinum-400: #94A3B8;
+    76→  --color-platinum-500: #64748B;
+    77→  --color-platinum-600: #475569;
+    78→  --color-platinum-700: #334155;
+    79→  --color-platinum-800: #1E293B;
+    80→  --color-platinum-900: #0F172A;
+    81→  --color-platinum-950: #020617;
+    82→
+    83→  /* ── Semantic: Status Colors ── */
+    84→  --color-success: #14B8A6;
+    85→  --color-warning: #F59E0B;
+    86→  --color-danger: #EF4444;
+    87→  --color-protected: #10B981;
+    88→  --color-info: #3B82F6;
+    89→
+    90→  /* ── Semantic: Brand & Surface ── */
+    91→  --color-brand: #0D9488;
+    92→  --color-brand-foreground: #F1F5F9;
+    93→  --color-surface-dark: #F8FAFC;
+    94→  --color-surface-card: #FFFFFF;
+    95→  --color-surface-elevated: #E2E8F0;
+    96→
+    97→  /* ── Stage / Pipeline Colors (V2 Section 9 — no indigo/purple) ── */
+    98→  --color-stage-lead: #0D9488;
+    99→  --color-stage-qualified: #0F766E;
+   100→  --color-stage-proposal: #475993;
+   101→  --color-stage-negotiation: #94A3B8;
+   102→  --color-stage-won: #10B981;
+   103→  --color-stage-lost: #EF4444;
+   104→
+   105→  /* ── Extended Semantic ── */
+   106→  --color-border-muted: #CBD5E1;
+   107→  --color-icon-blue: #3B82F6;
+   108→  --color-page-bg-from: #F0F9FF;
+   109→  --color-page-bg-to: #F8FAFC;
+   110→  --color-navy-accent: #F1F5F9;
+   111→  --color-chart-primary: #475993;
+   112→  --color-chart-frost: #7DD3FC;
+   113→
+   114→  /* ── Fonts ── */
+   115→  --font-sans: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+   116→  --font-mono: "Geist Mono", Menlo, "Courier New", monospace;
+   117→
+   118→  /* ── Typography Scale (1.25 ratio — Major Third) ── */
+   119→  --text-xs: 12px;
+   120→  --text-sm: 14px;
+   121→  --text-base: 16px;
+   122→  --text-lg: 18px;
+   123→  --text-xl: 20px;
+   124→  --text-2xl: 24px;
+   125→  --text-3xl: 30px;
+   126→  --text-4xl: 36px;
+   127→  --text-5xl: 48px;
+   128→  --leading-xs: 16px;
+   129→  --leading-sm: 20px;
+   130→  --leading-base: 24px;
+   131→  --leading-lg: 28px;
+   132→  --leading-xl: 28px;
+   133→  --leading-2xl: 32px;
+   134→  --leading-3xl: 36px;
+   135→  --leading-4xl: 40px;
+   136→  --leading-5xl: 48px;
+   137→  --weight-normal: 400;
+   138→  --weight-medium: 500;
+   139→  --weight-semibold: 600;
+   140→  --weight-bold: 700;
+   141→
+   142→  /* ── Spacing Scale (8px base) ── */
+   143→  --space-1: 4px;
+   144→  --space-2: 8px;
+   145→  --space-3: 12px;
+   146→  --space-4: 16px;
+   147→  --space-5: 24px;
+   148→  --space-6: 32px;
+   149→  --space-7: 48px;
+   150→  --space-8: 64px;
+   151→
+   152→  /* ── Surface Elevation Scale ── */
+   153→  --color-surface-0: #F8FAFC;
+   154→  --color-surface-1: #FFFFFF;
+   155→  --color-surface-2: #F1F5F9;
+   156→  --color-surface-3: #E2E8F0;
+   157→}
+   158→
+   159→/* ═══════════════════════════════════════════════════════════
+   160→   DARK MODE OVERRIDES — in @layer base so Tailwind preserves them
+   161→   Navy-tinted backgrounds (PDF Section 4.2)
+   162→   Pure black forbidden. Use #0A0F1C navy-tinted instead.
+   163→   ═══════════════════════════════════════════════════════════ */
+   164→@layer base {
+   165→  :root {
+   166→    --radius: 0.625rem;
+   167→
+   168→    /* Light mode custom properties (not color tokens — those are in @theme) */
+   169→    --bg-page: #F8FAFC;
+   170→    --bg-surface-1: #FFFFFF;
+   171→    --bg-surface-2: #F1F5F9;
+   172→    --bg-surface-3: #E2E8F0;
+   173→    --border-subtle: #E2E8F0;
+   174→    --border-default: #CBD5E1;
+   175→    --border-strong: #94A3B8;
+   176→    --text-primary: #1E293B;
+   177→    --text-secondary: #64748B;
+   178→    --text-tertiary: #94A3B8;
+   179→    --text-inverse: #F1F5F9;
+   180→    --accent-primary: #0D9488;
+   181→    --accent-hover: #14B8A6;
+   182→    --accent-muted: rgba(13,148,136,0.15);
+   183→    --accent-secondary: #94A3B8;
+   184→    --gradient-institutional: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+   185→    --gradient-teal-veil: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+   186→    --gradient-card-elevate: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+   187→    --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+   188→    --gradient-steel-horizon: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+   189→  }
+   190→
+   191→  .dark {
+   192→    /* ── Dark mode semantic overrides ── */
+   193→    --color-background: #0A0F1C;
+   194→    --color-foreground: #F1F5F9;
+   195→    --color-card: #0C1322;
+   196→    --color-card-foreground: #F1F5F9;
+   197→    --color-popover: #0C1322;
+   198→    --color-popover-foreground: #F1F5F9;
+   199→    --color-primary: #0D9488;
+   200→    --color-primary-foreground: #F1F5F9;
+   201→    --color-secondary: #111827;
+   202→    --color-secondary-foreground: #F1F5F9;
+   203→    --color-muted: #111827;
+   204→    --color-muted-foreground: #94A3B8;
+   205→    --color-accent: #0D9488;
+   206→    --color-accent-foreground: #F1F5F9;
+   207→    --color-destructive: #EF4444;
+   208→    --color-border: rgba(255,255,255,0.08);
+   209→    --color-input: rgba(255,255,255,0.08);
+   210→    --color-ring: #0D9488;
+   211→    --color-chart-1: #475993;
+   212→    --color-chart-2: #0D9488;
+   213→    --color-chart-3: #94A3B8;
+   214→    --color-chart-4: #7DD3FC;
+   215→    --color-chart-5: #64748B;
+   216→    --color-sidebar: #0C1322;
+   217→    --color-sidebar-foreground: #F1F5F9;
+   218→    --color-sidebar-primary: #0D9488;
+   219→    --color-sidebar-primary-foreground: #F1F5F9;
+   220→    --color-sidebar-accent: #111827;
+   221→    --color-sidebar-accent-foreground: #F1F5F9;
+   222→    --color-sidebar-border: rgba(255,255,255,0.08);
+   223→    --color-sidebar-ring: #0D9488;
+   224→
+   225→    /* Dark mode status colors — brighter */
+   226→    --color-success: #2DD4BF;
+   227→    --color-warning: #FBBF24;
+   228→    --color-danger: #F87171;
+   229→    --color-protected: #34D399;
+   230→    --color-info: #60A5FA;
+   231→
+   232→    /* Dark mode brand */
+   233→    --color-brand: #0D9488;
+   234→    --color-brand-foreground: #F1F5F9;
+   235→    --color-surface-dark: #0A0F1C;
+   236→    --color-surface-card: #0C1322;
+   237→    --color-surface-elevated: #1A2035;
+   238→
+   239→    /* Dark mode stage — brighter */
+   240→    --color-stage-lead: #14B8A6;
+   241→    --color-stage-qualified: #2DD4BF;
+   242→    --color-stage-proposal: #7DD3FC;
+   243→    --color-stage-negotiation: #CBD5E1;
+   244→    --color-stage-won: #34D399;
+   245→    --color-stage-lost: #F87171;
+   246→
+   247→    /* Dark mode extended */
+   248→    --color-border-muted: #4B5563;
+   249→    --color-icon-blue: #93C5FD;
+   250→    --color-page-bg-from: #0A0F1C;
+   251→    --color-page-bg-to: #0C1322;
+   252→    --color-navy-accent: #112240;
+   253→
+   254→    /* Dark mode custom properties */
+   255→    --bg-page: #0A0F1C;
+   256→
+   257→    /* Dark mode surface elevation */
+   258→    --color-surface-0: #0A0F1C;
+   259→    --color-surface-1: #0C1322;
+   260→    --color-surface-2: #111827;
+   261→    --color-surface-3: #1A2035;
+   262→    --bg-surface-1: #0C1322;
+   263→    --bg-surface-2: #111827;
+   264→    --bg-surface-3: #1A2035;
+   265→    --border-subtle: rgba(255,255,255,0.04);
+   266→    --border-default: rgba(255,255,255,0.08);
+   267→    --border-strong: rgba(255,255,255,0.12);
+   268→    --text-primary: #F1F5F9;
+   269→    --text-secondary: #94A3B8;
+   270→    --text-tertiary: #64748B;
+   271→    --text-inverse: #1E293B;
+   272→    --accent-primary: #0D9488;
+   273→    --accent-hover: #2DD4BF;
+   274→    --accent-muted: rgba(13,148,136,0.20);
+   275→    --accent-secondary: #94A3B8;
+   276→    --gradient-institutional: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+   277→    --gradient-teal-veil: linear-gradient(135deg, #0F172A 0%, #0C1A2A 100%);
+   278→    --gradient-card-elevate: linear-gradient(180deg, #1E293B 0%, #253347 100%);
+   279→    --gradient-hero-accent: linear-gradient(135deg, rgba(13,148,136,0.15) 0%, transparent 100%);
+   280→    --gradient-steel-horizon: linear-gradient(135deg, #1E293B 0%, #2A3A52 50%, #1E293B 100%);
+   281→  }
+   282→}
+   283→
+   284→/* ── Light mode: Global text-white override ── */
+   285→:root:not(.dark) .text-white {
+   286→  color: var(--foreground) !important;
+   287→}
+   288→/* Restore white text on actual colored backgrounds */
+   289→:root:not(.dark) button.text-white,
+   290→:root:not(.dark) .btn.text-white,
+   291→:root:not(.dark) [class*="bg-axia-teal"] .text-white,
+   292→:root:not(.dark) [class*="bg-primary"] .text-white,
+   293→:root:not(.dark) [class*="bg-emerald"] .text-white,
+   294→:root:not(.dark) [class*="bg-red-"] .text-white,
+   295→:root:not(.dark) [class*="bg-destructive"] .text-white,
+   296→:root:not(.dark) [class*="bg-amber-"] .text-white,
+   297→:root:not(.dark) [class*="bg-blue-600"] .text-white,
+   298→:root:not(.dark) [class*="bg-blue-700"] .text-white,
+   299→:root:not(.dark) [class*="bg-green-"] .text-white,
+   300→:root:not(.dark) [class*="bg-\\[\\#"] .text-white,
+   301→:root:not(.dark) .bg-axia-teal-600.text-white,
+   302→:root:not(.dark) .bg-primary.text-white {
+   303→  color: #FFFFFF !important;
+   304→}
+   305→
+   306→/* Light mode: bg-slate-950/900/800 → proper light surfaces */
+   307→:root:not(.dark) .bg-slate-950 { background-color: #FFFFFF !important; }
+   308→:root:not(.dark) .bg-slate-900 { background-color: #F8FAFC !important; }
+   309→:root:not(.dark) .bg-slate-800 { background-color: #F1F5F9 !important; }
+   310→:root:not(.dark) .bg-slate-950\/50 { background-color: rgba(255,255,255,0.95) !important; }
+   311→:root:not(.dark) .bg-slate-900\/50 { background-color: rgba(248,250,252,0.95) !important; }
+   312→:root:not(.dark) .bg-slate-900\/80 { background-color: rgba(248,250,252,0.97) !important; }
+   313→:root:not(.dark) .bg-slate-800\/50 { background-color: rgba(241,245,249,0.95) !important; }
+   314→
+   315→/* Light mode: border fixes */
+   316→:root:not(.dark) .border-slate-800 { border-color: #E2E8F0 !important; }
+   317→:root:not(.dark) .border-slate-700 { border-color: #CBD5E1 !important; }
+   318→:root:not(.dark) .border-slate-700\/50 { border-color: rgba(203,213,225,0.5) !important; }
+   319→:root:not(.dark) .border-slate-700\/30 { border-color: rgba(203,213,225,0.3) !important; }
+   320→:root:not(.dark) .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
+   321→:root:not(.dark) .border-white\/10 { border-color: rgba(0,0,0,0.05) !important; }
+   322→:root:not(.dark) .border-white\/20 { border-color: rgba(0,0,0,0.08) !important; }
+   323→
+   324→/* Light mode: text-slate fixes for contrast */
+   325→:root:not(.dark) .text-slate-200 { color: #334155 !important; }
+   326→:root:not(.dark) .text-slate-300 { color: #475569 !important; }
+   327→:root:not(.dark) .text-slate-400 { color: #64748B !important; }
+   328→:root:not(.dark) .text-slate-500 { color: #64748B !important; }
+   329→:root:not(.dark) .text-slate-600 { color: #475569 !important; }
+   330→
+   331→/* Light mode: bg-white/5, bg-white/10 fixes */
+   332→:root:not(.dark) .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+   333→:root:not(.dark) .bg-white\/10 { background-color: rgba(0,0,0,0.05) !important; }
+   334→:root:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.08) !important; }
+   335→
+   336→/* Light mode: hover states */
+   337→:root:not(.dark) .hover\:bg-slate-800:hover { background-color: #E2E8F0 !important; }
+   338→:root:not(.dark) .hover\:bg-slate-800\/50:hover { background-color: rgba(226,232,240,0.7) !important; }
+   339→:root:not(.dark) .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.05) !important; }
+   340→:root:not(.dark) .hover\:text-white:hover { color: var(--foreground) !important; }
+   341→
+   342→/* Light mode: gradient-to-br from-slate-900 etc. */
+   343→:root:not(.dark) .from-slate-900 { --tw-gradient-from: #F8FAFC !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(248,250,252,0)) !important; }
+   344→:root:not(.dark) .via-slate-800 { --tw-gradient-via: #F1F5F9 !important; }
+   345→:root:not(.dark) .to-slate-900 { --tw-gradient-to: #F8FAFC !important; }
+   346→:root:not(.dark) .to-slate-950 { --tw-gradient-to: #FFFFFF !important; }
+   347→:root:not(.dark) .from-slate-800 { --tw-gradient-from: #F1F5F9 !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(241,245,249,0)) !important; }
+   348→
+   349→/* ── Light mode: Platinum scale overrides ── */
+   350→:root:not(.dark) .bg-platinum-900 { background-color: #FFFFFF !important; }
+   351→:root:not(.dark) .bg-platinum-800 { background-color: #F8FAFC !important; }
+   352→:root:not(.dark) .bg-platinum-700 { background-color: #F1F5F9 !important; }
+   353→:root:not(.dark) .bg-platinum-950 { background-color: #FFFFFF !important; }
+   354→:root:not(.dark) .bg-platinum-900\/50 { background-color: rgba(255,255,255,0.95) !important; }
+   355→:root:not(.dark) .bg-platinum-800\/50 { background-color: rgba(248,250,252,0.95) !important; }
+   356→
+   357→/* ── Light mode: Teal scale overrides ── */
+   358→:root:not(.dark) .bg-axia-teal-950 { background-color: #F0FDFA !important; }
+   359→:root:not(.dark) .bg-axia-teal-900 { background-color: #CCFBF1 !important; }
+   360→:root:not(.dark) .bg-axia-teal-800 { background-color: #99F6E4 !important; }
+   361→:root:not(.dark) .bg-axia-teal-950\/30 { background-color: rgba(240,253,250,0.6) !important; }
+   362→:root:not(.dark) .bg-axia-teal-900\/50 { background-color: rgba(204,251,241,0.5) !important; }
+   363→:root:not(.dark) .border-axia-teal-900\/50 { border-color: rgba(13,148,136,0.15) !important; }
+   364→:root:not(.dark) .border-axia-teal-900\/30 { border-color: rgba(13,148,136,0.1) !important; }
+   365→
+   366→/* ── Light mode: bg-slate-700 ── */
+   367→:root:not(.dark) .bg-slate-700 { background-color: #E2E8F0 !important; }
+   368→:root:not(.dark) .bg-slate-700\/50 { background-color: rgba(226,232,240,0.5) !important; }
+   369→:root:not(.dark) .border-slate-600 { border-color: #CBD5E1 !important; }
+   370→
+   371→/* ── Light mode: text-blue-100/200 ── */
+   372→:root:not(.dark) .text-blue-100 { color: #1E40AF !important; }
+   373→:root:not(.dark) .text-blue-200 { color: #1D4ED8 !important; }
+   374→:root:not(.dark) .text-blue-300 { color: #2563EB !important; }
+   375→:root:not(.dark) .text-blue-400 { color: #3B82F6 !important; }
+   376→
+   377→/* ── Light mode: text-red-400 ── */
+   378→:root:not(.dark) .text-red-400 { color: #DC2626 !important; }
+   379→
+   380→/* ── Light mode: text-white/80 and text-white/60 ── */
+   381→:root:not(.dark) .text-white\/80:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.8) !important; }
+   382→:root:not(.dark) .text-white\/60:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.6) !important; }
+   383→:root:not(.dark) .text-white\/90:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not(button) { color: rgba(30,41,59,0.9) !important; }
+   384→
+   385→/* ── Light mode: bg-white/20/30 on non-accent ── */
+   386→:root:not(.dark) .bg-white\/20:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.08) !important; }
+   387→:root:not(.dark) .bg-white\/30:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-red"]) { background-color: rgba(0,0,0,0.1) !important; }
+   388→
+   389→/* ── Light mode: border-white/30 ── */
+   390→:root:not(.dark) .border-white\/30 { border-color: rgba(0,0,0,0.1) !important; }
+   391→:root:not(.dark) .border-white\/15 { border-color: rgba(0,0,0,0.06) !important; }
+   392→
+   393→/* ── Light mode: Hardcoded hex backgrounds ── */
+   394→:root:not(.dark) .bg-\[\#0A0F1C\] { background-color: #F8FAFC !important; }
+   395→:root:not(.dark) .bg-\[\#0C1322\] { background-color: #FFFFFF !important; }
+   396→:root:not(.dark) .bg-\[\#111827\] { background-color: #F1F5F9 !important; }
+   397→:root:not(.dark) .bg-\[\#1A2035\] { background-color: #E2E8F0 !important; }
+   398→:root:not(.dark) .bg-\[\#1E293B\] { background-color: #F1F5F9 !important; }
+   399→:root:not(.dark) .bg-\[\#0F172A\] { background-color: #F8FAFC !important; }
+   400→
+   401→/* ── Light mode: TooltipContent overrides ── */
+   402→:root:not(.dark) [data-radix-popper-content-wrapper] > div,
+   403→:root:not(.dark) [role="dialog"] > div {
+   404→  background-color: #FFFFFF !important;
+   405→  color: #1E293B !important;
+   406→  border-color: #E2E8F0 !important;
+   407→}
+   408→
+   409→/* ── Light mode: bg-slate-900 tooltips ── */
+   410→:root:not(.dark) .bg-slate-900.text-white,
+   411→:root:not(.dark) .bg-slate-800.text-white {
+   412→  background-color: #FFFFFF !important;
+   413→  color: #1E293B !important;
+   414→  border: 1px solid #E2E8F0 !important;
+   415→}
+   416→
+   417→/* ── Light mode: hover:white on buttons ── */
+   418→:root:not(.dark) .hover\:bg-white\/20:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.08) !important; }
+   419→:root:not(.dark) .hover\:bg-white\/30:hover:not([class*="bg-axia-teal"]):not([class*="bg-primary"]):not([class*="bg-emerald"]) { background-color: rgba(0,0,0,0.1) !important; }
+   420→:root:not(.dark) .hover\:text-white\/60:hover { color: rgba(30,41,59,0.6) !important; }
+   421→
+   422→@layer base {
+   423→  * {
+   424→    @apply border-border outline-ring/50;
+   425→    letter-spacing: -0.01em;
+   426→  }
+   427→  h1, h2, h3, h4, h5, h6 {
+   428→    font-weight: 600;
+   429→  }
+   430→  body {
+   431→    @apply bg-background text-foreground;
+   432→    font-family: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+   433→  }
+   434→  .font-sans {
+   435→    font-family: "Space Grotesk", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+   436→  }
+   437→  .font-serif {
+   438→    font-family: Georgia, Georgia, serif;
+   439→  }
+   440→  .font-mono {
+   441→    font-family: "Geist Mono", Menlo, "Courier New", monospace;
+   442→  }
+   443→}
+   444→
+   445→/* ── V2: Gradient utility classes ── */
+   446→.gradient-institutional { background: var(--gradient-institutional); }
+   447→.gradient-teal-veil { background: var(--gradient-teal-veil); }
+   448→.gradient-card-elevate { background: var(--gradient-card-elevate); }
+   449→.gradient-hero-accent { background: var(--gradient-hero-accent); }
+   450→.gradient-steel-horizon { background: var(--gradient-steel-horizon); }
+   451→.gradient-hero { background: var(--gradient-hero-accent); }
+   452→.gradient-sidebar { background: var(--gradient-institutional); }
+   453→.gradient-subtle { background: var(--gradient-card-elevate); }
+   454→
+   455→/* Light mode gradient overrides */
+   456→:root:not(.dark) .gradient-institutional,
+   457→:root:not(.dark) .gradient-sidebar {
+   458→  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+   459→}
+   460→:root:not(.dark) .gradient-teal-veil {
+   461→  background: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 100%);
+   462→}
+   463→:root:not(.dark) .gradient-card-elevate,
+   464→:root:not(.dark) .gradient-subtle {
+   465→  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+   466→}
+   467→:root:not(.dark) .gradient-hero-accent,
+   468→:root:not(.dark) .gradient-hero {
+   469→  background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, transparent 100%);
+   470→}
+   471→:root:not(.dark) .gradient-steel-horizon {
+   472→  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+   473→}
+   474→
+   475→/* ── V2: Accent tint utility classes ── */
+   476→.accent-tint { background: rgba(13,148,136,0.15); }
+   477→.accent-tint-subtle { background: rgba(13,148,136,0.08); }
+   478→:root:not(.dark) .accent-tint { background: rgba(13,148,136,0.10); }
+   479→:root:not(.dark) .accent-tint-subtle { background: rgba(13,148,136,0.05); }
+   480→
+   481→/* ── V2: Accessibility focus indicators (WCAG 2.1 AA) ── */
+   482→:focus-visible {
+   483→  outline: 2px solid var(--ring);
+   484→  outline-offset: 2px;
+   485→  border-radius: 2px;
+   486→}
+   487→
+   488→.skip-to-content {
+   489→  position: absolute;
+   490→  top: -100%;
+   491→  left: 50%;
+   492→  transform: translateX(-50%);
+   493→  padding: 0.5rem 1rem;
+   494→  background: var(--primary);
+   495→  color: var(--primary-foreground);
+   496→  border-radius: var(--radius);
+   497→  z-index: 99999;
+   498→  font-weight: 600;
+   499→  transition: top 0.2s;
+   500→}
+   501→.skip-to-content:focus {
+   502→  top: 0.5rem;
+   503→}
+   504→
+   505→.scrollbar-hide {
+   506→  -ms-overflow-style: none;
+   507→  scrollbar-width: none;
+   508→}
+   509→.scrollbar-hide::-webkit-scrollbar {
+   510→  display: none;
+   511→}
+   512→
+   513→/* V2 Motion System */
+   514→.transition-v2-hover { transition: all 150ms ease-out; }
+   515→.transition-v2-page { transition: all 200ms ease-in-out; }
+   516→.transition-v2-modal { transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+   517→.transition-v2-sidebar { transition: all 300ms ease-in-out; }
+   518→.transition-v2-toast { transition: all 300ms ease-out; }
+   519→
+   520→/* V2 Crypto-Distancing Rules */
+   521→.no-glow {
+   522→  box-shadow: none !important;
+   523→  text-shadow: none !important;
+   524→}
+   525→.bg-safe-dark {
+   526→  background-color: #0A0F1C;
+   527→}
+   528→:root:not(.dark) .bg-safe-dark {
+   529→  background-color: #F8FAFC;
+   530→}
+   531→
+   532→@keyframes fadeInUp {
+   533→  from { opacity: 0; transform: translateY(20px); }
+   534→  to { opacity: 1; transform: translateY(0); }
+   535→}
+   536→
+   537→@keyframes pulse-subtle {
+   538→  0%, 100% { opacity: 1; }
+   539→  50% { opacity: 0.85; }
+   540→}
+   541→
+   542→.animate-fade-in-up {
+   543→  animation: fadeInUp 0.5s ease-out forwards;
+   544→}
+   545→.animate-pulse-subtle {
+   546→  animation: pulse-subtle 2s ease-in-out infinite;
+   547→}
+   548→.animate-pulse-glow {
+   549→  animation: pulse-subtle 2s ease-in-out infinite;
+   550→}
+   551→
+   552→/* ═══════════════════════════════════════════════════════════
+   553→   DESIGN SYSTEM UTILITY CLASSES
+   554→   Phase 1: Typography, Spacing, Surface utilities
+   555→   ═══════════════════════════════════════════════════════════ */
+   556→
+   557→/* ── Typography Scale Utilities ── */
+   558→.text-display { font-size: var(--text-5xl); line-height: var(--leading-5xl); font-weight: var(--weight-bold); letter-spacing: -0.02em; }
+   559→.text-h1 { font-size: var(--text-3xl); line-height: var(--leading-3xl); font-weight: var(--weight-bold); letter-spacing: -0.015em; }
+   560→.text-h2 { font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-semibold); letter-spacing: -0.01em; }
+   561→.text-h3 { font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-semibold); }
+   562→.text-h4 { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-medium); }
+   563→.text-body-lg { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-normal); }
+   564→.text-body { font-size: var(--text-base); line-height: var(--leading-base); font-weight: var(--weight-normal); }
+   565→.text-body-sm { font-size: var(--text-sm); line-height: var(--leading-sm); font-weight: var(--weight-normal); }
+   566→.text-caption { font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-normal); letter-spacing: 0.02em; }
+   567→.text-label { font-size: var(--text-sm); line-height: var(--leading-sm); font-weight: var(--weight-medium); letter-spacing: 0.01em; }
+   568→.text-metric { font-size: var(--text-4xl); line-height: var(--leading-4xl); font-weight: var(--weight-bold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+   569→
+   570→/* ── Spacing Utilities ── */
+   571→.p-space-1 { padding: var(--space-1); }
+   572→.p-space-2 { padding: var(--space-2); }
+   573→.p-space-3 { padding: var(--space-3); }
+   574→.p-space-4 { padding: var(--space-4); }
+   575→.p-space-5 { padding: var(--space-5); }
+   576→.p-space-6 { padding: var(--space-6); }
+   577→.gap-space-1 { gap: var(--space-1); }
+   578→.gap-space-2 { gap: var(--space-2); }
+   579→.gap-space-3 { gap: var(--space-3); }
+   580→.gap-space-4 { gap: var(--space-4); }
+   581→.gap-space-5 { gap: var(--space-5); }
+   582→.gap-space-6 { gap: var(--space-6); }
+   583→.mb-space-6 { margin-bottom: var(--space-6); }
+   584→.mb-space-5 { margin-bottom: var(--space-5); }
+   585→.mb-space-4 { margin-bottom: var(--space-4); }
+   586→
+   587→/* ── Surface Elevation Utilities ── */
+   588→.bg-surface-0 { background-color: var(--color-surface-0); }
+   589→.bg-surface-1 { background-color: var(--color-surface-1); }
+   590→.bg-surface-2 { background-color: var(--color-surface-2); }
+   591→.bg-surface-3 { background-color: var(--color-surface-3); }
+   592→.border-surface { border-color: var(--color-border); }
+   593→
+   594→/* ── Standard Input Styling (Phase 5) ── */
+   595→.input-standard {
+   596→  height: 40px;
+   597→  padding: 0 12px;
+   598→  font-size: var(--text-sm);
+   599→  line-height: var(--leading-sm);
+   600→  border: 1px solid var(--color-input);
+   601→  border-radius: var(--radius-md);
+   602→  background-color: var(--color-background);
+   603→  color: var(--color-foreground);
+   604→  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+   605→  outline: none;
+   606→  width: 100%;
+   607→}
+   608→.input-standard::placeholder {
+   609→  color: var(--color-muted-foreground);
+   610→}
+   611→.input-standard:focus {
+   612→  border-color: var(--color-ring);
+   613→  box-shadow: 0 0 0 3px var(--accent-muted);
+   614→}
+   615→.input-standard:disabled {
+   616→  opacity: 0.5;
+   617→  cursor: not-allowed;
+   618→  background-color: var(--color-muted);
+   619→}
+   620→.input-standard.input-error {
+   621→  border-color: var(--color-destructive);
+   622→  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+   623→}
+   624→
+   625→/* ── Stat Card Utility (Phase 2 standard) ── */
+   626→.stat-card {
+   627→  padding: var(--space-4);
+   628→  border: 1px solid var(--color-border);
+   629→  border-radius: var(--radius-lg);
+   630→  background-color: var(--color-card);
+   631→  display: flex;
+   632→  flex-direction: column;
+   633→  gap: var(--space-2);
+   634→}
+   635→.stat-card .stat-icon {
+   636→  width: 32px;
+   637→  height: 32px;
+   638→  border-radius: var(--radius-sm);
+   639→  display: flex;
+   640→  align-items: center;
+   641→  justify-content: center;
+   642→  background: var(--accent-muted);
+   643→  color: var(--color-primary);
+   644→}
+   645→.stat-card .stat-value {
+   646→  font-size: var(--text-4xl);
+   647→  line-height: var(--leading-4xl);
+   648→  font-weight: var(--weight-bold);
+   649→  letter-spacing: -0.02em;
+   650→  font-variant-numeric: tabular-nums;
+   651→  color: var(--color-foreground);
+   652→}
+   653→.stat-card .stat-label {
+   654→  font-size: var(--text-sm);
+   655→  line-height: var(--leading-sm);
+   656→  color: var(--color-muted-foreground);
+   657→}
+   658→.stat-card .stat-trend-up {
+   659→  color: var(--color-protected);
+   660→}
+   661→.stat-card .stat-trend-down {
+   662→  color: var(--color-danger);
+   663→}
+   664→

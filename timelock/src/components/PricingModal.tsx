@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -51,9 +52,11 @@ export function PricingModal({
   const handleUpgradeClick = (tier: string) => {
     const pricing = TIER_PRICING[tier as keyof typeof TIER_PRICING];
     if (pricing > 0) {
-      // Redirect to Stripe checkout
-      const stripeCheckoutUrl = `https://checkout.stripe.com/pay/cs_live_${tier}_${pricing}`;
-      window.location.href = stripeCheckoutUrl;
+      // SECURITY: Don't redirect to fake Stripe URLs. Instead, show a toast
+      // indicating payment integration is coming soon. Fake payment redirects
+      // could trick users into thinking they've paid when they haven't.
+      toast.info(`${tier.charAt(0).toUpperCase() + tier.slice(1)} plan — payment integration coming soon!`);
+      return;
     }
     onUpgrade(tier);
   };

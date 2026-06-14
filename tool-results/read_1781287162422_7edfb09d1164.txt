@@ -1,0 +1,1320 @@
+     1→import { useState, useEffect } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { Button } from "@/components/ui/button";
+     4→import { Input } from "@/components/ui/input";
+     5→import { Textarea } from "@/components/ui/textarea";
+     6→import { Switch } from "@/components/ui/switch";
+     7→import { Badge } from "@/components/ui/badge";
+     8→import { Separator } from "@/components/ui/separator";
+     9→import { Skeleton } from "@/components/ui/skeleton";
+    10→import {
+    11→  Card,
+    12→  CardContent,
+    13→  CardHeader,
+    14→  CardTitle,
+    15→  CardDescription,
+    16→  CardFooter,
+    17→} from "@/components/ui/card";
+    18→import {
+    19→  Accordion,
+    20→  AccordionItem,
+    21→  AccordionTrigger,
+    22→  AccordionContent,
+    23→} from "@/components/ui/accordion";
+    24→import { Label } from "@/components/ui/label";
+    25→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    26→import { useTheme } from "@/components/ThemeProvider";
+    27→import {
+    28→  User,
+    29→  Zap,
+    30→  HelpCircle,
+    31→  Shield,
+    32→  LogOut,
+    33→  Copy,
+    34→  Check,
+    35→  Mail,
+    36→  Lock,
+    37→  CheckCircle2,
+    38→  X,
+    39→  Crown,
+    40→  Rocket,
+    41→  ChevronDown,
+    42→  ChevronUp,
+    43→  CreditCard,
+    44→  BarChart3,
+    45→  HardDrive,
+    46→  Users,
+    47→  Brain,
+    48→  Globe,
+    49→  Star,
+    50→  MessageSquare,
+    51→  ArrowUpRight,
+    52→  Search,
+    53→  Headphones,
+    54→  Phone,
+    55→  Bug,
+    56→  Lightbulb,
+    57→  BookOpen,
+    58→  PlayCircle,
+    59→  ChevronRight,
+    60→  Send,
+    61→  Loader2,
+    62→  ExternalLink,
+    63→  ArrowRight,
+    64→  Settings,
+    65→  FileText,
+    66→  Clock,
+    67→  AlertCircle,
+    68→  CircleDot,
+    69→  Sparkles,
+    70→} from "lucide-react";
+    71→import { useAuthActions } from "@convex-dev/auth/react";
+    72→import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    73→import { api } from "@/convex/_generated/api";
+    74→import { toast } from "sonner";
+    75→
+    76→// ─── Navigation Items ────────────────────────────────────────────────────────
+    77→
+    78→type SettingsSection = "profile" | "subscription" | "connections" | "help" | "security";
+    79→
+    80→const navItems: { key: SettingsSection; label: string; icon: React.ElementType }[] = [
+    81→  { key: "profile", label: "Profile", icon: User },
+    82→  { key: "subscription", label: "Subscription", icon: Zap },
+    83→  { key: "connections", label: "Connections", icon: Globe },
+    84→  { key: "help", label: "Help & Support", icon: HelpCircle },
+    85→  { key: "security", label: "Security", icon: Shield },
+    86→];
+    87→
+    88→// ─── Tier Definitions ────────────────────────────────────────────────────────
+    89→
+    90→type TierKey = "free" | "starter" | "pro" | "expert";
+    91→
+    92→interface TierInfo {
+    93→  key: TierKey;
+    94→  name: string;
+    95→  price: number;
+    96→  description: string;
+    97→  icon: React.ReactNode;
+    98→  color: string;
+    99→  bgColor: string;
+   100→  borderColor: string;
+   101→  badge?: string;
+   102→  highlighted?: boolean;
+   103→}
+   104→
+   105→const TIERS: TierInfo[] = [
+   106→  {
+   107→    key: "free",
+   108→    name: "Free",
+   109→    price: 0,
+   110→    description: "Basic protection for freelancers getting started",
+   111→    icon: <Shield className="w-5 h-5" />,
+   112→    color: "text-slate-400",
+   113→    bgColor: "bg-slate-500/10",
+   114→    borderColor: "border-slate-500/30",
+   115→  },
+   116→  {
+   117→    key: "starter",
+   118→    name: "Starter",
+   119→    price: 19,
+   120→    description: "Enhanced protection with evidence collection",
+   121→    icon: <Rocket className="w-5 h-5" />,
+   122→    color: "text-blue-400",
+   123→    bgColor: "bg-blue-500/10",
+   124→    borderColor: "border-blue-500/30",
+   125→  },
+   126→  {
+   127→    key: "pro",
+   128→    name: "Pro",
+   129→    price: 49,
+   130→    description: "Complete protection with dispute resolution",
+   131→    icon: <Star className="w-5 h-5" />,
+   132→    color: "text-teal-400",
+   133→    bgColor: "bg-teal-500/10",
+   134→    borderColor: "border-teal-500/30",
+   135→    badge: "Popular",
+   136→    highlighted: true,
+   137→  },
+   138→  {
+   139→    key: "expert",
+   140→    name: "Expert",
+   141→    price: 99,
+   142→    description: "Enterprise-grade with team validation & WCVM",
+   143→    icon: <Crown className="w-5 h-5" />,
+   144→    color: "text-amber-400",
+   145→    bgColor: "bg-amber-500/10",
+   146→    borderColor: "border-amber-500/30",
+   147→  },
+   148→];
+   149→
+   150→// ─── Help Center Mock Data ───────────────────────────────────────────────────
+   151→
+   152→interface HelpArticle {
+   153→  id: string;
+   154→  title: string;
+   155→  category: string;
+   156→  excerpt: string;
+   157→}
+   158→
+   159→interface SupportTicket {
+   160→  id: string;
+   161→  subject: string;
+   162→  status: "open" | "in_progress" | "resolved" | "closed";
+   163→  createdAt: number;
+   164→  updatedAt: number;
+   165→}
+   166→
+   167→const MOCK_ARTICLES: HelpArticle[] = [
+   168→  { id: "1", title: "How to set up your first project", category: "Getting Started", excerpt: "Learn how to create your first protected project in Axia." },
+   169→  { id: "2", title: "Understanding scope protection", category: "Core Features", excerpt: "How Axia monitors your project scope and alerts you to deviations." },
+   170→  { id: "3", title: "Evidence collection best practices", category: "Evidence", excerpt: "Tips for ensuring your evidence is comprehensive and admissible." },
+   171→  { id: "4", title: "How to file a dispute", category: "Disputes", excerpt: "Step-by-step guide to initiating and managing a dispute." },
+   172→  { id: "5", title: "Invoicing and payment tracking", category: "Billing", excerpt: "How to create invoices and track payment patterns." },
+   173→  { id: "6", title: "Setting up platform connections", category: "Integrations", excerpt: "Connect your freelance platforms for automatic evidence collection." },
+   174→  { id: "7", title: "Using the browser extension", category: "Evidence", excerpt: "Install and use the Axia browser extension for real-time evidence capture." },
+   175→  { id: "8", title: "Team management and permissions", category: "Teams", excerpt: "Invite team members and manage their roles and access levels." },
+   176→];
+   177→
+   178→const MOCK_FAQ = [
+   179→  { q: "What is scope protection?", a: "Scope protection monitors your project agreements and alerts you when work deviates from the agreed terms. It uses automated evidence collection to build a verifiable record of all work performed." },
+   180→  { q: "How does evidence collection work?", a: "Axia collects evidence through multiple channels: the browser extension captures real-time work activity, time tracking records work sessions, and platform integrations pull in communications and deliverables. All evidence is cryptographically timestamped." },
+   181→  { q: "Can I export evidence for legal proceedings?", a: "Yes! Pro and Expert tiers support Legal Package exports that include chain-of-custody documentation, cryptographic verification, and court-admissible formatting. Free and Starter tiers can export in CSV and JSON formats." },
+   182→  { q: "How do I upgrade my plan?", a: "Navigate to the Subscription tab in Account Settings and select your desired plan. You can upgrade or downgrade at any time, with prorated billing for mid-cycle changes." },
+   183→  { q: "Is my data secure?", a: "Absolutely. All data is encrypted at rest and in transit. Evidence records use cryptographic hashing for tamper-proof verification. We never share your data with third parties." },
+   184→  { q: "What happens if I downgrade?", a: "When you downgrade, you retain access to features at your new tier level. Any data created at a higher tier remains accessible in read-only mode. You can upgrade again at any time to regain full access." },
+   185→];
+   186→
+   187→// ─── Main Component ──────────────────────────────────────────────────────────
+   188→
+   189→export default function AccountSettings() {
+   190→  const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
+   191→
+   192→  // Listen for navigation events from child components (e.g. "Manage" button in Profile)
+   193→  useEffect(() => {
+   194→    function handleNavigateToConnections() {
+   195→      setActiveSection("connections");
+   196→    }
+   197→    window.addEventListener("navigateToConnections", handleNavigateToConnections as EventListener);
+   198→    return () => window.removeEventListener("navigateToConnections", handleNavigateToConnections as EventListener);
+   199→  }, []);
+   200→  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
+   201→  const { theme, setTheme } = useTheme();
+   202→  const { signOut } = useAuthActions();
+   203→
+   204→  // ── Profile State ──
+   205→  const [profileName, setProfileName] = useState("Agency User");
+   206→  const [profileEmail, setProfileEmail] = useState(localStorage.getItem("userEmail") || "user@example.com");
+   207→  const [profileHourlyRate, setProfileHourlyRate] = useState("50");
+   208→  const [profileBio, setProfileBio] = useState("Experienced professional focused on quality work");
+   209→  const [copied, setCopied] = useState(false);
+   210→
+   211→  // ── Help State ──
+   212→  const [searchQuery, setSearchQuery] = useState("");
+   213→  const [ticketSubject, setTicketSubject] = useState("");
+   214→  const [ticketMessage, setTicketMessage] = useState("");
+   215→  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+   216→
+   217→  // ── Sign Out Confirmation ──
+   218→  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+   219→
+   220→  const handleCopyEmail = () => {
+   221→    navigator.clipboard.writeText(profileEmail);
+   222→    setCopied(true);
+   223→    setTimeout(() => setCopied(false), 2000);
+   224→  };
+   225→
+   226→  const handleSaveProfile = () => {
+   227→    localStorage.setItem("userEmail", profileEmail);
+   228→    toast.success("Profile updated successfully");
+   229→  };
+   230→
+   231→  const handleTierChange = (newTier: TierKey | "client") => {
+   232→    setSubscriptionTier(newTier);
+   233→    toast.success(`Subscription changed to ${newTier}`);
+   234→  };
+   235→
+   236→  const handleThemeToggle = (enabled: boolean) => {
+   237→    setTheme(enabled ? "dark" : "light");
+   238→  };
+   239→
+   240→  const handleSignOut = async () => {
+   241→    try {
+   242→      await signOut();
+   243→      toast.success("Signed out successfully");
+   244→    } catch (error) {
+   245→      toast.error("Failed to sign out");
+   246→    }
+   247→  };
+   248→
+   249→  const handleSubmitTicket = async () => {
+   250→    if (!ticketSubject.trim() || !ticketMessage.trim()) {
+   251→      toast.error("Please fill in all fields");
+   252→      return;
+   253→    }
+   254→    setIsSubmittingTicket(true);
+   255→    // Simulate API call
+   256→    await new Promise(resolve => setTimeout(resolve, 1500));
+   257→    setIsSubmittingTicket(false);
+   258→    setTicketSubject("");
+   259→    setTicketMessage("");
+   260→    toast.success("Support ticket submitted! We'll get back to you within 24 hours.");
+   261→  };
+   262→
+   263→  const filteredArticles = MOCK_ARTICLES.filter(
+   264→    article =>
+   265→      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   266→      article.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   267→      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
+   268→  );
+   269→
+   270→  return (
+   271→    <div className="w-full min-h-screen bg-background">
+   272→      <div className="p-4 md:p-8">
+   273→        {/* Page Header */}
+   274→        <div className="mb-4 md:mb-8">
+   275→          <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
+   276→            Account Settings
+   277→          </h1>
+   278→          <p className="text-sm md:text-[16px] text-muted-foreground">
+   279→            Manage your profile, subscription, get help, and secure your account.
+   280→          </p>
+   281→        </div>
+   282→
+   283→        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+   284→          {/* Left Sidebar Navigation — horizontal tabs on mobile, vertical on desktop */}
+   285→          <nav className="w-full md:w-56 flex-shrink-0">
+   286→            <div className="bg-card border border-border rounded-xl p-2 space-y-1 md:sticky md:top-8 flex md:flex-col gap-1 overflow-x-auto md:overflow-visible">
+   287→              {navItems.map(({ key, label, icon: Icon }) => (
+   288→                <button
+   289→                  key={key}
+   290→                  onClick={() => setActiveSection(key)}
+   291→                  className={`flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+   292→                    activeSection === key
+   293→                      ? "bg-primary/10 text-primary"
+   294→                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+   295→                  }`}
+   296→                >
+   297→                  <Icon className="w-4 h-4" />
+   298→                  {label}
+   299→                </button>
+   300→              ))}
+   301→            </div>
+   302→          </nav>
+   303→
+   304→          {/* Main Content Area */}
+   305→          <div className="flex-1 min-w-0">
+   306→            <motion.div
+   307→              key={activeSection}
+   308→              initial={{ opacity: 0, y: 8 }}
+   309→              animate={{ opacity: 1, y: 0 }}
+   310→              transition={{ duration: 0.2 }}
+   311→            >
+   312→              {activeSection === "profile" && (
+   313→                <ProfileSection
+   314→                  profileName={profileName}
+   315→                  setProfileName={setProfileName}
+   316→                  profileEmail={profileEmail}
+   317→                  setProfileEmail={setProfileEmail}
+   318→                  profileHourlyRate={profileHourlyRate}
+   319→                  setProfileHourlyRate={setProfileHourlyRate}
+   320→                  profileBio={profileBio}
+   321→                  setProfileBio={setProfileBio}
+   322→                  subscriptionTier={subscriptionTier}
+   323→                  handleTierChange={handleTierChange}
+   324→                  handleCopyEmail={handleCopyEmail}
+   325→                  copied={copied}
+   326→                  handleSaveProfile={handleSaveProfile}
+   327→                  theme={theme}
+   328→                  handleThemeToggle={handleThemeToggle}
+   329→                />
+   330→              )}
+   331→              {activeSection === "subscription" && (
+   332→                <SubscriptionSection
+   333→                  subscriptionTier={subscriptionTier}
+   334→                  handleTierChange={handleTierChange}
+   335→                />
+   336→              )}
+   337→              {activeSection === "connections" && (
+   338→                <ConnectionsSection />
+   339→              )}
+   340→              {activeSection === "help" && (
+   341→                <HelpSection
+   342→                  searchQuery={searchQuery}
+   343→                  setSearchQuery={setSearchQuery}
+   344→                  filteredArticles={filteredArticles}
+   345→                  ticketSubject={ticketSubject}
+   346→                  setTicketSubject={setTicketSubject}
+   347→                  ticketMessage={ticketMessage}
+   348→                  setTicketMessage={setTicketMessage}
+   349→                  isSubmittingTicket={isSubmittingTicket}
+   350→                  handleSubmitTicket={handleSubmitTicket}
+   351→                />
+   352→              )}
+   353→              {activeSection === "security" && (
+   354→                <SecuritySection
+   355→                  showSignOutConfirm={showSignOutConfirm}
+   356→                  setShowSignOutConfirm={setShowSignOutConfirm}
+   357→                  handleSignOut={handleSignOut}
+   358→                />
+   359→              )}
+   360→            </motion.div>
+   361→          </div>
+   362→        </div>
+   363→      </div>
+   364→    </div>
+   365→  );
+   366→}
+   367→
+   368→// ─── Profile Section ─────────────────────────────────────────────────────────
+   369→
+   370→function ProfileSection({
+   371→  profileName, setProfileName,
+   372→  profileEmail, setProfileEmail,
+   373→  profileHourlyRate, setProfileHourlyRate,
+   374→  profileBio, setProfileBio,
+   375→  subscriptionTier, handleTierChange,
+   376→  handleCopyEmail, copied,
+   377→  handleSaveProfile,
+   378→  theme, handleThemeToggle,
+   379→}: {
+   380→  profileName: string; setProfileName: (v: string) => void;
+   381→  profileEmail: string; setProfileEmail: (v: string) => void;
+   382→  profileHourlyRate: string; setProfileHourlyRate: (v: string) => void;
+   383→  profileBio: string; setProfileBio: (v: string) => void;
+   384→  subscriptionTier: string; handleTierChange: (t: TierKey | "client") => void;
+   385→  handleCopyEmail: () => void; copied: boolean;
+   386→  handleSaveProfile: () => void;
+   387→  theme: string; handleThemeToggle: (e: boolean) => void;
+   388→}) {
+   389→  return (
+   390→    <div className="space-y-6">
+   391→      {/* Personal Information */}
+   392→      <Card className="bg-card border-border">
+   393→        <CardHeader>
+   394→          <CardTitle className="flex items-center gap-2">
+   395→            <User className="w-5 h-5 text-primary" />
+   396→            Personal Information
+   397→          </CardTitle>
+   398→          <CardDescription>Your personal details and contact information</CardDescription>
+   399→        </CardHeader>
+   400→        <CardContent className="space-y-4">
+   401→          <div>
+   402→            <Label className="text-sm font-medium mb-2 block">Full Name</Label>
+   403→            <Input
+   404→              value={profileName}
+   405→              onChange={(e) => setProfileName(e.target.value)}
+   406→              className="bg-background border-border"
+   407→              placeholder="Your name"
+   408→            />
+   409→          </div>
+   410→          <div>
+   411→            <Label className="text-sm font-medium mb-2 block">Email Address</Label>
+   412→            <div className="flex gap-2">
+   413→              <Input
+   414→                value={profileEmail}
+   415→                onChange={(e) => setProfileEmail(e.target.value)}
+   416→                className="bg-background border-border"
+   417→                placeholder="your@email.com"
+   418→              />
+   419→              <Button
+   420→                size="sm"
+   421→                variant="outline"
+   422→                onClick={handleCopyEmail}
+   423→                className="border-border hover:bg-accent"
+   424→              >
+   425→                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+   426→              </Button>
+   427→            </div>
+   428→          </div>
+   429→          <div>
+   430→            <Label className="text-sm font-medium mb-2 block">Hourly Rate ($)</Label>
+   431→            <Input
+   432→              type="number"
+   433→              value={profileHourlyRate}
+   434→              onChange={(e) => setProfileHourlyRate(e.target.value)}
+   435→              className="bg-background border-border"
+   436→              placeholder="50"
+   437→            />
+   438→          </div>
+   439→        </CardContent>
+   440→      </Card>
+   441→
+   442→      {/* Professional Information */}
+   443→      <Card className="bg-card border-border">
+   444→        <CardHeader>
+   445→          <CardTitle className="flex items-center gap-2">
+   446→            <FileText className="w-5 h-5 text-primary" />
+   447→            Professional Profile
+   448→          </CardTitle>
+   449→          <CardDescription>Your professional background and platform connections</CardDescription>
+   450→        </CardHeader>
+   451→        <CardContent className="space-y-4">
+   452→          <div>
+   453→            <Label className="text-sm font-medium mb-2 block">Professional Bio</Label>
+   454→            <Textarea
+   455→              value={profileBio}
+   456→              onChange={(e) => setProfileBio(e.target.value.slice(0, 500))}
+   457→              className="bg-background border-border min-h-24"
+   458→              placeholder="Tell us about your professional background..."
+   459→              maxLength={500}
+   460→            />
+   461→            <p className="text-xs text-muted-foreground mt-1">{profileBio.length}/500 characters</p>
+   462→          </div>
+   463→
+   464→          <div className="p-4 bg-primary/5 rounded-lg border border-border">
+   465→            <div className="text-sm font-medium mb-2">Protection Metrics</div>
+   466→            <div className="space-y-2 text-sm text-muted-foreground">
+   467→              <div className="flex justify-between">
+   468→                <span>Axia Protection:</span>
+   469→                <span className="text-emerald-500 font-medium">Active</span>
+   470→              </div>
+   471→              <div className="flex justify-between">
+   472→                <span>Hours Protected:</span>
+   473→                <span className="text-foreground font-medium">124.5h</span>
+   474→              </div>
+   475→              <div className="flex justify-between">
+   476→                <span>Denial Rate:</span>
+   477→                <span className="text-foreground font-medium">0%</span>
+   478→              </div>
+   479→            </div>
+   480→          </div>
+   481→
+   482→          {/* Platform Connections — link to dedicated Connections tab */}
+   483→          <div className="p-4 bg-primary/5 rounded-lg border border-border">
+   484→            <div className="flex items-center justify-between">
+   485→              <div>
+   486→                <div className="text-sm font-medium">Platform Connections</div>
+   487→                <div className="text-xs text-muted-foreground mt-1">Manage Upwork, Fiverr, Toptal, and Freelancer.com connections</div>
+   488→              </div>
+   489→              <Button size="sm" variant="outline" className="border-border hover:bg-accent" onClick={() => {
+   490→                // Navigate to connections tab — we use the parent component's setActiveSection
+   491→                const event = new CustomEvent('navigateToConnections');
+   492→                window.dispatchEvent(event);
+   493→              }}>
+   494→                Manage <ChevronRight className="w-3 h-3 ml-1" />
+   495→              </Button>
+   496→            </div>
+   497→          </div>
+   498→        </CardContent>
+   499→      </Card>
+   500→
+   501→      {/* Appearance */}
+   502→      <Card className="bg-card border-border">
+   503→        <CardHeader>
+   504→          <CardTitle className="flex items-center gap-2">
+   505→            <Settings className="w-5 h-5 text-primary" />
+   506→            Appearance
+   507→          </CardTitle>
+   508→          <CardDescription>Customize how Axia looks for you</CardDescription>
+   509→        </CardHeader>
+   510→        <CardContent className="space-y-4">
+   511→          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border">
+   512→            <div>
+   513→              <div className="text-sm font-medium">Dark Mode</div>
+   514→              <p className="text-xs text-muted-foreground mt-1">
+   515→                {theme === "dark" ? "Dark theme is currently active" : "Light theme is currently active"}
+   516→              </p>
+   517→            </div>
+   518→            <Switch
+   519→              checked={theme === "dark"}
+   520→              onCheckedChange={handleThemeToggle}
+   521→            />
+   522→          </div>
+   523→        </CardContent>
+   524→      </Card>
+   525→
+   526→      {/* Save Button */}
+   527→      <div className="flex justify-end">
+   528→        <Button onClick={handleSaveProfile} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+   529→          Save Changes
+   530→        </Button>
+   531→      </div>
+   532→    </div>
+   533→  );
+   534→}
+   535→
+   536→// ─── Subscription Section ────────────────────────────────────────────────────
+   537→
+   538→function SubscriptionSection({
+   539→  subscriptionTier,
+   540→  handleTierChange,
+   541→}: {
+   542→  subscriptionTier: string;
+   543→  handleTierChange: (t: TierKey | "client") => void;
+   544→}) {
+   545→  const [expandedTier, setExpandedTier] = useState<TierKey | null>(null);
+   546→  const { isAuthenticated } = useConvexAuth();
+   547→  const { isDisconnected } = useConvexConnectionState();
+   548→
+   549→  const tierFeatures: Record<TierKey, { included: string[]; notIncluded: string[] }> = {
+   550→    free: {
+   551→      included: [
+   552→        "1 active project",
+   553→        "Basic evidence collection",
+   554→        "CSV evidence export",
+   555→        "Email support",
+   556→        "Community access",
+   557→      ],
+   558→      notIncluded: [
+   559→        "Browser extension",
+   560→        "Legal package export",
+   561→        "Dispute resolution",
+   562→        "Team collaboration",
+   563→        "WCVM verification",
+   564→      ],
+   565→    },
+   566→    starter: {
+   567→      included: [
+   568→        "5 active projects",
+   569→        "Enhanced evidence collection",
+   570→        "CSV + JSON export",
+   571→        "Browser extension",
+   572→        "Priority email support",
+   573→        "Scope deviation alerts",
+   574→      ],
+   575→      notIncluded: [
+   576→        "Legal package export",
+   577→        "Dispute resolution",
+   578→        "Team collaboration",
+   579→        "WCVM verification",
+   580→      ],
+   581→    },
+   582→    pro: {
+   583→      included: [
+   584→        "Unlimited projects",
+   585→        "Full evidence collection + timeline",
+   586→        "All export formats (CSV, JSON, PDF, Legal)",
+   587→        "Browser extension + auto-capture",
+   588→        "Dispute resolution assistant",
+   589→        "Scope deviation detection",
+   590→        "Payment pattern analysis",
+   591→      ],
+   592→      notIncluded: [
+   593→        "Team collaboration",
+   594→        "WCVM verification",
+   595→        "Custom integrations",
+   596→      ],
+   597→    },
+   598→    expert: {
+   599→      included: [
+   600→        "Unlimited projects",
+   601→        "Full evidence collection + timeline + WCVM",
+   602→        "All export formats + chain-of-custody",
+   603→        "Browser extension + auto-capture",
+   604→        "Dispute resolution + legal templates",
+   605→        "Team collaboration & validation",
+   606→        "WCVM cryptographic verification",
+   607→        "Custom integrations & API access",
+   608→        "Dedicated account manager",
+   609→      ],
+   610→      notIncluded: [],
+   611→    },
+   612→  };
+   613→
+   614→  return (
+   615→    <div className="space-y-6">
+   616→      {/* Current Plan Banner */}
+   617→      <Card className="bg-card border-border">
+   618→        <CardHeader>
+   619→          <CardTitle className="flex items-center gap-2">
+   620→            <Zap className="w-5 h-5 text-primary" />
+   621→            Your Subscription
+   622→          </CardTitle>
+   623→          <CardDescription>Current plan and available upgrades</CardDescription>
+   624→        </CardHeader>
+   625→        <CardContent>
+   626→          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border">
+   627→            <div>
+   628→              <div className="text-sm text-muted-foreground">Current Plan</div>
+   629→              <div className="text-2xl font-bold capitalize">{subscriptionTier}</div>
+   630→            </div>
+   631→            <Badge className="bg-primary/20 text-primary border-0 capitalize text-sm">
+   632→              {subscriptionTier === "free" ? "Free Tier" : subscriptionTier === "starter" ? "Starter" : subscriptionTier === "pro" ? "Pro" : subscriptionTier === "expert" ? "Expert" : "Client"}
+   633→            </Badge>
+   634→          </div>
+   635→        </CardContent>
+   636→      </Card>
+   637→
+   638→      {/* Tier Comparison */}
+   639→      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   640→        {TIERS.map((tier) => {
+   641→          const isCurrent = subscriptionTier === tier.key;
+   642→          const features = tierFeatures[tier.key];
+   643→          const isExpanded = expandedTier === tier.key;
+   644→
+   645→          return (
+   646→            <Card
+   647→              key={tier.key}
+   648→              className={`bg-card transition-all ${
+   649→                isCurrent
+   650→                  ? `border-2 ${tier.borderColor} ${tier.bgColor}`
+   651→                  : tier.highlighted
+   652→                  ? "border-primary/40 hover:border-primary/60"
+   653→                  : "border-border hover:border-primary/20"
+   654→              }`}
+   655→            >
+   656→              <CardHeader className="pb-3">
+   657→                <div className="flex items-center justify-between">
+   658→                  <div className="flex items-center gap-2">
+   659→                    <div className={`p-2 rounded-lg ${tier.bgColor}`}>
+   660→                      <div className={tier.color}>{tier.icon}</div>
+   661→                    </div>
+   662→                    <div>
+   663→                      <CardTitle className="text-lg">{tier.name}</CardTitle>
+   664→                      {tier.badge && (
+   665→                        <Badge className="bg-primary/20 text-primary border-0 text-[10px] ml-1">
+   666→                          {tier.badge}
+   667→                        </Badge>
+   668→                      )}
+   669→                    </div>
+   670→                  </div>
+   671→                  {isCurrent && (
+   672→                    <Badge className="bg-primary text-primary-foreground border-0 text-xs">
+   673→                      Current
+   674→                    </Badge>
+   675→                  )}
+   676→                </div>
+   677→                <CardDescription className="mt-2">{tier.description}</CardDescription>
+   678→              </CardHeader>
+   679→              <CardContent>
+   680→                <div className="flex items-baseline gap-1 mb-4">
+   681→                  <span className="text-3xl font-bold">${tier.price}</span>
+   682→                  <span className="text-muted-foreground text-sm">/month</span>
+   683→                </div>
+   684→
+   685→                <button
+   686→                  onClick={() => setExpandedTier(isExpanded ? null : tier.key)}
+   687→                  className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mb-3"
+   688→                >
+   689→                  {isExpanded ? "Hide" : "Show"} features
+   690→                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+   691→                </button>
+   692→
+   693→                {isExpanded && (
+   694→                  <div className="space-y-1.5">
+   695→                    {features.included.map((feature, i) => (
+   696→                      <div key={i} className="flex items-center gap-2 text-sm">
+   697→                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+   698→                        <span>{feature}</span>
+   699→                      </div>
+   700→                    ))}
+   701→                    {features.notIncluded.map((feature, i) => (
+   702→                      <div key={`no-${i}`} className="flex items-center gap-2 text-sm text-muted-foreground/60">
+   703→                        <X className="w-3.5 h-3.5 flex-shrink-0" />
+   704→                        <span>{feature}</span>
+   705→                      </div>
+   706→                    ))}
+   707→                  </div>
+   708→                )}
+   709→              </CardContent>
+   710→              <CardFooter>
+   711→                {isCurrent ? (
+   712→                  <Button variant="outline" className="w-full border-border" disabled>
+   713→                    Current Plan
+   714→                  </Button>
+   715→                ) : (
+   716→                  <Button
+   717→                    onClick={() => handleTierChange(tier.key)}
+   718→                    className={`w-full ${
+   719→                      tier.highlighted
+   720→                        ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+   721→                        : "bg-background border border-border hover:bg-accent text-foreground"
+   722→                    }`}
+   723→                    variant={tier.highlighted ? "default" : "outline"}
+   724→                  >
+   725→                    {subscriptionTier && TIERS.findIndex(t => t.key === subscriptionTier) > TIERS.findIndex(t => t.key === tier.key)
+   726→                      ? "Downgrade"
+   727→                      : "Upgrade"}
+   728→                  </Button>
+   729→                )}
+   730→              </CardFooter>
+   731→            </Card>
+   732→          );
+   733→        })}
+   734→      </div>
+   735→
+   736→      {/* Dev Tier Switcher */}
+   737→      <Card className="bg-card border-border">
+   738→        <CardHeader>
+   739→          <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+   740→            <Settings className="w-4 h-4" />
+   741→            Development: Quick Tier Switcher
+   742→          </CardTitle>
+   743→        </CardHeader>
+   744→        <CardContent>
+   745→          <p className="text-xs text-muted-foreground mb-3">
+   746→            Switch between tiers for development and testing. In production, this would connect to a payment provider.
+   747→          </p>
+   748→          <div className="flex gap-2 flex-wrap">
+   749→            {(["free", "starter", "pro", "expert", "client"] as const).map((t) => (
+   750→              <Button
+   751→                key={t}
+   752→                size="sm"
+   753→                variant={subscriptionTier === t ? "default" : "outline"}
+   754→                onClick={() => handleTierChange(t)}
+   755→                className={subscriptionTier === t ? "bg-primary text-primary-foreground" : "border-border"}
+   756→              >
+   757→                {t.charAt(0).toUpperCase() + t.slice(1)}
+   758→              </Button>
+   759→            ))}
+   760→          </div>
+   761→        </CardContent>
+   762→      </Card>
+   763→    </div>
+   764→  );
+   765→}
+   766→
+   767→// ─── Help & Support Section ──────────────────────────────────────────────────
+   768→
+   769→function HelpSection({
+   770→  searchQuery, setSearchQuery,
+   771→  filteredArticles,
+   772→  ticketSubject, setTicketSubject,
+   773→  ticketMessage, setTicketMessage,
+   774→  isSubmittingTicket, handleSubmitTicket,
+   775→}: {
+   776→  searchQuery: string; setSearchQuery: (v: string) => void;
+   777→  filteredArticles: HelpArticle[];
+   778→  ticketSubject: string; setTicketSubject: (v: string) => void;
+   779→  ticketMessage: string; setTicketMessage: (v: string) => void;
+   780→  isSubmittingTicket: boolean; handleSubmitTicket: () => void;
+   781→}) {
+   782→  const [activeHelpTab, setActiveHelpTab] = useState<"articles" | "faq" | "contact">("articles");
+   783→
+   784→  return (
+   785→    <div className="space-y-6">
+   786→      {/* Quick Actions */}
+   787→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   788→        {[
+   789→          { icon: BookOpen, title: "Documentation", desc: "Browse guides and tutorials", action: () => setActiveHelpTab("articles") },
+   790→          { icon: HelpCircle, title: "FAQ", desc: "Quick answers to common questions", action: () => setActiveHelpTab("faq") },
+   791→          { icon: MessageSquare, title: "Contact Support", desc: "Submit a support ticket", action: () => setActiveHelpTab("contact") },
+   792→        ].map(({ icon: Icon, title, desc, action }) => (
+   793→          <Card key={title} className="bg-card border-border cursor-pointer hover:border-primary/40 transition-colors" onClick={action}>
+   794→            <CardContent className="p-4 flex items-center gap-3">
+   795→              <div className="p-2 rounded-lg bg-primary/10">
+   796→                <Icon className="w-5 h-5 text-primary" />
+   797→              </div>
+   798→              <div>
+   799→                <div className="text-sm font-medium">{title}</div>
+   800→                <div className="text-xs text-muted-foreground">{desc}</div>
+   801→              </div>
+   802→              <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+   803→            </CardContent>
+   804→          </Card>
+   805→        ))}
+   806→      </div>
+   807→
+   808→      {/* Help Tabs */}
+   809→      <div className="flex gap-1 bg-card border border-border rounded-lg p-1 w-fit">
+   810→        {[
+   811→          { key: "articles" as const, label: "Articles" },
+   812→          { key: "faq" as const, label: "FAQ" },
+   813→          { key: "contact" as const, label: "Contact Support" },
+   814→        ].map(({ key, label }) => (
+   815→          <button
+   816→            key={key}
+   817→            onClick={() => setActiveHelpTab(key)}
+   818→            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+   819→              activeHelpTab === key
+   820→                ? "bg-primary text-primary-foreground"
+   821→                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+   822→            }`}
+   823→          >
+   824→            {label}
+   825→          </button>
+   826→        ))}
+   827→      </div>
+   828→
+   829→      {/* Articles Tab */}
+   830→      {activeHelpTab === "articles" && (
+   831→        <Card className="bg-card border-border">
+   832→          <CardHeader>
+   833→            <CardTitle>Knowledge Base</CardTitle>
+   834→            <CardDescription>Search our articles and guides</CardDescription>
+   835→          </CardHeader>
+   836→          <CardContent className="space-y-4">
+   837→            <div className="relative">
+   838→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   839→              <Input
+   840→                placeholder="Search articles..."
+   841→                value={searchQuery}
+   842→                onChange={(e) => setSearchQuery(e.target.value)}
+   843→                className="pl-9 bg-background border-border"
+   844→              />
+   845→            </div>
+   846→
+   847→            <div className="space-y-2">
+   848→              {filteredArticles.map((article) => (
+   849→                <div
+   850→                  key={article.id}
+   851→                  className="p-3 bg-background rounded-lg border border-border hover:border-primary/30 cursor-pointer transition-colors"
+   852→                >
+   853→                  <div className="flex items-center justify-between mb-1">
+   854→                    <div className="text-sm font-medium">{article.title}</div>
+   855→                    <Badge variant="outline" className="text-[10px] border-border">{article.category}</Badge>
+   856→                  </div>
+   857→                  <p className="text-xs text-muted-foreground">{article.excerpt}</p>
+   858→                </div>
+   859→              ))}
+   860→              {filteredArticles.length === 0 && (
+   861→                <p className="text-sm text-muted-foreground py-4 text-center">No articles found matching your search.</p>
+   862→              )}
+   863→            </div>
+   864→          </CardContent>
+   865→        </Card>
+   866→      )}
+   867→
+   868→      {/* FAQ Tab */}
+   869→      {activeHelpTab === "faq" && (
+   870→        <Card className="bg-card border-border">
+   871→          <CardHeader>
+   872→            <CardTitle>Frequently Asked Questions</CardTitle>
+   873→            <CardDescription>Quick answers to common questions about Axia</CardDescription>
+   874→          </CardHeader>
+   875→          <CardContent>
+   876→            <Accordion type="single" collapsible className="space-y-2">
+   877→              {MOCK_FAQ.map((item, i) => (
+   878→                <AccordionItem key={i} value={`faq-${i}`} className="border border-border rounded-lg px-4">
+   879→                  <AccordionTrigger className="text-sm font-medium text-left hover:no-underline">
+   880→                    {item.q}
+   881→                  </AccordionTrigger>
+   882→                  <AccordionContent className="text-sm text-muted-foreground">
+   883→                    {item.a}
+   884→                  </AccordionContent>
+   885→                </AccordionItem>
+   886→              ))}
+   887→            </Accordion>
+   888→          </CardContent>
+   889→        </Card>
+   890→      )}
+   891→
+   892→      {/* Contact Support Tab */}
+   893→      {activeHelpTab === "contact" && (
+   894→        <Card className="bg-card border-border">
+   895→          <CardHeader>
+   896→            <CardTitle>Contact Support</CardTitle>
+   897→            <CardDescription>Submit a support ticket and we'll respond within 24 hours</CardDescription>
+   898→          </CardHeader>
+   899→          <CardContent className="space-y-4">
+   900→            <div>
+   901→              <Label className="text-sm font-medium mb-2 block">Subject</Label>
+   902→              <Input
+   903→                value={ticketSubject}
+   904→                onChange={(e) => setTicketSubject(e.target.value)}
+   905→                className="bg-background border-border"
+   906→                placeholder="Brief description of your issue"
+   907→              />
+   908→            </div>
+   909→            <div>
+   910→              <Label className="text-sm font-medium mb-2 block">Message</Label>
+   911→              <Textarea
+   912→                value={ticketMessage}
+   913→                onChange={(e) => setTicketMessage(e.target.value)}
+   914→                className="bg-background border-border min-h-32"
+   915→                placeholder="Describe your issue in detail..."
+   916→              />
+   917→            </div>
+   918→            <Button
+   919→              onClick={handleSubmitTicket}
+   920→              disabled={isSubmittingTicket}
+   921→              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+   922→            >
+   923→              {isSubmittingTicket ? (
+   924→                <>
+   925→                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+   926→                  Submitting...
+   927→                </>
+   928→              ) : (
+   929→                <>
+   930→                  <Send className="w-4 h-4 mr-2" />
+   931→                  Submit Ticket
+   932→                </>
+   933→              )}
+   934→            </Button>
+   935→          </CardContent>
+   936→        </Card>
+   937→      )}
+   938→    </div>
+   939→  );
+   940→}
+   941→
+   942→// ─── Security Section ────────────────────────────────────────────────────────
+   943→
+   944→function SecuritySection({
+   945→  showSignOutConfirm,
+   946→  setShowSignOutConfirm,
+   947→  handleSignOut,
+   948→}: {
+   949→  showSignOutConfirm: boolean;
+   950→  setShowSignOutConfirm: (v: boolean) => void;
+   951→  handleSignOut: () => void;
+   952→}) {
+   953→  return (
+   954→    <div className="space-y-6">
+   955→      {/* Account Security */}
+   956→      <Card className="bg-card border-border">
+   957→        <CardHeader>
+   958→          <CardTitle className="flex items-center gap-2">
+   959→            <Shield className="w-5 h-5 text-primary" />
+   960→            Account Security
+   961→          </CardTitle>
+   962→          <CardDescription>Manage your account credentials and sessions</CardDescription>
+   963→        </CardHeader>
+   964→        <CardContent className="space-y-4">
+   965→          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border">
+   966→            <div className="flex items-center gap-3">
+   967→              <div className="p-2 rounded-lg bg-background">
+   968→                <Mail className="w-4 h-4 text-muted-foreground" />
+   969→              </div>
+   970→              <div>
+   971→                <div className="text-sm font-medium">Email Address</div>
+   972→                <div className="text-xs text-muted-foreground">Change your login email</div>
+   973→              </div>
+   974→            </div>
+   975→            <Button variant="outline" size="sm" className="border-border hover:bg-accent">
+   976→              Change
+   977→            </Button>
+   978→          </div>
+   979→
+   980→          <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border">
+   981→            <div className="flex items-center gap-3">
+   982→              <div className="p-2 rounded-lg bg-background">
+   983→                <Lock className="w-4 h-4 text-muted-foreground" />
+   984→              </div>
+   985→              <div>
+   986→                <div className="text-sm font-medium">Password</div>
+   987→                <div className="text-xs text-muted-foreground">Update your account password</div>
+   988→              </div>
+   989→            </div>
+   990→            <Button variant="outline" size="sm" className="border-border hover:bg-accent">
+   991→              Change
+   992→            </Button>
+   993→          </div>
+   994→        </CardContent>
+   995→      </Card>
+   996→
+   997→      {/* Session Information */}
+   998→      <Card className="bg-card border-border">
+   999→        <CardHeader>
+  1000→          <CardTitle className="flex items-center gap-2">
+  1001→            <Clock className="w-5 h-5 text-primary" />
+  1002→            Session Information
+  1003→          </CardTitle>
+  1004→        </CardHeader>
+  1005→        <CardContent>
+  1006→          <div className="space-y-3 text-sm">
+  1007→            <div className="flex justify-between p-3 bg-primary/5 rounded-lg border border-border">
+  1008→              <span className="text-muted-foreground">Last Login</span>
+  1009→              <span className="font-medium">Today at 10:30 AM</span>
+  1010→            </div>
+  1011→            <div className="flex justify-between p-3 bg-primary/5 rounded-lg border border-border">
+  1012→              <span className="text-muted-foreground">Active Sessions</span>
+  1013→              <span className="font-medium">1</span>
+  1014→            </div>
+  1015→            <div className="flex justify-between p-3 bg-primary/5 rounded-lg border border-border">
+  1016→              <span className="text-muted-foreground">Two-Factor Authentication</span>
+  1017→              <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-xs">Not Enabled</Badge>
+  1018→            </div>
+  1019→          </div>
+  1020→        </CardContent>
+  1021→      </Card>
+  1022→
+  1023→      {/* Danger Zone */}
+  1024→      <Card className="bg-card border-red-500/30">
+  1025→        <CardHeader>
+  1026→          <CardTitle className="text-red-500 flex items-center gap-2">
+  1027→            <AlertCircle className="w-5 h-5" />
+  1028→            Danger Zone
+  1029→          </CardTitle>
+  1030→          <CardDescription>Irreversible account actions</CardDescription>
+  1031→        </CardHeader>
+  1032→        <CardContent className="space-y-4">
+  1033→          {!showSignOutConfirm ? (
+  1034→            <Button
+  1035→              onClick={() => setShowSignOutConfirm(true)}
+  1036→              variant="outline"
+  1037→              className="w-full border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50"
+  1038→            >
+  1039→              <LogOut className="w-4 h-4 mr-2" />
+  1040→              Sign Out
+  1041→            </Button>
+  1042→          ) : (
+  1043→            <div className="p-4 bg-red-500/5 rounded-lg border border-red-500/20 space-y-3">
+  1044→              <p className="text-sm text-red-500 font-medium">Are you sure you want to sign out?</p>
+  1045→              <p className="text-xs text-muted-foreground">You will be redirected to the login page and will need to sign in again to access your account.</p>
+  1046→              <div className="flex gap-2">
+  1047→                <Button
+  1048→                  onClick={handleSignOut}
+  1049→                  className="bg-red-600 hover:bg-red-700 text-white"
+  1050→                >
+  1051→                  <LogOut className="w-4 h-4 mr-2" />
+  1052→                  Yes, Sign Out
+  1053→                </Button>
+  1054→                <Button
+  1055→                  onClick={() => setShowSignOutConfirm(false)}
+  1056→                  variant="outline"
+  1057→                  className="border-border hover:bg-accent"
+  1058→                >
+  1059→                  Cancel
+  1060→                </Button>
+  1061→              </div>
+  1062→            </div>
+  1063→          )}
+  1064→        </CardContent>
+  1065→      </Card>
+  1066→    </div>
+  1067→  );
+  1068→}
+  1069→
+  1070→// ─── Connections Section ──────────────────────────────────────────────────────
+  1071→
+  1072→type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
+  1073→
+  1074→const platformLabels: Record<Platform, string> = {
+  1075→  upwork: "Upwork",
+  1076→  fiverr: "Fiverr",
+  1077→  toptal: "Toptal",
+  1078→  freelancer: "Freelancer.com",
+  1079→};
+  1080→
+  1081→const platformColors: Record<Platform, string> = {
+  1082→  upwork: "#14A800",
+  1083→  fiverr: "#1DBF73",
+  1084→  toptal: "#204ECF",
+  1085→  freelancer: "#29B2FE",
+  1086→};
+  1087→
+  1088→function ConnectionsSection() {
+  1089→  const { isAuthenticated } = useConvexAuth();
+  1090→  const { isDisconnected } = useConvexConnectionState();
+  1091→
+  1092→  // Fetch real platform connection status
+  1093→  const connections = useQuery(
+  1094→    isAuthenticated ? api.platforms.platformConnections.getPlatformConnectionStatus : "skip",
+  1095→    {}
+  1096→  );
+  1097→
+  1098→  const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
+  1099→  const [disconnectingPlatform, setDisconnectingPlatform] = useState<Platform | null>(null);
+  1100→
+  1101→  const handleConnect = async (platform: Platform) => {
+  1102→    setConnectingPlatform(platform);
+  1103→    try {
+  1104→      await new Promise(resolve => setTimeout(resolve, 1500));
+  1105→      toast.success(`Connected to ${platformLabels[platform]}`, {
+  1106→        description: "Your platform data will begin syncing automatically.",
+  1107→      });
+  1108→    } catch {
+  1109→      toast.error(`Failed to connect ${platformLabels[platform]}`, {
+  1110→        description: "Please try again later.",
+  1111→      });
+  1112→    }
+  1113→    setConnectingPlatform(null);
+  1114→  };
+  1115→
+  1116→  const handleDisconnect = async (platform: Platform) => {
+  1117→    setDisconnectingPlatform(platform);
+  1118→    try {
+  1119→      await new Promise(resolve => setTimeout(resolve, 500));
+  1120→      toast.success(`Disconnected from ${platformLabels[platform]}`, {
+  1121→        description: "Your platform data has been removed.",
+  1122→      });
+  1123→    } catch {
+  1124→      toast.error(`Failed to disconnect ${platformLabels[platform]}`);
+  1125→    }
+  1126→    setDisconnectingPlatform(null);
+  1127→  };
+  1128→
+  1129→  const getStatusInfo = (platform: Platform) => {
+  1130→    if (!connections || isDisconnected) {
+  1131→      return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+  1132→    }
+  1133→    const conn = (connections as any)?.find((c: any) => c.platform === platform);
+  1134→    if (!conn) {
+  1135→      return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+  1136→    }
+  1137→    if (conn.status === "connected") {
+  1138→      return { status: "connected" as const, label: "Connected", color: "text-emerald-500", lastSynced: conn.lastSyncedAt };
+  1139→    }
+  1140→    if (conn.status === "pending") {
+  1141→      return { status: "pending" as const, label: "Pending", color: "text-amber-500" };
+  1142→    }
+  1143→    if (conn.status === "error") {
+  1144→      return { status: "error" as const, label: "Error", color: "text-red-500" };
+  1145→    }
+  1146→    return { status: "not_connected" as const, label: "Not Connected", color: "text-muted-foreground" };
+  1147→  };
+  1148→
+  1149→  const platforms: Platform[] = ["upwork", "fiverr", "toptal", "freelancer"];
+  1150→
+  1151→  return (
+  1152→    <div className="space-y-6">
+  1153→      {/* Platform Connections */}
+  1154→      <Card className="bg-card border-border">
+  1155→        <CardHeader>
+  1156→          <CardTitle className="flex items-center gap-2">
+  1157→            <Globe className="w-5 h-5 text-primary" />
+  1158→            Platform Connections
+  1159→          </CardTitle>
+  1160→          <CardDescription>
+  1161→            Connect your freelance platforms to automatically collect evidence and sync work data.
+  1162→            Axia reads your work history, communications, and earnings to build your protection record.
+  1163→          </CardDescription>
+  1164→        </CardHeader>
+  1165→        <CardContent className="space-y-3">
+  1166→          {platforms.map((platform) => {
+  1167→            const statusInfo = getStatusInfo(platform);
+  1168→            const isConnecting = connectingPlatform === platform;
+  1169→            const isDisconnecting = disconnectingPlatform === platform;
+  1170→
+  1171→            return (
+  1172→              <div
+  1173→                key={platform}
+  1174→                className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-border"
+  1175→              >
+  1176→                <div className="flex items-center gap-3">
+  1177→                  <div
+  1178→                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+  1179→                    style={{ backgroundColor: platformColors[platform] }}
+  1180→                  >
+  1181→                    {platformLabels[platform].charAt(0)}
+  1182→                  </div>
+  1183→                  <div>
+  1184→                    <div className="text-sm font-medium">{platformLabels[platform]}</div>
+  1185→                    <div className="flex items-center gap-2">
+  1186→                      <span className={`text-xs font-medium ${statusInfo.color}`}>
+  1187→                        {statusInfo.label}
+  1188→                      </span>
+  1189→                      {statusInfo.status === "connected" && statusInfo.lastSynced && (
+  1190→                        <span className="text-xs text-muted-foreground">
+  1191→                          — Last synced {new Date(statusInfo.lastSynced).toLocaleDateString()}
+  1192→                        </span>
+  1193→                      )}
+  1194→                    </div>
+  1195→                  </div>
+  1196→                </div>
+  1197→                <div className="flex items-center gap-2">
+  1198→                  {statusInfo.status === "connected" ? (
+  1199→                    <>
+  1200→                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 border">
+  1201→                        <CheckCircle2 className="w-3 h-3 mr-1" />Active
+  1202→                      </Badge>
+  1203→                      <Button
+  1204→                        variant="outline"
+  1205→                        size="sm"
+  1206→                        onClick={() => handleDisconnect(platform)}
+  1207→                        disabled={isDisconnecting}
+  1208→                        className="border-border hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+  1209→                      >
+  1210→                        {isDisconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
+  1211→                      </Button>
+  1212→                    </>
+  1213→                  ) : statusInfo.status === "pending" ? (
+  1214→                    <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 border">
+  1215→                      <Clock className="w-3 h-3 mr-1" />Pending
+  1216→                    </Badge>
+  1217→                  ) : statusInfo.status === "error" ? (
+  1218→                    <>
+  1219→                      <Badge className="bg-red-500/10 text-red-500 border-red-500/20 border">
+  1220→                        <AlertCircle className="w-3 h-3 mr-1" />Error
+  1221→                      </Badge>
+  1222→                      <Button
+  1223→                        variant="outline"
+  1224→                        size="sm"
+  1225→                        onClick={() => handleConnect(platform)}
+  1226→                        disabled={isConnecting}
+  1227→                        className="border-border hover:bg-accent"
+  1228→                      >
+  1229→                        {isConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Reconnect"}
+  1230→                      </Button>
+  1231→                    </>
+  1232→                  ) : (
+  1233→                    <Button
+  1234→                      variant="outline"
+  1235→                      size="sm"
+  1236→                      onClick={() => handleConnect(platform)}
+  1237→                      disabled={isConnecting || !isAuthenticated}
+  1238→                      className="border-border hover:bg-accent"
+  1239→                    >
+  1240→                      {isConnecting ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+  1241→                      Connect
+  1242→                    </Button>
+  1243→                  )}
+  1244→                </div>
+  1245→              </div>
+  1246→            );
+  1247→          })}
+  1248→        </CardContent>
+  1249→      </Card>
+  1250→
+  1251→      {/* What Axia Accesses */}
+  1252→      <Card className="bg-card border-border">
+  1253→        <CardHeader>
+  1254→          <CardTitle className="text-sm">What Axia Accesses</CardTitle>
+  1255→          <CardDescription>When you connect a platform, Axia reads the following data to build your protection record:</CardDescription>
+  1256→        </CardHeader>
+  1257→        <CardContent>
+  1258→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1259→            {[
+  1260→              { icon: Users, title: "Profile & Work History", desc: "Your public profile, skills, and completed contracts" },
+  1261→              { icon: MessageSquare, title: "Communications", desc: "Message timestamps and response patterns (not content)" },
+  1262→              { icon: CreditCard, title: "Earnings & Payments", desc: "Payment records, milestones, and transaction history" },
+  1263→            ].map(({ icon: Icon, title, desc }) => (
+  1264→              <div key={title} className="p-3 bg-background rounded-lg border border-border">
+  1265→                <Icon className="w-4 h-4 text-primary mb-2" />
+  1266→                <div className="text-sm font-medium mb-1">{title}</div>
+  1267→                <div className="text-xs text-muted-foreground">{desc}</div>
+  1268→              </div>
+  1269→            ))}
+  1270→          </div>
+  1271→        </CardContent>
+  1272→      </Card>
+  1273→
+  1274→      {/* Coming Soon: CRM & Tool Integrations */}
+  1275→      <Card className="bg-card border-border">
+  1276→        <CardHeader>
+  1277→          <CardTitle className="flex items-center gap-2">
+  1278→            <Sparkles className="w-5 h-5 text-primary" />
+  1279→            Coming Soon: Data Import from Other Tools
+  1280→          </CardTitle>
+  1281→          <CardDescription>
+  1282→            Import your existing data from CRMs, project managers, and invoicing tools.
+  1283→          </CardDescription>
+  1284→        </CardHeader>
+  1285→        <CardContent>
+  1286→          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1287→            {[
+  1288→              { name: "HubSpot", color: "#FF7A59" },
+  1289→              { name: "Stripe", color: "#635BFF" },
+  1290→              { name: "ClickUp", color: "#7B68EE" },
+  1291→              { name: "Pipedrive", color: "#2F4C48" },
+  1292→              { name: "Asana", color: "#F06A6A" },
+  1293→              { name: "FreshBooks", color: "#0070FF" },
+  1294→              { name: "PandaDoc", color: "#3D7BFF" },
+  1295→              { name: "QuickBooks", color: "#2CA01C" },
+  1296→            ].map((tool) => (
+  1297→              <div
+  1298→                key={tool.name}
+  1299→                className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border opacity-60"
+  1300→              >
+  1301→                <div
+  1302→                  className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+  1303→                  style={{ backgroundColor: tool.color }}
+  1304→                >
+  1305→                  {tool.name.charAt(0)}
+  1306→                </div>
+  1307→                <span className="text-sm">{tool.name}</span>
+  1308→              </div>
+  1309→            ))}
+  1310→          </div>
+  1311→          <p className="text-xs text-muted-foreground mt-3">
+  1312→            We're building OAuth-based integrations to import your clients, projects, invoices, and proposals from these tools.
+  1313→            Want early access? <Button variant="link" className="h-auto p-0 text-xs text-primary">Join the waitlist</Button>
+  1314→          </p>
+  1315→        </CardContent>
+  1316→      </Card>
+  1317→    </div>
+  1318→  );
+  1319→}
+  1320→

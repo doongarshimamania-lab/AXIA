@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "./vly-toolbar-readonly.tsx";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import Dashboard from "@/pages/Dashboard.tsx";
 import Clients from "@/pages/Clients.tsx";
@@ -8,7 +7,6 @@ import { ProtectionValueDashboard } from "@/components/ProtectionValueDashboard.
 import { PremiumNetwork } from "@/components/PremiumNetwork.tsx";
 import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
-import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { Component, StrictMode, useEffect } from "react";
@@ -23,6 +21,7 @@ import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import "./types/global.d.ts";
 import TimeTracking from "./pages/TimeTracking.tsx";
 import Tags from "./pages/Tags.tsx";
@@ -41,7 +40,14 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import Scope from "./pages/Scope.tsx";
+import AccountSettings from "./pages/AccountSettings.tsx";
+import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 // Error Boundary to catch Convex errors and prevent app crash
 class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -140,17 +146,55 @@ function RouteSyncer() {
   return null;
 }
 
+// ─── Mobile Header with hamburger menu ──────────────────────────────────
+function MobileHeader() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border flex items-center justify-between px-4 z-[9998] md:hidden">
+      <div className="flex items-center gap-2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+          <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <span className="font-[Space_Grotesk] font-semibold text-base text-foreground">Axia</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <NotificationCenter />
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <CollapsibleSidebar />
+          </SheetContent>
+        </Sheet>
+      </div>
+    </div>
+  );
+}
+
 function DashboardLayout() {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
-    const savedState = localStorage.getItem("axia_sidebar_state");
-    const isExpanded = savedState !== "collapsed";
-    document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
-  }, []);
+    if (isMobile) {
+      document.documentElement.style.setProperty('--sidebar-width', '0px');
+    } else {
+      const savedState = localStorage.getItem("axia_sidebar_state");
+      const isExpanded = savedState !== "collapsed";
+      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+    }
+  }, [isMobile]);
 
   return (
     <div className="flex w-full min-h-screen">
       <CollapsibleSidebar />
-      <div className="flex-1 min-h-screen bg-background" style={{ marginLeft: 'var(--sidebar-width, 320px)', transition: 'margin-left 0.3s ease-in-out' }}>
+      {/* Mobile header with hamburger */}
+      {isMobile && <MobileHeader />}
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
         <Outlet />
       </div>
     </div>
@@ -161,7 +205,6 @@ const root = createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>
-    <VlyToolbar />
     <ThemeProvider>
       <InstrumentationProvider>
         <ConvexProvider client={convex}>
@@ -191,6 +234,7 @@ root.render(
                     <Route path="/network" element={<PremiumNetwork />} />
                     <Route path="/teams" element={<TeamManagement />} />
                     <Route path="/evidence-library" element={<EvidenceLibrary />} />
+                    <Route path="/evidence-export" element={<EvidenceExport />} />
                     <Route path="/time-tracking" element={<TimeTracking />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/goals" element={<Goals />} />
@@ -198,15 +242,16 @@ root.render(
                     <Route path="/invoices/new" element={<InvoiceBuilder />} />
                     <Route path="/payment-patterns" element={<PaymentPatterns />} />
                     <Route path="/reports" element={<Reports />} />
-                    <Route path="/platform-integrations" element={<PlatformIntegrations />} />
-                    <Route path="/evidence-export" element={<EvidenceExport />} />
-                    <Route path="/subscription" element={<Subscription />} />
-                    <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/pipeline" element={<Pipeline />} />
                     <Route path="/proposals" element={<Proposals />} />
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
+                    <Route path="/account-settings" element={<AccountSettings />} />
+                    {/* Legacy redirects — these pages are now consolidated */}
+                    <Route path="/platform-integrations" element={<AccountSettings />} />
+                    <Route path="/subscription" element={<AccountSettings />} />
+                    <Route path="/help-center" element={<AccountSettings />} />
                   </Route>
 
                   {/* Catch-all */}

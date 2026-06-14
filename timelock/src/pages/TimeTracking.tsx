@@ -11,87 +11,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
-  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Info, Loader2,
+  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
-
-// ─── Mock data for demo mode ─────────────────────────────────────────────────
-
-const MOCK_ENTRIES = [
-  {
-    _id: "1" as any,
-    projectName: "Website Redesign",
-    clientName: "Acme Corp",
-    platform: "upwork" as const,
-    startTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 7 * 24 * 60 * 60 * 1000 + 4.5 * 60 * 60 * 1000,
-    totalMinutes: 270,
-    complianceStatus: "active" as const,
-    hourlyRate: 85,
-    notes: "Implemented responsive navigation and hero section",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "2" as any,
-    projectName: "Mobile App MVP",
-    clientName: "TechStart Inc",
-    platform: "fiverr" as const,
-    startTime: Date.now() - 6 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 6 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000,
-    totalMinutes: 180,
-    complianceStatus: "active" as const,
-    hourlyRate: 65,
-    notes: "API integration and data fetching layer",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "3" as any,
-    projectName: "Brand Identity",
-    clientName: "Creative Studio",
-    platform: "upwork" as const,
-    startTime: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 5 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000,
-    totalMinutes: 150,
-    complianceStatus: "at_risk" as const,
-    hourlyRate: 95,
-    notes: "Logo variations and color palette exploration",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "4" as any,
-    projectName: "Dashboard Analytics",
-    clientName: "DataViz Co",
-    platform: "toptal" as const,
-    startTime: Date.now() - 4 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 4 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000,
-    totalMinutes: 360,
-    complianceStatus: "active" as const,
-    hourlyRate: 120,
-    notes: "Chart components and real-time data streaming",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "5" as any,
-    projectName: "E-commerce Platform",
-    clientName: "ShopEasy",
-    platform: "upwork" as const,
-    startTime: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 3 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000,
-    totalMinutes: 90,
-    complianceStatus: "rejected" as const,
-    hourlyRate: 75,
-    notes: "Low activity period - minimal keyboard/mouse events",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-];
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -175,7 +101,7 @@ export default function TimeTracking() {
 
   // ─── Map Convex data ────────────────────────────────────────────────────
   const realSessions = (sessionsData ?? []).filter((s: any) => s.endTime !== undefined);
-  const timeEntries = isDemoMode ? MOCK_ENTRIES : realSessions;
+  const timeEntries = realSessions;
 
   const activeSession = isDemoMode ? null : currentSession;
   const isTimerRunning = !!activeSession && activeSession.endTime === undefined;
@@ -395,7 +321,7 @@ export default function TimeTracking() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <PageLayout spaced>
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -406,18 +332,24 @@ export default function TimeTracking() {
           </p>
         </div>
 
-        {/* Demo mode banner */}
+        {/* Demo mode empty state */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to track your real work sessions.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Clock className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to track your time</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to track work hours across all platforms with compliance monitoring.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Loading state */}
@@ -777,7 +709,7 @@ export default function TimeTracking() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

@@ -1,6 +1,6 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { auth } from "./helpers";
+import { getAuthenticatedUser } from "./helpers";
 
 /**
  * Channel mutations — create, update, archive, join/leave channels.
@@ -22,7 +22,7 @@ export const createChannel = mutation({
     memberIds: v.optional(v.array(v.id("users"))),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
 
     // Verify workspace membership
     const membership = await ctx.db
@@ -117,7 +117,7 @@ export const updateChannel = mutation({
     icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -152,7 +152,7 @@ export const updateChannel = mutation({
 export const archiveChannel = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -173,7 +173,7 @@ export const archiveChannel = mutation({
 export const joinChannel = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -215,7 +215,7 @@ export const joinChannel = mutation({
 export const leaveChannel = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const member = await ctx.db
       .query("channelMembers")
       .withIndex("by_channel_and_user", (q) =>
@@ -234,7 +234,7 @@ export const addChannelMember = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const callerId = await auth(ctx);
+    const callerId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -305,7 +305,7 @@ export const removeChannelMember = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const callerId = await auth(ctx);
+    const callerId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -334,7 +334,7 @@ export const removeChannelMember = mutation({
 export const toggleMuteChannel = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
-    const userId = await auth(ctx);
+    const userId = await getAuthenticatedUser(ctx);
     const member = await ctx.db
       .query("channelMembers")
       .withIndex("by_channel_and_user", (q) =>

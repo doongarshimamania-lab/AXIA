@@ -251,28 +251,7 @@ export interface TruthLayerWidgetProps {
   className?: string;
 }
 
-// ─── Mock Data for Demo ─────────────────────────────────────────────────────
 
-const MOCK_TIME_ENTRIES = [
-  { screenshotCount: 12, mouseActivity: true, keyboardActivity: true, hasMemo: true, complianceStatus: "compliant", description: "Code review" },
-  { screenshotCount: 8, mouseActivity: true, keyboardActivity: false, hasMemo: false, complianceStatus: "at_risk", description: "" },
-  { screenshotCount: 2, mouseActivity: false, keyboardActivity: false, hasMemo: false, complianceStatus: "rejected", description: "" },
-  { screenshotCount: 5, mouseActivity: true, keyboardActivity: true, hasMemo: true, complianceStatus: "compliant", description: "Spec writing" },
-];
-
-const MOCK_INVOICES = [
-  { proofCount: 3, hasValidatedBilling: true, status: "paid", lineItems: [{ hasProof: true }] },
-  { proofCount: 1, hasValidatedBilling: false, status: "sent", lineItems: [{ hasProof: false }] },
-  { proofCount: 0, hasValidatedBilling: false, status: "draft", lineItems: [{ hasProof: false }] },
-  { proofCount: 2, hasValidatedBilling: true, status: "paid", lineItems: [{ hasProof: true }, { hasProof: true }] },
-  { proofCount: 0, hasValidatedBilling: false, status: "overdue", lineItems: [{ hasProof: false }] },
-];
-
-const MOCK_SCOPES = [
-  { clientApprovedAt: Date.now() - 30 * 24 * 60 * 60 * 1000, status: "active", deliverables: [{ name: "Homepage" }, { name: "Product Pages" }] },
-  { clientApprovedAt: undefined, status: "active", deliverables: [{ name: "Auth System" }, { name: "Task CRUD" }] },
-  { clientApprovedAt: Date.now() - 10 * 24 * 60 * 60 * 1000, status: "completed", deliverables: [{ name: "Logo" }, { name: "Brand Guide" }] },
-];
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -285,9 +264,9 @@ export function TruthLayerWidget({
 
   const scores: TruthLayerScores = useMemo(() => {
     return buildTruthLayerScores({
-      timeEntries: data?.timeEntries ?? MOCK_TIME_ENTRIES,
-      invoices: data?.invoices ?? MOCK_INVOICES,
-      scopes: data?.scopes ?? MOCK_SCOPES,
+      timeEntries: data?.timeEntries ?? [],
+      invoices: data?.invoices ?? [],
+      scopes: data?.scopes ?? [],
       messages: data?.messages ?? [],
     });
   }, [data]);
