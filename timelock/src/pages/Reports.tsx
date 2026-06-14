@@ -16,7 +16,6 @@ import {
   Search,
   Lock,
   Zap,
-  Info,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,107 +72,6 @@ interface DisputeReport {
   title?: string;
   type?: string;
 }
-
-// ─── Mock Data for demo mode ────────────────────────────────────────────────
-
-const MOCK_REPORTS: DisputeReport[] = [
-  {
-    _id: "1",
-    caseId: "CASE-20250228-001",
-    clientName: "TechCorp Solutions",
-    projectName: "E-Commerce Platform Redesign",
-    lostIncome: 2125.0,
-    rejectedHours: 25,
-    status: "resolved",
-    generatedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    description:
-      "Client rejected 25 hours of work claiming deliverables did not match specifications. Timeline evidence and work diary screenshots confirm continuous, compliant work activity matching the agreed scope.",
-    evidenceSummary:
-      "12 screenshots, 156 mouse events, 89 keyboard events, 3 work memos, and 8 cross-platform activity logs all confirm compliant work during disputed period.",
-    evidenceCount: 100,
-    hourlyRate: 85,
-  },
-  {
-    _id: "2",
-    caseId: "CASE-20250301-002",
-    clientName: "StartupHub Inc",
-    projectName: "Mobile App Backend API",
-    lostIncome: 1625.0,
-    rejectedHours: 25,
-    status: "sent",
-    generatedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    description:
-      "Client disputed 25 hours claiming low activity density and no visible progress. Evidence collection shows consistent code commits, API testing logs, and client communication records.",
-    evidenceSummary:
-      "Git commit history shows 47 commits during disputed period. API test coverage increased from 62% to 89%. Client Slack messages acknowledge progress on 3 separate occasions.",
-    evidenceCount: 47,
-    hourlyRate: 65,
-  },
-  {
-    _id: "3",
-    caseId: "CASE-20250302-003",
-    clientName: "Global Enterprises",
-    projectName: "Analytics Dashboard",
-    lostIncome: 4800.0,
-    rejectedHours: 40,
-    status: "appealed",
-    generatedAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    description:
-      "Initial dispute resolved in client's favor. Appealing with additional WCVM-verified context evidence and Pattern #7 vulnerability analysis showing the dispute was filed in bad faith.",
-    evidenceSummary:
-      "WCVM context scan reveals 87% work relevance score. Pattern #7 vulnerability detected: client filed dispute 2 days after milestone approval, consistent with known bad-faith dispute pattern.",
-    evidenceCount: 87,
-    hourlyRate: 120,
-  },
-  {
-    _id: "4",
-    caseId: "CASE-20250303-004",
-    clientName: "Digital Marketing Co",
-    projectName: "Social Media Automation Tool",
-    lostIncome: 675.0,
-    rejectedHours: 15,
-    status: "generated",
-    generatedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    description:
-      "Client rejected 15 hours of work citing scope misalignment. Automated evidence collection active during entire period with full compliance status.",
-    evidenceSummary:
-      "Full evidence trail collected: 18 screenshots, 234 activity events, 5 work memos. 100% compliance score maintained throughout disputed hours.",
-    evidenceCount: 257,
-    hourlyRate: 45,
-  },
-  {
-    _id: "5",
-    caseId: "CASE-20250304-005",
-    clientName: "Creative Studios",
-    projectName: "Brand Identity System",
-    lostIncome: 1900.0,
-    rejectedHours: 20,
-    status: "sent",
-    generatedAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    description:
-      "Client disputed 20 hours claiming insufficient revision cycles. Evidence shows all revision requests were addressed within 24 hours and client approved 3 of 4 milestones.",
-    evidenceSummary:
-      "Work diary shows 4 revision cycles completed with client approval on 3 milestones. Communication logs confirm client received and reviewed all deliverables within the disputed period.",
-    evidenceCount: 156,
-    hourlyRate: 95,
-  },
-  {
-    _id: "6",
-    caseId: "CASE-20250305-006",
-    clientName: "TechCorp Solutions",
-    projectName: "Payment Integration Module",
-    lostIncome: 937.5,
-    rejectedHours: 12.5,
-    status: "generated",
-    generatedAt: Date.now() - 0.5 * 24 * 60 * 60 * 1000,
-    description:
-      "Client flagged 12.5 hours as non-compliant due to detected cross-platform activity. Evidence monitor recorded brief context switches but work context relevance remained above 80%.",
-    evidenceSummary:
-      "Cross-platform detection flagged 3 context switches totaling 12 minutes. Work context relevance maintained at 84%. Primary platform activity consistent with project requirements.",
-    evidenceCount: 48,
-    hourlyRate: 75,
-  },
-];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -292,7 +190,7 @@ export default function Reports() {
   const isLoading = !authLoading && reportsData === undefined && !timedOut && !isDemoMode && !isDisconnected;
 
   // ─── Map Convex data ────────────────────────────────────────────────────
-  const reports: DisputeReport[] = isDemoMode ? MOCK_REPORTS : (reportsData ?? []) as any;
+  const reports: DisputeReport[] = (reportsData ?? []) as any;
 
   // Tier-gating logic
   const isProOrAbove = subscriptionTier === "pro" || subscriptionTier === "expert";
@@ -370,25 +268,8 @@ export default function Reports() {
     const rate = parseFloat(formHourlyRate) || 75;
 
     if (isDemoMode) {
-      const newReport: DisputeReport = {
-        _id: `report_${Date.now()}`,
-        caseId: `CASE-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(MOCK_REPORTS.length + 1).padStart(3, "0")}`,
-        clientName: formClient.trim(),
-        projectName: formProject.trim(),
-        lostIncome: hours * rate,
-        rejectedHours: hours,
-        status: "generated",
-        generatedAt: Date.now(),
-        description: formDescription.trim() || "Dispute report generated from work session evidence.",
-        evidenceSummary: `${Math.floor(hours * 4)} screenshots, ${Math.floor(hours * 12)} activity events, and ${Math.floor(hours * 0.6)} work memos collected during the disputed period.`,
-        evidenceCount: Math.floor(hours * 4) + Math.floor(hours * 12),
-        hourlyRate: rate,
-      };
-      MOCK_REPORTS.unshift(newReport);
-      setShowGenerateDialog(false);
-      resetForm();
-      toast.success("Dispute report generated! (Demo mode)", {
-        description: `Case ID: ${newReport.caseId}`,
+      toast.info("Sign in to generate reports", {
+        description: "Connect your account to generate dispute reports with evidence-backed protection.",
       });
       return;
     }
@@ -438,9 +319,7 @@ export default function Reports() {
 
   const handleStatusChange = async (reportId: any, newStatus: ReportStatus) => {
     if (isDemoMode) {
-      const report = MOCK_REPORTS.find((r) => r._id === reportId);
-      if (report) report.status = newStatus;
-      toast.success(`Report status updated! (Demo mode)`);
+      toast.info("Sign in to update report status");
       return;
     }
 
@@ -491,18 +370,24 @@ export default function Reports() {
           </p>
         </div>
 
-        {/* Demo mode banner */}
+        {/* Demo mode empty state */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real dispute reports.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your reports</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to generate and track dispute reports.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Loading state */}

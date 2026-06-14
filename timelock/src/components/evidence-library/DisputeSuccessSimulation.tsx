@@ -16,13 +16,13 @@ interface DisputeSuccessSimulationProps {
 }
 
 export function DisputeSuccessSimulation({ successRate, hasAccess, disputeData }: DisputeSuccessSimulationProps) {
-  const currentRate = disputeData?.currentRate || 83;
-  const potentialRate = disputeData?.potentialRate || 92;
-  const totalItems = disputeData?.totalEvidenceItems || 245;
-  const recommendation = disputeData?.recommendation || "Add 2-3 more memos per session";
-  const workContext = disputeData?.workContextCoverage || 88;
-  const timeConsistency = disputeData?.timeConsistency || 91;
-  const platformCompliance = disputeData?.platformCompliance || 94;
+  const currentRate = disputeData?.currentRate ?? 0;
+  const potentialRate = disputeData?.potentialRate ?? 0;
+  const totalItems = disputeData?.totalEvidenceItems ?? 0;
+  const recommendation = disputeData?.recommendation ?? "No recommendation available";
+  const workContext = disputeData?.workContextCoverage ?? 0;
+  const timeConsistency = disputeData?.timeConsistency ?? 0;
+  const platformCompliance = disputeData?.platformCompliance ?? 0;
 
   return (
     <Card className="p-6 bg-[#1E293B] border-[#334155]">

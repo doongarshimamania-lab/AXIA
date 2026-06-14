@@ -148,7 +148,7 @@ const TIERS: TierInfo[] = [
   },
 ];
 
-// ─── Help Center Mock Data ───────────────────────────────────────────────────
+// ─── Help Center Types ────────────────────────────────────────────────────
 
 interface HelpArticle {
   id: string;
@@ -156,34 +156,6 @@ interface HelpArticle {
   category: string;
   excerpt: string;
 }
-
-interface SupportTicket {
-  id: string;
-  subject: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  createdAt: number;
-  updatedAt: number;
-}
-
-const MOCK_ARTICLES: HelpArticle[] = [
-  { id: "1", title: "How to set up your first project", category: "Getting Started", excerpt: "Learn how to create your first protected project in Axia." },
-  { id: "2", title: "Understanding scope protection", category: "Core Features", excerpt: "How Axia monitors your project scope and alerts you to deviations." },
-  { id: "3", title: "Evidence collection best practices", category: "Evidence", excerpt: "Tips for ensuring your evidence is comprehensive and admissible." },
-  { id: "4", title: "How to file a dispute", category: "Disputes", excerpt: "Step-by-step guide to initiating and managing a dispute." },
-  { id: "5", title: "Invoicing and payment tracking", category: "Billing", excerpt: "How to create invoices and track payment patterns." },
-  { id: "6", title: "Setting up platform connections", category: "Integrations", excerpt: "Connect your freelance platforms for automatic evidence collection." },
-  { id: "7", title: "Using the browser extension", category: "Evidence", excerpt: "Install and use the Axia browser extension for real-time evidence capture." },
-  { id: "8", title: "Team management and permissions", category: "Teams", excerpt: "Invite team members and manage their roles and access levels." },
-];
-
-const MOCK_FAQ = [
-  { q: "What is scope protection?", a: "Scope protection monitors your project agreements and alerts you when work deviates from the agreed terms. It uses automated evidence collection to build a verifiable record of all work performed." },
-  { q: "How does evidence collection work?", a: "Axia collects evidence through multiple channels: the browser extension captures real-time work activity, time tracking records work sessions, and platform integrations pull in communications and deliverables. All evidence is cryptographically timestamped." },
-  { q: "Can I export evidence for legal proceedings?", a: "Yes! Pro and Expert tiers support Legal Package exports that include chain-of-custody documentation, cryptographic verification, and court-admissible formatting. Free and Starter tiers can export in CSV and JSON formats." },
-  { q: "How do I upgrade my plan?", a: "Navigate to the Subscription tab in Account Settings and select your desired plan. You can upgrade or downgrade at any time, with prorated billing for mid-cycle changes." },
-  { q: "Is my data secure?", a: "Absolutely. All data is encrypted at rest and in transit. Evidence records use cryptographic hashing for tamper-proof verification. We never share your data with third parties." },
-  { q: "What happens if I downgrade?", a: "When you downgrade, you retain access to features at your new tier level. Any data created at a higher tier remains accessible in read-only mode. You can upgrade again at any time to regain full access." },
-];
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -210,7 +182,6 @@ export default function AccountSettings() {
   const [copied, setCopied] = useState(false);
 
   // ── Help State ──
-  const [searchQuery, setSearchQuery] = useState("");
   const [ticketSubject, setTicketSubject] = useState("");
   const [ticketMessage, setTicketMessage] = useState("");
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
@@ -253,7 +224,7 @@ export default function AccountSettings() {
       return;
     }
     setIsSubmittingTicket(true);
-    // Simulate API call
+    // TODO: Replace with real Convex mutation when support ticket system is implemented
     await new Promise(resolve => setTimeout(resolve, 1500));
     setIsSubmittingTicket(false);
     setTicketSubject("");
@@ -261,12 +232,7 @@ export default function AccountSettings() {
     toast.success("Support ticket submitted! We'll get back to you within 24 hours.");
   };
 
-  const filteredArticles = MOCK_ARTICLES.filter(
-    article =>
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // No mock articles - help articles will come from Convex when implemented
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -340,9 +306,6 @@ export default function AccountSettings() {
               )}
               {activeSection === "help" && (
                 <HelpSection
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  filteredArticles={filteredArticles}
                   ticketSubject={ticketSubject}
                   setTicketSubject={setTicketSubject}
                   ticketMessage={ticketMessage}
@@ -768,27 +731,22 @@ function SubscriptionSection({
 // ─── Help & Support Section ──────────────────────────────────────────────────
 
 function HelpSection({
-  searchQuery, setSearchQuery,
-  filteredArticles,
   ticketSubject, setTicketSubject,
   ticketMessage, setTicketMessage,
   isSubmittingTicket, handleSubmitTicket,
 }: {
-  searchQuery: string; setSearchQuery: (v: string) => void;
-  filteredArticles: HelpArticle[];
   ticketSubject: string; setTicketSubject: (v: string) => void;
   ticketMessage: string; setTicketMessage: (v: string) => void;
   isSubmittingTicket: boolean; handleSubmitTicket: () => void;
 }) {
-  const [activeHelpTab, setActiveHelpTab] = useState<"articles" | "faq" | "contact">("articles");
+  const [activeHelpTab, setActiveHelpTab] = useState<"articles" | "contact">("articles");
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           { icon: BookOpen, title: "Documentation", desc: "Browse guides and tutorials", action: () => setActiveHelpTab("articles") },
-          { icon: HelpCircle, title: "FAQ", desc: "Quick answers to common questions", action: () => setActiveHelpTab("faq") },
           { icon: MessageSquare, title: "Contact Support", desc: "Submit a support ticket", action: () => setActiveHelpTab("contact") },
         ].map(({ icon: Icon, title, desc, action }) => (
           <Card key={title} className="bg-card border-border cursor-pointer hover:border-primary/40 transition-colors" onClick={action}>
@@ -810,7 +768,6 @@ function HelpSection({
       <div className="flex gap-1 bg-card border border-border rounded-lg p-1 w-fit">
         {[
           { key: "articles" as const, label: "Articles" },
-          { key: "faq" as const, label: "FAQ" },
           { key: "contact" as const, label: "Contact Support" },
         ].map(({ key, label }) => (
           <button
@@ -827,65 +784,23 @@ function HelpSection({
         ))}
       </div>
 
-      {/* Articles Tab */}
+      {/* Articles Tab - Coming Soon */}
       {activeHelpTab === "articles" && (
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Knowledge Base</CardTitle>
-            <CardDescription>Search our articles and guides</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search articles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background border-border"
-              />
-            </div>
-
-            <div className="space-y-2">
-              {filteredArticles.map((article) => (
-                <div
-                  key={article.id}
-                  className="p-3 bg-background rounded-lg border border-border hover:border-primary/30 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm font-medium">{article.title}</div>
-                    <Badge variant="outline" className="text-[10px] border-border">{article.category}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{article.excerpt}</p>
-                </div>
-              ))}
-              {filteredArticles.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4 text-center">No articles found matching your search.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* FAQ Tab */}
-      {activeHelpTab === "faq" && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle>Frequently Asked Questions</CardTitle>
-            <CardDescription>Quick answers to common questions about Axia</CardDescription>
+            <CardDescription>Help articles and guides</CardDescription>
           </CardHeader>
           <CardContent>
-            <Accordion type="single" collapsible className="space-y-2">
-              {MOCK_FAQ.map((item, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border border-border rounded-lg px-4">
-                  <AccordionTrigger className="text-sm font-medium text-left hover:no-underline">
-                    {item.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground">
-                    {item.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <div className="flex flex-col items-center text-center py-8">
+              <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <BookOpen className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground text-sm mb-1">Coming Soon</h3>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                Help articles and documentation are being prepared. In the meantime, contact support if you need assistance.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

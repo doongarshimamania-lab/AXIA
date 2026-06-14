@@ -244,17 +244,13 @@ export default function EvidenceExport() {
   const { isAuthenticated } = useConvexAuth();
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
-  // Safely access evidence API — it may not exist in local Convex deployment
-  const evidenceApi = (api as any).evidence?.library;
-  const hasEvidenceApi = !!(evidenceApi?.getEvidenceLibraryData);
-
   const evidenceData = useQuery(
-    hasEvidenceApi ? evidenceApi.getEvidenceLibraryData : "skip",
-    hasEvidenceApi ? {
+    api.evidence.library.getEvidenceLibraryData,
+    {
       view: "date" as const,
       startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
       endDate: Date.now(),
-    } : "skip"
+    }
   ) as any | undefined;
 
   const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;

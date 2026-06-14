@@ -10,7 +10,6 @@ import {
   Hash,
   X,
   Palette,
-  Info,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,91 +40,6 @@ const PRESET_COLORS = [
   "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e",
   "#14b8a6", "#06b6d4", "#6366f1", "#a855f7", "#ec4899",
   "#f43f5e", "#0ea5e9",
-];
-
-// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
-
-const MOCK_TAGS = [
-  {
-    _id: "tag_1" as any,
-    name: "Urgent",
-    color: "#ef4444",
-    category: "general" as string | null,
-    usageCount: 23,
-    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_2" as any,
-    name: "Design",
-    color: "#a855f7",
-    category: "project" as string | null,
-    usageCount: 18,
-    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_3" as any,
-    name: "Development",
-    color: "#22c55e",
-    category: "project" as string | null,
-    usageCount: 42,
-    createdAt: Date.now() - 145 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_4" as any,
-    name: "Client Communication",
-    color: "#06b6d4",
-    category: "client" as string | null,
-    usageCount: 31,
-    createdAt: Date.now() - 140 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_5" as any,
-    name: "Bug Fix",
-    color: "#f97316",
-    category: "general" as string | null,
-    usageCount: 14,
-    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_6" as any,
-    name: "Documentation",
-    color: "#14b8a6",
-    category: "project" as string | null,
-    usageCount: 9,
-    createdAt: Date.now() - 115 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_7" as any,
-    name: "Revision",
-    color: "#f59e0b",
-    category: "general" as string | null,
-    usageCount: 19,
-    createdAt: Date.now() - 110 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_8" as any,
-    name: "Research",
-    color: "#6366f1",
-    category: "general" as string | null,
-    usageCount: 7,
-    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_9" as any,
-    name: "Testing",
-    color: "#ec4899",
-    category: "evidence" as string | null,
-    usageCount: 11,
-    createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_10" as any,
-    name: "Payment",
-    color: "#84cc16",
-    category: "client" as string | null,
-    usageCount: 5,
-    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-  },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -177,7 +91,7 @@ export default function Tags() {
     createdAt: t.createdAt,
   }));
 
-  const tags = isDemoMode ? MOCK_TAGS : realTags;
+  const tags = realTags;
 
   // ── Computed Stats ──
   const totalTags = tags.length;
@@ -421,18 +335,24 @@ export default function Tags() {
           </Dialog>
         </div>
 
-        {/* ── Demo mode banner ── */}
+        {/* ── Demo mode empty state ── */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real tags.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Tag className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your tags</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to organize your work with custom tags.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* ── Loading state ── */}

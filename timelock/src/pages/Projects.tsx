@@ -74,8 +74,8 @@ export default function Projects() {
   const seedTestProjectsMutation = useMutation(api.seedProjects.seedTestProjects);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
   
   const handleUpgrade = () => navigate("/subscription");
 

@@ -36,39 +36,8 @@ import { useQuery, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-
 import { api } from "@/convex/_generated/api";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 
-// Mock data constants
-const MOCK_DATA = {
-  stripe: {
-    mrr: 439.88,
-    churnRate: 0.08,
-    usersNeeded: Math.ceil((500 - 439.88) / 8), // 21
-    daysRemaining: 28
-  },
-  airtable: {
-    rejectionRate: 8.2,
-    disputeSuccess: 83,
-    highValueUsers: [
-      { id: "user_001", rejectionRate: 12.5, potentialSavings: 187.50 },
-      { id: "user_002", rejectionRate: 9.8, potentialSavings: 147.00 },
-      { id: "user_003", rejectionRate: 8.9, potentialSavings: 133.50 }
-    ]
-  },
-  upwork: {
-    apiStatus: "Critical",
-    complianceRules: {
-      workSites: ["upwork.com", "github.com", "slack.com"],
-      nonWorkSites: ["youtube.com", "facebook.com", "twitter.com"]
-    }
-  }
-};
-
-// Derived calculations
-const currentUsers = Math.floor(MOCK_DATA.stripe.mrr / 8); // 54
-const targetUsers = 63; // 500/8 rounded up
-const userPercentage = Math.round((currentUsers / targetUsers) * 100); // 86%
-const costs = 120;
-const netRevenue = MOCK_DATA.stripe.mrr - costs; // 319.88
-const profitabilityDate = new Date(Date.now() + MOCK_DATA.stripe.daysRemaining * 24 * 60 * 60 * 1000);
+// No mock data — all analytics data will come from real backend integrations (Stripe, Airtable, Upwork)
+// Until those are connected, dashboard shows N/A / empty states.
 
 // Authentication hook
 function useOwnerAuth() {
@@ -207,12 +176,13 @@ function ThemeToggle() {
 }
 
 // Speedometer component
-function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => void }) {
+function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number | null; onFixClick: () => void }) {
+  const hasData = mrr !== null && mrr !== undefined;
   // Clamp to 0..500 to prevent overshoot
-  const SAFE_MRR = Math.max(0, Math.min(mrr, 500));
-  const percentage = Math.round((SAFE_MRR / 500) * 100);
-  const usersNeeded = Math.ceil((500 - SAFE_MRR) / 8);
-  const daysRemaining = MOCK_DATA.stripe.daysRemaining;
+  const SAFE_MRR = hasData ? Math.max(0, Math.min(mrr, 500)) : 0;
+  const percentage = hasData ? Math.round((SAFE_MRR / 500) * 100) : 0;
+  const usersNeeded = hasData ? Math.ceil((500 - SAFE_MRR) / 8) : Math.ceil(500 / 8);
+  const daysRemaining = null; // No real data yet
 
   // Geometry constants to ensure full visibility of the arc
   const CENTER_X = 400;
@@ -314,20 +284,35 @@ function RevenueRiskMeter({ mrr, onFixClick }: { mrr: number; onFixClick: () => 
 
           {/* Status text */}
           <div className="text-center space-y-2">
-            <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk' }}>
-              <span className="text-foreground">${SAFE_MRR.toFixed(2)}</span>
-              <span className="text-muted-foreground"> of $500 target (</span>
-              <span className="text-emerald-600">{percentage}%</span>
-              <span className="text-muted-foreground">)</span>
-            </div>
+            {!hasData ? (
+              <>
+                <div className="text-2xl font-medium text-muted-foreground" style={{ fontFamily: 'Space Grotesk' }}>
+                  No analytics data available
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Connect Stripe to see revenue metrics and projections.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk' }}>
+                  <span className="text-foreground">${SAFE_MRR.toFixed(2)}</span>
+                  <span className="text-muted-foreground"> of $500 target (</span>
+                  <span className="text-emerald-600">{percentage}%</span>
+                  <span className="text-muted-foreground">)</span>
+                </div>
 
-            <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk', color: getUsersNeededColor() }}>
-              {usersNeeded} users needed to hit goal
-            </div>
+                <div className="text-2xl font-medium" style={{ fontFamily: 'Space Grotesk', color: getUsersNeededColor() }}>
+                  {usersNeeded} users needed to hit goal
+                </div>
 
-            <div className="text-2xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
-              Profitability in {daysRemaining} days
-            </div>
+                {daysRemaining !== null && (
+                  <div className="text-2xl font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
+                    Profitability in {daysRemaining} days
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Fix This button */}
@@ -489,33 +474,19 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
           
           <div className="space-y-4">
             <div className="space-y-3">
-              {MOCK_DATA.airtable.highValueUsers.map((user, index) => (
-                <Card key={user.id} className="p-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-semibold text-foreground">{user.id}</span>
-                      <div className="text-sm text-muted-foreground">
-                        Rejection rate: <span className="font-medium text-orange-600">{user.rejectionRate}%</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
-                        ${user.potentialSavings}
-                      </span>
-                      <div className="text-sm text-slate-600">potential savings</div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+              <div className="text-center py-6 text-muted-foreground">
+                <p className="text-sm">No user analytics data available.</p>
+                <p className="text-xs mt-1">Connect Airtable to see high-value user insights.</p>
+              </div>
             </div>
             
             <div className="space-y-2">
               <Label>Message Template</Label>
               <textarea 
                 className="w-full h-32 p-3 border rounded-md text-sm"
-                defaultValue={`Hi! I noticed you've had ${(MOCK_DATA.airtable.highValueUsers[0].rejectionRate * 10).toFixed(1)} hours rejected recently. 
+                defaultValue={`Hi! I noticed you've had some hours rejected recently. 
 
-Axia Pro could save you $${MOCK_DATA.airtable.highValueUsers[0].potentialSavings}/month by preventing these rejections with real-time compliance monitoring.
+Axia Pro could save you money by preventing these rejections with real-time compliance monitoring.
 
 Would you like to try Pro free for 7 days?`}
               />
@@ -568,7 +539,7 @@ function ComplianceRuleTester() {
   const [status, setStatus] = useState<"idle" | "active" | "at_risk">("idle");
   const [detectedDomain, setDetectedDomain] = useState("");
   const [showFixRule, setShowFixRule] = useState(false);
-  const [workSites, setWorkSites] = useState(MOCK_DATA.upwork.complianceRules.workSites);
+  const [workSites, setWorkSites] = useState<string[]>(["upwork.com", "github.com", "slack.com"]);
 
   useEffect(() => {
     if (testUrl) {
@@ -1190,9 +1161,8 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
         {/* Section 1: Revenue Command (Top 30%) */}
         <div className="mb-12">
           <RevenueRiskMeter 
-            mrr={MOCK_DATA.stripe.mrr} 
+            mrr={null} 
             onFixClick={() => {
-              // Ensure the Priority 1 action is targeted for completion flow
               setActiveActionId(priorityActions[0]?.id ?? null);
               setShowPriorityModal(true);
             }} 
@@ -1205,39 +1175,9 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                 <CardTitle className="text-xl font-semibold text-foreground">Users Needed Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Progress value={userPercentage} className="h-2" />
-                  <div className="mt-2 text-center">
-                    <span className="text-2xl font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
-                      {currentUsers}/{targetUsers}
-                    </span>
-                    <span className="text-2xl font-medium text-emerald-600 ml-2" style={{ fontFamily: 'Space Grotesk' }}>
-                      ({userPercentage}%)
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  {[
-                    { source: "Organic", users: 32, progress: 59 },
-                    { source: "Referrals", users: 15, progress: 28 },
-                    { source: "Paid Ads", users: 7, progress: 13 }
-                  ].map((item) => (
-                    <Card key={item.source} className="p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-foreground">{item.source}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {item.users}
-                        </span>
-                      </div>
-                      <Progress value={item.progress} className="h-1 mb-2" />
-                      <div className="flex justify-end">
-                        <Button variant="link" className="p-0 h-auto text-blue-600 text-sm">
-                          Get Users
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
+                <div className="text-center py-6 text-muted-foreground">
+                  <p className="text-sm">No analytics data available.</p>
+                  <p className="text-xs mt-1">Connect Stripe to see user growth metrics.</p>
                 </div>
               </CardContent>
             </Card>
@@ -1248,71 +1188,10 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
                 <CardTitle className="text-xl font-semibold text-foreground">Burn Rate vs MRR Growth</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { 
-                    label: "MRR", 
-                    icon: ArrowUp, 
-                    current: MOCK_DATA.stripe.mrr, 
-                    target: 500, 
-                    color: "text-emerald-600" 
-                  },
-                  { 
-                    label: "Costs", 
-                    icon: ArrowDown, 
-                    current: costs, 
-                    target: 100, 
-                    color: "text-red-600" 
-                  },
-                  { 
-                    label: "Net", 
-                    icon: ArrowRight, 
-                    current: netRevenue, 
-                    target: 400, 
-                    color: "text-orange-600" 
-                  }
-                ].map((metric) => {
-                  const Icon = metric.icon;
-                  const progress = Math.min((metric.current / metric.target) * 100, 100);
-                  
-                  return (
-                    <Card key={metric.label} className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`h-5 w-5 ${metric.color}`} />
-                          <span className="font-medium text-foreground">{metric.label}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-2xl font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
-                            ${metric.current.toFixed(0)}
-                          </span>
-                          <span className="text-xl font-medium text-muted-foreground" style={{ fontFamily: 'Space Grotesk' }}>
-                            ${metric.target}
-                          </span>
-                        </div>
-                        
-                        <Progress value={progress} className="h-2" />
-                        
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">To target</span>
-                          <span className="font-medium text-foreground" style={{ fontFamily: 'Space Grotesk' }}>
-                            ${(metric.target - metric.current).toFixed(0)}
-                          </span>
-                        </div>
-                        
-                        {metric.label === "Net" && (
-                          <div className="mt-2 pt-2 border-t">
-                            <span className="text-lg font-medium text-emerald-600" style={{ fontFamily: 'Space Grotesk' }}>
-                              Profitability Date: {profitabilityDate.toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  );
-                })}
+                <div className="text-center py-6 text-muted-foreground">
+                  <p className="text-sm">No financial data available.</p>
+                  <p className="text-xs mt-1">Connect Stripe to see revenue and cost metrics.</p>
+                </div>
               </CardContent>
             </Card>
           </div>

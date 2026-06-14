@@ -293,148 +293,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Rich Mock Data for Team Workspace ────────────────────────
-// These hooks return realistic mock data so the Team Management
-// page looks fully populated when Convex returns no data.
+// ─── Workspace Member & Stats Hooks ────────────────────────
+// These hooks return real Convex data with proper empty states.
 
-const MOCK_MEMBERS = [
-  {
-    _id: "mem_001",
-    userId: "user_owner",
-    name: "Alex Rivera",
-    displayName: "Alex Rivera",
-    email: "alex.rivera@axiaagency.com",
-    image: "",
-    role: "owner" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 5 * 60 * 1000,
-    projectsAssigned: 8,
-    hoursThisWeek: 34.5,
-  },
-  {
-    _id: "mem_002",
-    userId: "user_manager_1",
-    name: "Priya Sharma",
-    displayName: "Priya Sharma",
-    email: "priya.sharma@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 15 * 60 * 1000,
-    projectsAssigned: 5,
-    hoursThisWeek: 28.0,
-  },
-  {
-    _id: "mem_003",
-    userId: "user_manager_2",
-    name: "Jordan Kim",
-    displayName: "Jordan Kim",
-    email: "jordan.kim@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 2 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 22.5,
-  },
-  {
-    _id: "mem_004",
-    userId: "user_member_1",
-    name: "Sam Chen",
-    displayName: "Sam Chen",
-    email: "sam.chen@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 1 * 60 * 60 * 1000,
-    projectsAssigned: 4,
-    hoursThisWeek: 40.0,
-  },
-  {
-    _id: "mem_005",
-    userId: "user_member_2",
-    name: "Elena Volkov",
-    displayName: "Elena Volkov",
-    email: "elena.volkov@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 21 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 30 * 60 * 1000,
-    projectsAssigned: 2,
-    hoursThisWeek: 35.0,
-  },
-  {
-    _id: "mem_006",
-    userId: "user_member_3",
-    name: "Marcus Thompson",
-    displayName: "Marcus Thompson",
-    email: "marcus.t@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 4 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 18.0,
-  },
-  {
-    _id: "mem_007",
-    userId: "user_member_4",
-    name: "Aisha Patel",
-    displayName: "Aisha Patel",
-    email: "aisha.patel@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-  {
-    _id: "mem_008",
-    userId: "user_member_5",
-    name: "Lucas Weber",
-    displayName: "Lucas Weber",
-    email: "lucas.w@freelance.dev",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 6 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-];
-
-const MOCK_STATS = {
-  memberCount: 8,
-  clientCount: 12,
-  activeProjectCount: 6,
-  pendingInvoiceCount: 4,
-  totalRevenue: 47850,
-  totalHoursThisWeek: 178,
-  protectionScore: 94,
+// Default empty stats when no data is available
+const EMPTY_STATS = {
+  memberCount: 0,
+  clientCount: 0,
+  activeProjectCount: 0,
+  pendingInvoiceCount: 0,
+  totalRevenue: 0,
+  totalHoursThisWeek: 0,
+  protectionScore: 0,
 };
 
 export function useWorkspaceMembers(workspaceId: string | null) {
-  const workspacesApi = (api as any).workspaces;
-  const hasMembersApi = !!(workspacesApi?.members?.getMembers);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexMembers = useQuery(
-    hasMembersApi && validId ? workspacesApi.members.getMembers : "skip",
+    validId ? api.workspaces.members.getMembers : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any[] | undefined;
 
-  // If Convex returns data, map it. Otherwise fall back to mock.
+  // If Convex returns data, map it. Otherwise return empty array.
   if (convexMembers && convexMembers.length > 0) {
     return convexMembers.map((m: any) => ({
       _id: m._id,
@@ -452,17 +333,15 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     }));
   }
 
-  // Fallback to mock data
-  return MOCK_MEMBERS;
+  // Return empty array when no data
+  return [];
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
-  const workspacesApi = (api as any).workspaces;
-  const hasStatsApi = !!(workspacesApi?.crud?.getWorkspaceStats);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexStats = useQuery(
-    hasStatsApi && validId ? workspacesApi.crud.getWorkspaceStats : "skip",
+    validId ? api.workspaces.crud.getWorkspaceStats : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any | undefined;
 
@@ -478,18 +357,13 @@ export function useWorkspaceStats(workspaceId: string | null) {
     };
   }
 
-  return MOCK_STATS;
+  return EMPTY_STATS;
 }
 
 export function useInviteMember() {
-  const workspacesApi = (api as any).workspaces;
-  const hasInviteApi = !!(workspacesApi?.invitations?.createInvitation);
-  const inviteMutation = useMutation(
-    hasInviteApi ? workspacesApi.invitations.createInvitation : null
-  );
+  const inviteMutation = useMutation(api.workspaces.invitations.createInvitation);
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
-    // SECURITY: Fail closed — don't return fake success when API is unavailable
-    if (!hasInviteApi || !inviteMutation || !isValidConvexId(args.workspaceId)) {
+    if (!inviteMutation || !isValidConvexId(args.workspaceId)) {
       return { success: false, error: "Invitation service unavailable. Please try again later." };
     }
     try {

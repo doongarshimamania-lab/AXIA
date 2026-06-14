@@ -137,16 +137,10 @@ export default function TeamManagement() {
   ) as any[] | undefined;
 
   // ─── Teams queries ─────────────────────────────────────────────────────────
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamsApi = !!teamsApi?.getTeams;
-
   const convexTeams = useQuery(
-    hasTeamsApi && hasRealWorkspaceId ? teamsApi.getTeams : "skip",
+    hasRealWorkspaceId ? api.teams.crud.getTeams : "skip",
     hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
   ) as any[] | undefined;
-
-  // ─── Team Members per team ──────────────────────────────────────────────────
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
 
   // ─── Mutations ─────────────────────────────────────────────────────────────
   const inviteMemberMutation = useMutation(api.workspaces.invitations.createInvitation);
@@ -155,11 +149,11 @@ export default function TeamManagement() {
   const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
 
   // Team mutations
-  const createTeamMutation = useMutation(hasTeamsApi ? teamsApi.createTeam : null);
-  const updateTeamMutation = useMutation(hasTeamsApi ? teamsApi.updateTeam : null);
-  const deleteTeamMutation = useMutation(hasTeamsApi ? teamsApi.deleteTeam : null);
-  const addTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.addTeamMember : null);
-  const removeTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.removeTeamMember : null);
+  const createTeamMutation = useMutation(api.teams.crud.createTeam);
+  const updateTeamMutation = useMutation(api.teams.crud.updateTeam);
+  const deleteTeamMutation = useMutation(api.teams.crud.deleteTeam);
+  const addTeamMemberMutation = useMutation(api.teams.crud.addTeamMember);
+  const removeTeamMemberMutation = useMutation(api.teams.crud.removeTeamMember);
 
   // ─── State ─────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<string>("members");
@@ -1326,10 +1320,8 @@ function TeamCard({
   const [expanded, setExpanded] = useState(false);
 
   // Fetch team members
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
   const teamMembers = useQuery(
-    hasTeamMembersApi ? teamsApi.getTeamMembers : "skip",
+    api.teams.crud.getTeamMembers,
     { teamId: team._id }
   ) as any[] | undefined;
 
