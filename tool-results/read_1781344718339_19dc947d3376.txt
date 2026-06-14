@@ -1,0 +1,902 @@
+     1→import { useState, useMemo, useEffect } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import {
+     5→  Download,
+     6→  FileText,
+     7→  FileSpreadsheet,
+     8→  FileJson,
+     9→  Briefcase,
+    10→  Shield,
+    11→  ShieldCheck,
+    12→  Calendar,
+    13→  Filter,
+    14→  Eye,
+    15→  CheckCircle2,
+    16→  Clock,
+    17→  AlertTriangle,
+    18→  Lock,
+    19→  ChevronDown,
+    20→  Package,
+    21→  HardDrive,
+    22→  Loader2,
+    23→  Info,
+    24→  Database,
+    25→  Plus,
+    26→} from "lucide-react";
+    27→import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+    28→import { Button } from "@/components/ui/button";
+    29→import { Badge } from "@/components/ui/badge";
+    30→import { Input } from "@/components/ui/input";
+    31→import {
+    32→  Select,
+    33→  SelectContent,
+    34→  SelectItem,
+    35→  SelectTrigger,
+    36→  SelectValue,
+    37→} from "@/components/ui/select";
+    38→import { Checkbox } from "@/components/ui/checkbox";
+    39→import { Separator } from "@/components/ui/separator";
+    40→import { Label } from "@/components/ui/label";
+    41→import { Skeleton } from "@/components/ui/skeleton";
+    42→import {
+    43→  Dialog,
+    44→  DialogContent,
+    45→  DialogDescription,
+    46→  DialogFooter,
+    47→  DialogHeader,
+    48→  DialogTitle,
+    49→  DialogTrigger,
+    50→} from "@/components/ui/dialog";
+    51→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    52→import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    53→import { api } from "@/convex/_generated/api";
+    54→import { exportEvidence } from "@/lib/exportUtils";
+    55→import { PageLoader } from "@/components/QueryState";
+    56→import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+    57→import { PageLayout } from "@/components/design-system/PageLayout";
+    58→
+    59→// --- Types ---
+    60→type ExportFormat = "pdf" | "csv" | "json" | "legal";
+    61→type ExportStatus = "completed" | "processing" | "failed";
+    62→
+    63→interface RecentExport {
+    64→  id: string;
+    65→  name: string;
+    66→  format: ExportFormat;
+    67→  status: ExportStatus;
+    68→  size: string;
+    69→  date: string;
+    70→  itemCount: number;
+    71→  complianceVerified: boolean;
+    72→  project: string;
+    73→}
+    74→
+    75→interface EvidenceTypeOption {
+    76→  id: string;
+    77→  label: string;
+    78→  icon: React.ReactNode;
+    79→  count: number;
+    80→}
+    81→
+    82→// --- Config ---
+    83→const FORMAT_CONFIG: Record<ExportFormat, { label: string; icon: React.ReactNode; color: string; tierRequired: string }> = {
+    84→  pdf: { label: "PDF", icon: <FileText className="h-5 w-5" />, color: "text-red-500", tierRequired: "pro" },
+    85→  csv: { label: "CSV", icon: <FileSpreadsheet className="h-5 w-5" />, color: "text-green-500", tierRequired: "free" },
+    86→  json: { label: "JSON", icon: <FileJson className="h-5 w-5" />, color: "text-amber-500", tierRequired: "starter" },
+    87→  legal: { label: "Legal Package", icon: <Package className="h-5 w-5" />, color: "text-purple-500", tierRequired: "pro" },
+    88→};
+    89→
+    90→const STATUS_CONFIG: Record<ExportStatus, { label: string; icon: React.ReactNode; badgeVariant: "default" | "secondary" | "destructive" | "outline" }> = {
+    91→  completed: { label: "Completed", icon: <CheckCircle2 className="h-3.5 w-3.5" />, badgeVariant: "default" },
+    92→  processing: { label: "Processing", icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />, badgeVariant: "secondary" },
+    93→  failed: { label: "Failed", icon: <AlertTriangle className="h-3.5 w-3.5" />, badgeVariant: "destructive" },
+    94→};
+    95→
+    96→function getTierLevel(tier: string): number {
+    97→  const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3, client: 0 };
+    98→  return levels[tier] ?? 0;
+    99→}
+   100→
+   101→function hasTierAccess(userTier: string, requiredTier: string): boolean {
+   102→  return getTierLevel(userTier) >= getTierLevel(requiredTier);
+   103→}
+   104→
+   105→// --- Sub-Components ---
+   106→
+   107→function SummaryCard({
+   108→  title,
+   109→  value,
+   110→  subtitle,
+   111→  icon,
+   112→  accent,
+   113→}: {
+   114→  title: string;
+   115→  value: string | number;
+   116→  subtitle: string;
+   117→  icon: React.ReactNode;
+   118→  accent: string;
+   119→}) {
+   120→  return (
+   121→    <Card className="relative overflow-hidden">
+   122→      <CardContent className="p-6">
+   123→        <div className="flex items-start justify-between">
+   124→          <div className="space-y-1">
+   125→            <p className="text-sm text-muted-foreground font-medium">{title}</p>
+   126→            <p className="text-3xl font-bold tracking-tight">{value}</p>
+   127→            <p className="text-xs text-muted-foreground">{subtitle}</p>
+   128→          </div>
+   129→          <div className={`rounded-lg p-2.5 ${accent}`}>
+   130→            {icon}
+   131→          </div>
+   132→        </div>
+   133→      </CardContent>
+   134→    </Card>
+   135→  );
+   136→}
+   137→
+   138→function SummarySkeleton() {
+   139→  return (
+   140→    <Card>
+   141→      <CardContent className="p-6">
+   142→        <div className="flex items-start justify-between">
+   143→          <div className="space-y-1">
+   144→            <Skeleton className="h-4 w-24" />
+   145→            <Skeleton className="h-8 w-16" />
+   146→            <Skeleton className="h-3 w-32" />
+   147→          </div>
+   148→          <Skeleton className="h-10 w-10 rounded-lg" />
+   149→        </div>
+   150→      </CardContent>
+   151→    </Card>
+   152→  );
+   153→}
+   154→
+   155→function FormatOption({
+   156→  formatKey,
+   157→  selected,
+   158→  onSelect,
+   159→  locked,
+   160→}: {
+   161→  formatKey: ExportFormat;
+   162→  selected: boolean;
+   163→  onSelect: () => void;
+   164→  locked: boolean;
+   165→}) {
+   166→  const config = FORMAT_CONFIG[formatKey];
+   167→
+   168→  return (
+   169→    <button
+   170→      type="button"
+   171→      onClick={locked ? undefined : onSelect}
+   172→      disabled={locked}
+   173→      className={`
+   174→        relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200
+   175→        ${selected && !locked
+   176→          ? "border-primary bg-primary/5 shadow-sm"
+   177→          : locked
+   178→            ? "border-muted bg-muted/30 opacity-60 cursor-not-allowed"
+   179→            : "border-border hover:border-primary/40 hover:bg-accent/50 cursor-pointer"
+   180→        }
+   181→      `}
+   182→    >
+   183→      {locked && (
+   184→        <div className="absolute -top-2 -right-2 rounded-full bg-muted p-1">
+   185→          <Lock className="h-3 w-3 text-muted-foreground" />
+   186→        </div>
+   187→      )}
+   188→      <div className={config.color}>{config.icon}</div>
+   189→      <span className="text-sm font-semibold">{config.label}</span>
+   190→      {locked && (
+   191→        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+   192→          {config.tierRequired}+
+   193→        </span>
+   194→      )}
+   195→      {selected && !locked && (
+   196→        <div className="absolute -top-1.5 -right-1.5 rounded-full bg-primary p-0.5">
+   197→          <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />
+   198→        </div>
+   199→      )}
+   200→    </button>
+   201→  );
+   202→}
+   203→
+   204→// --- Demo Mode Banner ---
+   205→function DemoModeBanner() {
+   206→  return (
+   207→    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 mb-6">
+   208→      <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+   209→      <p className="text-sm text-amber-700 dark:text-amber-300">
+   210→        <span className="font-medium">Demo Mode</span> — Sign in to see your real evidence data. 
+   211→        Showing sample data for preview.
+   212→      </p>
+   213→    </div>
+   214→  );
+   215→}
+   216→
+   217→// --- Empty State ---
+   218→function EmptyEvidenceState() {
+   219→  return (
+   220→    <motion.div
+   221→      initial={{ opacity: 0, y: 20 }}
+   222→      animate={{ opacity: 1, y: 0 }}
+   223→      className="text-center py-16"
+   224→    >
+   225→      <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+   226→        <Database className="h-8 w-8 text-muted-foreground" />
+   227→      </div>
+   228→      <h3 className="text-xl font-semibold text-foreground mb-2">No Evidence Data Yet</h3>
+   229→      <p className="text-muted-foreground max-w-md mx-auto mb-6">
+   230→        Start collecting evidence through the browser extension or work sessions. 
+   231→        Once you have evidence items, you can export them in various formats.
+   232→      </p>
+   233→      <Button onClick={() => toast.info("Install the Axia browser extension to start collecting evidence")}>
+   234→        <Plus className="h-4 w-4 mr-2" />
+   235→        Start Collecting Evidence
+   236→      </Button>
+   237→    </motion.div>
+   238→  );
+   239→}
+   240→
+   241→// --- Main Component ---
+   242→export default function EvidenceExport() {
+   243→  const { tier } = useSubscriptionTier();
+   244→  const { isAuthenticated } = useConvexAuth();
+   245→
+   246→  // ─── Convex Queries ────────────────────────────────────────────────────────
+   247→  const evidenceData = useQuery(api.evidence.library.getEvidenceLibraryData, {
+   248→    view: "date" as const,
+   249→    startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
+   250→    endDate: Date.now(),
+   251→  }) as any | undefined;
+   252→
+   253→  const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
+   254→  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {}) as any[] | undefined;
+   255→
+   256→  const { isDisconnected } = useConvexConnectionState();
+   257→  const isLoading = evidenceData === undefined || clients === undefined;
+   258→  const timedOut = useQueryTimeout(isLoading, 3000);
+   259→  const showLoading = isLoading && !timedOut && !isDisconnected;
+   260→
+   261→  // ─── Derived Data ──────────────────────────────────────────────────────────
+   262→
+   263→  // Build evidence type options from real data
+   264→  const evidenceTypes: EvidenceTypeOption[] = useMemo(() => {
+   265→    if (!evidenceData) return [];
+   266→    const items = evidenceData.evidenceItems ?? [];
+   267→    const typeCounts: Record<string, number> = {};
+   268→    const typeLabels: Record<string, string> = {
+   269→      screenshot_ref: "Screenshots",
+   270→      memo: "Work Memos",
+   271→      url: "URL Visits",
+   272→      keyboard: "Keyboard Activity",
+   273→      mouse: "Mouse Activity",
+   274→      platform_status: "Platform Status",
+   275→    };
+   276→    const typeIcons: Record<string, React.ReactNode> = {
+   277→      screenshot_ref: <Eye className="h-4 w-4" />,
+   278→      memo: <FileText className="h-4 w-4" />,
+   279→      url: <FileJson className="h-4 w-4" />,
+   280→      keyboard: <FileText className="h-4 w-4" />,
+   281→      mouse: <FileText className="h-4 w-4" />,
+   282→      platform_status: <Shield className="h-4 w-4" />,
+   283→    };
+   284→
+   285→    for (const item of items) {
+   286→      const kind = item.type ?? "unknown";
+   287→      typeCounts[kind] = (typeCounts[kind] ?? 0) + 1;
+   288→    }
+   289→
+   290→    return Object.entries(typeCounts).map(([id, count]) => ({
+   291→      id,
+   292→      label: typeLabels[id] ?? id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " "),
+   293→      icon: typeIcons[id] ?? <FileText className="h-4 w-4" />,
+   294→      count,
+   295→    }));
+   296→  }, [evidenceData]);
+   297→
+   298→  // Build project options from real scopes
+   299→  const projectOptions = useMemo(() => {
+   300→    const all = [{ id: "all", label: "All Projects" }];
+   301→    if (scopeDefinitions) {
+   302→      for (const scope of scopeDefinitions) {
+   303→        all.push({ id: scope._id, label: scope.title ?? "Untitled Scope" });
+   304→      }
+   305→    }
+   306→    return all;
+   307→  }, [scopeDefinitions]);
+   308→
+   309→  // Build client options from real clients
+   310→  const clientOptions = useMemo(() => {
+   311→    const all = [{ id: "all", label: "All Clients" }];
+   312→    if (clients) {
+   313→      for (const client of clients) {
+   314→        all.push({ id: client._id, label: client.clientName ?? "Unknown Client" });
+   315→      }
+   316→    }
+   317→    return all;
+   318→  }, [clients]);
+   319→
+   320→  // Compliance score from real data
+   321→  const complianceScore = evidenceData?.healthScore?.score ?? 0;
+   322→  const totalItems = evidenceData?.totalCount ?? 0;
+   323→  const disputeSuccessRate = evidenceData?.disputeSuccessRate ?? 0;
+   324→
+   325→  // State
+   326→  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("csv");
+   327→  const [dateFrom, setDateFrom] = useState(() => {
+   328→    const d = new Date();
+   329→    d.setMonth(d.getMonth() - 3);
+   330→    return d.toISOString().split("T")[0];
+   331→  });
+   332→  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
+   333→  const [selectedProject, setSelectedProject] = useState("all");
+   334→  const [selectedClient, setSelectedClient] = useState("all");
+   335→  const [selectedEvidenceTypes, setSelectedEvidenceTypes] = useState<string[]>([]);
+   336→  const [isExporting, setIsExporting] = useState(false);
+   337→  const [previewOpen, setPreviewOpen] = useState(false);
+   338→  const [recentExports, setRecentExports] = useState<RecentExport[]>([]);
+   339→
+   340→  // Auto-select all evidence types when they load
+   341→  useEffect(() => {
+   342→    if (evidenceTypes.length > 0 && selectedEvidenceTypes.length === 0) {
+   343→      setSelectedEvidenceTypes(evidenceTypes.map((t) => t.id));
+   344→    }
+   345→  }, [evidenceTypes]);
+   346→
+   347→  // Derived
+   348→  const totalEvidenceItems = useMemo(
+   349→    () => evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id)).reduce((sum, t) => sum + t.count, 0),
+   350→    [evidenceTypes, selectedEvidenceTypes]
+   351→  );
+   352→
+   353→  const isFormatLocked = (format: ExportFormat): boolean => {
+   354→    const requiredTier = FORMAT_CONFIG[format].tierRequired;
+   355→    return !hasTierAccess(tier, requiredTier);
+   356→  };
+   357→
+   358→  const toggleEvidenceType = (id: string) => {
+   359→    setSelectedEvidenceTypes((prev) =>
+   360→      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+   361→    );
+   362→  };
+   363→
+   364→  const handleExport = async () => {
+   365→    if (selectedEvidenceTypes.length === 0) {
+   366→      toast.error("No evidence types selected", {
+   367→        description: "Select at least one evidence type to export.",
+   368→      });
+   369→      return;
+   370→    }
+   371→
+   372→    if (isFormatLocked(selectedFormat)) {
+   373→      toast.error("Upgrade required", {
+   374→        description: `Export as ${FORMAT_CONFIG[selectedFormat].label} requires a ${FORMAT_CONFIG[selectedFormat].tierRequired} plan or higher.`,
+   375→      });
+   376→      return;
+   377→    }
+   378→
+   379→    setIsExporting(true);
+   380→
+   381→    try {
+   382→      const selectedTypes = evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id));
+   383→      const selectedProjectLabel = projectOptions.find((p) => p.id === selectedProject)?.label ?? "All Projects";
+   384→      const selectedClientLabel = clientOptions.find((c) => c.id === selectedClient)?.label ?? "All Clients";
+   385→
+   386→      exportEvidence(selectedFormat, {
+   387→        evidenceTypes: selectedTypes.map((t) => ({ id: t.id, label: t.label, count: t.count })),
+   388→        dateRange: `${dateFrom} to ${dateTo}`,
+   389→        project: selectedProjectLabel,
+   390→        client: selectedClientLabel,
+   391→        complianceScore,
+   392→        totalItems: totalEvidenceItems,
+   393→      });
+   394→
+   395→      // Add to recent exports
+   396→      const newExport: RecentExport = {
+   397→        id: `exp_${Date.now()}`,
+   398→        name: `${selectedProjectLabel} — ${FORMAT_CONFIG[selectedFormat].label} Export`,
+   399→        format: selectedFormat,
+   400→        status: "completed",
+   401→        size: `~${(totalEvidenceItems * 0.12).toFixed(1)} MB`,
+   402→        date: new Date().toISOString().split("T")[0],
+   403→        itemCount: totalEvidenceItems,
+   404→        complianceVerified: hasTierAccess(tier, "pro"),
+   405→        project: selectedProjectLabel,
+   406→      };
+   407→      setRecentExports((prev) => [newExport, ...prev].slice(0, 10));
+   408→
+   409→      toast.success("Export complete", {
+   410→        description: `Your ${FORMAT_CONFIG[selectedFormat].label} export with ${totalEvidenceItems} items has been downloaded.`,
+   411→      });
+   412→    } catch {
+   413→      toast.error("Export failed", {
+   414→        description: "An error occurred while generating the export file.",
+   415→      });
+   416→    }
+   417→
+   418→    setIsExporting(false);
+   419→  };
+   420→
+   421→  const handleFormatSelect = (format: ExportFormat) => {
+   422→    if (isFormatLocked(format)) {
+   423→      toast.error("Upgrade required", {
+   424→        description: `Export as ${FORMAT_CONFIG[format].label} requires a ${FORMAT_CONFIG[format].tierRequired} plan or higher.`,
+   425→      });
+   426→      return;
+   427→    }
+   428→    setSelectedFormat(format);
+   429→  };
+   430→
+   431→  const previewItems = useMemo(() => {
+   432→    return evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id));
+   433→  }, [evidenceTypes, selectedEvidenceTypes]);
+   434→
+   435→  const selectedProjectLabel = projectOptions.find((p) => p.id === selectedProject)?.label ?? "All Projects";
+   436→  const selectedClientLabel = clientOptions.find((c) => c.id === selectedClient)?.label ?? "All Clients";
+   437→
+   438→  const hasData = totalItems > 0 || evidenceTypes.length > 0;
+   439→
+   440→  // ─── Render ───────────────────────────────────────────────────────────────
+   441→
+   442→  return (
+   443→    <motion.div
+   444→      initial={{ opacity: 0 }}
+   445→      animate={{ opacity: 1 }}
+   446→      className="w-full min-h-screen bg-background"
+   447→    >
+   448→      <PageLayout spaced>
+   449→        {/* Header */}
+   450→        <div>
+   451→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Export</h1>
+   452→          <p className="text-[16px] text-muted-foreground">
+   453→            Package and download your work evidence in court-ready formats with compliance verification.
+   454→          </p>
+   455→        </div>
+   456→
+   457→        {/* Demo Mode Banner */}
+   458→        {!isAuthenticated && <DemoModeBanner />}
+   459→
+   460→        {/* Loading / Timeout State */}
+   461→        {showLoading ? (
+   462→          <>
+   463→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   464→              {[0, 1, 2, 3].map((i) => <SummarySkeleton key={i} />)}
+   465→            </div>
+   466→            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   467→              <div className="lg:col-span-2"><Card><CardContent className="p-6"><Skeleton className="h-64 w-full" /></CardContent></Card></div>
+   468→              <div><Card><CardContent className="p-6"><Skeleton className="h-64 w-full" /></CardContent></Card></div>
+   469→            </div>
+   470→          </>
+   471→        ) : !hasData ? (
+   472→          <EmptyEvidenceState />
+   473→        ) : (
+   474→          <>
+   475→            {/* Summary Dashboard */}
+   476→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   477→              <SummaryCard
+   478→                title="Total Items"
+   479→                value={totalItems}
+   480→                subtitle="Across all projects"
+   481→                icon={<HardDrive className="h-5 w-5 text-primary-foreground" />}
+   482→                accent="bg-primary"
+   483→              />
+   484→              <SummaryCard
+   485→                title="Evidence Types"
+   486→                value={evidenceTypes.length}
+   487→                subtitle="Different categories"
+   488→                icon={<Clock className="h-5 w-5 text-amber-700" />}
+   489→                accent="bg-amber-100 dark:bg-amber-900/30"
+   490→              />
+   491→              <SummaryCard
+   492→                title="Compliance Score"
+   493→                value={`${complianceScore}%`}
+   494→                subtitle={complianceScore >= 80 ? "Court-admissible ready" : "Needs improvement"}
+   495→                icon={<ShieldCheck className="h-5 w-5 text-emerald-700" />}
+   496→                accent="bg-emerald-100 dark:bg-emerald-900/30"
+   497→              />
+   498→              <SummaryCard
+   499→                title="Dispute Success"
+   500→                value={`${disputeSuccessRate}%`}
+   501→                subtitle="Based on evidence quality"
+   502→                icon={<Shield className="h-5 w-5 text-sky-700" />}
+   503→                accent="bg-sky-100 dark:bg-sky-900/30"
+   504→              />
+   505→            </div>
+   506→
+   507→            {/* Export Configuration */}
+   508→            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   509→              {/* Left Column: Format + Filters */}
+   510→              <div className="lg:col-span-2 space-y-6">
+   511→                {/* Format Selection */}
+   512→                <Card>
+   513→                  <CardHeader>
+   514→                    <CardTitle className="flex items-center gap-2">
+   515→                      <Download className="h-5 w-5 text-primary" />
+   516→                      Export Format
+   517→                    </CardTitle>
+   518→                    <CardDescription>Choose the output format for your evidence package.</CardDescription>
+   519→                  </CardHeader>
+   520→                  <CardContent>
+   521→                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   522→                      {(Object.keys(FORMAT_CONFIG) as ExportFormat[]).map((formatKey) => (
+   523→                        <FormatOption
+   524→                          key={formatKey}
+   525→                          formatKey={formatKey}
+   526→                          selected={selectedFormat === formatKey}
+   527→                          onSelect={() => handleFormatSelect(formatKey)}
+   528→                          locked={isFormatLocked(formatKey)}
+   529→                        />
+   530→                      ))}
+   531→                    </div>
+   532→                    {isFormatLocked(selectedFormat) && (
+   533→                      <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-3">
+   534→                        <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+   535→                        <p className="text-sm text-amber-800 dark:text-amber-200">
+   536→                          <span className="font-semibold">Upgrade to {FORMAT_CONFIG[selectedFormat].tierRequired}</span> to unlock{" "}
+   537→                          {FORMAT_CONFIG[selectedFormat].label} exports with compliance verification.
+   538→                        </p>
+   539→                      </div>
+   540→                    )}
+   541→                  </CardContent>
+   542→                </Card>
+   543→
+   544→                {/* Date Range & Filters */}
+   545→                <Card>
+   546→                  <CardHeader>
+   547→                    <CardTitle className="flex items-center gap-2">
+   548→                      <Filter className="h-5 w-5 text-primary" />
+   549→                      Filters & Date Range
+   550→                    </CardTitle>
+   551→                    <CardDescription>Refine which evidence to include in the export.</CardDescription>
+   552→                  </CardHeader>
+   553→                  <CardContent className="space-y-5">
+   554→                    {/* Date Range */}
+   555→                    <div className="space-y-2">
+   556→                      <Label className="text-sm font-semibold">Date Range</Label>
+   557→                      <div className="flex flex-col sm:flex-row items-center gap-3">
+   558→                        <div className="flex items-center gap-2 flex-1 w-full">
+   559→                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+   560→                          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1" />
+   561→                        </div>
+   562→                        <span className="text-muted-foreground text-sm hidden sm:block">to</span>
+   563→                        <div className="flex items-center gap-2 flex-1 w-full">
+   564→                          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+   565→                          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1" />
+   566→                        </div>
+   567→                      </div>
+   568→                    </div>
+   569→
+   570→                    <Separator />
+   571→
+   572→                    {/* Project & Client Filters */}
+   573→                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   574→                      <div className="space-y-2">
+   575→                        <Label className="text-sm font-semibold">Project</Label>
+   576→                        <Select value={selectedProject} onValueChange={setSelectedProject}>
+   577→                          <SelectTrigger className="w-full">
+   578→                            <Briefcase className="h-4 w-4 mr-1 text-muted-foreground" />
+   579→                            <SelectValue placeholder="Select project" />
+   580→                          </SelectTrigger>
+   581→                          <SelectContent>
+   582→                            {projectOptions.map((p) => (
+   583→                              <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+   584→                            ))}
+   585→                          </SelectContent>
+   586→                        </Select>
+   587→                      </div>
+   588→                      <div className="space-y-2">
+   589→                        <Label className="text-sm font-semibold">Client</Label>
+   590→                        <Select value={selectedClient} onValueChange={setSelectedClient}>
+   591→                          <SelectTrigger className="w-full">
+   592→                            <Briefcase className="h-4 w-4 mr-1 text-muted-foreground" />
+   593→                            <SelectValue placeholder="Select client" />
+   594→                          </SelectTrigger>
+   595→                          <SelectContent>
+   596→                            {clientOptions.map((c) => (
+   597→                              <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+   598→                            ))}
+   599→                          </SelectContent>
+   600→                        </Select>
+   601→                      </div>
+   602→                    </div>
+   603→
+   604→                    <Separator />
+   605→
+   606→                    {/* Evidence Type Filter */}
+   607→                    <div className="space-y-3">
+   608→                      <Label className="text-sm font-semibold">Evidence Types</Label>
+   609→                      {evidenceTypes.length === 0 ? (
+   610→                        <div className="text-center py-6 text-muted-foreground">
+   611→                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-40" />
+   612→                          <p className="text-sm">No evidence types collected yet</p>
+   613→                        </div>
+   614→                      ) : (
+   615→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   616→                          {evidenceTypes.map((type) => (
+   617→                            <label
+   618→                              key={type.id}
+   619→                              className={`
+   620→                                flex items-center gap-3 rounded-lg border p-3 transition-all cursor-pointer
+   621→                                ${selectedEvidenceTypes.includes(type.id)
+   622→                                  ? "border-primary bg-primary/5"
+   623→                                  : "border-border hover:border-primary/30 hover:bg-accent/30"
+   624→                                }
+   625→                              `}
+   626→                            >
+   627→                              <Checkbox
+   628→                                checked={selectedEvidenceTypes.includes(type.id)}
+   629→                                onCheckedChange={() => toggleEvidenceType(type.id)}
+   630→                              />
+   631→                              <div className="flex items-center gap-2 flex-1">
+   632→                                <span className="text-muted-foreground">{type.icon}</span>
+   633→                                <span className="text-sm font-medium">{type.label}</span>
+   634→                              </div>
+   635→                              <Badge variant="secondary" className="text-[10px] font-mono">{type.count}</Badge>
+   636→                            </label>
+   637→                          ))}
+   638→                        </div>
+   639→                      )}
+   640→                    </div>
+   641→                  </CardContent>
+   642→                </Card>
+   643→              </div>
+   644→
+   645→              {/* Right Column: Preview & Actions */}
+   646→              <div className="space-y-6">
+   647→                {/* Export Preview */}
+   648→                <Card>
+   649→                  <CardHeader>
+   650→                    <CardTitle className="flex items-center gap-2">
+   651→                      <Eye className="h-5 w-5 text-primary" />
+   652→                      Export Preview
+   653→                    </CardTitle>
+   654→                    <CardDescription>Summary of what will be included.</CardDescription>
+   655→                  </CardHeader>
+   656→                  <CardContent className="space-y-4">
+   657→                    <div className="space-y-3">
+   658→                      <div className="flex items-center justify-between text-sm">
+   659→                        <span className="text-muted-foreground">Format</span>
+   660→                        <div className="flex items-center gap-1.5">
+   661→                          <span className={FORMAT_CONFIG[selectedFormat].color}>{FORMAT_CONFIG[selectedFormat].icon}</span>
+   662→                          <span className="font-medium">{FORMAT_CONFIG[selectedFormat].label}</span>
+   663→                        </div>
+   664→                      </div>
+   665→                      <div className="flex items-center justify-between text-sm">
+   666→                        <span className="text-muted-foreground">Date Range</span>
+   667→                        <span className="font-medium">{dateFrom} → {dateTo}</span>
+   668→                      </div>
+   669→                      <div className="flex items-center justify-between text-sm">
+   670→                        <span className="text-muted-foreground">Project</span>
+   671→                        <span className="font-medium truncate ml-2 max-w-[160px]">{selectedProjectLabel}</span>
+   672→                      </div>
+   673→                      <div className="flex items-center justify-between text-sm">
+   674→                        <span className="text-muted-foreground">Client</span>
+   675→                        <span className="font-medium truncate ml-2 max-w-[160px]">{selectedClientLabel}</span>
+   676→                      </div>
+   677→                      <Separator />
+   678→                      <div className="flex items-center justify-between text-sm">
+   679→                        <span className="text-muted-foreground">Evidence Types</span>
+   680→                        <span className="font-medium">{previewItems.length} selected</span>
+   681→                      </div>
+   682→                      {previewItems.map((item) => (
+   683→                        <div key={item.id} className="flex items-center justify-between text-sm pl-4">
+   684→                          <div className="flex items-center gap-1.5 text-muted-foreground">
+   685→                            {item.icon}
+   686→                            <span>{item.label}</span>
+   687→                          </div>
+   688→                          <span className="font-mono text-xs">{item.count} items</span>
+   689→                        </div>
+   690→                      ))}
+   691→                      <Separator />
+   692→                      <div className="flex items-center justify-between text-sm font-semibold">
+   693→                        <span>Total Items</span>
+   694→                        <span className="text-primary">{totalEvidenceItems}</span>
+   695→                      </div>
+   696→                    </div>
+   697→
+   698→                    <Separator />
+   699→
+   700→                    {/* Compliance Badge */}
+   701→                    {hasTierAccess(tier, "pro") && (
+   702→                      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 p-3">
+   703→                        <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+   704→                        <div>
+   705→                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Compliance Verified</p>
+   706→                          <p className="text-xs text-emerald-700 dark:text-emerald-300">
+   707→                            Export will include cryptographic proof of authenticity
+   708→                          </p>
+   709→                        </div>
+   710→                      </div>
+   711→                    )}
+   712→
+   713→                    {/* Actions */}
+   714→                    <div className="space-y-3 pt-1">
+   715→                      <Button
+   716→                        className="w-full"
+   717→                        size="lg"
+   718→                        onClick={handleExport}
+   719→                        disabled={isExporting || selectedEvidenceTypes.length === 0}
+   720→                      >
+   721→                        {isExporting ? (
+   722→                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Exporting...</>
+   723→                        ) : (
+   724→                          <><Download className="mr-2 h-4 w-4" />Export {FORMAT_CONFIG[selectedFormat].label}</>
+   725→                        )}
+   726→                      </Button>
+   727→
+   728→                      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+   729→                        <DialogTrigger asChild>
+   730→                          <Button variant="outline" className="w-full" size="lg">
+   731→                            <Eye className="mr-2 h-4 w-4" />
+   732→                            Full Preview
+   733→                          </Button>
+   734→                        </DialogTrigger>
+   735→                        <DialogContent className="sm:max-w-lg">
+   736→                          <DialogHeader>
+   737→                            <DialogTitle>Export Preview — {FORMAT_CONFIG[selectedFormat].label}</DialogTitle>
+   738→                            <DialogDescription>Detailed breakdown of your evidence export package.</DialogDescription>
+   739→                          </DialogHeader>
+   740→                          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
+   741→                            <div className="rounded-lg border p-4 space-y-3">
+   742→                              <h4 className="text-sm font-semibold">Package Details</h4>
+   743→                              <div className="grid grid-cols-2 gap-2 text-sm">
+   744→                                <span className="text-muted-foreground">Format:</span>
+   745→                                <span className="font-medium">{FORMAT_CONFIG[selectedFormat].label}</span>
+   746→                                <span className="text-muted-foreground">Total Items:</span>
+   747→                                <span className="font-medium">{totalEvidenceItems}</span>
+   748→                                <span className="text-muted-foreground">Est. Size:</span>
+   749→                                <span className="font-medium">~{(totalEvidenceItems * 0.12).toFixed(1)} MB</span>
+   750→                                <span className="text-muted-foreground">Compliance:</span>
+   751→                                <span className="font-medium">{hasTierAccess(tier, "pro") ? "✓ Verified" : "— Upgrade required"}</span>
+   752→                              </div>
+   753→                            </div>
+   754→                            <div className="rounded-lg border p-4 space-y-3">
+   755→                              <h4 className="text-sm font-semibold">Included Evidence</h4>
+   756→                              {previewItems.length === 0 ? (
+   757→                                <p className="text-sm text-muted-foreground">No evidence types selected.</p>
+   758→                              ) : (
+   759→                                previewItems.map((item) => (
+   760→                                  <div key={item.id} className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0">
+   761→                                    <div className="flex items-center gap-2">{item.icon}<span>{item.label}</span></div>
+   762→                                    <div className="flex items-center gap-2">
+   763→                                      <span className="font-mono text-xs text-muted-foreground">{item.count} items</span>
+   764→                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+   765→                                    </div>
+   766→                                  </div>
+   767→                                ))
+   768→                              )}
+   769→                            </div>
+   770→                            <div className="rounded-lg border p-4 space-y-2">
+   771→                              <h4 className="text-sm font-semibold">Filters Applied</h4>
+   772→                              <div className="flex flex-wrap gap-2">
+   773→                                <Badge variant="outline"><Calendar className="h-3 w-3 mr-1" />{dateFrom} → {dateTo}</Badge>
+   774→                                <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedProjectLabel}</Badge>
+   775→                                <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedClientLabel}</Badge>
+   776→                              </div>
+   777→                            </div>
+   778→                          </div>
+   779→                          <DialogFooter>
+   780→                            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Close</Button>
+   781→                            <Button onClick={() => { setPreviewOpen(false); handleExport(); }} disabled={isExporting}>
+   782→                              <Download className="mr-2 h-4 w-4" />Export Now
+   783→                            </Button>
+   784→                          </DialogFooter>
+   785→                        </DialogContent>
+   786→                      </Dialog>
+   787→                    </div>
+   788→                  </CardContent>
+   789→                </Card>
+   790→
+   791→                {/* Tier Info */}
+   792→                {!hasTierAccess(tier, "pro") && (
+   793→                  <Card className="border-amber-200 dark:border-amber-800">
+   794→                    <CardContent className="p-5">
+   795→                      <div className="flex items-start gap-3">
+   796→                        <div className="rounded-lg bg-amber-100 dark:bg-amber-900/30 p-2 shrink-0">
+   797→                          <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+   798→                        </div>
+   799→                        <div className="space-y-1">
+   800→                          <p className="text-sm font-semibold">Unlock Full Export Features</p>
+   801→                          <p className="text-xs text-muted-foreground">
+   802→                            Upgrade to Pro or Expert to export PDF and Legal Packages with compliance verification and cryptographic seals.
+   803→                          </p>
+   804→                          <Button variant="outline" size="sm" className="mt-2 text-xs">
+   805→                            <ChevronDown className="mr-1 h-3 w-3" />View Plans
+   806→                          </Button>
+   807→                        </div>
+   808→                      </div>
+   809→                    </CardContent>
+   810→                  </Card>
+   811→                )}
+   812→              </div>
+   813→            </div>
+   814→
+   815→            {/* Recent Exports */}
+   816→            <Card>
+   817→              <CardHeader>
+   818→                <CardTitle className="flex items-center gap-2">
+   819→                  <FileText className="h-5 w-5 text-primary" />
+   820→                  Recent Exports
+   821→                </CardTitle>
+   822→                <CardDescription>Your latest evidence export history.</CardDescription>
+   823→              </CardHeader>
+   824→              <CardContent>
+   825→                {recentExports.length === 0 ? (
+   826→                  <div className="text-center py-8 text-muted-foreground">
+   827→                    <Download className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   828→                    <p className="text-sm">No exports yet. Create your first export above.</p>
+   829→                  </div>
+   830→                ) : (
+   831→                  <div className="space-y-3">
+   832→                    {recentExports.map((exp, idx) => {
+   833→                      const fmtConfig = FORMAT_CONFIG[exp.format];
+   834→                      const statusConfig = STATUS_CONFIG[exp.status];
+   835→
+   836→                      return (
+   837→                        <motion.div
+   838→                          key={exp.id}
+   839→                          initial={{ opacity: 0, y: 12 }}
+   840→                          animate={{ opacity: 1, y: 0 }}
+   841→                          transition={{ delay: idx * 0.05, duration: 0.25 }}
+   842→                        >
+   843→                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border p-4 hover:bg-accent/30 transition-colors">
+   844→                            <div className={`shrink-0 rounded-lg border p-2.5 bg-background ${fmtConfig.color}`}>
+   845→                              {fmtConfig.icon}
+   846→                            </div>
+   847→                            <div className="flex-1 min-w-0 space-y-1">
+   848→                              <div className="flex items-center gap-2 flex-wrap">
+   849→                                <p className="text-sm font-semibold truncate">{exp.name}</p>
+   850→                                {exp.complianceVerified && (
+   851→                                  <Badge variant="outline" className="border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300 gap-1 text-[10px] px-1.5 py-0">
+   852→                                    <ShieldCheck className="h-3 w-3" />Verified
+   853→                                  </Badge>
+   854→                                )}
+   855→                              </div>
+   856→                              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+   857→                                <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{exp.project}</span>
+   858→                                <span>{exp.itemCount} items</span>
+   859→                                {exp.size !== "—" && <span>{exp.size}</span>}
+   860→                              </div>
+   861→                            </div>
+   862→                            <div className="flex items-center gap-3 shrink-0">
+   863→                              <Badge variant={statusConfig.badgeVariant} className="gap-1">
+   864→                                {statusConfig.icon}{statusConfig.label}
+   865→                              </Badge>
+   866→                              <span className="text-xs text-muted-foreground whitespace-nowrap">{exp.date}</span>
+   867→                              {exp.status === "completed" && (
+   868→                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+   869→                                  exportEvidence(exp.format, {
+   870→                                    evidenceTypes: evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id)).map((t) => ({ id: t.id, label: t.label, count: t.count })),
+   871→                                    dateRange: `${dateFrom} to ${dateTo}`,
+   872→                                    project: exp.project,
+   873→                                    client: "All Clients",
+   874→                                    complianceScore,
+   875→                                    totalItems: exp.itemCount,
+   876→                                  });
+   877→                                  toast.success("Download started", { description: exp.name });
+   878→                                }}>
+   879→                                  <Download className="h-4 w-4" />
+   880→                                </Button>
+   881→                              )}
+   882→                              {exp.status === "failed" && (
+   883→                                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => toast.info("Retry initiated", { description: "Re-attempting export..." })}>
+   884→                                  Retry
+   885→                                </Button>
+   886→                              )}
+   887→                            </div>
+   888→                          </div>
+   889→                        </motion.div>
+   890→                      );
+   891→                    })}
+   892→                  </div>
+   893→                )}
+   894→              </CardContent>
+   895→            </Card>
+   896→          </>
+   897→        )}
+   898→      </PageLayout>
+   899→    </motion.div>
+   900→  );
+   901→}
+   902→

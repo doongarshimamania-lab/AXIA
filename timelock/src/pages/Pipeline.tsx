@@ -71,6 +71,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -907,11 +908,11 @@ export default function Pipeline() {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
-      <div className="p-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold tracking-tight mb-1">
+            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight mb-1">
               Deal Pipeline
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -992,6 +993,7 @@ export default function Pipeline() {
             icon={<Target className="h-5 w-5" />}
             label="Win Rate"
             value={isLoading ? "—" : `${winRate}%`}
+            subtitle="Won vs Lost deals"
             accent="#22c55e"
           />
         </div>
@@ -1123,7 +1125,7 @@ export default function Pipeline() {
             })}
           </div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Create Deal Dialog ── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -1979,7 +1981,7 @@ function StatsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="py-4 gap-3 hover:shadow-md transition-shadow">
+      <Card className="py-4 gap-3 hover:shadow-md transition-shadow min-h-[88px]">
         <CardHeader className="pb-0 pt-0 px-4">
           <div className="flex items-center gap-2">
             <div
@@ -1995,11 +1997,9 @@ function StatsCard({
         </CardHeader>
         <CardContent className="pt-0 px-4">
           <p className="text-2xl font-bold tracking-tight">{value}</p>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {subtitle}
-            </p>
-          )}
+          <p className="text-[11px] text-muted-foreground mt-0.5 min-h-[16px]">
+            {subtitle ?? "\u00A0"}
+          </p>
         </CardContent>
       </Card>
     </motion.div>

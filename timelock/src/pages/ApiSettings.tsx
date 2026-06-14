@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // --- Types ---
 interface ApiKey {
@@ -284,7 +285,7 @@ export default function ApiSettings() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <PageLayout narrow>
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -755,7 +756,7 @@ export default function ApiSettings() {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </PageLayout>
       </div>
 
       {/* Create API Key Dialog */}

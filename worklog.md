@@ -163,3 +163,132 @@ Stage Summary:
 - All "Loading Timed Out" error cards: REMOVED (replaced with content-first pattern)
 - Architecture: Pages now always show content, never blocking error cards
 - Build succeeds, all pages tested
+---
+Task ID: data-flow-p0-p2-fixes
+Agent: Main Agent
+Task: Fix all priority data flow bugs (P0, P1, P2) from Axia Data Flow Architecture analysis
+
+Work Log:
+- Analyzed Axia_Data_Flow_Architecture.pdf and AXIA_Brand_Identity_Analysis.pdf line by line
+- Verified document claims against actual codebase (found document 70% accurate but outdated on several claims)
+- P0 FIX: Created src/convex/evidence/extension.ts with 3 internal mutations
+  - startEvidenceSession: creates evidenceSession record (was just echoing sessionId)
+  - recordEvidenceEvents: batch-inserts events into evidenceEvents table (was discarding all data)
+  - finalizeEvidenceSession: marks session finalized, computes evidence metadata, creates compliance alerts
+- P0 FIX: Updated src/convex/http.ts to call real internal mutations instead of returning success without persisting
+  - /api/extension/start now calls startEvidenceSession
+  - /api/extension/record now validates, sanitizes, caps at 500 events, and calls recordEvidenceEvents
+  - /api/extension/finalize now calls finalizeEvidenceSession
+- P1 FIX: Updated src/convex/proposals/crud.ts signProposal mutation
+  - Now auto-creates project when proposal is signed (with all fields from proposal)
+  - Now auto-creates scopeDefinition from proposal sections/deliverables
+  - Both cascades are non-blocking (proposal signing succeeds even if cascade fails)
+- P1 FIX: Updated src/pages/Projects.tsx to consume createFromProposal URL param
+- P1 FIX: Rewrote src/convex/wcvm/contextScanner.ts
+  - Now fetches real clientPolicies from database instead of hardcoded mock requirements
+  - Extracted shared analysis logic to eliminate 200-line code duplication
+  - Falls back to default requirements when no client-specific policies exist
+- Schema updates:
+  - complianceAlerts: added session_rejected, low_activity alert types
+  - evidenceMetadata: added evidenceSessionId field
+  - projects: added proposalId, protectionScore, totalHours, totalValue, atRiskAmount, rejectedHours, activeSession, by_proposal index
+- Also: ThemeProvider respects OS dark/light preference, .env.example created
+- Built successfully with Vite, deployed to disk/
+- Committed and pushed to GitHub
+- Created GitHub Release v4.0.0-data-flow-fixes with zip backup
+
+Stage Summary:
+- 16 files changed, 768 insertions, 425 deletions
+- P0 (critical data loss bug): FIXED — extension endpoints now persist evidence data
+- P1 (proposal cascade): FIXED — signed proposals auto-create project + scope
+- P1 (WCVM policies): FIXED — uses real clientPolicies instead of hardcoded mock
+- Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v4.0.0-data-flow-fixes
+- Zip: /home/z/my-project/download/AXIA-v4.0.0-data-flow-fixes.zip
+---
+Task ID: 4
+Agent: Sub Agent
+Task: Fix sidebar-to-page gap inconsistency across all dashboard pages
+
+Work Log:
+- Identified 7 pages with inconsistent inner div padding patterns
+- Pages that used `p-4 md:p-8`, `p-6 space-y-6`, or `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` had inconsistent gaps from the sidebar
+- Standardized all 7 pages to use `container mx-auto px-4 py-6` (with `space-y-6` where the original had spacing):
+  1. Clients.tsx: `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  2. Pipeline.tsx: `p-6 space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  3. Scope.tsx: `flex-1 transition-all duration-300 p-4 md:p-8 space-y-4 md:space-y-6` → `container mx-auto px-4 py-6 space-y-6`
+  4. AccountSettings.tsx: `p-4 md:p-8` → `container mx-auto px-4 py-6`
+  5. TeamManagement.tsx: two instances of `p-4 md:p-8` → `container mx-auto px-4 py-6`
+  6. EvidenceLibrary.tsx: `p-4 md:p-8 space-y-4 md:space-y-8` → `container mx-auto px-4 py-6 space-y-6`
+  7. EvidenceExport.tsx: `p-6 md:p-8 space-y-8` → `container mx-auto px-4 py-6 space-y-6`
+- Verified no remaining old padding patterns exist in pages directory
+- Verified build succeeds (13.26s)
+- Pages already using correct pattern (unchanged): Dashboard, Goals, Reports, TimeTracking, Tags, Proposals, Projects, PaymentPatterns, Subscription, ApiSettings, HelpCenter, ProposalBuilder, PlatformIntegrations, Invoices
+
+Stage Summary:
+- 7 files edited, 8 className replacements
+- All dashboard pages now use consistent `container mx-auto px-4 py-6` pattern
+- Content is properly centered with consistent sidebar-to-page gap
+- Build passes successfully
+---
+Task ID: 1
+Agent: Main
+Task: Fix sidebar gaps, create centralized layout, add active page indicator, build notification system
+
+Work Log:
+- Created centralized `PageLayout` component in `src/components/design-system/PageLayout.tsx`
+- Updated all 22 sidebar pages to use `PageLayout` instead of hardcoded `px-6 py-6 max-w-*` patterns
+- Added `useLocation` to `CollapsibleSidebar` for current path detection
+- Added `isActive` prop to all NavItem instances (expanded, collapsed, mobile views)
+- Enhanced `NavItem` component with left-border active indicator (`border-l-2 border-l-primary bg-primary/15`)
+- Collapsed view icons get `bg-primary/20 text-primary` active state
+- Created `useNotifications` hook in `src/hooks/use-notifications.ts` with localStorage persistence
+- Created `NotificationCenter` component in `src/components/NotificationCenter.tsx` with portal-based dropdown
+- Integrated notification bell into sidebar header (both expanded and collapsed) + mobile header
+- Only "reaction" notifications shown (client viewed proposal, payment received, invoice overdue, etc.)
+- NOT self-initiated actions (I added leads, I created deal)
+- Unseen notifications have `bg-primary/[0.08] border-l-2 border-l-primary` + pulsing dot
+- Click marks as seen + navigates to page
+- "Mark all as read" action available
+- Badge count on bell icon (red circle with count)
+- Removed inline notification system from Dashboard.tsx
+- Changed Tags icon from Settings to Tag in sidebar
+- Build passes, pushed to GitHub
+
+Stage Summary:
+- All sidebar pages now use centralized PageLayout component
+- Active page shows highlighted indicator in sidebar with left border
+- Global notification system with seen/unseen states, click-to-mark-seen
+- Notification bell in sidebar + mobile header
+- Build succeeds, pushed to main branch
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix notification bell overlapping, messages gap, notification persistence, and channel member selection
+
+Work Log:
+- Analyzed uploaded screenshot showing messaging UI with overlapping elements
+- Read DashboardLayout in main.tsx — bell was using absolute positioning (top-5 right-6 z-50) which overlapped page content
+- Read NotificationCenter, use-notifications hook, Messages page, ChannelList component
+- Fixed DashboardLayout: Replaced absolute-positioned bell with inline top bar (h-14, border-bottom, flex-shrink-0) that's part of content flow
+- Fixed Messages page height: Changed from h-[calc(100vh-4rem)] to h-[calc(100vh-3.5rem)] to account for the new top bar
+- Rewrote use-notifications hook with last-seen-count persistence:
+  - Changed from Set<string> of dedup keys to Record<string, number> of last seen counts
+  - Stable dedupKeys (e.g., "proposal-viewed") instead of count-dependent keys ("proposal-viewed-3")
+  - Notification is "seen" when currentValue <= lastSeenValue
+  - Only appears as unseen when count increases beyond previously seen value
+  - New localStorage key: axia_notifications_last_seen
+- Added member selection to Create Channel dialog in ChannelList:
+  - New AvailableMember interface and availableMembers prop
+  - Search/filter members, toggle selection with visual chips
+  - Pass selected memberIds to onCreateChannel callback
+- Updated Messages.tsx to pass availableMembers and handle memberIds in channel creation
+- Updated bell icon colors from sidebar-specific to standard foreground colors
+- Built successfully, committed, pushed to GitHub, tagged as v1.2.0
+
+Stage Summary:
+- Notification bell no longer overlaps page content — sits in a proper inline top bar
+- Messages page fills available height correctly
+- Notifications persist across page navigation — only re-appear when counts increase
+- Channel creation now supports adding members
+- All changes pushed to main branch and tagged as v1.2.0

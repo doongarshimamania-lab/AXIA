@@ -1,11 +1,6 @@
 :81 {
-	api path /api/*
 	@transform_port_query {
 		query XTransformPort=*
-	}
-
-	handle @api {
-		reverse_proxy localhost:3210
 	}
 
 	handle @transform_port_query {
@@ -18,5 +13,13 @@
 }
 
 preview-81.space-z.ai {
+	reverse_proxy localhost:3000
+}
+
+axia.space-z.ai {
+	reverse_proxy localhost:3000
+}
+
+timelock.space-z.ai {
 	reverse_proxy localhost:3000
 }

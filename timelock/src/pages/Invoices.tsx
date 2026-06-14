@@ -44,6 +44,7 @@ import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions, type RecordWithSharing } from "@/hooks/use-permissions";
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -360,11 +361,11 @@ export default function Invoices() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-4 py-6">
+      <PageLayout>
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1
-            className="text-[32px] font-bold text-foreground tracking-tight mb-2"
+            className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Invoices
@@ -790,8 +791,8 @@ export default function Invoices() {
                                   <h4 className="text-[13px] font-semibold text-foreground mb-3">
                                     Line Items
                                   </h4>
-                                  <div className="rounded-lg border border-border overflow-hidden bg-background">
-                                    <table className="w-full text-[13px]">
+                                  <div className="rounded-lg border border-border overflow-x-auto bg-background">
+                                    <table className="w-full text-[13px] min-w-[400px]">
                                       <thead>
                                         <tr className="border-b border-border bg-muted/50">
                                           <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">
@@ -1006,7 +1007,7 @@ export default function Invoices() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </PageLayout>
 
       {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>

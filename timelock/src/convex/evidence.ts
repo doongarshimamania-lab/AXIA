@@ -76,13 +76,18 @@ export const recordEvents = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
 
     // Validate evidence session exists and is active
     const evidenceSession = await ctx.db.get(args.evidenceSessionId);
     if (!evidenceSession || evidenceSession.status !== "active") {
       throw new Error("Evidence session not found or not active");
+    }
+
+    // SECURITY: Verify the evidence session belongs to the authenticated user
+    if (evidenceSession.userId !== user._id) {
+      throw new Error("Not authorized to record events for this session");
     }
 
     // Chunk events to stay under Convex limits (max 500 per batch)
@@ -116,12 +121,17 @@ export const finalizeEvidenceSession = mutation({
     evidenceSessionId: v.id("evidenceSessions"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
 
     const evidenceSession = await ctx.db.get(args.evidenceSessionId);
     if (!evidenceSession) {
       throw new Error("Evidence session not found");
+    }
+
+    // SECURITY: Verify the evidence session belongs to the authenticated user
+    if (evidenceSession.userId !== user._id) {
+      throw new Error("Not authorized to finalize this session");
     }
 
     await ctx.db.patch(args.evidenceSessionId, {

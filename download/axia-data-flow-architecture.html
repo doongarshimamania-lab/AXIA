@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axia Data Flow Architecture</title>
+<style>
+:root {
+  --page-bg: #f2f3f3;
+  --section-bg: #e8e9ea;
+  --card-bg: #e6eaeb;
+  --table-stripe: #f0f1f2;
+  --header-fill: #36515e;
+  --cover-block: #4a616d;
+  --border: #aabfc9;
+  --icon: #466a7d;
+  --accent: #b9263f;
+  --accent-secondary: #8548b0;
+  --text-primary: #191b1c;
+  --text-muted: #707679;
+  --semantic-success: #39794f;
+  --semantic-warning: #907747;
+  --semantic-error: #99473f;
+  --semantic-info: #537292;
+}
+
+@page {
+  size: A4;
+  margin: 20mm 18mm;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--page-bg);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Cover Page ── */
+.cover {
+  page-break-after: always;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(145deg, var(--cover-block) 0%, #2a3e49 60%, #1e2e38 100%);
+  color: white;
+  padding: 60px 40px;
+}
+.cover .kicker {
+  font-size: 11pt;
+  letter-spacing: 4pt;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 20px;
+}
+.cover h1 {
+  font-size: 38pt;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  max-width: 600px;
+}
+.cover .subtitle {
+  font-size: 14pt;
+  opacity: 0.75;
+  max-width: 520px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+.cover .meta {
+  font-size: 9pt;
+  opacity: 0.5;
+  margin-top: 60px;
+}
+.cover .divider {
+  width: 80px;
+  height: 3px;
+  background: var(--accent);
+  margin: 24px auto;
+  border-radius: 2px;
+}
+
+/* ── TOC ── */
+.toc {
+  page-break-after: always;
+  padding: 40px 0;
+}
+.toc h2 {
+  font-size: 18pt;
+  color: var(--header-fill);
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 8px;
+}
+.toc-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--border);
+  font-size: 10pt;
+}
+.toc-item.level-1 { font-weight: 600; padding-left: 0; }
+.toc-item.level-2 { font-weight: 400; padding-left: 20px; color: var(--text-muted); }
+
+/* ── Section Styles ── */
+.section {
+  page-break-inside: avoid;
+  margin-bottom: 28px;
+}
+h2.section-title {
+  font-size: 16pt;
+  color: var(--header-fill);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  page-break-after: avoid;
+}
+h3 {
+  font-size: 12pt;
+  color: var(--icon);
+  margin: 16px 0 8px 0;
+  page-break-after: avoid;
+}
+h4 {
+  font-size: 10.5pt;
+  color: var(--cover-block);
+  margin: 12px 0 6px 0;
+}
+p {
+  margin-bottom: 8px;
+  text-align: justify;
+  hyphens: auto;
+}
+ul, ol { margin: 8px 0 12px 20px; }
+li { margin-bottom: 4px; }
+
+/* ── Data Tables ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 16px 0;
+  font-size: 8.5pt;
+  page-break-inside: avoid;
+}
+th {
+  background: var(--header-fill);
+  color: white;
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+}
+td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: var(--table-stripe); }
+
+/* ── Cards ── */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  page-break-inside: avoid;
+}
+.card-header {
+  font-weight: 700;
+  font-size: 10pt;
+  color: var(--header-fill);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card .badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+}
+.badge-green { background: #d4edda; color: var(--semantic-success); }
+.badge-amber { background: #fff3cd; color: var(--semantic-warning); }
+.badge-red { background: #f8d7da; color: var(--semantic-error); }
+.badge-blue { background: #d1ecf1; color: var(--semantic-info); }
+.badge-purple { background: #e8daef; color: var(--accent-secondary); }
+
+/* ── Flow Diagrams ── */
+.flow-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+  justify-content: center;
+}
+.flow-node {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+  min-width: 100px;
+  max-width: 150px;
+  page-break-inside: avoid;
+}
+.flow-node.primary {
+  border-color: var(--accent);
+  background: #fef5f6;
+}
+.flow-node.success {
+  border-color: var(--semantic-success);
+  background: #f0faf3;
+}
+.flow-node.warning {
+  border-color: var(--semantic-warning);
+  background: #fdf8ef;
+}
+.flow-node.info {
+  border-color: var(--semantic-info);
+  background: #eef4f9;
+}
+.flow-node .node-title {
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.flow-node .node-sub {
+  font-size: 7pt;
+  color: var(--text-muted);
+}
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 14pt;
+}
+
+/* ── Status Indicators ── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.status-connected { background: var(--semantic-success); }
+.status-partial { background: var(--semantic-warning); }
+.status-disconnected { background: var(--semantic-error); }
+.status-unused { background: var(--text-muted); }
+
+/* ── Grid Layouts ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+/* ── Callout Boxes ── */
+.callout {
+  border-left: 4px solid;
+  padding: 10px 14px;
+  margin: 12px 0;
+  border-radius: 0 4px 4px 0;
+  page-break-inside: avoid;
+}
+.callout-danger { border-color: var(--semantic-error); background: #fef5f5; }
+.callout-warning { border-color: var(--semantic-warning); background: #fefbf3; }
+.callout-success { border-color: var(--semantic-success); background: #f3faf5; }
+.callout-info { border-color: var(--semantic-info); background: #f0f5fa; }
+.callout-title {
+  font-weight: 700;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  margin-bottom: 4px;
+}
+
+/* ── Page Breaks ── */
+.page-break { page-break-before: always; }
+
+/* ── Compact list ── */
+.compact-list { list-style: none; padding: 0; margin: 6px 0; }
+.compact-list li { padding: 2px 0; font-size: 8.5pt; }
+.compact-list li::before { content: ""; }
+
+/* ── Data Model Diagram ── */
+.entity-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 4px;
+  font-size: 8pt;
+}
+.entity-box .entity-name {
+  font-weight: 700;
+  color: var(--header-fill);
+  font-size: 8.5pt;
+}
+.entity-box .entity-fields {
+  font-size: 7pt;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.entity-relationship {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 7pt;
+  color: var(--text-muted);
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-size: 8pt;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ COVER PAGE ═══════════════════ -->
+<div class="cover">
+  <div class="kicker">Technical Architecture Document</div>
+  <h1>Axia Data Flow Architecture</h1>
+  <div class="divider"></div>
+  <div class="subtitle">
+    Complete mapping of user journeys, data flows, component connections,
+    and disconnection gaps across the entire Axia platform.
+  </div>
+  <div class="meta">
+    Version 1.0 &middot; June 2026 &middot; Confidential
+  </div>
+</div>
+
+<!-- ═══════════════════ TABLE OF CONTENTS ═══════════════════ -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <div class="toc-item level-1"><span>1. Executive Summary</span></div>
+  <div class="toc-item level-1"><span>2. User Journey Map</span></div>
+  <div class="toc-item level-2"><span>2.1 Public Journey (Unauthenticated)</span></div>
+  <div class="toc-item level-2"><span>2.2 Authenticated User Journey</span></div>
+  <div class="toc-item level-2"><span>2.3 Client Portal Journey</span></div>
+  <div class="toc-item level-1"><span>3. Data Model Relationships</span></div>
+  <div class="toc-item level-2"><span>3.1 Core Entity Map</span></div>
+  <div class="toc-item level-2"><span>3.2 Workspace-Centric Data Hierarchy</span></div>
+  <div class="toc-item level-1"><span>4. Page-by-Page Data Flow Audit</span></div>
+  <div class="toc-item level-2"><span>4.1 Pages With Full Data Connectivity</span></div>
+  <div class="toc-item level-2"><span>4.2 Pages With Partial Connectivity</span></div>
+  <div class="toc-item level-2"><span>4.3 Pages With No Data / Blank States</span></div>
+  <div class="toc-item level-1"><span>5. Cross-Page Data Dependencies</span></div>
+  <div class="toc-item level-1"><span>6. Disconnection Map: What's Missing</span></div>
+  <div class="toc-item level-2"><span>6.1 Backend Queries With No Frontend Page</span></div>
+  <div class="toc-item level-2"><span>6.2 Frontend Pages Missing Data Connections</span></div>
+  <div class="toc-item level-2"><span>6.3 Critical Missing Routes</span></div>
+  <div class="toc-item level-1"><span>7. Recommendations: Connecting the Dots</span></div>
+  <div class="toc-item level-2"><span>7.1 Priority 1: Missing Pages (End-to-End Gaps)</span></div>
+  <div class="toc-item level-2"><span>7.2 Priority 2: Data Bridge Connections</span></div>
+  <div class="toc-item level-2"><span>7.3 Priority 3: Unused Backend Surface</span></div>
+  <div class="toc-item level-1"><span>8. Architecture Diagram</span></div>
+</div>
+
+<!-- ═══════════════════ SECTION 1 ═══════════════════ -->
+<div class="section">
+  <h2 class="section-title">1. Executive Summary</h2>
+
+  <p>
+    Axia is a payment protection platform for agencies and freelancers working on platforms like Upwork, Fiverr, and Toptal.
+    The application is built on Vite + React 19 with a Convex backend, comprising 33 page components, approximately 48 query
+    calls, and 68 mutation calls across the frontend. The Convex backend exports roughly 150+ query functions, 80+ mutation
+    functions, and 1 action function across 60+ module files.
+  </p>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">Key Finding</div>
+    <p>
+      <strong>40-50% of backend queries are never called from any frontend page.</strong> The backend has been "forward-built"
+      with extensive functionality (compliance alerts, protection plans, milestone tracking, evidence analytics, network connections)
+      that has no corresponding UI. Conversely, a few pages (Projects, InvoiceBuilder, ProposalBuilder) render sparse or empty
+      content when the backend is unavailable, lacking proper demo data fallbacks.
+    </p>
+  </div>
+
+  <p>
+    This document maps the complete data flow architecture: how users navigate the platform, which data flows between pages,
+    which sub-components consume which queries, and where the critical gaps exist. The goal is to provide a clear roadmap for
+    connecting the remaining dots so that every piece of backend functionality has a visible, usable frontend surface.
+  </p>
+
+  <div class="grid-3" style="margin-top: 16px;">
+    <div class="card">
+      <div class="card-header">33 Pages</div>
+      <p style="font-size:8.5pt">Total page components in the application, from Landing to OwnerDashboard.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">~48 Queries</div>
+      <p style="font-size:8.5pt">Active useQuery calls across all pages and shared components.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">~68 Mutations</div>
+      <p style="font-size:8.5pt">Active useMutation calls for creating, updating, and deleting data.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 2 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">2. User Journey Map</h2>
+
+  <h3>2.1 Public Journey (Unauthenticated)</h3>
+  <p>
+    Unauthenticated visitors experience a streamlined funnel: they arrive on the Landing page, join the waitlist via
+    the WaitlistForm, receive a referral code through the WaitlistSuccessModal, and can view their position on the
+    WaitlistSuccess page. The only data interactions are waitlist mutations and referral stat queries. No dashboard
+    or workspace data is accessible.
+  </p>
+
+  <div class="flow-container">
+    <div class="flow-node primary">
+      <div class="node-title">Landing (/)</div>
+      <div class="node-sub">Static marketing page</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node info">
+      <div class="node-title">WaitlistForm</div>
+      <div class="node-sub">Email signup + mutation</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node success">
+      <div class="node-title">SuccessModal</div>
+      <div class="node-sub">Referral code + stats query</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node info">
+      <div class="node-title">/waitlist/success</div>
+      <div class="node-sub">Position + referral stats</div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-title">Data Flow</div>
+    <p>
+      Landing page has zero data dependencies. WaitlistForm calls <code>addToWaitlist</code> mutation and
+      <code>getEntryByEmail</code> query. SuccessModal calls <code>getReferralStats</code> query.
+      The entire public journey is self-contained and works without authentication.
+    </p>
+  </div>
+
+  <h3>2.2 Authenticated User Journey</h3>
+  <p>
+    After authentication (via Google, GitHub, or email OTP on /auth), users enter the dashboard ecosystem. The
+    ProtectedRoute component redirects unauthenticated users to /auth. The WorkspaceProvider wraps all routes,
+    providing workspace context. The DashboardLayout provides a CollapsibleSidebar + main content area.
+  </p>
+
+  <div class="flow-container">
+    <div class="flow-node primary"><div class="node-title">/auth</div><div class="node-sub">Sign in/up</div></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node success"><div class="node-title">/dashboard</div><div class="node-sub">Home overview</div></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node info"><div class="node-title">CRUD Pages</div><div class="node-sub">Clients, Projects, etc.</div></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-node warning"><div class="node-title">Builder Pages</div><div class="node-sub">Invoice/Proposal</div></div>
+  </div>
+
+  <p>
+    The authenticated journey branches into several functional areas, each with its own data domain:
+  </p>
+
+  <table>
+    <tr>
+      <th>Functional Area</th>
+      <th>Pages</th>
+      <th>Primary Data</th>
+      <th>Cross-Dependencies</th>
+    </tr>
+    <tr>
+      <td><strong>CRM</strong></td>
+      <td>Clients, ClientWorkspace</td>
+      <td>clients table</td>
+      <td>Projects, Invoices, Proposals reference clientId</td>
+    </tr>
+    <tr>
+      <td><strong>Project Protection</strong></td>
+      <td>Projects, Scope, EvidenceLibrary</td>
+      <td>projects, scopeDefinitions</td>
+      <td>Clients (owner), WorkSessions, TimeBlocks</td>
+    </tr>
+    <tr>
+      <td><strong>Pipeline & Deals</strong></td>
+      <td>Pipeline</td>
+      <td>pipelineStages, deals</td>
+      <td>Clients (deal.clientId), Proposals (deal.proposalId)</td>
+    </tr>
+    <tr>
+      <td><strong>Billing</strong></td>
+      <td>Invoices, InvoiceBuilder, PaymentPatterns, Subscription</td>
+      <td>invoices, invoiceWorkLinks</td>
+      <td>Clients (invoice.clientId), WorkSessions</td>
+    </tr>
+    <tr>
+      <td><strong>Proposals</strong></td>
+      <td>Proposals, ProposalBuilder</td>
+      <td>proposals, proposalFollowUps</td>
+      <td>Clients, Deals (deal.proposalId)</td>
+    </tr>
+    <tr>
+      <td><strong>Time Tracking</strong></td>
+      <td>TimeTracking, EvidenceExport</td>
+      <td>workSessions, timeBlocks</td>
+      <td>Projects, EvidenceSessions</td>
+    </tr>
+    <tr>
+      <td><strong>Team & Workspace</strong></td>
+      <td>TeamManagement</td>
+      <td>workspaceMembers, teams</td>
+      <td>All workspace-scoped data</td>
+    </tr>
+    <tr>
+      <td><strong>Communication</strong></td>
+      <td>Messages</td>
+      <td>channels, messages</td>
+      <td>WorkspaceMembers (participants)</td>
+    </tr>
+    <tr>
+      <td><strong>Analytics</strong></td>
+      <td>Reports, Goals, Tags, Dashboard</td>
+      <td>disputeReports, goals, tags</td>
+      <td>WorkSessions, Projects, Invoices</td>
+    </tr>
+    <tr>
+      <td><strong>Integrations</strong></td>
+      <td>PlatformIntegrations</td>
+      <td>platformConnections</td>
+      <td>User account</td>
+    </tr>
+    <tr>
+      <td><strong>Admin</strong></td>
+      <td>OwnerDashboard</td>
+      <td>waitlistEntries (admin)</td>
+      <td>Stripe/Airtable external data</td>
+    </tr>
+  </table>
+
+  <h3>2.3 Client Portal Journey</h3>
+  <p>
+    Clients access the platform via a shared workspace token URL (/client-workspace?token=xxx). This route validates
+    the token, then loads the client's projects, proposals, invoices, and team members. Clients can view proposals
+    and invoices, mark them as viewed, and the system records their access. This is the only page that works with
+    token-based authentication instead of user authentication.
+  </p>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">Gap Identified</div>
+    <p>
+      The client portal does NOT have pages for proposal signing or scope approval. The backend has
+      <code>proposals.crud.getProposalByToken</code> and <code>scope.crud.getScopeByApprovalToken</code> queries,
+      but no frontend routes exist for clients to view proposals or approve scopes via shared links.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 3 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">3. Data Model Relationships</h2>
+
+  <h3>3.1 Core Entity Map</h3>
+  <p>
+    The Convex data model is workspace-centric: every major entity belongs to a workspace. Users can own or be
+    members of multiple workspaces. Below is the primary entity relationship map showing how data flows from
+    the user through to invoices and evidence.
+  </p>
+
+  <div class="flow-container" style="flex-direction: column; align-items: stretch; gap: 12px;">
+    <!-- Row 1: User -->
+    <div style="text-align:center">
+      <div class="flow-node primary" style="display:inline-block; min-width:140px;">
+        <div class="node-title">users</div>
+        <div class="node-sub">Auth, profile, tier</div>
+      </div>
+    </div>
+    <div style="text-align:center; color:var(--text-muted); font-size:10pt;">&darr; owns</div>
+    <!-- Row 2: Workspace -->
+    <div style="text-align:center">
+      <div class="flow-node info" style="display:inline-block; min-width:160px;">
+        <div class="node-title">workspaces</div>
+        <div class="node-sub">Central hub for all data</div>
+      </div>
+    </div>
+    <div style="text-align:center; color:var(--text-muted); font-size:10pt;">&darr; contains</div>
+    <!-- Row 3: Core entities -->
+    <div class="flow-container" style="justify-content: center;">
+      <div class="flow-node"><div class="node-title">clients</div><div class="node-sub">CRM contacts</div></div>
+      <div class="flow-node"><div class="node-title">projects</div><div class="node-sub">Protection targets</div></div>
+      <div class="flow-node"><div class="node-title">pipelineStages</div><div class="node-sub">Sales pipeline</div></div>
+      <div class="flow-node"><div class="node-title">channels</div><div class="node-sub">Messaging</div></div>
+    </div>
+    <!-- Row 4: Secondary entities -->
+    <div class="flow-container" style="justify-content: center;">
+      <div class="flow-node"><div class="node-title">invoices</div><div class="node-sub">Billing</div></div>
+      <div class="flow-node"><div class="node-title">proposals</div><div class="node-sub">Deals</div></div>
+      <div class="flow-node"><div class="node-title">deals</div><div class="node-sub">Pipeline items</div></div>
+      <div class="flow-node"><div class="node-title">messages</div><div class="node-sub">Chat</div></div>
+    </div>
+    <!-- Row 5: Tertiary entities -->
+    <div class="flow-container" style="justify-content: center;">
+      <div class="flow-node"><div class="node-title">workSessions</div><div class="node-sub">Time tracking</div></div>
+      <div class="flow-node"><div class="node-title">evidenceSessions</div><div class="node-sub">Work proof</div></div>
+      <div class="flow-node"><div class="node-title">scopeDefinitions</div><div class="node-sub">Scope mgmt</div></div>
+      <div class="flow-node"><div class="node-title">disputeReports</div><div class="node-sub">Analytics</div></div>
+    </div>
+  </div>
+
+  <h3>3.2 Workspace-Centric Data Hierarchy</h3>
+  <p>
+    The workspace is the root container for nearly all business data. Each workspace has members, teams, channels,
+    clients, and pipeline stages. Clients belong to a workspace and have projects, invoices, and deals. Projects
+    have work sessions, evidence sessions, scope definitions, and protection scores. This hierarchy ensures data
+    isolation between workspaces and provides the foundation for multi-tenant access control.
+  </p>
+
+  <table>
+    <tr>
+      <th>Parent Entity</th>
+      <th>Child Entities</th>
+      <th>Join Key</th>
+      <th>Pages That Use This Chain</th>
+    </tr>
+    <tr>
+      <td>workspaces</td>
+      <td>clients, projects, invoices, proposals, deals, pipelineStages, channels, goals, tags, scopeDefinitions, workSessions</td>
+      <td>workspaceId</td>
+      <td>Dashboard (8 queries), Clients, Invoices, Proposals, Pipeline, Scope, TimeTracking, TeamManagement, Messages</td>
+    </tr>
+    <tr>
+      <td>clients</td>
+      <td>projects, invoices, deals</td>
+      <td>clientId</td>
+      <td>Clients (enriched view), PaymentPatterns, ClientWorkspace</td>
+    </tr>
+    <tr>
+      <td>projects</td>
+      <td>workSessions, evidenceSessions, scopeDefinitions, milestoneSnapshots</td>
+      <td>projectId</td>
+      <td>Projects, EvidenceLibrary, Scope, ProtectionValueDashboard</td>
+    </tr>
+    <tr>
+      <td>invoices</td>
+      <td>invoiceWorkLinks, paymentReminders</td>
+      <td>invoiceId</td>
+      <td>Invoices, InvoiceBuilder, PaymentPatterns, Subscription</td>
+    </tr>
+    <tr>
+      <td>proposals</td>
+      <td>proposalFollowUps</td>
+      <td>proposalId</td>
+      <td>Proposals, ProposalBuilder</td>
+    </tr>
+    <tr>
+      <td>workSessions</td>
+      <td>timeBlocks, evidenceSessions, disputeReports</td>
+      <td>sessionId</td>
+      <td>TimeTracking, EvidenceLibrary, Reports</td>
+    </tr>
+    <tr>
+      <td>channels</td>
+      <td>channelMembers, messages</td>
+      <td>channelId</td>
+      <td>Messages</td>
+    </tr>
+    <tr>
+      <td>messages</td>
+      <td>reactions, mentions</td>
+      <td>messageId</td>
+      <td>Messages (thread view)</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════ SECTION 4 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">4. Page-by-Page Data Flow Audit</h2>
+
+  <h3>4.1 Pages With Full Data Connectivity <span class="badge badge-green">Connected</span></h3>
+  <p>
+    These pages have both backend queries AND demo/mock data fallbacks. They render meaningful content
+    whether the Convex backend is available or not.
+  </p>
+
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Queries Used</th>
+      <th>Mutations Used</th>
+      <th>Demo Data</th>
+    </tr>
+    <tr><td>Dashboard</td><td>8 (clients, pipeline, proposals, invoices, scope, deals)</td><td>1 (autoSeed)</td><td>Zeroed stats + "Seed Demo Data" CTA</td></tr>
+    <tr><td>Clients</td><td>1 (getClients)</td><td>4 (CRUD + share/unshare)</td><td>MOCK_CLIENTS (5 items)</td></tr>
+    <tr><td>Invoices</td><td>2 (getInvoices, getInvoiceStats)</td><td>6 (CRUD + send + seed)</td><td>MOCK_INVOICES (6 items)</td></tr>
+    <tr><td>Proposals</td><td>3 (getProposals, getProposalStats, getFollowUps)</td><td>6 (CRUD + share + seed)</td><td>MOCK_PROPOSALS</td></tr>
+    <tr><td>Pipeline</td><td>3 (getStages, getDeals, getPipelineStats)</td><td>8 (CRUD + seed + import)</td><td>MOCK_STAGES + MOCK_DEALS</td></tr>
+    <tr><td>TeamManagement</td><td>5 (members, stats, invitations, teams, teamMembers)</td><td>9 (CRUD)</td><td>MOCK_MEMBERS + MOCK_TEAMS</td></tr>
+    <tr><td>Messages</td><td>4 (channels, messages, threads, members)</td><td>7 (CRUD + reactions + pins)</td><td>Extensive mock dataset</td></tr>
+    <tr><td>TimeTracking</td><td>2 (currentSession, getSessions)</td><td>6 (start/stop/pause/resume)</td><td>MOCK_ENTRIES (5 sessions)</td></tr>
+    <tr><td>EvidenceLibrary</td><td>2 (getLibraryData, getTimeline)</td><td>0</td><td>safeEvidenceData fallback</td></tr>
+    <tr><td>Reports</td><td>1 (getUserDisputeReports)</td><td>2 (create, updateStatus)</td><td>MOCK_REPORTS (5 items)</td></tr>
+    <tr><td>Tags</td><td>1 (getTags)</td><td>3 (CRUD)</td><td>MOCK_TAGS (10 items)</td></tr>
+    <tr><td>Goals</td><td>1 (getGoals)</td><td>5 (CRUD + milestone)</td><td>MOCK_GOALS (4 items)</td></tr>
+    <tr><td>PaymentPatterns</td><td>3 (getInvoices, getInvoiceStats, getClientsEnriched)</td><td>0</td><td>MOCK_CLIENTS + MOCK_INVOICES</td></tr>
+    <tr><td>OwnerDashboard</td><td>2 (getAllWaitlistEntries, getWaitlistCount)</td><td>0</td><td>Extensive MOCK_DATA</td></tr>
+    <tr><td>Scope</td><td>3 (getScopeDefinitions, getChangeOrders x2)</td><td>4 (CRUD + approve)</td><td>MOCK_SCOPES (3 items)</td></tr>
+    <tr><td>PlatformIntegrations</td><td>1 (getPlatformConnectionStatus)</td><td>3 (connect/disconnect)</td><td>Demo mode cards</td></tr>
+    <tr><td>Subscription</td><td>2 (getInvoices, getInvoiceStats)</td><td>0</td><td>Hardcoded tier definitions</td></tr>
+    <tr><td>HelpCenter</td><td>0</td><td>0</td><td>MOCK_ARTICLES + MOCK_TICKETS</td></tr>
+    <tr><td>ClientDashboard</td><td>1 (getClientProfile)</td><td>0</td><td>mockClientProfile</td></tr>
+    <tr><td>Landing</td><td>0</td><td>0</td><td>N/A (static marketing)</td></tr>
+    <tr><td>Auth</td><td>0</td><td>0</td><td>N/A (authentication flow)</td></tr>
+  </table>
+
+  <h3>4.2 Pages With Partial Connectivity <span class="badge badge-amber">Partial</span></h3>
+  <p>
+    These pages have queries but lack demo data fallbacks. When the Convex backend is unavailable, they render
+    empty states or skeleton forms rather than meaningful content.
+  </p>
+
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Queries Used</th>
+      <th>Missing Fallback</th>
+      <th>Result When Disconnected</th>
+    </tr>
+    <tr>
+      <td>Projects</td>
+      <td>1 (getMyProjects)</td>
+      <td>No mock project data</td>
+      <td>Empty list with "Add Test Project" button. No project cards rendered.</td>
+    </tr>
+    <tr>
+      <td>InvoiceBuilder</td>
+      <td>2 (getInvoice, getWorkLinks)</td>
+      <td>No mock invoice for editing</td>
+      <td>New invoice form works, but edit mode shows empty.</td>
+    </tr>
+    <tr>
+      <td>ProposalBuilder</td>
+      <td>3 (getProposal, getDeal, getTemplates)</td>
+      <td>No mock proposal for editing</td>
+      <td>New proposal form works, but edit mode shows empty.</td>
+    </tr>
+    <tr>
+      <td>WaitlistSuccess</td>
+      <td>1 (getReferralStats)</td>
+      <td>Only zeroed fallback</td>
+      <td>Shows position: 0, referrals: 0. Still functional but uninformative.</td>
+    </tr>
+    <tr>
+      <td>EvidenceExport</td>
+      <td>3 (getLibraryData, getClients, getScopeDefinitions)</td>
+      <td>Partial mock data</td>
+      <td>Mock evidence items available but client/scope selectors empty.</td>
+    </tr>
+  </table>
+
+  <h3>4.3 Pages With No Data / Blank States <span class="badge badge-red">Blank</span></h3>
+  <p>
+    These pages either have no Convex queries or exist as pure forms/static content. They are functional
+    but represent "dead ends" in the data flow where no data enters or leaves.
+  </p>
+
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Data Status</th>
+      <th>Notes</th>
+    </tr>
+    <tr><td>OnboardingSource</td><td>No queries, no mutations</td><td>Stub completeOnboarding function. Saves to localStorage only.</td></tr>
+    <tr><td>OnboardingUserInformation</td><td>No queries, no mutations</td><td>Pure form. Saves to localStorage only.</td></tr>
+    <tr><td>ClientSignup</td><td>1 mutation only</td><td>Register mutation saves to Convex but form is purely local.</td></tr>
+    <tr><td>ClientLogin</td><td>1 query (unused in render)</td><td>Login always succeeds in demo mode via localStorage.</td></tr>
+    <tr><td>NotFound</td><td>No data</td><td>Static 404 page.</td></tr>
+    <tr><td>ApiSettings</td><td>No Convex queries</td><td>Entirely mock API keys and webhooks (local state only).</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════ SECTION 5 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">5. Cross-Page Data Dependencies</h2>
+
+  <p>
+    Several data entities are queried from multiple pages simultaneously. This creates shared dependencies
+    where the same data must be consistent across views. The WorkspaceProvider acts as a shared context,
+    but individual pages query the same data independently (Convex handles deduplication automatically).
+  </p>
+
+  <table>
+    <tr>
+      <th>Shared Data</th>
+      <th>Pages That Query It</th>
+      <th>Consistency Risk</th>
+    </tr>
+    <tr>
+      <td><strong>clients</strong> (getClients / getClientsEnriched)</td>
+      <td>Dashboard, Clients, PaymentPatterns, EvidenceExport</td>
+      <td>Low - Convex real-time sync ensures consistency</td>
+    </tr>
+    <tr>
+      <td><strong>invoices</strong> (getInvoices / getInvoiceStats)</td>
+      <td>Dashboard, Invoices, PaymentPatterns, Subscription, InvoiceBuilder</td>
+      <td>Low - same query function, Convex deduplicates</td>
+    </tr>
+    <tr>
+      <td><strong>proposals</strong> (getProposals / getProposalStats)</td>
+      <td>Dashboard, Proposals, ProposalBuilder</td>
+      <td>Low - real-time subscription model</td>
+    </tr>
+    <tr>
+      <td><strong>pipeline</strong> (getStages / getDeals / getPipelineStats)</td>
+      <td>Dashboard, Pipeline</td>
+      <td>Low - same workspace scope</td>
+    </tr>
+    <tr>
+      <td><strong>scopeDefinitions</strong></td>
+      <td>Dashboard, Scope, EvidenceExport</td>
+      <td>Low - read-only in Dashboard/EvidenceExport</td>
+    </tr>
+    <tr>
+      <td><strong>workspaceId</strong> (from WorkspaceProvider)</td>
+      <td>All workspace-scoped pages</td>
+      <td><strong>HIGH</strong> - If workspaceId is invalid/null, all workspace queries skip</td>
+    </tr>
+  </table>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">Critical Dependency: workspaceId</div>
+    <p>
+      The workspaceId from WorkspaceProvider is the linchpin of the entire data architecture. Nearly every page
+      passes workspaceId to its queries. If the user has no workspace (e.g., first login before auto-seed completes),
+      ALL workspace-scoped queries return undefined, and pages show empty/demo states. The WorkspaceProvider
+      attempts to auto-seed a personal workspace, but if this mutation fails or is slow, pages render with no data.
+    </p>
+  </div>
+
+  <p>
+    Below is a diagram showing how the Dashboard page serves as the primary data aggregation point, querying
+    8 different data sources simultaneously to build its overview:
+  </p>
+
+  <div class="flow-container" style="flex-direction: column; align-items: center; gap: 8px;">
+    <div class="flow-node primary" style="min-width: 180px;">
+      <div class="node-title">Dashboard</div>
+      <div class="node-sub">8 queries, 1 mutation</div>
+    </div>
+    <div style="color:var(--text-muted); font-size:9pt;">queries from</div>
+    <div class="flow-container" style="justify-content: center;">
+      <div class="flow-node"><div class="node-title">clients</div><div class="node-sub">enriched</div></div>
+      <div class="flow-node"><div class="node-title">pipeline</div><div class="node-sub">stages+deals+stats</div></div>
+      <div class="flow-node"><div class="node-title">proposals</div><div class="node-sub">list+stats</div></div>
+      <div class="flow-node"><div class="node-title">invoices</div><div class="node-sub">list+stats</div></div>
+      <div class="flow-node"><div class="node-title">scope</div><div class="node-sub">definitions</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 6 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">6. Disconnection Map: What's Missing</h2>
+
+  <h3>6.1 Backend Queries With No Frontend Page</h3>
+  <p>
+    The Convex backend has approximately 50+ query functions that are never called from any frontend page.
+    These represent "forward-built" features that exist in the backend but have no UI surface. Grouped by
+    functional area:
+  </p>
+
+  <table>
+    <tr>
+      <th>Functional Area</th>
+      <th>Unused Queries</th>
+      <th>Impact</th>
+    </tr>
+    <tr>
+      <td><strong>Compliance & Alerts</strong></td>
+      <td>complianceAlerts.getActiveAlerts, platforms.upworkComplianceCheck.getUpworkCompliance</td>
+      <td>No way for users to see compliance issues or Upwork policy violations</td>
+    </tr>
+    <tr>
+      <td><strong>Evidence Analytics</strong></td>
+      <td>evidence.analytics.getEvidenceAnalytics</td>
+      <td>No analytics dashboard for evidence quality or coverage</td>
+    </tr>
+    <tr>
+      <td><strong>Protection Plans (Premium)</strong></td>
+      <td>premium.protectionPlans.getProtectionPlans, premium.crossPlatformVerification, premium.teamValidation, premium.protectionAdvisor</td>
+      <td>4 premium features with no UI - major monetization gap</td>
+    </tr>
+    <tr>
+      <td><strong>Milestone Tracking</strong></td>
+      <td>milestoneSnapshots.getSnapshots, milestoneAlerts.getAlerts, milestoneReports.getReports</td>
+      <td>3 milestone features with no browsing/management UI</td>
+    </tr>
+    <tr>
+      <td><strong>Scope Formalization</strong></td>
+      <td>scopeFormalization.getFormalizations</td>
+      <td>Formalizations can be created but never listed</td>
+    </tr>
+    <tr>
+      <td><strong>Client Intelligence</strong></td>
+      <td>clients.getStats, clients.search, clients.getById, timeBlocks.calculateRejectedHours</td>
+      <td>No client search, stats overview, or rejected hours calculation in UI</td>
+    </tr>
+    <tr>
+      <td><strong>Payment Reminders</strong></td>
+      <td>billing.reminders.getReminderHistory, billing.reminders.getAllReminders</td>
+      <td>Reminder history exists but no page shows it</td>
+    </tr>
+    <tr>
+      <td><strong>Network</strong></td>
+      <td>network.premiumNetwork.getNetworkConnections</td>
+      <td>PremiumNetwork component exists but no dedicated page</td>
+    </tr>
+    <tr>
+      <td><strong>Tier Detection</strong></td>
+      <td>tiers.tierDetection.detectTier</td>
+      <td>Tier detection logic exists but isn't surfaced in Subscription page</td>
+    </tr>
+    <tr>
+      <td><strong>Client Policies</strong></td>
+      <td>policies.clientPolicies.getClientPolicies</td>
+      <td>Policy management UI missing</td>
+    </tr>
+    <tr>
+      <td><strong>WCVAM Verification</strong></td>
+      <td>wcvm.contextScanner.getVerificationData</td>
+      <td>Work Context Verification Model has no dedicated UI</td>
+    </tr>
+  </table>
+
+  <h3>6.2 Frontend Pages Missing Data Connections</h3>
+  <p>
+    Some pages exist but don't connect to available backend data that would enhance them:
+  </p>
+
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Available Backend Data Not Connected</th>
+      <th>What's Missing</th>
+    </tr>
+    <tr>
+      <td>Projects</td>
+      <td>projectHealthDashboard, projectProtectionScore, riskTimeline, adaptiveEvidenceSystem</td>
+      <td>Project detail view with health dashboard, risk timeline, and protection score</td>
+    </tr>
+    <tr>
+      <td>Subscription</td>
+      <td>tiers.tierDetection.detectTier</td>
+      <td>Auto-detection of user's optimal tier based on usage</td>
+    </tr>
+    <tr>
+      <td>TeamManagement</td>
+      <td>workspaces.members.searchMembers, workspaces.members.getMemberProjects</td>
+      <td>Member search and project assignment views</td>
+    </tr>
+    <tr>
+      <td>Dashboard</td>
+      <td>complianceAlerts.getActiveAlerts, evidence.analytics</td>
+      <td>Compliance alerts widget and evidence quality summary</td>
+    </tr>
+    <tr>
+      <td>Invoices</td>
+      <td>billing.reminders.getReminderHistory</td>
+      <td>Reminder history per invoice</td>
+    </tr>
+    <tr>
+      <td>TimeTracking</td>
+      <td>timeBlocks.getSessionBlocks, timeBlocks.calculateRejectedHours</td>
+      <td>Block-level detail view and rejected hours calculation</td>
+    </tr>
+  </table>
+
+  <h3>6.3 Critical Missing Routes</h3>
+  <p>
+    These are entire pages that should exist but don't. They represent end-to-end gaps where the backend
+    functionality exists but there's no way for users to access it:
+  </p>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">CRITICAL GAP 1: Proposal Client View</div>
+    <p>
+      <strong>Backend exists:</strong> <code>proposals.crud.getProposalByToken</code> returns a proposal by its public sharing token.
+      <code>proposals.crud.signProposal</code> and <code>proposals.crud.markProposalViewed</code> handle client actions.
+      <br><strong>Frontend missing:</strong> No <code>/proposal/view/[token]</code> route exists. When a client receives a proposal link,
+      they have no page to view or sign it. The entire proposal sharing workflow is broken at the receiving end.
+    </p>
+  </div>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">CRITICAL GAP 2: Scope Client Approval</div>
+    <p>
+      <strong>Backend exists:</strong> <code>scope.crud.getScopeByApprovalToken</code> and <code>scope.crud.approveScopeByClient</code>
+      handle client-facing scope approval.
+      <br><strong>Frontend missing:</strong> No <code>/scope/approve/[token]</code> route. Clients cannot review or approve scope
+      changes through the platform. This is a core value proposition feature that is entirely non-functional.
+    </p>
+  </div>
+
+  <div class="callout callout-danger">
+    <div class="callout-title">CRITICAL GAP 3: Project Detail Page</div>
+    <p>
+      <strong>Backend exists:</strong> <code>projectProtection.getProjectProtectionDetails</code>, <code>projectHealthDashboard</code>,
+      <code>projectRiskTimeline</code>, <code>adaptiveEvidenceSystem</code>, <code>milestoneProtection</code> - all return rich project data.
+      <br><strong>Frontend missing:</strong> The Projects page only shows a flat list. Clicking a project should navigate to a detail
+      page showing health dashboard, risk timeline, milestone tracking, and protection score. None of this exists.
+    </p>
+  </div>
+
+  <div class="callout callout-warning">
+    <div class="callout-title">GAP 4: Invoice Client View</div>
+    <p>
+      <strong>Backend exists:</strong> <code>billing.crud.getByPublicToken</code> returns an invoice by sharing token.
+      <br><strong>Frontend missing:</strong> No <code>/invoice/view/[token]</code> route for clients to view invoices externally.
+      The ClientWorkspace page shows invoices, but direct link sharing doesn't work.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 7 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">7. Recommendations: Connecting the Dots</h2>
+
+  <h3>7.1 Priority 1: Missing Pages (End-to-End Gaps)</h3>
+  <p>
+    These are the highest-priority items because they represent broken user journeys. The backend is ready,
+    the sharing infrastructure exists, but there's no page for the recipient to interact with:
+  </p>
+
+  <table>
+    <tr>
+      <th>#</th>
+      <th>Route to Create</th>
+      <th>Backend Queries to Wire</th>
+      <th>Estimated Effort</th>
+      <th>Business Impact</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td><code>/proposal/view/:token</code></td>
+      <td>getProposalByToken, signProposal, markProposalViewed</td>
+      <td>Medium (2-3 days)</td>
+      <td>Critical - proposal sharing is a core feature</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><code>/scope/approve/:token</code></td>
+      <td>getScopeByApprovalToken, approveScopeByClient</td>
+      <td>Medium (2-3 days)</td>
+      <td>Critical - scope approval is a core value prop</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><code>/projects/:id</code> (Project Detail)</td>
+      <td>getProjectProtectionDetails, getProjectHealthDashboard, getProjectRiskTimeline, getMilestoneProtection, getAdaptiveEvidenceSystem</td>
+      <td>Large (5-7 days)</td>
+      <td>High - Projects page is currently a flat list</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><code>/invoice/view/:token</code></td>
+      <td>getByPublicToken</td>
+      <td>Small (1 day)</td>
+      <td>Medium - client invoice viewing</td>
+    </tr>
+  </table>
+
+  <h3>7.2 Priority 2: Data Bridge Connections</h3>
+  <p>
+    These are connections between existing pages and existing backend queries that would enhance the user
+    experience without requiring new pages:
+  </p>
+
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Enhancement</th>
+      <th>Query to Add</th>
+      <th>Effort</th>
+    </tr>
+    <tr>
+      <td>Dashboard</td>
+      <td>Add compliance alerts widget</td>
+      <td>complianceAlerts.getActiveAlerts</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>Dashboard</td>
+      <td>Add evidence quality summary</td>
+      <td>evidence.analytics.getEvidenceAnalytics</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>Subscription</td>
+      <td>Auto-detect optimal tier</td>
+      <td>tiers.tierDetection.detectTier</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>Projects</td>
+      <td>Add mock projects for demo mode</td>
+      <td>N/A (frontend mock data)</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>InvoiceBuilder/ProposalBuilder</td>
+      <td>Add mock data for edit mode demo</td>
+      <td>N/A (frontend mock data)</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>TeamManagement</td>
+      <td>Add member search when assigning</td>
+      <td>workspaces.members.searchMembers</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>TimeTracking</td>
+      <td>Show rejected hours calculation</td>
+      <td>timeBlocks.calculateRejectedHours</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td>Invoices</td>
+      <td>Show reminder history per invoice</td>
+      <td>billing.reminders.getReminderHistory</td>
+      <td>Small</td>
+    </tr>
+  </table>
+
+  <h3>7.3 Priority 3: Unused Backend Surface</h3>
+  <p>
+    These are features that have full backend implementations but no frontend. They represent potential
+    product features that could be unlocked with UI development:
+  </p>
+
+  <table>
+    <tr>
+      <th>Feature Area</th>
+      <th>Backend Queries Available</th>
+      <th>Suggested Page</th>
+      <th>Business Value</th>
+    </tr>
+    <tr>
+      <td>Protection Plans (Premium)</td>
+      <td>getProtectionPlans, createProtectionPlan</td>
+      <td>New "Protection Plans" page under billing</td>
+      <td>Monetization - premium feature gating</td>
+    </tr>
+    <tr>
+      <td>Cross-Platform Verification</td>
+      <td>getCrossPlatformVerification</td>
+      <td>Enhancement to PlatformIntegrations</td>
+      <td>Core value prop - multi-platform evidence</td>
+    </tr>
+    <tr>
+      <td>Team Validation</td>
+      <td>getTeamValidations</td>
+      <td>Enhancement to TeamManagement</td>
+      <td>Premium - team accountability</td>
+    </tr>
+    <tr>
+      <td>Protection Advisor</td>
+      <td>getAdvisorAlerts</td>
+      <td>New "Advisor" page or Dashboard widget</td>
+      <td>Proactive protection recommendations</td>
+    </tr>
+    <tr>
+      <td>Milestone Browser</td>
+      <td>getSnapshots, getAlerts, getReports</td>
+      <td>Tab within Project Detail page</td>
+      <td>Project tracking and documentation</td>
+    </tr>
+    <tr>
+      <td>Network / Freelancer Directory</td>
+      <td>getNetworkConnections, getVerifiedFreelancers</td>
+      <td>New "Network" page</td>
+      <td>Community and trust network</td>
+    </tr>
+    <tr>
+      <td>Client Policies</td>
+      <td>getClientPolicies, createClientPolicy</td>
+      <td>Tab within Clients detail view</td>
+      <td>Platform-specific policy management</td>
+    </tr>
+    <tr>
+      <td>Compliance Dashboard</td>
+      <td>getActiveAlerts, getUpworkCompliance</td>
+      <td>New "Compliance" page</td>
+      <td>Risk prevention - core value prop</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════ SECTION 8 ═══════════════════ -->
+<div class="page-break"></div>
+<div class="section">
+  <h2 class="section-title">8. Architecture Diagram</h2>
+
+  <p>
+    The diagram below shows the complete user journey from landing to each functional area, with data flow
+    connections indicated by arrows. Green nodes are fully connected, amber nodes are partially connected,
+    and red nodes represent missing pages that need to be built.
+  </p>
+
+  <div style="background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 16px 0;">
+    <!-- Top: Public Journey -->
+    <div style="text-align: center; margin-bottom: 16px;">
+      <div style="font-size: 9pt; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 8px;">Public Journey</div>
+      <div style="display: inline-flex; align-items: center; gap: 8px;">
+        <div style="background: #fef5f6; border: 2px solid var(--accent); border-radius: 8px; padding: 6px 12px; font-size: 8.5pt; font-weight: 600;">Landing</div>
+        <span style="color: var(--text-muted);">&rarr;</span>
+        <div style="background: #eef4f9; border: 2px solid var(--semantic-info); border-radius: 8px; padding: 6px 12px; font-size: 8.5pt; font-weight: 600;">WaitlistForm</div>
+        <span style="color: var(--text-muted);">&rarr;</span>
+        <div style="background: #eef4f9; border: 2px solid var(--semantic-info); border-radius: 8px; padding: 6px 12px; font-size: 8.5pt; font-weight: 600;">Success</div>
+      </div>
+    </div>
+
+    <!-- Auth Divider -->
+    <div style="text-align: center; margin: 12px 0;">
+      <div style="display: inline-block; background: var(--header-fill); color: white; padding: 4px 16px; border-radius: 12px; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1pt;">Authentication Barrier (ProtectedRoute)</div>
+    </div>
+
+    <!-- Authenticated Journey -->
+    <div style="text-align: center; margin-top: 12px; margin-bottom: 8px;">
+      <div style="font-size: 9pt; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1pt;">Authenticated Journey</div>
+    </div>
+
+    <!-- Dashboard Hub -->
+    <div style="text-align: center; margin-bottom: 12px;">
+      <div style="background: #f0faf3; border: 2px solid var(--semantic-success); border-radius: 8px; padding: 8px 16px; font-size: 9pt; font-weight: 700; display: inline-block;">
+        Dashboard (Hub) &mdash; 8 data sources
+      </div>
+    </div>
+
+    <!-- Functional Areas Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 7.5pt;">
+      <!-- Column 1 -->
+      <div>
+        <div style="font-weight: 700; color: var(--semantic-success); margin-bottom: 4px; font-size: 8pt;">CRM + Billing</div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Clients <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Invoices <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">InvoiceBuilder <span class="badge badge-amber" style="font-size:6pt;">Partial</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">PaymentPatterns <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Subscription <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f8d7da; border: 1px solid var(--semantic-error); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; font-style: italic;">/invoice/view/:token <span class="badge badge-red" style="font-size:6pt;">Missing</span></div>
+      </div>
+      <!-- Column 2 -->
+      <div>
+        <div style="font-weight: 700; color: var(--semantic-success); margin-bottom: 4px; font-size: 8pt;">Projects + Protection</div>
+        <div style="background: #fdf8ef; border: 1px solid var(--semantic-warning); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Projects <span class="badge badge-amber" style="font-size:6pt;">Partial</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Scope <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">EvidenceLibrary <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">TimeTracking <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f8d7da; border: 1px solid var(--semantic-error); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; font-style: italic;">/projects/:id <span class="badge badge-red" style="font-size:6pt;">Missing</span></div>
+        <div style="background: #f8d7da; border: 1px solid var(--semantic-error); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; font-style: italic;">/scope/approve/:token <span class="badge badge-red" style="font-size:6pt;">Missing</span></div>
+      </div>
+      <!-- Column 3 -->
+      <div>
+        <div style="font-weight: 700; color: var(--semantic-success); margin-bottom: 4px; font-size: 8pt;">Pipeline + Team</div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Pipeline <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Proposals <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #fdf8ef; border: 1px solid var(--semantic-warning); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">ProposalBuilder <span class="badge badge-amber" style="font-size:6pt;">Partial</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">TeamManagement <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f0faf3; border: 1px solid var(--semantic-success); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px;">Messages <span class="badge badge-green" style="font-size:6pt;">Connected</span></div>
+        <div style="background: #f8d7da; border: 1px solid var(--semantic-error); border-radius: 4px; padding: 4px 8px; margin-bottom: 4px; font-style: italic;">/proposal/view/:token <span class="badge badge-red" style="font-size:6pt;">Missing</span></div>
+      </div>
+    </div>
+
+    <!-- Client Portal -->
+    <div style="text-align: center; margin-top: 16px;">
+      <div style="font-size: 9pt; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1pt; margin-bottom: 8px;">Client Portal (Token-Based)</div>
+      <div style="display: inline-flex; align-items: center; gap: 8px;">
+        <div style="background: #eef4f9; border: 1px solid var(--semantic-info); border-radius: 8px; padding: 6px 12px; font-size: 8.5pt; font-weight: 600;">ClientWorkspace</div>
+        <div style="font-size: 7pt; color: var(--text-muted);">token validation &rarr; projects, proposals, invoices, team</div>
+      </div>
+    </div>
+
+    <!-- Unused Backend -->
+    <div style="margin-top: 16px; background: #f5f5f5; border-radius: 6px; padding: 10px 14px;">
+      <div style="font-size: 8pt; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">Unused Backend Surface (No Frontend)</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 7pt;">
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Compliance Alerts</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Evidence Analytics</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Protection Plans</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Cross-Platform Verification</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Team Validation</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Protection Advisor</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Milestones Browser</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Network</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Client Policies</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Tier Detection</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">WCVAM Verification</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Client Search</span>
+        <span style="background: #e0e0e0; padding: 2px 8px; border-radius: 3px;">Reminder History</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-success">
+    <div class="callout-title">Summary</div>
+    <p>
+      Axia has a robust backend with 150+ query functions and a well-structured workspace-centric data model.
+      The frontend covers approximately 50-60% of this surface area with 33 pages, most of which are fully
+      connected with demo data fallbacks. The three critical gaps are: (1) Proposal client view page,
+      (2) Scope client approval page, and (3) Project detail page. Addressing these would close the most
+      impactful end-to-end gaps. Beyond that, 11 backend feature areas have no frontend surface at all,
+      representing significant untapped product potential.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

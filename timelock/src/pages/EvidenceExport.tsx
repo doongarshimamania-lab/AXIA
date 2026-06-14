@@ -54,6 +54,7 @@ import { api } from "@/convex/_generated/api";
 import { exportEvidence } from "@/lib/exportUtils";
 import { PageLoader } from "@/components/QueryState";
 import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // --- Types ---
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
@@ -243,11 +244,18 @@ export default function EvidenceExport() {
   const { isAuthenticated } = useConvexAuth();
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
-  const evidenceData = useQuery(api.evidence.library.getEvidenceLibraryData, {
-    view: "date" as const,
-    startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
-    endDate: Date.now(),
-  }) as any | undefined;
+  // Safely access evidence API — it may not exist in local Convex deployment
+  const evidenceApi = (api as any).evidence?.library;
+  const hasEvidenceApi = !!(evidenceApi?.getEvidenceLibraryData);
+
+  const evidenceData = useQuery(
+    hasEvidenceApi ? evidenceApi.getEvidenceLibraryData : "skip",
+    hasEvidenceApi ? {
+      view: "date" as const,
+      startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
+      endDate: Date.now(),
+    } : "skip"
+  ) as any | undefined;
 
   const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {}) as any[] | undefined;
@@ -444,7 +452,7 @@ export default function EvidenceExport() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background"
     >
-      <div className="p-6 md:p-8 space-y-8">
+      <PageLayout spaced>
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Export</h1>
@@ -894,7 +902,7 @@ export default function EvidenceExport() {
             </Card>
           </>
         )}
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

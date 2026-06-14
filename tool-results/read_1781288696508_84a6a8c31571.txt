@@ -1,0 +1,972 @@
+     1→import { Button } from "@/components/ui/button";
+     2→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     3→import { Badge } from "@/components/ui/badge";
+     4→import { Skeleton } from "@/components/ui/skeleton";
+     5→import { Progress } from "@/components/ui/progress";
+     6→import { useAuth } from "@/hooks/use-auth";
+     7→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+     8→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     9→import { motion, AnimatePresence } from "framer-motion";
+    10→import {
+    11→  Users,
+    12→  TrendingUp,
+    13→  FileText,
+    14→  Receipt,
+    15→  Ruler,
+    16→  LayoutList,
+    17→  Plus,
+    18→  Sparkles,
+    19→  ArrowRight,
+    20→  Clock,
+    21→  CheckCircle2,
+    22→  AlertCircle,
+    23→  Send,
+    24→  DollarSign,
+    25→  Loader2,
+    26→  Eye,
+    27→  FileSignature,
+    28→  CreditCard,
+    29→  Bell,
+    30→  BellRing,
+    31→  X,
+    32→  ArrowUpRight,
+    33→  ArrowDownRight,
+    34→  Minus,
+    35→  Shield,
+    36→  Target,
+    37→  Zap,
+    38→  BarChart3,
+    39→  CircleDot,
+    40→  Timer,
+    41→  Kanban,
+    42→  Building2,
+    43→  Briefcase,
+    44→} from "lucide-react";
+    45→import { useQuery, useMutation, useConvexConnectionState } from "@/lib/safe-convex-react";
+    46→import { api } from "@/convex/_generated/api";
+    47→import { toast } from "sonner";
+    48→import { useNavigate } from "react-router";
+    49→import { useMemo, useState, useEffect, useCallback } from "react";
+    50→import { PricingModal } from "@/components/PricingModal";
+    51→
+    52→// ─── Loading skeleton for a stat card ────────────────────────────────────
+    53→function StatCardSkeleton() {
+    54→  return (
+    55→    <Card>
+    56→      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    57→        <Skeleton className="h-4 w-24" />
+    58→        <Skeleton className="h-4 w-4 rounded" />
+    59→      </CardHeader>
+    60→      <CardContent>
+    61→        <Skeleton className="h-8 w-20 mb-1" />
+    62→        <Skeleton className="h-3 w-32" />
+    63→      </CardContent>
+    64→    </Card>
+    65→  );
+    66→}
+    67→
+    68→// ─── Loading skeleton for the activity feed ──────────────────────────────
+    69→function ActivitySkeleton() {
+    70→  return (
+    71→    <div className="space-y-3">
+    72→      {Array.from({ length: 4 }).map((_, i) => (
+    73→        <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+    74→          <Skeleton className="h-8 w-8 rounded-full" />
+    75→          <div className="flex-1 space-y-1">
+    76→            <Skeleton className="h-4 w-48" />
+    77→            <Skeleton className="h-3 w-32" />
+    78→          </div>
+    79→          <Skeleton className="h-5 w-16 rounded-full" />
+    80→        </div>
+    81→      ))}
+    82→    </div>
+    83→  );
+    84→}
+    85→
+    86→// ─── Empty state CTA ─────────────────────────────────────────────────────
+    87→function EmptyState({
+    88→  icon: Icon,
+    89→  title,
+    90→  description,
+    91→  actionLabel,
+    92→  onAction,
+    93→}: {
+    94→  icon: React.ElementType;
+    95→  title: string;
+    96→  description: string;
+    97→  actionLabel: string;
+    98→  onAction: () => void;
+    99→}) {
+   100→  return (
+   101→    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+   102→      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+   103→        <Icon className="h-6 w-6 text-muted-foreground" />
+   104→      </div>
+   105→      <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
+   106→      <p className="text-xs text-muted-foreground mb-4 max-w-[240px]">{description}</p>
+   107→      <Button size="sm" onClick={onAction}>
+   108→        <Plus className="mr-1 h-3 w-3" />
+   109→        {actionLabel}
+   110→      </Button>
+   111→    </div>
+   112→  );
+   113→}
+   114→
+   115→// ─── Get Started state when no data at all ───────────────────────────────
+   116→function GetStartedState({ onSeed, onAddClient }: { onSeed: () => void; onAddClient: () => void }) {
+   117→  return (
+   118→    <Card className="border-dashed border-2">
+   119→      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+   120→        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+   121→          <Sparkles className="h-8 w-8 text-primary" />
+   122→        </div>
+   123→        <h3 className="text-lg font-semibold text-foreground mb-2">
+   124→          Welcome to Axia!
+   125→        </h3>
+   126→        <p className="text-sm text-muted-foreground mb-6 max-w-[360px]">
+   127→          Your dashboard is empty. Seed demo data to see how everything works, or start adding clients, deals, and proposals.
+   128→        </p>
+   129→        <div className="flex gap-3">
+   130→          {import.meta.env.DEV && (
+   131→            <Button onClick={onSeed}>
+   132→              <Sparkles className="mr-2 h-4 w-4" />
+   133→              Seed Demo Data
+   134→            </Button>
+   135→          )}
+   136→          <Button variant="outline" onClick={onAddClient}>
+   137→            <Plus className="mr-2 h-4 w-4" />
+   138→            Add Client
+   139→          </Button>
+   140→        </div>
+   141→      </CardContent>
+   142→    </Card>
+   143→  );
+   144→}
+   145→
+   146→// ─── Activity item type ──────────────────────────────────────────────────
+   147→interface ActivityItem {
+   148→  id: string;
+   149→  type: "deal" | "proposal" | "invoice";
+   150→  title: string;
+   151→  subtitle: string;
+   152→  status: string;
+   153→  timestamp: number;
+   154→  href: string;
+   155→}
+   156→
+   157→// ─── Notification type for the popup ─────────────────────────────────────
+   158→interface InsightNotification {
+   159→  id: string;
+   160→  icon: React.ElementType;
+   161→  iconColor: string;
+   162→  title: string;
+   163→  description: string;
+   164→  timestamp: number;
+   165→  href: string;
+   166→  read: boolean;
+   167→}
+   168→
+   169→// ─── Status badge colors ─────────────────────────────────────────────────
+   170→function statusColor(status: string): "default" | "secondary" | "destructive" | "outline" {
+   171→  if (["won", "signed", "paid", "completed"].includes(status)) return "default";
+   172→  if (["lost", "declined", "overdue", "expired", "rejected"].includes(status)) return "destructive";
+   173→  return "secondary";
+   174→}
+   175→
+   176→function statusIcon(type: string, status: string) {
+   177→  if (type === "deal") {
+   178→    if (status === "won") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   179→    if (status === "lost") return <AlertCircle className="h-4 w-4 text-red-500" />;
+   180→    return <TrendingUp className="h-4 w-4 text-blue-500" />;
+   181→  }
+   182→  if (type === "proposal") {
+   183→    if (status === "signed") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   184→    if (status === "sent" || status === "viewed") return <Send className="h-4 w-4 text-blue-500" />;
+   185→    return <FileText className="h-4 w-4 text-muted-foreground" />;
+   186→  }
+   187→  // invoice
+   188→  if (status === "paid") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+   189→  if (status === "overdue") return <AlertCircle className="h-4 w-4 text-red-500" />;
+   190→  return <DollarSign className="h-4 w-4 text-amber-500" />;
+   191→}
+   192→
+   193→// ─── Format currency ─────────────────────────────────────────────────────
+   194→function fmtCurrency(n: number): string {
+   195→  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+   196→}
+   197→
+   198→function fmtRelative(ts: number): string {
+   199→  const diff = Date.now() - ts;
+   200→  const mins = Math.floor(diff / 60000);
+   201→  if (mins < 1) return "just now";
+   202→  if (mins < 60) return `${mins}m ago`;
+   203→  const hrs = Math.floor(mins / 60);
+   204→  if (hrs < 24) return `${hrs}h ago`;
+   205→  const days = Math.floor(hrs / 24);
+   206→  if (days < 30) return `${days}d ago`;
+   207→  return new Date(ts).toLocaleDateString();
+   208→}
+   209→
+   210→function fmtCompactCurrency(n: number): string {
+   211→  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+   212→  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+   213→  return fmtCurrency(n);
+   214→}
+   215→
+   216→// ─── Metric trend indicator ──────────────────────────────────────────────
+   217→function TrendIndicator({ value, label }: { value: number; label: string }) {
+   218→  if (value > 0) return (
+   219→    <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 text-xs">
+   220→      <ArrowUpRight className="h-3 w-3" /> +{value}% {label}
+   221→    </span>
+   222→  );
+   223→  if (value < 0) return (
+   224→    <span className="flex items-center gap-0.5 text-red-600 dark:text-red-400 text-xs">
+   225→      <ArrowDownRight className="h-3 w-3" /> {value}% {label}
+   226→    </span>
+   227→  );
+   228→  return (
+   229→    <span className="flex items-center gap-0.5 text-muted-foreground text-xs">
+   230→      <Minus className="h-3 w-3" /> No change
+   231→    </span>
+   232→  );
+   233→}
+   234→
+   235→// ═════════════════════════════════════════════════════════════════════════
+   236→// MAIN DASHBOARD COMPONENT
+   237→// ═════════════════════════════════════════════════════════════════════════
+   238→export default function Dashboard() {
+   239→  const { isLoading: authLoading } = useAuth();
+   240→  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
+   241→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   242→  const navigate = useNavigate();
+   243→  const { isDisconnected } = useConvexConnectionState();
+   244→
+   245→  const [showPricingModal, setShowPricingModal] = useState(false);
+   246→  const [pricingHighlightSavings] = useState<number | undefined>(undefined);
+   247→  const [showNotifications, setShowNotifications] = useState(false);
+   248→
+   249→  // ─── Convex queries ─────────────────────────────────────────────────────
+   250→  const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
+   251→  const queryArgs = wsId ? { workspaceId: wsId } : "skip";
+   252→
+   253→  const clientsEnriched = useQuery(api.clients.crud.getClientsEnriched, queryArgs);
+   254→  const pipelineStats = useQuery(api.pipeline.crud.getPipelineStats, queryArgs);
+   255→  const proposalStats = useQuery(api.proposals.crud.getProposalStats, queryArgs);
+   256→  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, queryArgs);
+   257→  const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
+   258→  const projectsData = useQuery(api.projects.projectProtection.getMyProjects, {});
+   259→
+   260→  const deals = useQuery(api.pipeline.crud.getDeals, queryArgs);
+   261→  const proposals = useQuery(api.proposals.crud.getProposals, queryArgs);
+   262→  const invoices = useQuery(api.billing.crud.getInvoices, queryArgs);
+   263→
+   264→  const seedAll = useMutation(api.autoSeed.autoSeed);
+   265→
+   266→  // ─── Derived data ───────────────────────────────────────────────────────
+   267→  const isQueryLoading =
+   268→    isConvexConnected &&
+   269→    (clientsEnriched === undefined ||
+   270→    pipelineStats === undefined ||
+   271→    proposalStats === undefined ||
+   272→    invoiceStats === undefined ||
+   273→    scopeDefinitions === undefined);
+   274→
+   275→  const totalClients = clientsEnriched?.length ?? 0;
+   276→  const totalDeals = pipelineStats?.totalDeals ?? 0;
+   277→  const pipelineValue = pipelineStats?.totalValue ?? 0;
+   278→  const weightedValue = pipelineStats?.weightedValue ?? 0;
+   279→  const proposalTotal = proposalStats?.total ?? 0;
+   280→  const proposalSigned = proposalStats?.signed ?? 0;
+   281→  const proposalSignatureRate = proposalStats?.signatureRate ?? 0;
+   282→  const proposalTotalValue = proposalStats?.totalValue ?? 0;
+   283→  const proposalSent = proposalStats?.sent ?? 0;
+   284→  const proposalViewed = proposalStats?.viewed ?? 0;
+   285→  const invoiceTotal = invoiceStats?.total ?? 0;
+   286→  const invoicePaid = invoiceStats?.paid ?? 0;
+   287→  const invoiceOverdue = invoiceStats?.overdue ?? 0;
+   288→  const invoiceRevenue = invoiceStats?.totalRevenue ?? 0;
+   289→  const invoiceOutstanding = invoiceStats?.totalOutstanding ?? 0;
+   290→  const invoiceDraft = invoiceStats?.draft ?? 0;
+   291→  const scopeCount = (scopeDefinitions as any[])?.length ?? 0;
+   292→  const totalProjects = (projectsData as any[])?.length ?? 0;
+   293→  const activeProjects = (projectsData as any[])?.filter((p: any) => p.status === 'active' || p.status === 'in_progress')?.length ?? 0;
+   294→
+   295→  const hasAnyData = totalClients > 0 || totalDeals > 0 || proposalTotal > 0 || invoiceTotal > 0 || totalProjects > 0;
+   296→
+   297→  // ─── Derived health metrics ─────────────────────────────────────────────
+   298→  const collectionRate = invoiceTotal > 0 ? Math.round((invoicePaid / invoiceTotal) * 100) : 0;
+   299→  const pipelineHealth = totalDeals > 0 ? Math.min(100, Math.round((weightedValue / (pipelineValue || 1)) * 100)) : 0;
+   300→
+   301→  // ─── Build insight notifications from real data ─────────────────────────
+   302→  const notifications: InsightNotification[] = useMemo(() => {
+   303→    const notifs: InsightNotification[] = [];
+   304→
+   305→    // Overdue invoices → urgent alert
+   306→    if (invoiceOverdue > 0) {
+   307→      notifs.push({
+   308→        id: "overdue-alert",
+   309→        icon: AlertCircle,
+   310→        iconColor: "text-red-500 bg-red-500/10",
+   311→        title: `${invoiceOverdue} Overdue Invoice${invoiceOverdue > 1 ? "s" : ""}`,
+   312→        description: `${fmtCurrency(invoiceOutstanding)} outstanding — needs attention`,
+   313→        timestamp: Date.now() - 60000,
+   314→        href: "/invoices",
+   315→        read: false,
+   316→      });
+   317→    }
+   318→
+   319→    // Proposals viewed but not signed
+   320→    if (proposalViewed > 0) {
+   321→      notifs.push({
+   322→        id: "proposals-viewed",
+   323→        icon: Eye,
+   324→        iconColor: "text-blue-500 bg-blue-500/10",
+   325→        title: `${proposalViewed} Proposal${proposalViewed > 1 ? "s" : ""} Viewed`,
+   326→        description: "Client opened but hasn't signed yet — follow up",
+   327→        timestamp: Date.now() - 300000,
+   328→        href: "/proposals",
+   329→        read: false,
+   330→      });
+   331→    }
+   332→
+   333→    // Signed proposals → celebrate
+   334→    if (proposalSigned > 0) {
+   335→      notifs.push({
+   336→        id: "proposals-signed",
+   337→        icon: FileSignature,
+   338→        iconColor: "text-emerald-500 bg-emerald-500/10",
+   339→        title: `${proposalSigned} Proposal${proposalSigned > 1 ? "s" : ""} Signed`,
+   340→        description: `${fmtCurrency(proposalTotalValue)} in signed contracts`,
+   341→        timestamp: Date.now() - 600000,
+   342→        href: "/proposals",
+   343→        read: false,
+   344→      });
+   345→    }
+   346→
+   347→    // Invoices sent but not paid
+   348→    if (invoiceTotal - invoicePaid - invoiceOverdue > 0) {
+   349→      const pending = invoiceTotal - invoicePaid - invoiceOverdue;
+   350→      notifs.push({
+   351→        id: "invoices-pending",
+   352→        icon: CreditCard,
+   353→        iconColor: "text-amber-500 bg-amber-500/10",
+   354→        title: `${pending} Invoice${pending > 1 ? "s" : ""} Pending`,
+   355→        description: "Sent but awaiting payment",
+   356→        timestamp: Date.now() - 900000,
+   357→        href: "/invoices",
+   358→        read: true,
+   359→      });
+   360→    }
+   361→
+   362→    // Pipeline activity
+   363→    if (totalDeals > 0) {
+   364→      notifs.push({
+   365→        id: "pipeline-active",
+   366→        icon: Kanban,
+   367→        iconColor: "text-violet-500 bg-violet-500/10",
+   368→        title: `${totalDeals} Active Deal${totalDeals > 1 ? "s" : ""}`,
+   369→        description: `${fmtCurrency(pipelineValue)} total pipeline value`,
+   370→        timestamp: Date.now() - 1200000,
+   371→        href: "/pipeline",
+   372→        read: true,
+   373→      });
+   374→    }
+   375→
+   376→    // Proposals sent awaiting response
+   377→    if (proposalSent > 0) {
+   378→      notifs.push({
+   379→        id: "proposals-sent",
+   380→        icon: Send,
+   381→        iconColor: "text-sky-500 bg-sky-500/10",
+   382→        title: `${proposalSent} Proposal${proposalSent > 1 ? "s" : ""} Sent`,
+   383→        description: "Awaiting client response",
+   384→        timestamp: Date.now() - 1800000,
+   385→        href: "/proposals",
+   386→        read: true,
+   387→      });
+   388→    }
+   389→
+   390→    // Collection rate insight
+   391→    if (invoiceTotal > 0 && collectionRate < 80) {
+   392→      notifs.push({
+   393→        id: "collection-low",
+   394→        icon: BarChart3,
+   395→        iconColor: "text-orange-500 bg-orange-500/10",
+   396→        title: "Collection Rate Below 80%",
+   397→        description: `${collectionRate}% — consider following up on outstanding invoices`,
+   398→        timestamp: Date.now() - 3600000,
+   399→        href: "/invoices",
+   400→        read: true,
+   401→      });
+   402→    }
+   403→
+   404→    // Revenue received
+   405→    if (invoiceRevenue > 0) {
+   406→      notifs.push({
+   407→        id: "revenue-received",
+   408→        icon: DollarSign,
+   409→        iconColor: "text-emerald-500 bg-emerald-500/10",
+   410→        title: `${fmtCompactCurrency(invoiceRevenue)} Collected`,
+   411→        description: "Revenue received this period",
+   412→        timestamp: Date.now() - 7200000,
+   413→        href: "/invoices",
+   414→        read: true,
+   415→      });
+   416→    }
+   417→
+   418→    return notifs;
+   419→  }, [invoiceOverdue, invoiceOutstanding, proposalViewed, proposalSigned, proposalTotalValue, invoiceTotal, invoicePaid, totalDeals, pipelineValue, proposalSent, collectionRate, invoiceRevenue]);
+   420→
+   421→  const unreadCount = notifications.filter(n => !n.read).length;
+   422→
+   423→  // ─── Build activity feed ────────────────────────────────────────────────
+   424→  const activityItems: ActivityItem[] = useMemo(() => {
+   425→    const items: ActivityItem[] = [];
+   426→
+   427→    if (deals && Array.isArray(deals)) {
+   428→      for (const d of deals.slice(0, 10)) {
+   429→        const stageName = (d as any).stageName || "Pipeline";
+   430→        items.push({
+   431→          id: `deal-${(d as any)._id}`,
+   432→          type: "deal",
+   433→          title: d.title ?? "Untitled Deal",
+   434→          subtitle: `${fmtCurrency(d.value ?? 0)} · ${stageName}`,
+   435→          status: stageName.toLowerCase(),
+   436→          timestamp: d.updatedAt ?? d.createdAt ?? Date.now(),
+   437→          href: "/pipeline",
+   438→        });
+   439→      }
+   440→    }
+   441→
+   442→    if (proposals && Array.isArray(proposals)) {
+   443→      for (const p of proposals.slice(0, 10)) {
+   444→        items.push({
+   445→          id: `proposal-${(p as any)._id}`,
+   446→          type: "proposal",
+   447→          title: p.title ?? "Untitled Proposal",
+   448→          subtitle: `${fmtCurrency(p.totalValue ?? 0)} · ${p.clientName ?? "No client"}`,
+   449→          status: p.status ?? "draft",
+   450→          timestamp: p.updatedAt ?? p.createdAt ?? Date.now(),
+   451→          href: "/proposals",
+   452→        });
+   453→      }
+   454→    }
+   455→
+   456→    if (invoices && Array.isArray(invoices)) {
+   457→      for (const inv of invoices.slice(0, 10)) {
+   458→        items.push({
+   459→          id: `invoice-${(inv as any)._id}`,
+   460→          type: "invoice",
+   461→          title: `${(inv as any).invoiceNumber ?? "Invoice"} — ${inv.clientName ?? "No client"}`,
+   462→          subtitle: fmtCurrency(inv.total ?? 0),
+   463→          status: inv.status ?? "draft",
+   464→          timestamp: (inv as any).updatedAt ?? (inv as any).createdAt ?? Date.now(),
+   465→          href: "/invoices",
+   466→        });
+   467→      }
+   468→    }
+   469→
+   470→    items.sort((a, b) => b.timestamp - a.timestamp);
+   471→    return items.slice(0, 15);
+   472→  }, [deals, proposals, invoices]);
+   473→
+   474→  // ─── Handlers ───────────────────────────────────────────────────────────
+   475→  const handleSeed = async () => {
+   476→    try {
+   477→      toast.info("Seeding demo data...", { description: "This may take a few seconds" });
+   478→      await seedAll({});
+   479→      toast.success("Demo data seeded!", {
+   480→        description: "Your dashboard is now populated with sample data",
+   481→      });
+   482→    } catch (err: any) {
+   483→      console.error("Seed error:", err);
+   484→      toast.error("Failed to seed demo data", {
+   485→        description: err?.message ?? "Please try again",
+   486→      });
+   487→    }
+   488→  };
+   489→
+   490→  const handleUpgrade = (tier: string) => {
+   491→    toast.success(`Upgrading to ${tier}...`, {
+   492→      description: "You'll be redirected to Stripe checkout",
+   493→    });
+   494→    setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
+   495→    setShowPricingModal(false);
+   496→  };
+   497→
+   498→  // ─── Auto-dismiss notification panel ───────────────────────────────────
+   499→  useEffect(() => {
+   500→    if (!showNotifications) return;
+   501→    const timer = setTimeout(() => setShowNotifications(false), 15000);
+   502→    return () => clearTimeout(timer);
+   503→  }, [showNotifications]);
+   504→
+   505→  // ─── Auth loading gate ──────────────────────────────────────────────────
+   506→  if (authLoading) {
+   507→    return (
+   508→      <div className="min-h-screen flex items-center justify-center bg-background">
+   509→        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+   510→      </div>
+   511→    );
+   512→  }
+   513→
+   514→  return (
+   515→    <motion.div
+   516→      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+   517→      initial={{ opacity: 0 }}
+   518→      animate={{ opacity: 1 }}
+   519→      transition={{ duration: 0.5 }}
+   520→    >
+   521→      <div className="container mx-auto px-4 py-6 max-w-[1400px]">
+   522→        {/* ─── Header with Notification Bell ──────────────────────────── */}
+   523→        <div className="flex items-start justify-between mb-6">
+   524→          <div>
+   525→            <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">
+   526→              Dashboard
+   527→            </h1>
+   528→            <p className="text-sm text-muted-foreground">
+   529→              Your business at a glance — clients, deals, proposals, and invoices
+   530→            </p>
+   531→          </div>
+   532→          <div className="relative">
+   533→            <button
+   534→              onClick={() => setShowNotifications(!showNotifications)}
+   535→              className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+   536→            >
+   537→              {unreadCount > 0 ? (
+   538→                <BellRing className="h-5 w-5 text-foreground" />
+   539→              ) : (
+   540→                <Bell className="h-5 w-5 text-muted-foreground" />
+   541→              )}
+   542→              {unreadCount > 0 && (
+   543→                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+   544→                  {unreadCount}
+   545→                </span>
+   546→              )}
+   547→            </button>
+   548→
+   549→            {/* Notification Popup */}
+   550→            <AnimatePresence>
+   551→              {showNotifications && (
+   552→                <motion.div
+   553→                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+   554→                  animate={{ opacity: 1, y: 0, scale: 1 }}
+   555→                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+   556→                  transition={{ duration: 0.15 }}
+   557→                  className="absolute right-0 top-12 w-[360px] max-w-[calc(100vw-2rem)] max-h-[480px] overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50"
+   558→                >
+   559→                  <div className="sticky top-0 bg-popover border-b border-border px-4 py-3 flex items-center justify-between">
+   560→                    <div className="flex items-center gap-2">
+   561→                      <h3 className="text-sm font-semibold">Insights</h3>
+   562→                      {unreadCount > 0 && (
+   563→                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+   564→                          {unreadCount} new
+   565→                        </Badge>
+   566→                      )}
+   567→                    </div>
+   568→                    <button
+   569→                      onClick={() => setShowNotifications(false)}
+   570→                      className="p-1 rounded-md hover:bg-muted transition-colors"
+   571→                    >
+   572→                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+   573→                    </button>
+   574→                  </div>
+   575→                  <div className="divide-y divide-border">
+   576→                    {notifications.length === 0 ? (
+   577→                      <div className="py-8 text-center text-sm text-muted-foreground">
+   578→                        No insights right now
+   579→                      </div>
+   580→                    ) : (
+   581→                      notifications.map((notif) => (
+   582→                        <button
+   583→                          key={notif.id}
+   584→                          onClick={() => {
+   585→                            navigate(notif.href);
+   586→                            setShowNotifications(false);
+   587→                          }}
+   588→                          className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${!notif.read ? "bg-primary/5" : ""}`}
+   589→                        >
+   590→                          <div className="flex items-start gap-3">
+   591→                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notif.iconColor}`}>
+   592→                              <notif.icon className="h-4 w-4" />
+   593→                            </div>
+   594→                            <div className="flex-1 min-w-0">
+   595→                              <p className="text-sm font-medium text-foreground">{notif.title}</p>
+   596→                              <p className="text-xs text-muted-foreground mt-0.5">{notif.description}</p>
+   597→                              <p className="text-[10px] text-muted-foreground/60 mt-1">{fmtRelative(notif.timestamp)}</p>
+   598→                            </div>
+   599→                            {!notif.read && (
+   600→                              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+   601→                            )}
+   602→                          </div>
+   603→                        </button>
+   604→                      ))
+   605→                    )}
+   606→                  </div>
+   607→                </motion.div>
+   608→              )}
+   609→            </AnimatePresence>
+   610→          </div>
+   611→        </div>
+   612→
+   613→        {/* Demo mode banner */}
+   614→        {isDisconnected && (
+   615→          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-6">
+   616→            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+   617→            <div className="text-sm text-amber-800 dark:text-amber-200">
+   618→              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+   619→              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+   620→                Sign in
+   621→              </a>{" "}
+   622→              to manage your real data.
+   623→            </div>
+   624→          </div>
+   625→        )}
+   626→
+   627→        {/* ─── PRIMARY METRICS ROW — Big 3 KPIs: Projects, Clients, Revenue ── */}
+   628→        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+   629→          {isQueryLoading ? (
+   630→            <>
+   631→              <StatCardSkeleton />
+   632→              <StatCardSkeleton />
+   633→              <StatCardSkeleton />
+   634→            </>
+   635→          ) : (
+   636→            <>
+   637→              {/* Projects KPI */}
+   638→              <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/projects")}>
+   639→                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
+   640→                  <div className="flex items-center justify-between mb-2">
+   641→                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Projects</span>
+   642→                    <Briefcase className="h-4 w-4 text-blue-500" />
+   643→                  </div>
+   644→                  <div className="text-3xl font-bold text-foreground tracking-tight">
+   645→                    {totalProjects}
+   646→                  </div>
+   647→                  <div className="flex items-center justify-between mt-2">
+   648→                    <span className="text-xs text-muted-foreground">
+   649→                      {activeProjects} active · {totalProjects - activeProjects} completed
+   650→                    </span>
+   651→                    <span className="flex items-center gap-1 text-xs">
+   652→                      <span className="text-blue-600 dark:text-blue-400 font-medium">{totalDeals}</span>
+   653→                      <span className="text-muted-foreground">pipeline</span>
+   654→                    </span>
+   655→                  </div>
+   656→                  <Progress value={totalProjects > 0 ? Math.round((activeProjects / totalProjects) * 100) : 0} className="h-1.5 mt-2" />
+   657→                </CardContent>
+   658→              </Card>
+   659→
+   660→              {/* Clients KPI */}
+   661→              <Card className="border-l-4 border-l-violet-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clients")}>
+   662→                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
+   663→                  <div className="flex items-center justify-between mb-2">
+   664→                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Clients</span>
+   665→                    <Users className="h-4 w-4 text-violet-500" />
+   666→                  </div>
+   667→                  <div className="text-3xl font-bold text-foreground tracking-tight">
+   668→                    {totalClients}
+   669→                  </div>
+   670→                  <div className="flex items-center justify-between mt-2">
+   671→                    <span className="text-xs text-muted-foreground">
+   672→                      {proposalSent + proposalViewed} proposals in play
+   673→                    </span>
+   674→                    <span className="flex items-center gap-1 text-xs">
+   675→                      <span className="text-violet-600 dark:text-violet-400 font-medium">{proposalSignatureRate}%</span>
+   676→                      <span className="text-muted-foreground">close rate</span>
+   677→                    </span>
+   678→                  </div>
+   679→                  <Progress value={proposalSignatureRate} className="h-1.5 mt-2" />
+   680→                </CardContent>
+   681→              </Card>
+   682→
+   683→              {/* Revenue KPI — Money Paid */}
+   684→              <Card className="border-l-4 border-l-emerald-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
+   685→                <CardContent className="pt-4 pb-4 px-5 min-h-[120px]">
+   686→                  <div className="flex items-center justify-between mb-2">
+   687→                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Revenue</span>
+   688→                    <DollarSign className="h-4 w-4 text-emerald-500" />
+   689→                  </div>
+   690→                  <div className="text-3xl font-bold text-foreground tracking-tight">
+   691→                    {fmtCompactCurrency(invoiceRevenue)}
+   692→                  </div>
+   693→                  <div className="flex items-center justify-between mt-2">
+   694→                    <span className="text-xs text-muted-foreground">
+   695→                      {invoiceOutstanding > 0 ? `${fmtCompactCurrency(invoiceOutstanding)} outstanding` : "All collected"}
+   696→                    </span>
+   697→                    <span className="flex items-center gap-1 text-xs">
+   698→                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">{collectionRate}%</span>
+   699→                      <span className="text-muted-foreground">collected</span>
+   700→                    </span>
+   701→                  </div>
+   702→                  <Progress value={collectionRate} className="h-1.5 mt-2" />
+   703→                </CardContent>
+   704→              </Card>
+   705→            </>
+   706→          )}
+   707→        </div>
+   708→
+   709→        {/* ─── SECONDARY METRICS ROW — 6 compact tiles ─────────────────── */}
+   710→        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+   711→          {isQueryLoading ? (
+   712→            Array.from({ length: 6 }).map((_, i) => <StatCardSkeleton key={i} />)
+   713→          ) : (
+   714→            <>
+   715→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+   716→                <CardContent className="pt-3 pb-3 px-4">
+   717→                  <div className="flex items-center gap-2 mb-1">
+   718→                    <LayoutList className="h-3.5 w-3.5 text-muted-foreground" />
+   719→                    <span className="text-xs text-muted-foreground">Active Deals</span>
+   720→                  </div>
+   721→                  <div className="text-xl font-bold text-foreground">{totalDeals}</div>
+   722→                </CardContent>
+   723→              </Card>
+   724→
+   725→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/pipeline")}>
+   726→                <CardContent className="pt-3 pb-3 px-4">
+   727→                  <div className="flex items-center gap-2 mb-1">
+   728→                    <Kanban className="h-3.5 w-3.5 text-blue-500" />
+   729→                    <span className="text-xs text-muted-foreground">Pipeline</span>
+   730→                  </div>
+   731→                  <div className="text-xl font-bold text-foreground">{fmtCompactCurrency(pipelineValue)}</div>
+   732→                </CardContent>
+   733→              </Card>
+   734→
+   735→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/proposals")}>
+   736→                <CardContent className="pt-3 pb-3 px-4">
+   737→                  <div className="flex items-center gap-2 mb-1">
+   738→                    <Send className="h-3.5 w-3.5 text-sky-500" />
+   739→                    <span className="text-xs text-muted-foreground">Sent</span>
+   740→                  </div>
+   741→                  <div className="text-xl font-bold text-foreground">{proposalSent + proposalViewed}</div>
+   742→                </CardContent>
+   743→              </Card>
+   744→
+   745→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/invoices")}>
+   746→                <CardContent className="pt-3 pb-3 px-4">
+   747→                  <div className="flex items-center gap-2 mb-1">
+   748→                    <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+   749→                    <span className="text-xs text-muted-foreground">Invoices</span>
+   750→                  </div>
+   751→                  <div className="text-xl font-bold text-foreground">{invoiceTotal}</div>
+   752→                </CardContent>
+   753→              </Card>
+   754→
+   755→              <Card className={`cursor-pointer hover:shadow-md transition-shadow ${invoiceOverdue > 0 ? "border-red-200 dark:border-red-800" : ""}`} onClick={() => navigate("/invoices")}>
+   756→                <CardContent className="pt-3 pb-3 px-4">
+   757→                  <div className="flex items-center gap-2 mb-1">
+   758→                    <AlertCircle className={`h-3.5 w-3.5 ${invoiceOverdue > 0 ? "text-red-500" : "text-muted-foreground"}`} />
+   759→                    <span className="text-xs text-muted-foreground">Overdue</span>
+   760→                  </div>
+   761→                  <div className={`text-xl font-bold ${invoiceOverdue > 0 ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>{invoiceOverdue}</div>
+   762→                </CardContent>
+   763→              </Card>
+   764→
+   765→              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/scope")}>
+   766→                <CardContent className="pt-3 pb-3 px-4">
+   767→                  <div className="flex items-center gap-2 mb-1">
+   768→                    <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+   769→                    <span className="text-xs text-muted-foreground">Scopes</span>
+   770→                  </div>
+   771→                  <div className="text-xl font-bold text-foreground">{scopeCount}</div>
+   772→                </CardContent>
+   773→              </Card>
+   774→            </>
+   775→          )}
+   776→        </div>
+   777→
+   778→        {/* ─── Get Started / Seed Data (shown when no data exists) ───────── */}
+   779→        {!isQueryLoading && !hasAnyData && (
+   780→          <div className="mb-6">
+   781→            <GetStartedState onSeed={handleSeed} onAddClient={() => navigate("/clients")} />
+   782→          </div>
+   783→        )}
+   784→
+   785→        {/* ─── MAIN CONTENT: Side Panels (no activity feed) ───────────── */}
+   786→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+   787→          {/* Column 1 — Quick Actions + Business Health */}
+   788→          <div className="space-y-4">
+   789→            {/* Quick Actions */}
+   790→            <Card>
+   791→              <CardHeader className="pb-2">
+   792→                <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+   793→              </CardHeader>
+   794→              <CardContent className="space-y-2">
+   795→                <Button className="w-full justify-start h-9" variant="outline" size="sm" onClick={() => navigate("/pipeline")}>
+   796→                  <Plus className="mr-2 h-3.5 w-3.5" />
+   797→                  Create Deal
+   798→                </Button>
+   799→                <Button className="w-full justify-start h-9" variant="outline" size="sm" onClick={() => navigate("/proposals/new")}>
+   800→                  <Plus className="mr-2 h-3.5 w-3.5" />
+   801→                  Create Proposal
+   802→                </Button>
+   803→                <Button className="w-full justify-start h-9" variant="outline" size="sm" onClick={() => navigate("/invoices/new")}>
+   804→                  <Plus className="mr-2 h-3.5 w-3.5" />
+   805→                  Create Invoice
+   806→                </Button>
+   807→                <Button className="w-full justify-start h-9" variant="outline" size="sm" onClick={() => navigate("/clients")}>
+   808→                  <Plus className="mr-2 h-3.5 w-3.5" />
+   809→                  Add Client
+   810→                </Button>
+   811→              </CardContent>
+   812→            </Card>
+   813→
+   814→            {/* Health Overview — Combined pipeline + invoice health */}
+   815→            {!isQueryLoading && hasAnyData && (
+   816→              <Card>
+   817→                <CardHeader className="pb-2">
+   818→                  <CardTitle className="text-sm font-semibold">Business Health</CardTitle>
+   819→                </CardHeader>
+   820→                <CardContent className="space-y-3">
+   821→                  {/* Collection Health */}
+   822→                  <div>
+   823→                    <div className="flex items-center justify-between mb-1">
+   824→                      <span className="text-xs text-muted-foreground">Collection Rate</span>
+   825→                      <span className={`text-xs font-medium ${collectionRate >= 80 ? "text-emerald-600" : collectionRate >= 50 ? "text-amber-600" : "text-red-600"}`}>
+   826→                        {collectionRate}%
+   827→                      </span>
+   828→                    </div>
+   829→                    <Progress value={collectionRate} className="h-1.5" />
+   830→                  </div>
+   831→                  {/* Pipeline Health */}
+   832→                  <div>
+   833→                    <div className="flex items-center justify-between mb-1">
+   834→                      <span className="text-xs text-muted-foreground">Pipeline Weight</span>
+   835→                      <span className="text-xs font-medium text-blue-600">{pipelineHealth}%</span>
+   836→                    </div>
+   837→                    <Progress value={pipelineHealth} className="h-1.5" />
+   838→                  </div>
+   839→                  {/* Proposal Close Rate */}
+   840→                  <div>
+   841→                    <div className="flex items-center justify-between mb-1">
+   842→                      <span className="text-xs text-muted-foreground">Close Rate</span>
+   843→                      <span className="text-xs font-medium text-violet-600">{proposalSignatureRate}%</span>
+   844→                    </div>
+   845→                    <Progress value={proposalSignatureRate} className="h-1.5" />
+   846→                  </div>
+   847→                  {/* Alert line */}
+   848→                  {invoiceOverdue > 0 && (
+   849→                    <div className="flex items-center gap-2 p-2 bg-red-500/10 rounded-md mt-1">
+   850→                      <AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+   851→                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+   852→                        {invoiceOverdue} overdue invoice{invoiceOverdue !== 1 ? "s" : ""}
+   853→                      </span>
+   854→                    </div>
+   855→                  )}
+   856→                </CardContent>
+   857→              </Card>
+   858→            )}
+   859→
+   860→            {/* Pipeline Breakdown */}
+   861→            {!isQueryLoading && pipelineStats?.byStage && (pipelineStats.byStage as any[]).length > 0 && (
+   862→              <Card>
+   863→                <CardHeader className="pb-2">
+   864→                  <CardTitle className="text-sm font-semibold">Pipeline Breakdown</CardTitle>
+   865→                </CardHeader>
+   866→                <CardContent>
+   867→                  <div className="space-y-2">
+   868→                    {(pipelineStats.byStage as any[]).map((stage: any) => (
+   869→                      <div key={stage.stageId} className="flex items-center justify-between">
+   870→                        <div className="flex items-center gap-2">
+   871→                          <div
+   872→                            className="h-2.5 w-2.5 rounded-full"
+   873→                            style={{ backgroundColor: stage.color ?? "#888" }}
+   874→                          />
+   875→                          <span className="text-xs text-foreground">{stage.stageName}</span>
+   876→                        </div>
+   877→                        <div className="flex items-center gap-2">
+   878→                          <span className="text-[10px] text-muted-foreground">
+   879→                            {stage.dealCount}
+   880→                          </span>
+   881→                          <span className="text-xs font-medium text-foreground">
+   882→                            {fmtCompactCurrency(stage.totalValue)}
+   883→                          </span>
+   884→                        </div>
+   885→                      </div>
+   886→                    ))}
+   887→                  </div>
+   888→                </CardContent>
+   889→              </Card>
+   890→            )}
+   891→
+   892→            {/* Revenue Summary */}
+   893→            {!isQueryLoading && invoiceTotal > 0 && (
+   894→              <Card>
+   895→                <CardHeader className="pb-2">
+   896→                  <CardTitle className="text-sm font-semibold">Revenue Summary</CardTitle>
+   897→                </CardHeader>
+   898→                <CardContent>
+   899→                  <div className="grid grid-cols-2 gap-3">
+   900→                    <div>
+   901→                      <p className="text-sm font-bold text-emerald-600">{fmtCompactCurrency(invoiceRevenue)}</p>
+   902→                      <p className="text-[10px] text-muted-foreground">Collected</p>
+   903→                    </div>
+   904→                    <div>
+   905→                      <p className="text-sm font-bold text-foreground">{fmtCompactCurrency(invoiceOutstanding)}</p>
+   906→                      <p className="text-[10px] text-muted-foreground">Outstanding</p>
+   907→                    </div>
+   908→                    <div>
+   909→                      <p className="text-sm font-bold text-foreground">{invoicePaid}</p>
+   910→                      <p className="text-[10px] text-muted-foreground">Paid</p>
+   911→                    </div>
+   912→                    <div>
+   913→                      <p className="text-sm font-bold text-foreground">{invoiceDraft}</p>
+   914→                      <p className="text-[10px] text-muted-foreground">Draft</p>
+   915→                    </div>
+   916→                  </div>
+   917→                </CardContent>
+   918→              </Card>
+   919→            )}
+   920→
+   921→            {/* Scope Definitions */}
+   922→            {!isQueryLoading && scopeCount > 0 && (
+   923→              <Card
+   924→                className="cursor-pointer hover:shadow-md transition-shadow"
+   925→                onClick={() => navigate("/scope")}
+   926→              >
+   927→                <CardHeader className="pb-2">
+   928→                  <CardTitle className="text-sm font-semibold">Scope Definitions</CardTitle>
+   929→                </CardHeader>
+   930→                <CardContent>
+   931→                  <div className="flex items-center justify-between">
+   932→                    <p className="text-sm font-bold text-foreground">{scopeCount}</p>
+   933→                    <Badge variant="outline" className="text-[10px]">Active</Badge>
+   934→                  </div>
+   935→                  <p className="text-[10px] text-muted-foreground mt-1">
+   936→                    Protect against scope creep
+   937→                  </p>
+   938→                </CardContent>
+   939→              </Card>
+   940→            )}
+   941→
+   942→            {/* Seed Data button (dev only) */}
+   943→            {import.meta.env.DEV && !isQueryLoading && hasAnyData && totalClients < 3 && (
+   944→              <Button
+   945→                variant="ghost"
+   946→                size="sm"
+   947→                className="w-full text-xs text-muted-foreground"
+   948→                onClick={handleSeed}
+   949→              >
+   950→                <Sparkles className="mr-1 h-3 w-3" />
+   951→                Load more demo data
+   952→              </Button>
+   953→            )}
+   954→          </div>
+   955→        </div>
+   956→      </div>
+   957→
+   958→      {/* Pricing Modal */}
+   959→      <PricingModal
+   960→        isOpen={showPricingModal}
+   961→        onClose={() => setShowPricingModal(false)}
+   962→        onUpgrade={handleUpgrade}
+   963→        currentTier={subscriptionTier}
+   964→        currentLoss={0}
+   965→        potentialSavings={0}
+   966→        highlightSavings={pricingHighlightSavings}
+   967→        vulnerabilityScore={0}
+   968→      />
+   969→    </motion.div>
+   970→  );
+   971→}
+   972→

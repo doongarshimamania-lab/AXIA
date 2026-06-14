@@ -33,6 +33,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -322,7 +323,7 @@ export default function Tags() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background text-foreground"
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -647,7 +648,7 @@ export default function Tags() {
             )}
           </>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Edit Tag Dialog ── */}
       <Dialog

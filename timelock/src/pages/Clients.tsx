@@ -21,6 +21,7 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Mock data for demo mode (unauthenticated) ──────────────────────────
 const MOCK_CLIENTS = [
@@ -107,9 +108,6 @@ export default function Clients() {
   // ─── Permissions ────────────────────────────────────────────────────────
   const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
 
-  // ─── Permissions for selected client (hook MUST be at top level) ──────
-  const perms = usePermissions(selectedClient as any);
-
   // ─── Convex mutations for sharing ───────────────────────────────────────
   const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
   const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
@@ -174,7 +172,11 @@ export default function Clients() {
   }, [clients, selectedClientId]);
 
   // ─── Get selected client object ────────────────────────────────────────
+  // IMPORTANT: Must be computed BEFORE usePermissions() call below
   const selectedClient = clients.find((c: any) => c._id === selectedClientId) ?? null;
+
+  // ─── Permissions for selected client (hook MUST be at top level) ──────
+  const perms = usePermissions(selectedClient as any);
 
   // ─── Handlers ──────────────────────────────────────────────────────────
   const handleAddClient = async () => {
@@ -244,10 +246,10 @@ export default function Clients() {
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="flex-1 transition-all duration-300 p-8 space-y-6">
+      <PageLayout spaced>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
               Clients
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -581,7 +583,7 @@ export default function Clients() {
             toast.success("Import complete");
           }}
         />
-      </div>
+      </PageLayout>
     </div>
   );
 }

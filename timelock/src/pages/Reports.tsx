@@ -47,6 +47,7 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -481,7 +482,7 @@ export default function Reports() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-4 py-6">
+      <PageLayout>
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Reports</h1>
@@ -920,7 +921,7 @@ export default function Reports() {
             </div>
           </>
         )}
-      </div>
+      </PageLayout>
 
       {/* Generate Report Dialog */}
       <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>

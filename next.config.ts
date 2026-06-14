@@ -9,10 +9,15 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   async rewrites() {
     return [
-      // SPA fallback for /timelock/* routes - serve index.html for all sub-routes
+      // Proxy /timelock/ requests to the Vite app server on port 3001
       {
-        source: '/timelock/:path((?!assets|logo|favicon).*)*',
-        destination: '/timelock/index.html',
+        source: '/timelock/:path*',
+        destination: 'http://localhost:3001/:path*',
+      },
+      // Also proxy the root to the Vite app (for direct access)
+      {
+        source: '/assets/:path*',
+        destination: 'http://localhost:3001/assets/:path*',
       },
     ];
   },

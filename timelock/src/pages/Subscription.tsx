@@ -51,6 +51,7 @@ import {
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Tier Definitions ────────────────────────────────────────────────────────
 
@@ -695,7 +696,7 @@ export default function Subscription() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <PageLayout maxWidth="max-w-6xl">
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -1256,7 +1257,7 @@ export default function Subscription() {
             </Card>
           </motion.div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Change Plan Dialog ────────────────────────────────── */}
       <ChangePlanDialog

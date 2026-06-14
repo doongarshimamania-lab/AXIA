@@ -1,0 +1,665 @@
+     1→import { useState, useEffect, useRef } from "react";
+     2→import { motion, AnimatePresence } from "framer-motion";
+     3→import { Button } from "@/components/ui/button";
+     4→import { Badge } from "@/components/ui/badge";
+     5→import { useNavigate } from "react-router";
+     6→import { useTheme } from "@/components/ThemeProvider";
+     7→import { Sun, Moon } from "lucide-react";
+     8→import {
+     9→  Dialog,
+    10→  DialogContent,
+    11→  DialogDescription,
+    12→  DialogFooter,
+    13→  DialogHeader,
+    14→  DialogTitle,
+    15→} from "@/components/ui/dialog";
+    16→import {
+    17→  AlertDialog,
+    18→  AlertDialogAction,
+    19→  AlertDialogCancel,
+    20→  AlertDialogContent,
+    21→  AlertDialogDescription,
+    22→  AlertDialogFooter,
+    23→  AlertDialogHeader,
+    24→  AlertDialogTitle,
+    25→} from "@/components/ui/alert-dialog";
+    26→import { toast } from "sonner";
+    27→import { useIsMobile } from "@/hooks/use-mobile";
+    28→import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut } from "lucide-react";
+    29→import { ProfileSection } from "@/components/ProfileSection";
+    30→import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+    31→import { useAuth } from "@/hooks/use-auth";
+    32→
+    33→type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
+    34→
+    35→const platformLabels: Record<Platform, string> = {
+    36→  upwork: "Upwork",
+    37→  fiverr: "Fiverr",
+    38→  toptal: "Toptal",
+    39→  freelancer: "Freelancer.com",
+    40→};
+    41→
+    42→const platformColors: Record<Platform, string> = {
+    43→  upwork: "#14A800",
+    44→  fiverr: "#1DBF73",
+    45→  toptal: "#204ECF",
+    46→  freelancer: "#29B2FE",
+    47→};
+    48→
+    49→export function CollapsibleSidebar() {
+    50→  const navigate = useNavigate();
+    51→  const { theme, toggleTheme } = useTheme();
+    52→  const { signOut, user } = useAuth();
+    53→  const scrollContainerRef = useRef<HTMLDivElement>(null);
+    54→  const isMobile = useIsMobile();
+    55→
+    56→  // Analytics: wrap toggleTheme to track theme changes
+    57→  const handleToggleTheme = () => {
+    58→    const newTheme = theme === "dark" ? "light" : "dark";
+    59→    toggleTheme();
+    60→    import("@/lib/monitoring").then(({ trackEvent, AnalyticsEvents }) => {
+    61→      trackEvent(AnalyticsEvents.THEME_TOGGLE, { from: theme, to: newTheme });
+    62→    });
+    63→  };
+    64→  
+    65→  const [isExpanded, setIsExpanded] = useState(() => {
+    66→    if (typeof localStorage !== "undefined") {
+    67→      return localStorage.getItem("axia_sidebar_state") !== "collapsed";
+    68→    }
+    69→    return true;
+    70→  });
+    71→
+    72→  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    73→    if (typeof localStorage !== "undefined") {
+    74→      const saved = localStorage.getItem("axia_sidebar_sections");
+    75→      return saved ? JSON.parse(saved) : {};
+    76→    }
+    77→    return {};
+    78→  });
+    79→
+    80→  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+    81→  const [showConnectModal, setShowConnectModal] = useState(false);
+    82→  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+    83→  const [isConnecting, setIsConnecting] = useState(false);
+    84→  const [isDisconnecting, setIsDisconnecting] = useState(false);
+    85→
+    86→  // Use real user data from auth
+    87→  const profile = { name: user?.name || user?.email || "User", subscriptionTier: (user?.subscriptionTier || "free") as "free" | "starter" | "pro" | "expert" | "client", image: user?.image };
+    88→  const protectionMetrics = { 
+    89→    protectionScore: 92, 
+    90→    activeSession: { startTime: Date.now() - 30 * 60000 }, // 30 min session
+    91→    protectedHours: 4.5,
+    92→    evidenceEvents: 12,
+    93→    connectedPlatforms: 2
+    94→  }; // Mock metrics
+    95→  const evidenceStats = { total: 45, recent: 3 }; // Mock evidence
+    96→  const recentReports = [ // Mock reports
+    97→    { _id: "1", caseId: "UPW-2024-001", status: "generated" as const, generatedAt: Date.now() - 86400000 },
+    98→    { _id: "2", caseId: "FIV-2024-002", status: "sent" as const, generatedAt: Date.now() - 2 * 86400000 }
+    99→  ];
+   100→  const monthlyUsage = { used: 2, limit: 10 }; // Mock usage
+   101→  const platformStatus = { upwork: "connected", fiverr: "disconnected" }; // Mock status
+   102→  const currentSession = { _id: "session-123" }; // Mock session
+   103→
+   104→  // Mock connections and mutations as local state/actions
+   105→  const [connections, setConnections] = useState([
+   106→    { platform: "upwork" as Platform, status: "connected" as const, lastSyncedAt: Date.now() - 3600000 },
+   107→    { platform: "fiverr" as Platform, status: "disconnected" as const }
+   108→  ]); // Mock connections
+   109→  const generateUniversalReport = async ({ sessionId }: { sessionId: string }) => {
+   110→    toast.success("Report generated successfully!"); // Mock mutation
+   111→  };
+   112→  const initiate = async ({ platform }: { platform: Platform }) => ({ 
+   113→    alreadyConnected: false, 
+   114→    connectionId: "mock-conn-123" 
+   115→  }); // Mock initiate
+   116→  const complete = async (args: any) => { /* Mock complete */ }; // No-op
+   117→  const disconnect = async ({ platform }: { platform: Platform }) => ({ 
+   118→    deletedRecords: 5 
+   119→  }); // Mock disconnect, update local state
+   120→  const handleDisconnect = async () => {
+   121→    if (!selectedPlatform) return;
+   122→    setIsDisconnecting(true);
+   123→    // Simulate disconnect
+   124→    setConnections(prev => prev.filter(c => c.platform !== selectedPlatform));
+   125→    toast.success(`Disconnected from ${platformLabels[selectedPlatform]}`, { description: "Deleted 5 records" });
+   126→    setShowDisconnectDialog(false);
+   127→    setSelectedPlatform(null);
+   128→    setIsDisconnecting(false);
+   129→  };
+   130→
+   131→  // Save scroll position on scroll
+   132→  useEffect(() => {
+   133→    const container = scrollContainerRef.current;
+   134→    if (!container) return;
+   135→
+   136→    const handleScroll = () => {
+   137→      if (typeof localStorage !== "undefined") {
+   138→        localStorage.setItem("axia_sidebar_scroll", container.scrollTop.toString());
+   139→      }
+   140→    };
+   141→
+   142→    container.addEventListener("scroll", handleScroll);
+   143→    return () => container.removeEventListener("scroll", handleScroll);
+   144→  }, []);
+   145→
+   146→  // Restore scroll position on mount
+   147→  useEffect(() => {
+   148→    const container = scrollContainerRef.current;
+   149→    if (!container) return;
+   150→
+   151→    if (typeof localStorage !== "undefined") {
+   152→      const savedScroll = localStorage.getItem("axia_sidebar_scroll");
+   153→      if (savedScroll) {
+   154→        container.scrollTop = parseInt(savedScroll, 10);
+   155→      }
+   156→    }
+   157→  }, []);
+   158→
+   159→  useEffect(() => {
+   160→    if (typeof localStorage !== "undefined") {
+   161→      localStorage.setItem("axia_sidebar_state", isExpanded ? "expanded" : "collapsed");
+   162→      // Sync CSS variable immediately when state changes
+   163→      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+   164→    }
+   165→  }, [isExpanded]);
+   166→
+   167→  useEffect(() => {
+   168→    if (typeof localStorage !== "undefined") {
+   169→      localStorage.setItem("axia_sidebar_sections", JSON.stringify(expandedSections));
+   170→    }
+   171→  }, [expandedSections]);
+   172→
+   173→  const toggleSection = (section: string) => {
+   174→    setExpandedSections((prev: Record<string, boolean>) => ({
+   175→      ...prev,
+   176→      [section]: !prev[section]
+   177→    }));
+   178→  };
+   179→
+   180→  const username = profile?.name || "User";
+   181→  const userInitial = username.charAt(0).toUpperCase();
+   182→  const subscriptionTier = profile?.subscriptionTier || "free";
+   183→  const protectionScore = protectionMetrics?.protectionScore || 100;
+   184→
+   185→  // Calculate active session duration
+   186→  const activeSessionDuration = protectionMetrics?.activeSession 
+   187→    ? Math.floor((Date.now() - protectionMetrics.activeSession.startTime) / 60000)
+   188→    : 0;
+   189→
+   190→  return (
+   191→    <>
+   192→      <motion.div
+   193→        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto hidden md:flex"
+   194→        initial={false}
+   195→        animate={{ width: isExpanded ? 280 : 64 }}
+   196→        transition={{ duration: 0.3, ease: "easeInOut" }}
+   197→        style={{ 
+   198→          cursor: isExpanded ? 'default' : 'pointer',
+   199→          zIndex: 9999
+   200→        }}
+   201→        onClick={() => {
+   202→          if (!isExpanded) {
+   203→            setIsExpanded(true);
+   204→          }
+   205→        }}
+   206→        onAnimationStart={() => {
+   207→          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+   208→        }}
+   209→        onAnimationComplete={() => {
+   210→          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+   211→        }}
+   212→      >
+   213→        {/* Logo Section */}
+   214→        <div
+   215→          className="h-14 border-b border-sidebar-border flex items-center justify-between px-4 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
+   216→          onClick={(e) => {
+   217→            e.stopPropagation();
+   218→            if (isExpanded) {
+   219→              setIsExpanded(false);
+   220→            }
+   221→          }}
+   222→          onMouseDown={(e) => e.stopPropagation()}
+   223→          style={{ zIndex: 10000 }}
+   224→        >
+   225→          <div className="flex items-center gap-3">
+   226→            <div className="w-6 h-6 flex items-center justify-center">
+   227→              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+   228→                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+   229→                <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+   230→              </svg>
+   231→            </div>
+   232→            <AnimatePresence>
+   233→              {isExpanded && (
+   234→                <motion.span
+   235→                  initial={{ opacity: 0, width: 0 }}
+   236→                  animate={{ opacity: 1, width: "auto" }}
+   237→                  exit={{ opacity: 0, width: 0 }}
+   238→                  transition={{ duration: 0.2 }}
+   239→                  className="font-[Space_Grotesk] font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
+   240→                >
+   241→                  Axia
+   242→                </motion.span>
+   243→              )}
+   244→            </AnimatePresence>
+   245→          </div>
+   246→
+   247→          {isExpanded && (
+   248→            <button
+   249→              onClick={(e) => {
+   250→                e.stopPropagation();
+   251→                setIsExpanded(false);
+   252→              }}
+   253→              className="w-6 h-6 flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
+   254→              aria-label="Collapse sidebar"
+   255→            >
+   256→              <ChevronLeft className="w-5 h-5" />
+   257→            </button>
+   258→          )}
+   259→        </div>
+   260→
+   261→        {/* Profile Section - Using imported component */}
+   262→        <ProfileSection 
+   263→          profile={profile} 
+   264→          isExpanded={isExpanded} 
+   265→          onOpenProfile={() => {
+   266→            const event = new CustomEvent('openProfileModal');
+   267→            window.dispatchEvent(event);
+   268→          }} 
+   269→        />
+   270→
+   271→        {/* Workspace Switcher */}
+   272→        {isExpanded && (
+   273→          <div className="px-2 py-1">
+   274→            <WorkspaceSwitcher />
+   275→          </div>
+   276→        )}
+   277→
+   278→        {/* Navigation Content */}
+   279→        <div 
+   280→          ref={scrollContainerRef}
+   281→          className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide" 
+   282→          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', pointerEvents: 'auto' }}
+   283→        >
+   284→          <style>{`
+   285→            div::-webkit-scrollbar { width: 4px; }
+   286→            div::-webkit-scrollbar-track { background: transparent; }
+   287→            div::-webkit-scrollbar-thumb { background: oklch(0.4 0.02 240); border-radius: 2px; }
+   288→            div::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0.02 240); }
+   289→          `}</style>
+   290→          <AnimatePresence>
+   291→            {isExpanded ? (
+   292→              <motion.div
+   293→                initial={{ opacity: 0 }}
+   294→                animate={{ opacity: 1 }}
+   295→                exit={{ opacity: 0 }}
+   296→                transition={{ duration: 0.2 }}
+   297→                className="py-2 space-y-2"
+   298→                style={{ pointerEvents: 'auto' }}
+   299→              >
+   300→                {/* WORK Section */}
+   301→                <div className="px-2 space-y-0.5">
+   302→                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+   303→                    WORK
+   304→                  </div>
+   305→                  <button 
+   306→                    onClick={() => navigate("/dashboard")} 
+   307→                    className="w-full text-left"
+   308→                  >
+   309→                    <NavItem icon={Home} label="Dashboard" isExpanded={true} />
+   310→                  </button>
+   311→                  <button 
+   312→                    onClick={() => navigate("/projects")} 
+   313→                    className="w-full text-left"
+   314→                  >
+   315→                    <NavItem icon={Briefcase} label="Projects" isExpanded={true} />
+   316→                  </button>
+   317→                  <button 
+   318→                    onClick={() => navigate("/clients")} 
+   319→                    className="w-full text-left"
+   320→                  >
+   321→                    <NavItem icon={Users} label="Clients" isExpanded={true} />
+   322→                  </button>
+   323→                  <button 
+   324→                    onClick={() => navigate("/teams")} 
+   325→                    className="w-full text-left"
+   326→                  >
+   327→                    <NavItem icon={Building2} label="Team" isExpanded={true} />
+   328→                  </button>
+   329→                  <button 
+   330→                    onClick={() => navigate("/messages")} 
+   331→                    className="w-full text-left"
+   332→                  >
+   333→                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} />
+   334→                  </button>
+   335→                  <button 
+   336→                    onClick={() => navigate("/scope")} 
+   337→                    className="w-full text-left"
+   338→                  >
+   339→                    <NavItem icon={Shield} label="Scope" isExpanded={true} />
+   340→                  </button>
+   341→                  <button 
+   342→                    onClick={() => navigate("/evidence-library")} 
+   343→                    className="w-full text-left"
+   344→                  >
+   345→                    <NavItem icon={Database} label="Evidence Library" isExpanded={true} />
+   346→                  </button>
+   347→                  <button 
+   348→                    onClick={() => navigate("/time-tracking")} 
+   349→                    className="w-full text-left"
+   350→                  >
+   351→                    <NavItem icon={Clock} label="Time Tracking" isExpanded={true} />
+   352→                  </button>
+   353→                  <button 
+   354→                    onClick={() => navigate("/tags")} 
+   355→                    className="w-full text-left"
+   356→                  >
+   357→                    <NavItem icon={Settings} label="Tags" isExpanded={true} />
+   358→                  </button>
+   359→                  <button 
+   360→                    onClick={() => navigate("/goals")} 
+   361→                    className="w-full text-left"
+   362→                  >
+   363→                    <NavItem icon={TrendingUp} label="Goals" isExpanded={true} />
+   364→                  </button>
+   365→                </div>
+   366→
+   367→                {/* CRM Section */}
+   368→                <div className="px-2 space-y-0.5 mt-4">
+   369→                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+   370→                    CRM
+   371→                  </div>
+   372→                  <button onClick={() => navigate("/pipeline")} className="w-full text-left" type="button">
+   373→                    <NavItem icon={Kanban} label="Pipeline" isExpanded={true} />
+   374→                  </button>
+   375→                  <button onClick={() => navigate("/proposals")} className="w-full text-left" type="button">
+   376→                    <NavItem icon={FileSignature} label="Proposals" isExpanded={true} />
+   377→                  </button>
+   378→                </div>
+   379→
+   380→                {/* BILLING Section */}
+   381→                <div className="px-2 space-y-0.5 mt-4">
+   382→                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+   383→                    BILLING
+   384→                  </div>
+   385→                  <button onClick={() => navigate("/invoices")} className="w-full text-left" type="button">
+   386→                    <NavItem icon={FileText} label="Invoices" isExpanded={true} />
+   387→                  </button>
+   388→                  <button onClick={() => navigate("/payment-patterns")} className="w-full text-left" type="button">
+   389→                    <NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} />
+   390→                  </button>
+   391→                  <button onClick={() => navigate("/reports")} className="w-full text-left" type="button">
+   392→                    <NavItem icon={Activity} label="Reports" isExpanded={true} />
+   393→                  </button>
+   394→                </div>
+   395→
+   396→                {/* INTEGRATIONS section removed — Platform Connections moved to Account Settings > Connections tab; Evidence Export merged into Evidence Library page */}
+   397→
+   398→                {/* ADMIN Section — Subscription, Help & Sign Out moved to Account Settings page */}
+   399→                <div className="px-2 space-y-0.5 mt-4">
+   400→                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+   401→                    ADMIN
+   402→                  </div>
+   403→                  <button onClick={() => navigate("/account-settings")} className="w-full text-left" type="button">
+   404→                    <NavItem icon={Settings} label="Account Settings" isExpanded={true} />
+   405→                  </button>
+   406→                </div>
+   407→              </motion.div>
+   408→            ) : (
+   409→              <motion.div
+   410→                initial={{ opacity: 0 }}
+   411→                animate={{ opacity: 1 }}
+   412→                exit={{ opacity: 0 }}
+   413→                transition={{ duration: 0.2 }}
+   414→                className="py-3 flex flex-col items-center gap-1"
+   415→              >
+   416→                {/* WORK */}
+   417→                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   418→                  <Home className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   419→                </button>
+   420→                <button onClick={() => navigate("/projects")} title="Projects" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   421→                  <Briefcase className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   422→                </button>
+   423→                <button onClick={() => navigate("/clients")} title="Clients" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   424→                  <Users className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   425→                </button>
+   426→                <button onClick={() => navigate("/teams")} title="Team" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   427→                  <Building2 className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   428→                </button>
+   429→                <button onClick={() => navigate("/messages")} title="Messages" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   430→                  <MessageSquare className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   431→                </button>
+   432→                <button onClick={() => navigate("/scope")} title="Scope" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   433→                  <Shield className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   434→                </button>
+   435→                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   436→                  <Database className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   437→                </button>
+   438→                <button onClick={() => navigate("/time-tracking")} title="Time Tracking" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   439→                  <Clock className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   440→                </button>
+   441→                <button onClick={() => navigate("/goals")} title="Goals" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   442→                  <TrendingUp className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   443→                </button>
+   444→
+   445→                {/* Divider: CRM */}
+   446→                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+   447→
+   448→                <button onClick={() => navigate("/pipeline")} title="Pipeline" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   449→                  <Kanban className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   450→                </button>
+   451→                <button onClick={() => navigate("/proposals")} title="Proposals" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   452→                  <FileSignature className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   453→                </button>
+   454→
+   455→                {/* Divider: BILLING */}
+   456→                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+   457→
+   458→                <button onClick={() => navigate("/invoices")} title="Invoices" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   459→                  <FileText className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   460→                </button>
+   461→                <button onClick={() => navigate("/payment-patterns")} title="Payment Patterns" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   462→                  <TrendingUp className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   463→                </button>
+   464→                <button onClick={() => navigate("/reports")} title="Reports" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   465→                  <Activity className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   466→                </button>
+   467→
+   468→                {/* Divider: ADMIN */}
+   469→                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+   470→
+   471→                <button onClick={() => navigate("/account-settings")} title="Account Settings" className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors">
+   472→                  <Settings className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   473→                </button>
+   474→              </motion.div>
+   475→            )}
+   476→          </AnimatePresence>
+   477→        </div>
+   478→
+   479→        {/* Bottom Section - Theme Toggle + Work Timeline */}
+   480→        <div className="border-t border-sidebar-border py-2">
+   481→          <AnimatePresence>
+   482→            {isExpanded && (
+   483→              <motion.div
+   484→                initial={{ opacity: 0 }}
+   485→                animate={{ opacity: 1 }}
+   486→                exit={{ opacity: 0 }}
+   487→                transition={{ duration: 0.2 }}
+   488→                className="space-y-0.5 px-2 text-xs"
+   489→              >
+   490→                {/* Theme Toggle */}
+   491→                <button
+   492→                  onClick={(e) => {
+   493→                    e.stopPropagation();
+   494→                    handleToggleTheme();
+   495→                  }}
+   496→                  className="w-full text-left"
+   497→                >
+   498→                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+   499→                    {theme === "dark" ? (
+   500→                      <Sun className="w-4 h-4 flex-shrink-0" />
+   501→                    ) : (
+   502→                      <Moon className="w-4 h-4 flex-shrink-0" />
+   503→                    )}
+   504→                    <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
+   505→                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
+   506→                    </span>
+   507→                  </div>
+   508→                </button>
+   509→                <button onClick={(e) => {
+   510→                  e.stopPropagation();
+   511→                  const event = new CustomEvent('openTimelinePopup');
+   512→                  window.dispatchEvent(event);
+   513→                }} className="w-full text-left">
+   514→                  <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
+   515→                </button>
+   516→                {/* Sign Out moved to Account Settings > Security */}
+   517→              </motion.div>
+   518→            )}
+   519→          </AnimatePresence>
+   520→          {/* Collapsed theme toggle icon */}
+   521→          {!isExpanded && (
+   522→            <div className="flex flex-col items-center gap-2 py-1">
+   523→              <button
+   524→                onClick={(e) => {
+   525→                  e.stopPropagation();
+   526→                  handleToggleTheme();
+   527→                }}
+   528→                title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+   529→                className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors"
+   530→              >
+   531→                {theme === "dark" ? (
+   532→                  <Sun className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   533→                ) : (
+   534→                  <Moon className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+   535→                )}
+   536→              </button>
+   537→            </div>
+   538→          )}
+   539→        </div>
+   540→      </motion.div>
+   541→
+   542→      {/* Mobile sidebar: always expanded, shown inside Sheet from main.tsx */}
+   543→      {isMobile && (
+   544→        <div className="h-full bg-sidebar flex flex-col overflow-y-auto">
+   545→          {/* Logo */}
+   546→          <div className="h-14 border-b border-sidebar-border flex items-center px-4">
+   547→            <div className="flex items-center gap-2">
+   548→              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+   549→                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+   550→                <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+   551→              </svg>
+   552→              <span className="font-[Space_Grotesk] font-semibold text-base text-sidebar-foreground">Axia</span>
+   553→            </div>
+   554→          </div>
+   555→          {/* Nav items — always expanded on mobile */}
+   556→          <div className="flex-1 py-2 space-y-2 overflow-y-auto">
+   557→            <div className="px-2 space-y-0.5">
+   558→              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">WORK</div>
+   559→              <button onClick={() => navigate("/dashboard")} className="w-full text-left"><NavItem icon={Home} label="Dashboard" isExpanded={true} /></button>
+   560→              <button onClick={() => navigate("/projects")} className="w-full text-left"><NavItem icon={Briefcase} label="Projects" isExpanded={true} /></button>
+   561→              <button onClick={() => navigate("/clients")} className="w-full text-left"><NavItem icon={Users} label="Clients" isExpanded={true} /></button>
+   562→              <button onClick={() => navigate("/teams")} className="w-full text-left"><NavItem icon={Building2} label="Team" isExpanded={true} /></button>
+   563→              <button onClick={() => navigate("/messages")} className="w-full text-left"><NavItem icon={MessageSquare} label="Messages" isExpanded={true} /></button>
+   564→              <button onClick={() => navigate("/scope")} className="w-full text-left"><NavItem icon={Shield} label="Scope" isExpanded={true} /></button>
+   565→              <button onClick={() => navigate("/evidence-library")} className="w-full text-left"><NavItem icon={Database} label="Evidence Library" isExpanded={true} /></button>
+   566→              <button onClick={() => navigate("/time-tracking")} className="w-full text-left"><NavItem icon={Clock} label="Time Tracking" isExpanded={true} /></button>
+   567→              <button onClick={() => navigate("/goals")} className="w-full text-left"><NavItem icon={TrendingUp} label="Goals" isExpanded={true} /></button>
+   568→            </div>
+   569→            <div className="px-2 space-y-0.5 mt-4">
+   570→              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">CRM</div>
+   571→              <button onClick={() => navigate("/pipeline")} className="w-full text-left"><NavItem icon={Kanban} label="Pipeline" isExpanded={true} /></button>
+   572→              <button onClick={() => navigate("/proposals")} className="w-full text-left"><NavItem icon={FileSignature} label="Proposals" isExpanded={true} /></button>
+   573→            </div>
+   574→            <div className="px-2 space-y-0.5 mt-4">
+   575→              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">BILLING</div>
+   576→              <button onClick={() => navigate("/invoices")} className="w-full text-left"><NavItem icon={FileText} label="Invoices" isExpanded={true} /></button>
+   577→              <button onClick={() => navigate("/payment-patterns")} className="w-full text-left"><NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} /></button>
+   578→              <button onClick={() => navigate("/reports")} className="w-full text-left"><NavItem icon={Activity} label="Reports" isExpanded={true} /></button>
+   579→            </div>
+   580→            <div className="px-2 space-y-0.5 mt-4">
+   581→              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">ADMIN</div>
+   582→              <button onClick={() => navigate("/account-settings")} className="w-full text-left"><NavItem icon={Settings} label="Account Settings" isExpanded={true} /></button>
+   583→            </div>
+   584→          </div>
+   585→          {/* Bottom: Theme + Work Timeline */}
+   586→          <div className="border-t border-sidebar-border py-2 px-2 space-y-0.5 text-xs">
+   587→            <button onClick={handleToggleTheme} className="w-full text-left">
+   588→              <div className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+   589→                {theme === "dark" ? <Sun className="w-4 h-4 flex-shrink-0" /> : <Moon className="w-4 h-4 flex-shrink-0" />}
+   590→                <span className="font-medium text-[13px]">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+   591→              </div>
+   592→            </button>
+   593→            <button onClick={() => { const event = new CustomEvent('openTimelinePopup'); window.dispatchEvent(event); }} className="w-full text-left">
+   594→              <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
+   595→            </button>
+   596→          </div>
+   597→        </div>
+   598→      )}
+   599→    </>
+   600→  );
+   601→}
+   602→
+   603→interface NavItemProps {
+   604→  icon: React.ElementType;
+   605→  label: string;
+   606→  isActive?: boolean;
+   607→  isExpanded: boolean;
+   608→}
+   609→
+   610→function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
+   611→  return (
+   612→    <div
+   613→      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
+   614→        isActive
+   615→          ? "bg-primary/20 text-primary"
+   616→          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+   617→      }`}
+   618→    >
+   619→      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
+   620→      {isExpanded && (
+   621→        <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
+   622→          {label}
+   623→        </span>
+   624→      )}
+   625→    </div>
+   626→  );
+   627→}
+   628→
+   629→interface ExpandableSectionProps {
+   630→  title: string;
+   631→  isExpanded: boolean;
+   632→  onToggle: () => void;
+   633→  children?: React.ReactNode;
+   634→}
+   635→
+   636→export function ExpandableSection({ title, isExpanded, onToggle, children }: ExpandableSectionProps) {
+   637→  return (
+   638→    <div className="border-b border-sidebar-border/50 pb-2 mb-2">
+   639→      <div
+   640→        onClick={onToggle}
+   641→        className="flex items-center justify-between px-2 py-1.5 cursor-pointer text-sidebar-foreground hover:text-sidebar-foreground/80 transition-colors"
+   642→      >
+   643→        <span className="font-medium text-[12px]">{title}</span>
+   644→        <ChevronDown
+   645→          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+   646→            isExpanded ? "rotate-180" : ""
+   647→          }`}
+   648→        />
+   649→      </div>
+   650→      <AnimatePresence>
+   651→        {isExpanded && (
+   652→          <motion.div
+   653→            initial={{ height: 0, opacity: 0 }}
+   654→            animate={{ height: "auto", opacity: 1 }}
+   655→            exit={{ height: 0, opacity: 0 }}
+   656→            transition={{ duration: 0.2 }}
+   657→            className="overflow-hidden"
+   658→          >
+   659→            {children}
+   660→          </motion.div>
+   661→        )}
+   662→      </AnimatePresence>
+   663→    </div>
+   664→  );
+   665→}

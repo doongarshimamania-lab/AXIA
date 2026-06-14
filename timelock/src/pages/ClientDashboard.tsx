@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, CheckCircle, Clock, LayoutDashboard, UserSearch, FileCheck, Activity } from "lucide-react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
 import { useEffect } from "react";
 import { WCVMVerificationDashboard } from "@/components/WCVMVerificationDashboard";
 import { FreelancerDirectoryView } from "@/components/FreelancerDirectoryView";
@@ -12,34 +12,52 @@ import { RealTimeWorkValidation } from "@/components/RealTimeWorkValidation";
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const clientEmail = localStorage.getItem("axia_client_email");
+  const { isAuthenticated } = useConvexAuth();
 
-  // Fetch client profile
-  // @ts-ignore - Convex type inference causes deep instantiation error
-  const clientProfile = useQuery(
-    "clientAuth:getClientProfile" as any,
-    clientEmail ? { email: clientEmail } : "skip"
+  // SECURITY: Redirect unauthenticated users — auth guard is now enforced
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth?redirect=/client-dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Fetch client profile using authenticated user's data
+  // SECURITY: No longer reading email from localStorage — uses Convex auth
+  const userProfile = useQuery(
+    isAuthenticated ? "users:getProfile" as any : "skip",
+    {}
   );
 
-  // Allow access without login for dev/demo purposes
-  // useEffect(() => {
-  //   if (!clientEmail) {
-  //     navigate("/client-login");
-  //   }
-  // }, [clientEmail, navigate]);
+  // Don't render dashboard content until authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Building2 className="h-12 w-12 text-primary mx-auto mb-4" />
+            <CardTitle>Authentication Required</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">Please sign in to access the client portal.</p>
+            <Button onClick={() => navigate("/auth?redirect=/client-dashboard")}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  // Mock client profile if not logged in
-  const mockClientProfile = {
-    _id: "mock_client_1",
-    email: clientEmail || "demo@company.com",
-    companyName: "Demo Company",
-    contactName: "Demo User",
+  // Build client profile from authenticated user data
+  const displayProfile = {
+    _id: userProfile?._id || "unknown",
+    email: userProfile?.email || "",
+    companyName: userProfile?.name || "My Company",
+    contactName: userProfile?.name || "User",
     verificationCount: 0,
-    industry: "Technology",
-    companySize: "10-50",
+    industry: "",
+    companySize: "",
   };
-
-  const displayProfile = clientProfile || mockClientProfile;
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -50,10 +68,10 @@ export default function ClientDashboard() {
             <p className="text-muted-foreground">{displayProfile.email}</p>
           </div>
           <Button variant="outline" onClick={() => {
-            localStorage.removeItem("axia_client_email");
-            navigate("/client-login");
+            // SECURITY: Use proper sign out instead of clearing localStorage
+            navigate("/auth");
           }}>
-            Logout
+            Sign Out
           </Button>
         </div>
 

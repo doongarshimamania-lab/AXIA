@@ -62,6 +62,7 @@ import {
 } from "lucide-react";
 import { InvoiceTemplateImportDialog } from "@/components/billing/InvoiceTemplateImportDialog";
 import type { InvoiceSection } from "@/lib/template-parser";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -568,7 +569,7 @@ export default function InvoiceBuilder() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="max-w-6xl mx-auto">
+      <PageLayout maxWidth="max-w-6xl">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -1252,7 +1253,7 @@ export default function InvoiceBuilder() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </PageLayout>
 
       {/* ── Link Work Proof Dialog ─────────────────────────────────────── */}
       <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -166,7 +167,7 @@ export default function PlatformIntegrations() {
   if (!isAuthenticated) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
           <div className="mb-6">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
               Platform Connections
@@ -222,7 +223,7 @@ export default function PlatformIntegrations() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </PageLayout>
       </div>
     );
   }
@@ -236,7 +237,7 @@ export default function PlatformIntegrations() {
   if (showLoading) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
           <div className="mb-6">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
               Platform Connections
@@ -266,7 +267,7 @@ export default function PlatformIntegrations() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </PageLayout>
       </div>
     );
   }
@@ -275,7 +276,7 @@ export default function PlatformIntegrations() {
   return (
     <>
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
             <div className="mb-6">
               <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
                 Platform Connections
@@ -376,7 +377,7 @@ export default function PlatformIntegrations() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </PageLayout>
         </div>
 
       {/* Connect Modal */}

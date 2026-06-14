@@ -1,0 +1,721 @@
+     1→// @ts-nocheck — Convex backend file with schema types not yet in generated types
+     2→import { mutation, query } from "./_generated/server";
+     3→import { v } from "convex/values";
+     4→import { getAuthUserId } from "@convex-dev/auth/server";
+     5→import { ConvexError } from "convex/values";
+     6→import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
+     7→import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
+     8→
+     9→// ═════════════════════════════════════════════
+    10→// PIPELINE STAGES
+    11→// ═════════════════════════════════════════════
+    12→
+    13→// ─────────────────────────────────────────────
+    14→// 1. CREATE DEFAULT STAGES (idempotent, workspace-aware)
+    15→// ─────────────────────────────────────────────
+    16→export const createDefaultStages = mutation({
+    17→  args: {
+    18→    workspaceId: v.optional(v.id("workspaces")),
+    19→  },
+    20→  handler: async (ctx, args) => {
+    21→    const userId = await getAuthUserId(ctx);
+    22→    if (!userId) throw new ConvexError("Not authenticated");
+    23→
+    24→    // If workspaceId provided, verify membership
+    25→    if (args.workspaceId) {
+    26→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+    27→    }
+    28→
+    29→    // Check if stages already exist
+    30→    let existing;
+    31→    if (args.workspaceId) {
+    32→      existing = await ctx.db
+    33→        .query("pipelineStages")
+    34→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+    35→        .collect();
+    36→    } else {
+    37→      existing = await ctx.db
+    38→        .query("pipelineStages")
+    39→        .withIndex("by_user", (q) => q.eq("userId", userId))
+    40→        .collect();
+    41→    }
+    42→
+    43→    if (existing.length > 0) {
+    44→      return { created: false, message: "Pipeline stages already exist", stages: existing };
+    45→    }
+    46→
+    47→    const now = Date.now();
+    48→    const defaultStages = [
+    49→      { name: "Lead", order: 0, color: "#6B7280", isDefault: true },
+    50→      { name: "Qualified", order: 1, color: "#3B82F6", isDefault: true },
+    51→      { name: "Proposal Sent", order: 2, color: "#F59E0B", isDefault: true },
+    52→      { name: "Negotiation", order: 3, color: "#8B5CF6", isDefault: true },
+    53→      { name: "Won", order: 4, color: "#10B981", isDefault: true },
+    54→      { name: "Lost", order: 5, color: "#EF4444", isDefault: true },
+    55→    ];
+    56→
+    57→    const stageIds = [];
+    58→    for (const stage of defaultStages) {
+    59→      const id = await ctx.db.insert("pipelineStages", {
+    60→        userId,
+    61→        workspaceId: args.workspaceId ?? undefined,
+    62→        createdBy: userId,
+    63→        name: stage.name,
+    64→        order: stage.order,
+    65→        color: stage.color,
+    66→        isDefault: stage.isDefault,
+    67→        createdAt: now,
+    68→      });
+    69→      stageIds.push(id);
+    70→    }
+    71→
+    72→    return { created: true, count: stageIds.length, stageIds };
+    73→  },
+    74→});
+    75→
+    76→// ─────────────────────────────────────────────
+    77→// 2. LIST STAGES (workspace-aware, ordered by `order`)
+    78→// ─────────────────────────────────────────────
+    79→export const listStages = query({
+    80→  args: {
+    81→    workspaceId: v.optional(v.id("workspaces")),
+    82→  },
+    83→  handler: async (ctx, args) => {
+    84→    const userId = await getAuthUserId(ctx);
+    85→    if (!userId) throw new ConvexError("Not authenticated");
+    86→
+    87→    if (args.workspaceId) {
+    88→      // Verify workspace membership
+    89→      const membership = await getWorkspaceMembership(ctx, args.workspaceId, userId);
+    90→      if (!membership) return [];
+    91→
+    92→      return await ctx.db
+    93→        .query("pipelineStages")
+    94→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+    95→        .collect();
+    96→    }
+    97→
+    98→    // Backward compat: no workspaceId → filter by userId
+    99→    const stages = await ctx.db
+   100→      .query("pipelineStages")
+   101→      .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
+   102→      .collect();
+   103→
+   104→    return stages;
+   105→  },
+   106→});
+   107→
+   108→// ─────────────────────────────────────────────
+   109→// 3. UPDATE STAGE
+   110→// ─────────────────────────────────────────────
+   111→export const updateStage = mutation({
+   112→  args: {
+   113→    stageId: v.id("pipelineStages"),
+   114→    name: v.optional(v.string()),
+   115→    color: v.optional(v.string()),
+   116→    order: v.optional(v.number()),
+   117→  },
+   118→  handler: async (ctx, args) => {
+   119→    const userId = await getAuthUserId(ctx);
+   120→    if (!userId) throw new ConvexError("Not authenticated");
+   121→
+   122→    const stage = await ctx.db.get(args.stageId);
+   123→    if (!stage) throw new ConvexError("Pipeline stage not found");
+   124→
+   125→    // Check workspace access or direct ownership
+   126→    if (stage.workspaceId) {
+   127→      await requireRecordAccess(ctx, stage, "collaborate");
+   128→    } else if (stage.userId !== userId) {
+   129→      throw new ConvexError("Not authorized to update this pipeline stage");
+   130→    }
+   131→
+   132→    // Validate name is not empty if provided
+   133→    if (args.name !== undefined && args.name.trim().length === 0) {
+   134→      throw new ConvexError("Stage name cannot be empty");
+   135→    }
+   136→
+   137→    // Validate order is non-negative if provided
+   138→    if (args.order !== undefined && args.order < 0) {
+   139→      throw new ConvexError("Stage order must be non-negative");
+   140→    }
+   141→
+   142→    const updates: Record<string, unknown> = {};
+   143→    if (args.name !== undefined) updates.name = args.name.trim();
+   144→    if (args.color !== undefined) updates.color = args.color;
+   145→    if (args.order !== undefined) updates.order = args.order;
+   146→
+   147→    if (Object.keys(updates).length === 0) {
+   148→      throw new ConvexError("No fields to update");
+   149→    }
+   150→
+   151→    await ctx.db.patch(args.stageId, updates);
+   152→
+   153→    return args.stageId;
+   154→  },
+   155→});
+   156→
+   157→// ─────────────────────────────────────────────
+   158→// 4. REMOVE STAGE (move deals to first stage)
+   159→// ─────────────────────────────────────────────
+   160→export const removeStage = mutation({
+   161→  args: {
+   162→    stageId: v.id("pipelineStages"),
+   163→  },
+   164→  handler: async (ctx, args) => {
+   165→    const userId = await getAuthUserId(ctx);
+   166→    if (!userId) throw new ConvexError("Not authenticated");
+   167→
+   168→    const stage = await ctx.db.get(args.stageId);
+   169→    if (!stage) throw new ConvexError("Pipeline stage not found");
+   170→
+   171→    // Check workspace access (owner level) or direct ownership
+   172→    if (stage.workspaceId) {
+   173→      await requireRecordAccess(ctx, stage, "owner");
+   174→    } else if (stage.userId !== userId) {
+   175→      throw new ConvexError("Not authorized to delete this pipeline stage");
+   176→    }
+   177→
+   178→    // Get all stages for fallback, respecting workspace or user context
+   179→    let allStages;
+   180→    if (stage.workspaceId) {
+   181→      allStages = await ctx.db
+   182→        .query("pipelineStages")
+   183→        .withIndex("by_workspace", (q) => q.eq("workspaceId", stage.workspaceId))
+   184→        .collect();
+   185→    } else {
+   186→      allStages = await ctx.db
+   187→        .query("pipelineStages")
+   188→        .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
+   189→        .collect();
+   190→    }
+   191→
+   192→    // Cannot delete if this is the only stage
+   193→    if (allStages.length <= 1) {
+   194→      throw new ConvexError("Cannot delete the only pipeline stage");
+   195→    }
+   196→
+   197→    // Find the first stage (lowest order) that is NOT the stage being deleted
+   198→    const firstStage = allStages
+   199→      .filter((s) => s._id !== args.stageId)
+   200→      .sort((a, b) => a.order - b.order)[0];
+   201→
+   202→    if (!firstStage) {
+   203→      throw new ConvexError("No fallback stage available for deal migration");
+   204→    }
+   205→
+   206→    // Move any deals in the deleted stage to the first stage
+   207→    const dealsInStage = await ctx.db
+   208→      .query("deals")
+   209→      .withIndex("by_user_and_stage", (q) =>
+   210→        q.eq("userId", userId).eq("pipelineStageId", args.stageId)
+   211→      )
+   212→      .collect();
+   213→
+   214→    const now = Date.now();
+   215→    for (const deal of dealsInStage) {
+   216→      await ctx.db.patch(deal._id, {
+   217→        pipelineStageId: firstStage._id,
+   218→        updatedAt: now,
+   219→      });
+   220→    }
+   221→
+   222→    // Delete the stage
+   223→    await ctx.db.delete(args.stageId);
+   224→
+   225→    return {
+   226→      success: true,
+   227→      deletedStageId: args.stageId,
+   228→      dealsMoved: dealsInStage.length,
+   229→      movedToStageId: firstStage._id,
+   230→    };
+   231→  },
+   232→});
+   233→
+   234→// ═════════════════════════════════════════════
+   235→// DEALS
+   236→// ═════════════════════════════════════════════
+   237→
+   238→// ─────────────────────────────────────────────
+   239→// 5. CREATE DEAL
+   240→// ─────────────────────────────────────────────
+   241→export const create = mutation({
+   242→  args: {
+   243→    workspaceId: v.optional(v.id("workspaces")),
+   244→    teamId: v.optional(v.id("teams")),
+   245→    clientId: v.optional(v.id("clients")),
+   246→    pipelineStageId: v.id("pipelineStages"),
+   247→    title: v.string(),
+   248→    value: v.number(),
+   249→    probability: v.optional(v.number()),
+   250→    expectedCloseDate: v.optional(v.number()),
+   251→    proposalId: v.optional(v.id("proposals")),
+   252→    notes: v.optional(v.string()),
+   253→    lostReason: v.optional(v.string()),
+   254→    source: v.optional(v.string()),
+   255→    customFields: v.optional(v.any()),
+   256→  },
+   257→  handler: async (ctx, args) => {
+   258→    const userId = await getAuthUserId(ctx);
+   259→    if (!userId) throw new ConvexError("Not authenticated");
+   260→
+   261→    // If workspaceId provided, verify membership
+   262→    if (args.workspaceId) {
+   263→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+   264→    }
+   265→
+   266→    // Validate title is not empty
+   267→    if (args.title.trim().length === 0) {
+   268→      throw new ConvexError("Deal title cannot be empty");
+   269→    }
+   270→
+   271→    // Validate value is non-negative
+   272→    if (args.value < 0) {
+   273→      throw new ConvexError("Deal value cannot be negative");
+   274→    }
+   275→
+   276→    // Validate probability is 0-100 if provided
+   277→    if (args.probability !== undefined && (args.probability < 0 || args.probability > 100)) {
+   278→      throw new ConvexError("Probability must be between 0 and 100");
+   279→    }
+   280→
+   281→    // Validate pipelineStageId belongs to user or workspace
+   282→    const stage = await ctx.db.get(args.pipelineStageId);
+   283→    if (!stage) throw new ConvexError("Pipeline stage not found");
+   284→    if (stage.workspaceId) {
+   285→      // Stage belongs to a workspace, verify user has access
+   286→      if (args.workspaceId && stage.workspaceId !== args.workspaceId) {
+   287→        throw new ConvexError("Pipeline stage does not belong to this workspace");
+   288→      }
+   289→    } else if (stage.userId !== userId) {
+   290→      throw new ConvexError("Pipeline stage does not belong to this user");
+   291→    }
+   292→
+   293→    // Validate client ownership if provided
+   294→    if (args.clientId) {
+   295→      const client = await ctx.db.get(args.clientId);
+   296→      if (!client) throw new ConvexError("Client not found");
+   297→      if (client.workspaceId) {
+   298→        const access = await getRecordAccess(ctx, client, userId);
+   299→        if (!access) throw new ConvexError("Client does not belong to this workspace");
+   300→      } else if (client.userId !== userId) {
+   301→        throw new ConvexError("Client does not belong to this user");
+   302→      }
+   303→    }
+   304→
+   305→    // Validate proposal ownership if provided
+   306→    if (args.proposalId) {
+   307→      const proposal = await ctx.db.get(args.proposalId);
+   308→      if (!proposal) throw new ConvexError("Proposal not found");
+   309→      if (proposal.workspaceId) {
+   310→        const access = await getRecordAccess(ctx, proposal, userId);
+   311→        if (!access) throw new ConvexError("Proposal does not belong to this workspace");
+   312→      } else if (proposal.userId !== userId) {
+   313→        throw new ConvexError("Proposal does not belong to this user");
+   314→      }
+   315→    }
+   316→
+   317→    const now = Date.now();
+   318→    const { workspaceId, teamId, customFields, ...rest } = args;
+   319→
+   320→    const dealId = await ctx.db.insert("deals", {
+   321→      userId,
+   322→      workspaceId: workspaceId ?? undefined,
+   323→      createdBy: userId,
+   324→      teamId: teamId ?? undefined,
+   325→      customFields: customFields ?? undefined,
+   326→      clientId: rest.clientId,
+   327→      pipelineStageId: rest.pipelineStageId,
+   328→      title: rest.title.trim(),
+   329→      value: rest.value,
+   330→      probability: rest.probability,
+   331→      expectedCloseDate: rest.expectedCloseDate,
+   332→      proposalId: rest.proposalId,
+   333→      notes: rest.notes,
+   334→      lostReason: rest.lostReason,
+   335→      source: rest.source,
+   336→      createdAt: now,
+   337→      updatedAt: now,
+   338→    });
+   339→
+   340→    return dealId;
+   341→  },
+   342→});
+   343→
+   344→// ─────────────────────────────────────────────
+   345→// 6. UPDATE DEAL (partial)
+   346→// ─────────────────────────────────────────────
+   347→export const update = mutation({
+   348→  args: {
+   349→    dealId: v.id("deals"),
+   350→    clientId: v.optional(v.id("clients")),
+   351→    pipelineStageId: v.optional(v.id("pipelineStages")),
+   352→    title: v.optional(v.string()),
+   353→    value: v.optional(v.number()),
+   354→    probability: v.optional(v.number()),
+   355→    expectedCloseDate: v.optional(v.number()),
+   356→    proposalId: v.optional(v.id("proposals")),
+   357→    notes: v.optional(v.string()),
+   358→    lostReason: v.optional(v.string()),
+   359→    source: v.optional(v.string()),
+   360→    customFields: v.optional(v.any()),
+   361→  },
+   362→  handler: async (ctx, args) => {
+   363→    const userId = await getAuthUserId(ctx);
+   364→    if (!userId) throw new ConvexError("Not authenticated");
+   365→
+   366→    const deal = await ctx.db.get(args.dealId);
+   367→    if (!deal) throw new ConvexError("Deal not found");
+   368→
+   369→    // Check workspace access or direct ownership
+   370→    if (deal.workspaceId) {
+   371→      await requireRecordAccess(ctx, deal, "collaborate");
+   372→    } else if (deal.userId !== userId) {
+   373→      throw new ConvexError("Not authorized to update this deal");
+   374→    }
+   375→
+   376→    // Validate title if provided
+   377→    if (args.title !== undefined && args.title.trim().length === 0) {
+   378→      throw new ConvexError("Deal title cannot be empty");
+   379→    }
+   380→
+   381→    // Validate value if provided
+   382→    if (args.value !== undefined && args.value < 0) {
+   383→      throw new ConvexError("Deal value cannot be negative");
+   384→    }
+   385→
+   386→    // Validate probability if provided
+   387→    if (args.probability !== undefined && (args.probability < 0 || args.probability > 100)) {
+   388→      throw new ConvexError("Probability must be between 0 and 100");
+   389→    }
+   390→
+   391→    // Validate pipelineStageId belongs to user if provided
+   392→    if (args.pipelineStageId) {
+   393→      const stage = await ctx.db.get(args.pipelineStageId);
+   394→      if (!stage) throw new ConvexError("Pipeline stage not found");
+   395→      if (stage.workspaceId) {
+   396→        if (deal.workspaceId && stage.workspaceId !== deal.workspaceId) {
+   397→          throw new ConvexError("Pipeline stage does not belong to this workspace");
+   398→        }
+   399→      } else if (stage.userId !== userId) {
+   400→        throw new ConvexError("Pipeline stage does not belong to this user");
+   401→      }
+   402→    }
+   403→
+   404→    // Validate client ownership if provided
+   405→    if (args.clientId) {
+   406→      const client = await ctx.db.get(args.clientId);
+   407→      if (!client) throw new ConvexError("Client not found");
+   408→      if (client.workspaceId) {
+   409→        const access = await getRecordAccess(ctx, client, userId);
+   410→        if (!access) throw new ConvexError("Client does not belong to this workspace");
+   411→      } else if (client.userId !== userId) {
+   412→        throw new ConvexError("Client does not belong to this user");
+   413→      }
+   414→    }
+   415→
+   416→    // Validate proposal ownership if provided
+   417→    if (args.proposalId) {
+   418→      const proposal = await ctx.db.get(args.proposalId);
+   419→      if (!proposal) throw new ConvexError("Proposal not found");
+   420→      if (proposal.workspaceId) {
+   421→        const access = await getRecordAccess(ctx, proposal, userId);
+   422→        if (!access) throw new ConvexError("Proposal does not belong to this workspace");
+   423→      } else if (proposal.userId !== userId) {
+   424→        throw new ConvexError("Proposal does not belong to this user");
+   425→      }
+   426→    }
+   427→
+   428→    // Build partial update object
+   429→    const updates: Record<string, unknown> = { updatedAt: Date.now() };
+   430→
+   431→    if (args.clientId !== undefined) updates.clientId = args.clientId;
+   432→    if (args.pipelineStageId !== undefined) updates.pipelineStageId = args.pipelineStageId;
+   433→    if (args.title !== undefined) updates.title = args.title.trim();
+   434→    if (args.value !== undefined) updates.value = args.value;
+   435→    if (args.probability !== undefined) updates.probability = args.probability;
+   436→    if (args.expectedCloseDate !== undefined) updates.expectedCloseDate = args.expectedCloseDate;
+   437→    if (args.proposalId !== undefined) updates.proposalId = args.proposalId;
+   438→    if (args.notes !== undefined) updates.notes = args.notes;
+   439→    if (args.lostReason !== undefined) updates.lostReason = args.lostReason;
+   440→    if (args.source !== undefined) updates.source = args.source;
+   441→    if (args.customFields !== undefined) updates.customFields = args.customFields;
+   442→
+   443→    await ctx.db.patch(args.dealId, updates);
+   444→
+   445→    return args.dealId;
+   446→  },
+   447→});
+   448→
+   449→// ─────────────────────────────────────────────
+   450→// 7. MOVE TO STAGE
+   451→// ─────────────────────────────────────────────
+   452→export const moveToStage = mutation({
+   453→  args: {
+   454→    dealId: v.id("deals"),
+   455→    pipelineStageId: v.id("pipelineStages"),
+   456→    lostReason: v.optional(v.string()),
+   457→  },
+   458→  handler: async (ctx, args) => {
+   459→    const userId = await getAuthUserId(ctx);
+   460→    if (!userId) throw new ConvexError("Not authenticated");
+   461→
+   462→    const deal = await ctx.db.get(args.dealId);
+   463→    if (!deal) throw new ConvexError("Deal not found");
+   464→
+   465→    // Check workspace access or direct ownership
+   466→    if (deal.workspaceId) {
+   467→      await requireRecordAccess(ctx, deal, "collaborate");
+   468→    } else if (deal.userId !== userId) {
+   469→      throw new ConvexError("Not authorized to move this deal");
+   470→    }
+   471→
+   472→    const targetStage = await ctx.db.get(args.pipelineStageId);
+   473→    if (!targetStage) throw new ConvexError("Pipeline stage not found");
+   474→
+   475→    // Verify target stage belongs to same workspace or user
+   476→    if (targetStage.workspaceId) {
+   477→      if (deal.workspaceId && targetStage.workspaceId !== deal.workspaceId) {
+   478→        throw new ConvexError("Pipeline stage does not belong to this workspace");
+   479→      }
+   480→    } else if (targetStage.userId !== userId) {
+   481→      throw new ConvexError("Pipeline stage does not belong to this user");
+   482→    }
+   483→
+   484→    const now = Date.now();
+   485→    const updates: Record<string, unknown> = {
+   486→      pipelineStageId: args.pipelineStageId,
+   487→      updatedAt: now,
+   488→    };
+   489→
+   490→    // If moving to "Won", set probability to 100
+   491→    if (targetStage.name.toLowerCase() === "won") {
+   492→      updates.probability = 100;
+   493→    }
+   494→
+   495→    // If moving to "Lost", require lostReason
+   496→    if (targetStage.name.toLowerCase() === "lost") {
+   497→      if (!args.lostReason || args.lostReason.trim().length === 0) {
+   498→        throw new ConvexError("A lost reason is required when moving a deal to the Lost stage");
+   499→      }
+   500→      updates.lostReason = args.lostReason.trim();
+   501→      updates.probability = 0;
+   502→    }
+   503→
+   504→    await ctx.db.patch(args.dealId, updates);
+   505→
+   506→    return args.dealId;
+   507→  },
+   508→});
+   509→
+   510→// ─────────────────────────────────────────────
+   511→// 8. GET DEAL (with access check)
+   512→// ─────────────────────────────────────────────
+   513→export const get = query({
+   514→  args: {
+   515→    dealId: v.id("deals"),
+   516→  },
+   517→  handler: async (ctx, args) => {
+   518→    const userId = await getAuthUserId(ctx);
+   519→    if (!userId) throw new ConvexError("Not authenticated");
+   520→
+   521→    const deal = await ctx.db.get(args.dealId);
+   522→    if (!deal) throw new ConvexError("Deal not found");
+   523→
+   524→    // Check workspace membership or direct ownership
+   525→    if (deal.workspaceId) {
+   526→      const access = await getRecordAccess(ctx, deal, userId);
+   527→      if (!access) throw new ConvexError("Not authorized to view this deal");
+   528→    } else if (deal.userId !== userId) {
+   529→      throw new ConvexError("Not authorized to view this deal");
+   530→    }
+   531→
+   532→    return deal;
+   533→  },
+   534→});
+   535→
+   536→// ─────────────────────────────────────────────
+   537→// 9. LIST DEALS (workspace-aware, with optional pipelineStageId filter)
+   538→// ─────────────────────────────────────────────
+   539→export const list = query({
+   540→  args: {
+   541→    workspaceId: v.optional(v.id("workspaces")),
+   542→    pipelineStageId: v.optional(v.id("pipelineStages")),
+   543→  },
+   544→  handler: async (ctx, args) => {
+   545→    const userId = await getAuthUserId(ctx);
+   546→    if (!userId) throw new ConvexError("Not authenticated");
+   547→
+   548→    // If workspaceId provided, filter by workspace with team-aware visibility
+   549→    if (args.workspaceId) {
+   550→      const visibility = await getUserVisibility(ctx, args.workspaceId);
+   551→      if (!visibility) throw new ConvexError("Not a member of this workspace");
+   552→
+   553→      const allDeals = await ctx.db
+   554→        .query("deals")
+   555→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+   556→        .collect();
+   557→
+   558→      // Filter by team visibility
+   559→      let visible = allDeals.filter((d) => isRecordVisible(d, visibility));
+   560→
+   561→      // Apply stage filter if provided
+   562→      if (args.pipelineStageId) {
+   563→        visible = visible.filter((d) => d.pipelineStageId === args.pipelineStageId);
+   564→      }
+   565→
+   566→      return visible.sort((a, b) => b.updatedAt - a.updatedAt);
+   567→    }
+   568→
+   569→    // Backward compat: no workspaceId → filter by userId
+   570→    if (args.pipelineStageId) {
+   571→      // Validate stage ownership
+   572→      const stage = await ctx.db.get(args.pipelineStageId);
+   573→      if (!stage) throw new ConvexError("Pipeline stage not found");
+   574→      if (stage.userId !== userId) throw new ConvexError("Pipeline stage does not belong to this user");
+   575→
+   576→      const deals = await ctx.db
+   577→        .query("deals")
+   578→        .withIndex("by_user_and_stage", (q) =>
+   579→          q.eq("userId", userId).eq("pipelineStageId", args.pipelineStageId!)
+   580→        )
+   581→        .order("desc")
+   582→        .collect();
+   583→      return deals;
+   584→    }
+   585→
+   586→    // No filter — return all deals for this user
+   587→    const deals = await ctx.db
+   588→      .query("deals")
+   589→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   590→      .order("desc")
+   591→      .collect();
+   592→
+   593→    return deals.sort((a, b) => b.updatedAt - a.updatedAt);
+   594→  },
+   595→});
+   596→
+   597→// ─────────────────────────────────────────────
+   598→// 10. GET PIPELINE STATS (workspace-aware)
+   599→// ─────────────────────────────────────────────
+   600→export const getPipelineStats = query({
+   601→  args: {
+   602→    workspaceId: v.optional(v.id("workspaces")),
+   603→  },
+   604→  handler: async (ctx, args) => {
+   605→    const userId = await getAuthUserId(ctx);
+   606→    if (!userId) throw new ConvexError("Not authenticated");
+   607→
+   608→    let stages, deals;
+   609→
+   610→    if (args.workspaceId) {
+   611→      const visibility = await getUserVisibility(ctx, args.workspaceId);
+   612→      if (!visibility) return {
+   613→        dealsByStage: {},
+   614→        totalDeals: 0,
+   615→        totalPipelineValue: 0,
+   616→        weightedPipelineValue: 0,
+   617→        winRate: 0,
+   618→        avgDealCycleDays: 0,
+   619→        wonCount: 0,
+   620→        lostCount: 0,
+   621→      };
+   622→
+   623→      stages = await ctx.db
+   624→        .query("pipelineStages")
+   625→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+   626→        .collect();
+   627→
+   628→      const allDeals = await ctx.db
+   629→        .query("deals")
+   630→        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+   631→        .collect();
+   632→
+   633→      deals = allDeals.filter((d) => isRecordVisible(d, visibility));
+   634→    } else {
+   635→      // Get all stages for the user
+   636→      stages = await ctx.db
+   637→        .query("pipelineStages")
+   638→        .withIndex("by_user", (q) => q.eq("userId", userId))
+   639→        .collect();
+   640→
+   641→      // Get all deals for the user
+   642→      deals = await ctx.db
+   643→        .query("deals")
+   644→        .withIndex("by_user", (q) => q.eq("userId", userId))
+   645→        .collect();
+   646→    }
+   647→
+   648→    // Total deals by stage
+   649→    const dealsByStage: Record<string, number> = {};
+   650→    for (const stage of stages) {
+   651→      dealsByStage[stage.name] = deals.filter((d) => d.pipelineStageId === stage._id).length;
+   652→    }
+   653→
+   654→    // Total pipeline value (sum of all deal values)
+   655→    const totalPipelineValue = deals.reduce((sum, d) => sum + d.value, 0);
+   656→
+   657→    // Weighted pipeline value (value * probability / 100)
+   658→    const weightedPipelineValue = deals.reduce((sum, d) => {
+   659→      const prob = d.probability ?? 0;
+   660→      return sum + (d.value * prob) / 100;
+   661→    }, 0);
+   662→
+   663→    // Win rate: won deals / (won + lost deals)
+   664→    const wonStage = stages.find((s) => s.name.toLowerCase() === "won");
+   665→    const lostStage = stages.find((s) => s.name.toLowerCase() === "lost");
+   666→
+   667→    const wonDeals = wonStage ? deals.filter((d) => d.pipelineStageId === wonStage._id) : [];
+   668→    const lostDeals = lostStage ? deals.filter((d) => d.pipelineStageId === lostStage._id) : [];
+   669→
+   670→    const totalClosed = wonDeals.length + lostDeals.length;
+   671→    const winRate = totalClosed > 0 ? wonDeals.length / totalClosed : 0;
+   672→
+   673→    // Average deal cycle time (days from createdAt to when moved to Won)
+   674→    const wonDealsWithDates = wonDeals.filter((d) => d.createdAt && d.updatedAt);
+   675→    const avgDealCycleDays = wonDealsWithDates.length > 0
+   676→      ? wonDealsWithDates.reduce((sum, d) => {
+   677→          const days = (d.updatedAt - d.createdAt) / (1000 * 60 * 60 * 24);
+   678→          return sum + days;
+   679→        }, 0) / wonDealsWithDates.length
+   680→      : 0;
+   681→
+   682→    return {
+   683→      dealsByStage,
+   684→      totalDeals: deals.length,
+   685→      totalPipelineValue,
+   686→      weightedPipelineValue,
+   687→      winRate: Math.round(winRate * 100) / 100,
+   688→      avgDealCycleDays: Math.round(avgDealCycleDays * 10) / 10,
+   689→      wonCount: wonDeals.length,
+   690→      lostCount: lostDeals.length,
+   691→    };
+   692→  },
+   693→});
+   694→
+   695→// ─────────────────────────────────────────────
+   696→// 11. REMOVE DEAL
+   697→// ─────────────────────────────────────────────
+   698→export const remove = mutation({
+   699→  args: {
+   700→    dealId: v.id("deals"),
+   701→  },
+   702→  handler: async (ctx, args) => {
+   703→    const userId = await getAuthUserId(ctx);
+   704→    if (!userId) throw new ConvexError("Not authenticated");
+   705→
+   706→    const deal = await ctx.db.get(args.dealId);
+   707→    if (!deal) throw new ConvexError("Deal not found");
+   708→
+   709→    // Check workspace access (owner level) or direct ownership
+   710→    if (deal.workspaceId) {
+   711→      await requireRecordAccess(ctx, deal, "owner");
+   712→    } else if (deal.userId !== userId) {
+   713→      throw new ConvexError("Not authorized to delete this deal");
+   714→    }
+   715→
+   716→    await ctx.db.delete(args.dealId);
+   717→
+   718→    return { success: true, deletedId: args.dealId };
+   719→  },
+   720→});
+   721→
