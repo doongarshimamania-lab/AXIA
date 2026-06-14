@@ -292,3 +292,27 @@ Stage Summary:
 - Notifications persist across page navigation — only re-appear when counts increase
 - Channel creation now supports adding members
 - All changes pushed to main branch and tagged as v1.2.0
+---
+Task ID: 1
+Agent: Main Agent
+Task: Deep audit and root-cause fixes for evidence export, messages, notifications + P0 security hardening
+
+Work Log:
+- Analyzed 4 user screenshots showing: empty evidence export page, messages with mock member data, notification bell reappearing on page change
+- Discovered ROOT CAUSE: Entire Convex backend (124 files) was missing from the project — only 5 messaging files remained
+- Restored full Convex backend from backup at /home/z/my-project/src/convex/
+- Fixed EvidenceLibrary: Replaced (api as any).evidence?.library defensive pattern with direct api.evidence.library references
+- Fixed Messages page: Removed 85 lines of hardcoded mock data, replaced with Convex-only data + proper empty states
+- Fixed NotificationCenter: Auto-marks all as seen after 1.5s when panel opens to prevent bell re-appearing on navigation
+- Fixed ClientDashboard: Replaced broken "users:getProfile" as any with real api.users.getProfile reference
+- Fixed P0 security: resetDevUser auth check, seedDevProfile privilege escalation, getSessionBlocks IDOR, debug.ts auth, setSubscriptionTier internalMutation
+- Removed duplicate EvidenceLibrary import in main.tsx
+- Fixed workspaceId scoping in EvidenceLibrary queries
+- Build succeeded, committed, pushed, tagged v4.0.0-security-root-cause-fixes
+
+Stage Summary:
+- Evidence export ROOT CAUSE was missing Convex backend + defensive API pattern — both fixed
+- Messages now uses real Convex data exclusively, no mock fallback
+- Notifications auto-mark as seen when panel is viewed
+- P0 security vulnerabilities patched
+- Build: successful | Push: be831d6 → origin/main | Tag: v4.0.0-security-root-cause-fixes
