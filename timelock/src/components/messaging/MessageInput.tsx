@@ -12,16 +12,25 @@ import {
   Send,
   Smile,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface MessageInputProps {
   onSend: (content: string) => void;
   channelName: string;
 }
 
+const EMOJI_LIST = [
+  "👍", "👎", "❤️", "😂", "🎉", "🔥", "✅", "❌",
+  "👀", "🤔", "💯", "🚀", "⭐", "💡", "🎯", "💪",
+  "🙌", "👏", "🤝", "😊", "😄", "🥳", "🫡", "💬",
+];
+
 export function MessageInput({ onSend, channelName }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = () => {
     if (content.trim()) {
@@ -66,8 +75,47 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
     }, 0);
   };
 
+  const insertEmoji = (emoji: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const newContent = content.substring(0, start) + emoji + content.substring(start);
+    setContent(newContent);
+    setShowEmojiPicker(false);
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + emoji.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
+  // Prevent focus loss when clicking toolbar buttons
+  const preventFocusLoss = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="flex-shrink-0 border-t border-border bg-background p-3">
+    <div className="flex-shrink-0 border-t border-border bg-background p-3 relative">
+      {/* Emoji Picker Popup */}
+      {showEmojiPicker && (
+        <div
+          ref={emojiPickerRef}
+          className="absolute bottom-full right-4 mb-2 bg-popover border border-border rounded-lg shadow-lg p-2 z-50"
+        >
+          <div className="grid grid-cols-8 gap-1">
+            {EMOJI_LIST.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => insertEmoji(emoji)}
+                className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent text-base transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div
         className={`rounded-lg border transition-colors ${
           isFocused ? "border-primary/50 ring-1 ring-primary/20" : "border-border"
@@ -79,6 +127,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("**", "**")}
             title="Bold"
           >
@@ -88,6 +137,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("_", "_")}
             title="Italic"
           >
@@ -97,6 +147,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("`", "`")}
             title="Code"
           >
@@ -106,6 +157,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("- ")}
             title="List"
           >
@@ -115,6 +167,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("[", "](url)")}
             title="Link"
           >
@@ -125,6 +178,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("@")}
             title="Mention"
           >
@@ -134,6 +188,7 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onMouseDown={preventFocusLoss}
             onClick={() => insertFormatting("#")}
             title="Channel reference"
           >
@@ -155,10 +210,24 @@ export function MessageInput({ onSend, channelName }: MessageInputProps) {
             rows={1}
           />
           <div className="flex items-center gap-1 flex-shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7" title="Attach file">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              title="Attach file"
+              onMouseDown={preventFocusLoss}
+              onClick={() => toast.info("File attachments coming soon")}
+            >
               <Paperclip className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" title="Emoji">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              title="Emoji"
+              onMouseDown={preventFocusLoss}
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
               <Smile className="h-3.5 w-3.5" />
             </Button>
             <Button

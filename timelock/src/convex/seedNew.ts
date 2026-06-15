@@ -1,18 +1,27 @@
 // @ts-nocheck — Convex backend file with schema types not yet in generated types
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const seedMockPipeline = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
     // Check if stages already exist
-    const existingStages = await ctx.db
-      .query("pipelineStages")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    let existingStages;
+    if (workspaceId) {
+      existingStages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    } else {
+      existingStages = await ctx.db
+        .query("pipelineStages")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     let stages = existingStages;
     if (stages.length === 0) {
@@ -27,6 +36,7 @@ export const seedMockPipeline = mutation({
       for (let i = 0; i < defaults.length; i++) {
         await ctx.db.insert("pipelineStages", {
           userId,
+          workspaceId: workspaceId ?? undefined,
           createdBy: userId,
           name: defaults[i].name,
           color: defaults[i].color,
@@ -34,17 +44,32 @@ export const seedMockPipeline = mutation({
           isDefault: true,
         });
       }
-      stages = await ctx.db
-        .query("pipelineStages")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+      if (workspaceId) {
+        stages = await ctx.db
+          .query("pipelineStages")
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+          .collect();
+      } else {
+        stages = await ctx.db
+          .query("pipelineStages")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .collect();
+      }
     }
 
     // Check if deals already exist
-    const existingDeals = await ctx.db
-      .query("deals")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    let existingDeals;
+    if (workspaceId) {
+      existingDeals = await ctx.db
+        .query("deals")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect();
+    } else {
+      existingDeals = await ctx.db
+        .query("deals")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+    }
 
     if (existingDeals.length > 0) return { seeded: false, dealCount: existingDeals.length };
 
@@ -470,6 +495,7 @@ export const seedMockPipeline = mutation({
 
       await ctx.db.insert("deals", {
         userId,
+        workspaceId: workspaceId ?? undefined,
         stageId: stage._id,
         title: deal.title,
         value: deal.value,

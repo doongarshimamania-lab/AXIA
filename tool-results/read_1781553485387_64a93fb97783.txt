@@ -1,0 +1,842 @@
+     1→// @ts-nocheck — Convex backend file with schema types not yet in generated types
+     2→import { query, mutation, internalMutation } from "../_generated/server";
+     3→import { v } from "convex/values";
+     4→import { getAuthUserId } from "@convex-dev/auth/server";
+     5→import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "../permissions";
+     6→import { getUserVisibility, isRecordVisible } from "../workspaceFilter";
+     7→
+     8→// ─── QUERIES ──────────────────────────────────────────────────────────────
+     9→
+    10→export const getProposals = query({
+    11→  args: {
+    12→    workspaceId: v.optional(v.id("workspaces")),
+    13→    status: v.optional(v.string()),
+    14→  },
+    15→  handler: async (ctx, { workspaceId, status }) => {
+    16→    const userId = await getAuthUserId(ctx);
+    17→    if (!userId) return [];
+    18→
+    19→    if (workspaceId) {
+    20→      const visibility = await getUserVisibility(ctx, workspaceId);
+    21→      if (!visibility) return [];
+    22→
+    23→      const allProposals = await ctx.db
+    24→        .query("proposals")
+    25→        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    26→        .collect();
+    27→
+    28→      let visible = allProposals.filter((p) => isRecordVisible(p, visibility));
+    29→      if (status) visible = visible.filter((p) => p.status === status);
+    30→      return visible;
+    31→    }
+    32→
+    33→    // Backward compat: no workspaceId
+    34→    if (status) {
+    35→      return await ctx.db
+    36→        .query("proposals")
+    37→        .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", status as any))
+    38→        .order("desc")
+    39→        .collect();
+    40→    }
+    41→    return await ctx.db
+    42→      .query("proposals")
+    43→      .withIndex("by_user", (q) => q.eq("userId", userId))
+    44→      .order("desc")
+    45→      .collect();
+    46→  },
+    47→});
+    48→
+    49→export const getProposal = query({
+    50→  args: { proposalId: v.id("proposals") },
+    51→  handler: async (ctx, { proposalId }) => {
+    52→    const userId = await getAuthUserId(ctx);
+    53→    if (!userId) return null;
+    54→    const proposal = await ctx.db.get(proposalId);
+    55→    if (!proposal) return null;
+    56→
+    57→    // Check workspace access or direct ownership
+    58→    if (proposal.workspaceId) {
+    59→      const access = await getRecordAccess(ctx, proposal, userId);
+    60→      if (!access) return null;
+    61→    } else if (proposal.userId !== userId) {
+    62→      return null;
+    63→    }
+    64→    return proposal;
+    65→  },
+    66→});
+    67→
+    68→export const getProposalByToken = query({
+    69→  args: { publicToken: v.string() },
+    70→  handler: async (ctx, { publicToken }) => {
+    71→    return await ctx.db
+    72→      .query("proposals")
+    73→      .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
+    74→      .first();
+    75→  },
+    76→});
+    77→
+    78→export const getTemplates = query({
+    79→  args: { workspaceId: v.optional(v.id("workspaces")) },
+    80→  handler: async (ctx, { workspaceId }) => {
+    81→    const userId = await getAuthUserId(ctx);
+    82→
+    83→    const systemTemplates = await ctx.db
+    84→      .query("proposalTemplates")
+    85→      .withIndex("by_system", (q) => q.eq("isSystem", true))
+    86→      .collect();
+    87→
+    88→    let userTemplates: any[] = [];
+    89→    if (userId) {
+    90→      if (workspaceId) {
+    91→        userTemplates = await ctx.db
+    92→          .query("proposalTemplates")
+    93→          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    94→          .collect();
+    95→        // Also get user's own templates
+    96→        const personalTemplates = await ctx.db
+    97→          .query("proposalTemplates")
+    98→          .withIndex("by_user", (q) => q.eq("userId", userId))
+    99→          .collect();
+   100→        // Merge and deduplicate
+   101→        const ids = new Set(userTemplates.map((t: any) => t._id));
+   102→        for (const t of personalTemplates) {
+   103→          if (!ids.has(t._id)) userTemplates.push(t);
+   104→        }
+   105→      } else {
+   106→        userTemplates = await ctx.db
+   107→          .query("proposalTemplates")
+   108→          .withIndex("by_user", (q) => q.eq("userId", userId))
+   109→          .collect();
+   110→      }
+   111→    }
+   112→
+   113→    return [...systemTemplates, ...userTemplates];
+   114→  },
+   115→});
+   116→
+   117→export const getProposalStats = query({
+   118→  args: { workspaceId: v.optional(v.id("workspaces")) },
+   119→  handler: async (ctx, { workspaceId }) => {
+   120→    const userId = await getAuthUserId(ctx);
+   121→    if (!userId) return { total: 0, sent: 0, signed: 0, draft: 0, signatureRate: 0, totalValue: 0 };
+   122→
+   123→    let proposals;
+   124→    if (workspaceId) {
+   125→      const visibility = await getUserVisibility(ctx, workspaceId);
+   126→      if (!visibility) return { total: 0, sent: 0, signed: 0, draft: 0, signatureRate: 0, totalValue: 0 };
+   127→
+   128→      const allProposals = await ctx.db
+   129→        .query("proposals")
+   130→        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+   131→        .collect();
+   132→      proposals = allProposals.filter((p) => isRecordVisible(p, visibility));
+   133→    } else {
+   134→      proposals = await ctx.db
+   135→        .query("proposals")
+   136→        .withIndex("by_user", (q) => q.eq("userId", userId))
+   137→        .collect();
+   138→    }
+   139→
+   140→    const sent = proposals.filter(p => p.status === "sent" || p.status === "viewed").length;
+   141→    const signed = proposals.filter(p => p.status === "signed").length;
+   142→    const draft = proposals.filter(p => p.status === "draft").length;
+   143→    const totalValue = proposals.filter(p => p.status === "signed").reduce((sum, p) => sum + p.totalValue, 0);
+   144→
+   145→    return {
+   146→      total: proposals.length,
+   147→      sent,
+   148→      signed,
+   149→      draft,
+   150→      signatureRate: sent + signed > 0 ? Math.round((signed / (sent + signed)) * 100) : 0,
+   151→      totalValue,
+   152→    };
+   153→  },
+   154→});
+   155→
+   156→export const getFollowUps = query({
+   157→  args: { proposalId: v.id("proposals") },
+   158→  handler: async (ctx, { proposalId }) => {
+   159→    return await ctx.db
+   160→      .query("proposalFollowUps")
+   161→      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+   162→      .collect();
+   163→  },
+   164→});
+   165→
+   166→// ─── MUTATIONS ────────────────────────────────────────────────────────────
+   167→
+   168→function generateToken(): string {
+   169→  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+   170→  let result = "";
+   171→  for (let i = 0; i < 32; i++) {
+   172→    result += chars.charAt(Math.floor(Math.random() * chars.length));
+   173→  }
+   174→  return result;
+   175→}
+   176→
+   177→export const createProposal = mutation({
+   178→  args: {
+   179→    workspaceId: v.optional(v.id("workspaces")),
+   180→    teamId: v.optional(v.id("teams")),
+   181→    title: v.string(),
+   182→    sections: v.array(v.object({
+   183→      id: v.string(),
+   184→      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
+   185→      content: v.string(),
+   186→      metadata: v.optional(v.any()),
+   187→    })),
+   188→    totalValue: v.number(),
+   189→    clientId: v.optional(v.id("clients")),
+   190→    clientName: v.optional(v.string()),
+   191→    clientEmail: v.optional(v.string()),
+   192→    templateId: v.optional(v.id("proposalTemplates")),
+   193→    validUntil: v.optional(v.number()),
+   194→    notes: v.optional(v.string()),
+   195→    currency: v.optional(v.string()),
+   196→    customFields: v.optional(v.any()),
+   197→  },
+   198→  handler: async (ctx, args) => {
+   199→    const userId = await getAuthUserId(ctx);
+   200→    if (!userId) throw new Error("Not authenticated");
+   201→
+   202→    // If workspaceId provided, verify membership
+   203→    if (args.workspaceId) {
+   204→      await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+   205→    }
+   206→
+   207→    const { workspaceId, teamId, customFields, ...rest } = args;
+   208→
+   209→    return await ctx.db.insert("proposals", {
+   210→      userId,
+   211→      workspaceId: workspaceId ?? undefined,
+   212→      createdBy: userId,
+   213→      teamId: teamId ?? undefined,
+   214→      customFields: customFields ?? undefined,
+   215→      ...rest,
+   216→      status: "draft",
+   217→      publicToken: generateToken(),
+   218→      createdAt: Date.now(),
+   219→      updatedAt: Date.now(),
+   220→    });
+   221→  },
+   222→});
+   223→
+   224→export const updateProposal = mutation({
+   225→  args: {
+   226→    proposalId: v.id("proposals"),
+   227→    title: v.optional(v.string()),
+   228→    sections: v.optional(v.array(v.object({
+   229→      id: v.string(),
+   230→      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
+   231→      content: v.string(),
+   232→      metadata: v.optional(v.any()),
+   233→    }))),
+   234→    totalValue: v.optional(v.number()),
+   235→    clientId: v.optional(v.id("clients")),
+   236→    clientName: v.optional(v.string()),
+   237→    clientEmail: v.optional(v.string()),
+   238→    validUntil: v.optional(v.number()),
+   239→    notes: v.optional(v.string()),
+   240→    teamId: v.optional(v.id("teams")),
+   241→  },
+   242→  handler: async (ctx, { proposalId, ...updates }) => {
+   243→    const userId = await getAuthUserId(ctx);
+   244→    if (!userId) throw new Error("Not authenticated");
+   245→
+   246→    const proposal = await ctx.db.get(proposalId);
+   247→    if (!proposal) throw new Error("Proposal not found");
+   248→
+   249→    // Check workspace access or direct ownership
+   250→    if (proposal.workspaceId) {
+   251→      await requireRecordAccess(ctx, proposal, "collaborate");
+   252→    } else if (proposal.userId !== userId) {
+   253→      throw new Error("Not authorized");
+   254→    }
+   255→
+   256→    await ctx.db.patch(proposalId, { ...updates, updatedAt: Date.now() });
+   257→  },
+   258→});
+   259→
+   260→export const sendProposal = mutation({
+   261→  args: { proposalId: v.id("proposals") },
+   262→  handler: async (ctx, { proposalId }) => {
+   263→    const userId = await getAuthUserId(ctx);
+   264→    if (!userId) throw new Error("Not authenticated");
+   265→
+   266→    const proposal = await ctx.db.get(proposalId);
+   267→    if (!proposal) throw new Error("Proposal not found");
+   268→
+   269→    // Check workspace access or direct ownership
+   270→    if (proposal.workspaceId) {
+   271→      await requireRecordAccess(ctx, proposal, "collaborate");
+   272→    } else if (proposal.userId !== userId) {
+   273→      throw new Error("Not authorized");
+   274→    }
+   275→
+   276→    await ctx.db.patch(proposalId, {
+   277→      status: "sent",
+   278→      sentAt: Date.now(),
+   279→      updatedAt: Date.now(),
+   280→    });
+   281→
+   282→    // Schedule follow-ups
+   283→    const followUpSchedule = [
+   284→      { day: 3, subject: `Following up: ${proposal.title}`, tone: "friendly" },
+   285→      { day: 7, subject: `Checking in: ${proposal.title}`, tone: "firm" },
+   286→      { day: 14, subject: `Final reminder: ${proposal.title}`, tone: "urgent" },
+   287→    ];
+   288→
+   289→    for (const followUp of followUpSchedule) {
+   290→      await ctx.db.insert("proposalFollowUps", {
+   291→        userId,
+   292→        workspaceId: proposal.workspaceId ?? undefined,
+   293→        proposalId,
+   294→        dayNumber: followUp.day,
+   295→        subject: followUp.subject,
+   296→        body: `Hi ${proposal.clientName || "there"},\n\nI wanted to follow up on the proposal "${proposal.title}" I sent on ${new Date(proposal.sentAt!).toLocaleDateString()}.\n\n${followUp.tone === "urgent" ? "This proposal will expire soon. " : ""}Please let me know if you have any questions.\n\nBest regards`,
+   297→        channel: "email",
+   298→        status: "scheduled",
+   299→        scheduledAt: Date.now() + followUp.day * 24 * 60 * 60 * 1000,
+   300→        createdAt: Date.now(),
+   301→      });
+   302→    }
+   303→  },
+   304→});
+   305→
+   306→export const markProposalViewed = mutation({
+   307→  args: { publicToken: v.string() },
+   308→  handler: async (ctx, { publicToken }) => {
+   309→    // This is a public action via shared link — no auth required
+   310→    const proposal = await ctx.db
+   311→      .query("proposals")
+   312→      .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
+   313→      .first();
+   314→
+   315→    if (!proposal || proposal.status !== "sent") return;
+   316→
+   317→    await ctx.db.patch(proposal._id, {
+   318→      status: "viewed",
+   319→      viewedAt: Date.now(),
+   320→      updatedAt: Date.now(),
+   321→    });
+   322→  },
+   323→});
+   324→
+   325→export const signProposal = mutation({
+   326→  args: { publicToken: v.string(), signatureData: v.string() },
+   327→  handler: async (ctx, { publicToken, signatureData }) => {
+   328→    // This is a public action via shared link — client signs without being a platform user
+   329→    const proposal = await ctx.db
+   330→      .query("proposals")
+   331→      .withIndex("by_public_token", (q) => q.eq("publicToken", publicToken))
+   332→      .first();
+   333→
+   334→    if (!proposal) throw new Error("Proposal not found");
+   335→    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+   336→      throw new Error("Proposal is not in a signable state");
+   337→    }
+   338→    if (proposal.status === "signed") {
+   339→      throw new Error("Proposal has already been signed");
+   340→    }
+   341→
+   342→    await ctx.db.patch(proposal._id, {
+   343→      status: "signed",
+   344→      signedAt: Date.now(),
+   345→      signatureData,
+   346→      updatedAt: Date.now(),
+   347→    });
+   348→
+   349→    // Cancel remaining follow-ups
+   350→    const followUps = await ctx.db
+   351→      .query("proposalFollowUps")
+   352→      .withIndex("by_proposal", (q) => q.eq("proposalId", proposal._id))
+   353→      .collect();
+   354→
+   355→    for (const fu of followUps) {
+   356→      if (fu.status === "scheduled") {
+   357→        await ctx.db.patch(fu._id, { status: "cancelled" });
+   358→      }
+   359→    }
+   360→  },
+   361→});
+   362→
+   363→export const duplicateProposal = mutation({
+   364→  args: { proposalId: v.id("proposals") },
+   365→  handler: async (ctx, { proposalId }) => {
+   366→    const userId = await getAuthUserId(ctx);
+   367→    if (!userId) throw new Error("Not authenticated");
+   368→
+   369→    const proposal = await ctx.db.get(proposalId);
+   370→    if (!proposal) throw new Error("Proposal not found");
+   371→
+   372→    // Check workspace access or direct ownership
+   373→    if (proposal.workspaceId) {
+   374→      await requireRecordAccess(ctx, proposal, "collaborate");
+   375→    } else if (proposal.userId !== userId) {
+   376→      throw new Error("Not authorized");
+   377→    }
+   378→
+   379→    const { _id, ...rest } = proposal;
+   380→    return await ctx.db.insert("proposals", {
+   381→      ...rest,
+   382→      status: "draft",
+   383→      publicToken: generateToken(),
+   384→      sentAt: undefined,
+   385→      viewedAt: undefined,
+   386→      signedAt: undefined,
+   387→      signatureData: undefined,
+   388→      createdAt: Date.now(),
+   389→      updatedAt: Date.now(),
+   390→    });
+   391→  },
+   392→});
+   393→
+   394→export const deleteProposal = mutation({
+   395→  args: { proposalId: v.id("proposals") },
+   396→  handler: async (ctx, { proposalId }) => {
+   397→    const userId = await getAuthUserId(ctx);
+   398→    if (!userId) throw new Error("Not authenticated");
+   399→
+   400→    const proposal = await ctx.db.get(proposalId);
+   401→    if (!proposal) throw new Error("Proposal not found");
+   402→
+   403→    // Check workspace access (owner level) or direct ownership
+   404→    if (proposal.workspaceId) {
+   405→      await requireRecordAccess(ctx, proposal, "owner");
+   406→    } else if (proposal.userId !== userId) {
+   407→      throw new Error("Not authorized");
+   408→    }
+   409→
+   410→    // Delete follow-ups
+   411→    const followUps = await ctx.db
+   412→      .query("proposalFollowUps")
+   413→      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+   414→      .collect();
+   415→    for (const fu of followUps) await ctx.db.delete(fu._id);
+   416→
+   417→    await ctx.db.delete(proposalId);
+   418→  },
+   419→});
+   420→
+   421→export const seedTemplates = mutation({
+   422→  args: {},
+   423→  handler: async (ctx) => {
+   424→    const existing = await ctx.db
+   425→      .query("proposalTemplates")
+   426→      .withIndex("by_system", (q) => q.eq("isSystem", true))
+   427→      .collect();
+   428→
+   429→    if (existing.length > 0) return;
+   430→
+   431→    const templates = [
+   432→      {
+   433→        name: "Web Development Proposal",
+   434→        industry: "Technology",
+   435→        description: "Professional proposal template for web development projects",
+   436→        sections: [
+   437→          { id: "1", type: "heading" as const, content: "Project Overview" },
+   438→          { id: "2", type: "text" as const, content: "We will build a modern, responsive web application tailored to your business needs. Our approach combines clean architecture with pixel-perfect design." },
+   439→          { id: "3", type: "pricing" as const, content: "Development Package", metadata: { items: [{ name: "Frontend Development", price: 5000 }, { name: "Backend Development", price: 7000 }, { name: "Testing & QA", price: 2000 }] } },
+   440→          { id: "4", type: "milestone" as const, content: "Project Milestones", metadata: { milestones: [{ name: "Design Approval", weeks: 2 }, { name: "MVP Delivery", weeks: 6 }, { name: "Final Delivery", weeks: 10 }] } },
+   441→          { id: "5", type: "terms" as const, content: "Payment Terms: 30% upfront, 40% at MVP, 30% on delivery. Project scope changes will be billed at $150/hr." },
+   442→        ],
+   443→      },
+   444→      {
+   445→        name: "Design & Branding Proposal",
+   446→        industry: "Creative",
+   447→        description: "Template for design, branding, and creative services",
+   448→        sections: [
+   449→          { id: "1", type: "heading" as const, content: "Creative Brief" },
+   450→          { id: "2", type: "text" as const, content: "We'll craft a cohesive brand identity that resonates with your target audience and sets you apart from competitors." },
+   451→          { id: "3", type: "pricing" as const, content: "Design Package", metadata: { items: [{ name: "Logo Design", price: 3000 }, { name: "Brand Guidelines", price: 2000 }, { name: "Marketing Collateral", price: 2500 }] } },
+   452→          { id: "4", type: "terms" as const, content: "Includes 3 revision rounds. Additional revisions billed at $100/round." },
+   453→        ],
+   454→      },
+   455→      {
+   456→        name: "Consulting Proposal",
+   457→        industry: "Professional Services",
+   458→        description: "Template for consulting and advisory services",
+   459→        sections: [
+   460→          { id: "1", type: "heading" as const, content: "Engagement Overview" },
+   461→          { id: "2", type: "text" as const, content: "Our consulting engagement will provide strategic guidance and actionable recommendations to optimize your operations." },
+   462→          { id: "3", type: "pricing" as const, content: "Consulting Package", metadata: { items: [{ name: "Discovery Phase (2 weeks)", price: 4000 }, { name: "Analysis & Recommendations", price: 6000 }, { name: "Implementation Support", price: 5000 }] } },
+   463→          { id: "4", type: "terms" as const, content: "Billed monthly. 30-day cancellation notice required." },
+   464→        ],
+   465→      },
+   466→    ];
+   467→
+   468→    for (const t of templates) {
+   469→      await ctx.db.insert("proposalTemplates", {
+   470→        name: t.name,
+   471→        industry: t.industry,
+   472→        description: t.description,
+   473→        sections: t.sections,
+   474→        isSystem: true,
+   475→        usageCount: 0,
+   476→        createdAt: Date.now(),
+   477→      });
+   478→    }
+   479→  },
+   480→});
+   481→
+   482→export const createProposalFromDeal = mutation({
+   483→  args: {
+   484→    dealId: v.id("deals"),
+   485→    workspaceId: v.optional(v.id("workspaces")),
+   486→    teamId: v.optional(v.id("teams")),
+   487→  },
+   488→  handler: async (ctx, { dealId, workspaceId, teamId }) => {
+   489→    const userId = await getAuthUserId(ctx);
+   490→    if (!userId) throw new Error("Not authenticated");
+   491→
+   492→    const deal = await ctx.db.get(dealId);
+   493→    if (!deal) throw new Error("Deal not found");
+   494→
+   495→    // Check workspace access or direct ownership
+   496→    if (deal.workspaceId) {
+   497→      await requireRecordAccess(ctx, deal, "collaborate");
+   498→    } else if (deal.userId !== userId) {
+   499→      throw new Error("Not authorized");
+   500→    }
+   501→
+   502→    // If workspaceId provided, verify membership
+   503→    const effectiveWorkspaceId = workspaceId ?? deal.workspaceId;
+   504→    if (effectiveWorkspaceId) {
+   505→      await requireWorkspaceAccess(ctx, effectiveWorkspaceId, "member");
+   506→    }
+   507→
+   508→    // Generate auto-populated sections from deal data
+   509→    const sections = [
+   510→      { id: "deal_heading", type: "heading" as const, content: deal.title },
+   511→      { id: "deal_desc", type: "text" as const, content: deal.description || `Proposal for ${deal.title}` },
+   512→      { id: "deal_pricing", type: "pricing" as const, content: "Project Pricing", metadata: { items: [{ name: deal.title, price: deal.value }] } },
+   513→      { id: "deal_terms", type: "terms" as const, content: "Payment Terms: 30% upfront, 40% at midpoint, 30% on delivery. Project scope changes will be billed at an agreed hourly rate." },
+   514→    ];
+   515→
+   516→    const proposalId = await ctx.db.insert("proposals", {
+   517→      userId,
+   518→      workspaceId: effectiveWorkspaceId ?? undefined,
+   519→      createdBy: userId,
+   520→      teamId: teamId ?? deal.teamId ?? undefined,
+   521→      dealId,
+   522→      clientId: deal.clientId,
+   523→      title: `Proposal: ${deal.title}`,
+   524→      status: "draft",
+   525→      publicToken: generateToken(),
+   526→      sections,
+   527→      totalValue: deal.value,
+   528→      currency: deal.currency || "USD",
+   529→      clientName: deal.contactName,
+   530→      clientEmail: deal.contactEmail,
+   531→      notes: deal.notes,
+   532→      createdAt: Date.now(),
+   533→      updatedAt: Date.now(),
+   534→    });
+   535→
+   536→    // Link deal to proposal
+   537→    await ctx.db.patch(dealId, { proposalId, updatedAt: Date.now() });
+   538→
+   539→    return proposalId;
+   540→  },
+   541→});
+   542→
+   543→// ─── FOLLOW-UP MANAGEMENT MUTATIONS ──────────────────────────────────────
+   544→
+   545→function getFollowUpSubject(dayNumber, title) {
+   546→  if (dayNumber <= 3) return `Following up: ${title}`;
+   547→  if (dayNumber <= 10) return `Checking in: ${title}`;
+   548→  return `Final reminder: ${title}`;
+   549→}
+   550→
+   551→function getFollowUpBody(dayNumber, title, clientName, sentAt) {
+   552→  const name = clientName || "there";
+   553→  const sentDate = new Date(sentAt).toLocaleDateString();
+   554→  if (dayNumber <= 3) {
+   555→    return `Hi ${name},\n\nI wanted to follow up on the proposal "${title}" I sent on ${sentDate}.\n\nI'd love to hear your thoughts and answer any questions you might have.\n\nBest regards`;
+   556→  }
+   557→  if (dayNumber <= 10) {
+   558→    return `Hi ${name},\n\nI'm checking in on the proposal "${title}" I sent on ${sentDate}.\n\nPlease let me know if you need any additional information or would like to discuss any adjustments.\n\nBest regards`;
+   559→  }
+   560→  return `Hi ${name},\n\nThis is a final reminder regarding the proposal "${title}" I sent on ${sentDate}.\n\nThis proposal will expire soon. Please let me know if you have any questions or if you'd like to proceed.\n\nBest regards`;
+   561→}
+   562→
+   563→export const startFollowUps = mutation({
+   564→  args: {
+   565→    proposalId: v.id("proposals"),
+   566→    intervals: v.optional(v.array(v.number())),
+   567→  },
+   568→  handler: async (ctx, { proposalId, intervals }) => {
+   569→    const userId = await getAuthUserId(ctx);
+   570→    if (!userId) throw new Error("Not authenticated");
+   571→
+   572→    const proposal = await ctx.db.get(proposalId);
+   573→    if (!proposal) throw new Error("Proposal not found");
+   574→
+   575→    // Check workspace access or direct ownership
+   576→    if (proposal.workspaceId) {
+   577→      const access = await getRecordAccess(ctx, proposal, userId);
+   578→      if (!access) throw new Error("Not authorized");
+   579→    } else if (proposal.userId !== userId) {
+   580→      throw new Error("Not authorized");
+   581→    }
+   582→
+   583→    // Only allow for proposals with status "sent" or "viewed"
+   584→    if (proposal.status !== "sent" && proposal.status !== "viewed") {
+   585→      throw new Error("Follow-ups can only be started for sent or viewed proposals");
+   586→    }
+   587→
+   588→    // Cancel any existing scheduled follow-ups for this proposal
+   589→    const existingFollowUps = await ctx.db
+   590→      .query("proposalFollowUps")
+   591→      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+   592→      .collect();
+   593→
+   594→    for (const fu of existingFollowUps) {
+   595→      if (fu.status === "scheduled") {
+   596→        await ctx.db.patch(fu._id, { status: "cancelled" });
+   597→      }
+   598→    }
+   599→
+   600→    // Create new follow-ups based on provided intervals or defaults
+   601→    const dayIntervals = intervals || [3, 7, 14];
+   602→    const sentAt = proposal.sentAt || Date.now();
+   603→
+   604→    for (const dayNumber of dayIntervals) {
+   605→      await ctx.db.insert("proposalFollowUps", {
+   606→        userId: proposal.userId,
+   607→        workspaceId: proposal.workspaceId ?? undefined,
+   608→        proposalId,
+   609→        dayNumber,
+   610→        subject: getFollowUpSubject(dayNumber, proposal.title),
+   611→        body: getFollowUpBody(dayNumber, proposal.title, proposal.clientName, sentAt),
+   612→        channel: "email",
+   613→        status: "scheduled",
+   614→        scheduledAt: sentAt + dayNumber * 24 * 60 * 60 * 1000,
+   615→        createdAt: Date.now(),
+   616→      });
+   617→    }
+   618→
+   619→    return { success: true, scheduledCount: dayIntervals.length };
+   620→  },
+   621→});
+   622→
+   623→export const stopFollowUps = mutation({
+   624→  args: {
+   625→    proposalId: v.id("proposals"),
+   626→  },
+   627→  handler: async (ctx, { proposalId }) => {
+   628→    const userId = await getAuthUserId(ctx);
+   629→    if (!userId) throw new Error("Not authenticated");
+   630→
+   631→    const proposal = await ctx.db.get(proposalId);
+   632→    if (!proposal) throw new Error("Proposal not found");
+   633→
+   634→    // Check workspace access or direct ownership
+   635→    if (proposal.workspaceId) {
+   636→      const access = await getRecordAccess(ctx, proposal, userId);
+   637→      if (!access) throw new Error("Not authorized");
+   638→    } else if (proposal.userId !== userId) {
+   639→      throw new Error("Not authorized");
+   640→    }
+   641→
+   642→    // Find all scheduled follow-ups for this proposal and cancel them
+   643→    const followUps = await ctx.db
+   644→      .query("proposalFollowUps")
+   645→      .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
+   646→      .collect();
+   647→
+   648→    let cancelledCount = 0;
+   649→    for (const fu of followUps) {
+   650→      if (fu.status === "scheduled") {
+   651→        await ctx.db.patch(fu._id, { status: "cancelled" });
+   652→        cancelledCount++;
+   653→      }
+   654→    }
+   655→
+   656→    return { success: true, cancelledCount };
+   657→  },
+   658→});
+   659→
+   660→export const skipFollowUp = mutation({
+   661→  args: {
+   662→    followUpId: v.id("proposalFollowUps"),
+   663→  },
+   664→  handler: async (ctx, { followUpId }) => {
+   665→    const userId = await getAuthUserId(ctx);
+   666→    if (!userId) throw new Error("Not authenticated");
+   667→
+   668→    const followUp = await ctx.db.get(followUpId);
+   669→    if (!followUp) throw new Error("Follow-up not found");
+   670→
+   671→    // Verify user owns the follow-up
+   672→    if (followUp.userId !== userId) {
+   673→      throw new Error("Not authorized");
+   674→    }
+   675→
+   676→    // Only allow if status is "scheduled"
+   677→    if (followUp.status !== "scheduled") {
+   678→      throw new Error("Only scheduled follow-ups can be skipped");
+   679→    }
+   680→
+   681→    await ctx.db.patch(followUpId, { status: "skipped" });
+   682→
+   683→    return { success: true };
+   684→  },
+   685→});
+   686→
+   687→export const getFollowUpSettings = query({
+   688→  args: {},
+   689→  handler: async (ctx) => {
+   690→    const userId = await getAuthUserId(ctx);
+   691→    if (!userId) {
+   692→      return {
+   693→        autoFollowUpsEnabled: true,
+   694→        day1Enabled: false,
+   695→        day3Enabled: true,
+   696→        day7Enabled: true,
+   697→        day14Enabled: true,
+   698→        day21Enabled: false,
+   699→        customIntervals: [],
+   700→        defaultChannel: "email",
+   701→      };
+   702→    }
+   703→
+   704→    const settings = await ctx.db
+   705→      .query("proposalFollowUpSettings")
+   706→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   707→      .first();
+   708→
+   709→    if (!settings) {
+   710→      return {
+   711→        autoFollowUpsEnabled: true,
+   712→        day1Enabled: false,
+   713→        day3Enabled: true,
+   714→        day7Enabled: true,
+   715→        day14Enabled: true,
+   716→        day21Enabled: false,
+   717→        customIntervals: [],
+   718→        defaultChannel: "email",
+   719→      };
+   720→    }
+   721→
+   722→    return {
+   723→      autoFollowUpsEnabled: settings.autoFollowUpsEnabled,
+   724→      day1Enabled: settings.day1Enabled ?? false,
+   725→      day3Enabled: settings.day3Enabled ?? true,
+   726→      day7Enabled: settings.day7Enabled ?? true,
+   727→      day14Enabled: settings.day14Enabled ?? true,
+   728→      day21Enabled: settings.day21Enabled ?? false,
+   729→      customIntervals: settings.customIntervals ?? [],
+   730→      defaultChannel: settings.defaultChannel ?? "email",
+   731→    };
+   732→  },
+   733→});
+   734→
+   735→export const updateFollowUpSettings = mutation({
+   736→  args: {
+   737→    autoFollowUpsEnabled: v.optional(v.boolean()),
+   738→    day1Enabled: v.optional(v.boolean()),
+   739→    day3Enabled: v.optional(v.boolean()),
+   740→    day7Enabled: v.optional(v.boolean()),
+   741→    day14Enabled: v.optional(v.boolean()),
+   742→    day21Enabled: v.optional(v.boolean()),
+   743→    customIntervals: v.optional(v.array(v.number())),
+   744→    defaultChannel: v.optional(v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"))),
+   745→    workspaceId: v.optional(v.id("workspaces")),
+   746→  },
+   747→  handler: async (ctx, args) => {
+   748→    const userId = await getAuthUserId(ctx);
+   749→    if (!userId) throw new Error("Not authenticated");
+   750→
+   751→    const existing = await ctx.db
+   752→      .query("proposalFollowUpSettings")
+   753→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   754→      .first();
+   755→
+   756→    const { workspaceId, ...updates } = args;
+   757→
+   758→    if (existing) {
+   759→      // Update existing settings
+   760→      const patchData = { ...updates, updatedAt: Date.now() };
+   761→      await ctx.db.patch(existing._id, patchData);
+   762→      return existing._id;
+   763→    }
+   764→
+   765→    // Create new settings
+   766→    return await ctx.db.insert("proposalFollowUpSettings", {
+   767→      userId,
+   768→      workspaceId: workspaceId ?? undefined,
+   769→      autoFollowUpsEnabled: updates.autoFollowUpsEnabled ?? true,
+   770→      day1Enabled: updates.day1Enabled ?? false,
+   771→      day3Enabled: updates.day3Enabled ?? true,
+   772→      day7Enabled: updates.day7Enabled ?? true,
+   773→      day14Enabled: updates.day14Enabled ?? true,
+   774→      day21Enabled: updates.day21Enabled ?? false,
+   775→      customIntervals: updates.customIntervals ?? [],
+   776→      defaultChannel: updates.defaultChannel ?? "email",
+   777→      createdAt: Date.now(),
+   778→      updatedAt: Date.now(),
+   779→    });
+   780→  },
+   781→});
+   782→
+   783→export const processDueFollowUps = internalMutation({
+   784→  args: {},
+   785→  handler: async (ctx) => {
+   786→    const now = Date.now();
+   787→
+   788→    // Find all follow-ups with status "scheduled" where scheduledAt < now
+   789→    const dueFollowUps = await ctx.db
+   790→      .query("proposalFollowUps")
+   791→      .withIndex("by_status_and_date", (q) => q.eq("status", "scheduled").lt("scheduledAt", now))
+   792→      .collect();
+   793→
+   794→    let processedCount = 0;
+   795→    for (const fu of dueFollowUps) {
+   796→      await ctx.db.patch(fu._id, {
+   797→        status: "sent",
+   798→        sentAt: Date.now(),
+   799→      });
+   800→      processedCount++;
+   801→    }
+   802→
+   803→    return { processedCount };
+   804→  },
+   805→});
+   806→
+   807→export const saveUploadedTemplate = mutation({
+   808→  args: {
+   809→    name: v.string(),
+   810→    sections: v.array(v.object({
+   811→      id: v.string(),
+   812→      type: v.union(v.literal("heading"), v.literal("text"), v.literal("pricing"), v.literal("terms"), v.literal("milestone"), v.literal("divider"), v.literal("client_info"), v.literal("sender_info"), v.literal("summary"), v.literal("scope_of_work")),
+   813→      content: v.string(),
+   814→      metadata: v.optional(v.any()),
+   815→    })),
+   816→    industry: v.optional(v.string()),
+   817→    description: v.optional(v.string()),
+   818→    workspaceId: v.optional(v.id("workspaces")),
+   819→  },
+   820→  handler: async (ctx, { name, sections, industry, description, workspaceId }) => {
+   821→    const userId = await getAuthUserId(ctx);
+   822→    if (!userId) throw new Error("Not authenticated");
+   823→
+   824→    // If workspaceId provided, verify membership
+   825→    if (workspaceId) {
+   826→      await requireWorkspaceAccess(ctx, workspaceId, "member");
+   827→    }
+   828→
+   829→    return await ctx.db.insert("proposalTemplates", {
+   830→      userId,
+   831→      workspaceId: workspaceId ?? undefined,
+   832→      createdBy: userId,
+   833→      name,
+   834→      sections,
+   835→      industry,
+   836→      description,
+   837→      usageCount: 0,
+   838→      createdAt: Date.now(),
+   839→    });
+   840→  },
+   841→});
+   842→

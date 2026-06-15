@@ -67,13 +67,22 @@ export const addProject = mutation({
     hourlyRate: v.number(),
     projectType: v.union(v.literal("ongoing"), v.literal("fixed"), v.literal("milestone")),
     protectionLevel: v.union(v.literal("standard"), v.literal("enhanced"), v.literal("maximum")),
+    workspaceId: v.optional(v.id("workspaces")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
     const client = await ctx.db.get(args.clientId);
-    if (!client || client.userId !== userId) {
+    if (!client) {
+      throw new Error("Client not found or unauthorized");
+    }
+    // Allow access if client belongs to same workspace or same user
+    if (client.workspaceId) {
+      if (client.workspaceId !== args.workspaceId && client.userId !== userId) {
+        throw new Error("Client not found or unauthorized");
+      }
+    } else if (client.userId !== userId) {
       throw new Error("Client not found or unauthorized");
     }
 
@@ -90,6 +99,7 @@ export const addProject = mutation({
 
     const projectId = await ctx.db.insert("projects", {
       userId,
+      workspaceId: args.workspaceId,
       clientId: args.clientId,
       projectName: args.projectName,
       hourlyRate: args.hourlyRate,

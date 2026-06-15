@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ClientList } from "@/components/client-protection/ClientList";
 import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
@@ -93,11 +93,14 @@ export default function Clients() {
   const clients = realClients;
 
   // ─── Auto-select first client ──────────────────────────────────────────
+  const hasAutoSelected = useRef(false);
   useEffect(() => {
-    if (!selectedClientId && clients.length > 0) {
+    if (!hasAutoSelected.current && !selectedClientId && clients.length > 0) {
+      hasAutoSelected.current = true;
       setSelectedClientId(clients[0]._id);
     }
-  }, [clients, selectedClientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit selectedClientId to avoid infinite re-renders
+  }, [clients]);
 
   // ─── Get selected client object ────────────────────────────────────────
   // IMPORTANT: Must be computed BEFORE usePermissions() call below

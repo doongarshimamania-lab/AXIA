@@ -357,13 +357,27 @@ export default function Pipeline() {
   }, [safeStages, dealsByStage]);
 
   // ── Auto-create default stages on first load ──
+  // Use a ref so the effect doesn't re-fire when createDefaultStages identity changes
+  const createDefaultStagesRef = useRef(createDefaultStages);
+  createDefaultStagesRef.current = createDefaultStages;
+
+  // Track whether we've already attempted to create defaults to avoid race conditions
+  const hasAttemptedDefaults = useRef(false);
+
   useEffect(() => {
-    if (stages !== undefined && stages.length === 0) {
-      createDefaultStages(workspaceId ? { workspaceId } : {}).catch(() => {
-        // Silently fail - user might not be authenticated
-      });
-    }
-  }, [stages, createDefaultStages, workspaceId]);
+    // Skip if demo mode (workspaceId is a fake "ws_" string, not a real Convex ID)
+    if (workspaceId && typeof workspaceId === "string" && workspaceId.startsWith("ws_")) return;
+    // Only run when stages have been loaded (not undefined) and are empty
+    if (stages === undefined) return;
+    if (stages.length > 0) return;
+    // Only attempt once per mount
+    if (hasAttemptedDefaults.current) return;
+    hasAttemptedDefaults.current = true;
+
+    createDefaultStagesRef.current(workspaceId ? { workspaceId } : {}).catch(() => {
+      // Silently fail - user might not be authenticated
+    });
+  }, [stages, workspaceId]);
 
   // ── Handlers ──
   const handleOpenCreateDialog = useCallback(
@@ -431,7 +445,7 @@ export default function Pipeline() {
   const handleSeedData = useCallback(async () => {
     setIsSeeding(true);
     try {
-      const result = await seedMockPipeline({});
+      const result = await seedMockPipeline(workspaceId ? { workspaceId } : {});
       const seedResult = result as { seeded?: boolean; dealCount?: number };
       if (seedResult?.seeded) {
         toast.success(`Seeded ${seedResult.dealCount} demo deals`);
@@ -444,7 +458,7 @@ export default function Pipeline() {
     } finally {
       setIsSeeding(false);
     }
-  }, [seedMockPipeline]);
+  }, [seedMockPipeline, workspaceId]);
 
   // ── Drag & Drop ──
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);

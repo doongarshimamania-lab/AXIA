@@ -174,6 +174,18 @@ export default function Proposals() {
   const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
 
+  // Mutations for Convert-to-Project flow
+  const createClientMutation = useMutation(api.clients.crud.createClient);
+  const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
+  const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
+  const updateProposalMutation = useMutation(api.proposals.crud.updateProposal);
+
+  // Fetch pipeline stages (to find "Won" stage for deal conversion)
+  const pipelineStages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as { _id: string; name: string }[] | undefined;
+
+  // Fetch existing clients (to check if client already exists)
+  const existingClients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as { _id: string; clientName: string; contactEmail?: string }[] | undefined;
+
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
 
@@ -275,6 +287,78 @@ export default function Proposals() {
       toast.success("Proposal deleted");
     } catch (err: any) {
       toast.error("Failed to delete proposal", { description: err.message });
+    }
+  };
+
+  const handleConvertToProject = async (proposal: Proposal) => {
+    try {
+      // Step 1: Find or create the client
+      const clientName = proposal.clientName || "Unknown Client";
+      const clientEmail = proposal.clientEmail;
+      let clientId: string | undefined;
+
+      // Check if a client with this name already exists
+      const existingClient = existingClients?.find(
+        (c) => c.clientName.toLowerCase() === clientName.toLowerCase()
+      );
+
+      if (existingClient) {
+        clientId = existingClient._id;
+      } else {
+        // Create a new client
+        const newClientId = await createClientMutation({
+          clientName,
+          platform: "direct" as const,
+          hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+          contractType: "hourly" as const,
+          contactEmail: clientEmail,
+          contactName: clientName,
+          workspaceId,
+          notes: `Created from proposal: ${proposal.title}`,
+        });
+        clientId = newClientId as unknown as string;
+      }
+
+      if (!clientId) {
+        throw new Error("Failed to resolve client ID");
+      }
+
+      // Step 2: Create the project
+      await addProjectMutation({
+        projectName: proposal.title,
+        clientId: clientId as any,
+        hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+        projectType: "ongoing" as const,
+        protectionLevel: "enhanced" as const,
+        workspaceId,
+      });
+
+      // Step 3: If proposal has a dealId, move the deal to "Won" stage
+      const dealId = (proposal as any).dealId;
+      if (dealId && pipelineStages) {
+        const wonStage = pipelineStages.find(
+          (s) => s.name.toLowerCase() === "won"
+        );
+        if (wonStage) {
+          await moveDealMutation({
+            dealId: dealId as any,
+            stageId: wonStage._id as any,
+          });
+        }
+      }
+
+      // Step 4: Update proposal notes to indicate conversion
+      const existingNotes = proposal.notes || "";
+      await updateProposalMutation({
+        proposalId: proposal._id as any,
+        notes: `${existingNotes ? existingNotes + "\n" : ""}[Converted to project — ${new Date().toLocaleDateString()}]`,
+      });
+
+      toast.success("Project created!", {
+        description: `"${proposal.title}" has been converted to a project.`,
+      });
+    } catch (err: any) {
+      toast.error("Failed to convert to project", { description: err.message });
     }
   };
 
@@ -541,6 +625,7 @@ export default function Proposals() {
                   } : () => {}}
                   canDelete={canDeleteRecords}
                   canShare={canShareRecords}
+                  onConvertToProject={handleConvertToProject}
                 />
               ))
             )}
@@ -626,6 +711,7 @@ function ProposalCard({
   onDelete,
   onView,
   onShare,
+  onConvertToProject,
   canDelete,
   canShare,
 }: {
@@ -639,6 +725,7 @@ function ProposalCard({
   onDelete: (id: string) => void;
   onView: () => void;
   onShare?: (id: string) => void;
+  onConvertToProject?: (proposal: Proposal) => void;
   canDelete?: boolean;
   canShare?: boolean;
 }) {
@@ -667,8 +754,8 @@ function ProposalCard({
       transition={{ duration: 0.3, delay: idx * 0.04 }}
       layout
     >
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden">
-        <CardContent className="p-5">
+      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden h-full flex flex-col">
+        <CardContent className="p-5 flex flex-col flex-1">
           {/* Top Row: Status + Actions */}
           <div className="flex items-start justify-between mb-3">
             <Badge
@@ -819,7 +906,7 @@ function ProposalCard({
                 className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/projects?createFromProposal=${proposal._id}`);
+                  onConvertToProject?.(proposal);
                 }}
               >
                 <Briefcase className="h-3 w-3" />
@@ -831,7 +918,7 @@ function ProposalCard({
                 className="gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/scope?proposal=${proposal._id}`);
+                  navigate(`/scope?proposalId=${proposal._id}`);
                 }}
               >
                 <ShieldCheck className="h-3 w-3" />

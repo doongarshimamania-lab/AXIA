@@ -248,36 +248,49 @@ export default function EvidenceLibrary() {
 
   // ── Convex Queries ──
 
+  // Build query args — only include workspaceId when it has a value so Convex
+  // doesn't reject the call with an invalid optional ID.
+  const libraryQueryArgs = useMemo(() => ({
+    view: viewMode,
+    startDate: libraryDateRange.start,
+    endDate: libraryDateRange.end,
+    ...(workspaceId ? { workspaceId } : {}),
+  }), [viewMode, libraryDateRange.start, libraryDateRange.end, workspaceId]);
+
+  const exportQueryArgs = useMemo(() => ({
+    view: "date" as const,
+    startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
+    endDate: Date.now(),
+    ...(workspaceId ? { workspaceId } : {}),
+  }), [workspaceId]);
+
+  const timelineQueryArgs = useMemo(() => ({
+    date: startOfDay,
+    ...(workspaceId ? { workspaceId } : {}),
+  }), [startOfDay, workspaceId]);
+
   // Library data with ±30 day window for monitoring
   const evidenceData = useQuery(
     api.evidence.library.getEvidenceLibraryData,
-    {
-      view: viewMode,
-      startDate: libraryDateRange.start,
-      endDate: libraryDateRange.end,
-    }
+    libraryQueryArgs
   );
 
   // Export data with full year window for comprehensive exports
   const exportData = useQuery(
     api.evidence.library.getEvidenceLibraryData,
-    {
-      view: "date" as const,
-      startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
-      endDate: Date.now(),
-    }
+    exportQueryArgs
   ) as any | undefined;
 
   const timelineData = useQuery(
     api.evidence.library.getEvidenceTimeline,
-    { date: startOfDay }
+    timelineQueryArgs
   );
 
   const clients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as any[] | undefined;
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, workspaceId ? { workspaceId } : "skip") as any[] | undefined;
 
-  const isLoading = evidenceData === undefined || timelineData === undefined;
-  const exportLoading = exportData === undefined || clients === undefined;
+  const isLoading = evidenceData === undefined && timelineData === undefined;
+  const exportLoading = exportData === undefined && clients === undefined;
   const timedOut = useQueryTimeout(isLoading, 5000);
   const showLoading = isLoading && !timedOut && !isDisconnected;
 

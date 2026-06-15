@@ -1,0 +1,983 @@
+     1→// @ts-nocheck
+     2→import { query, mutation } from "../_generated/server";
+     3→import { v } from "convex/values";
+     4→import { getAuthUserId } from "@convex-dev/auth/server";
+     5→
+     6→// Get all clients for the current user
+     7→export const getMyClients = query({
+     8→  args: {},
+     9→  handler: async (ctx) => {
+    10→    let userId;
+    11→    try {
+    12→      userId = await getAuthUserId(ctx);
+    13→    } catch (error) {
+    14→      // User not authenticated
+    15→      return [];
+    16→    }
+    17→    if (!userId) return [];
+    18→
+    19→    const clients = await ctx.db
+    20→      .query("clients")
+    21→      .withIndex("by_user", (q) => q.eq("userId", userId))
+    22→      .collect();
+    23→
+    24→    // Enrich with protection metrics
+    25→    const enrichedClients = await Promise.all(
+    26→      clients.map(async (client) => {
+    27→        // Get sessions for this client
+    28→        const sessions = await ctx.db
+    29→          .query("workSessions")
+    30→          .withIndex("by_user", (q) => q.eq("userId", userId))
+    31→          .filter((q) => q.eq(q.field("clientName"), client.clientName))
+    32→          .collect();
+    33→
+    34→        const totalHours = sessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
+    35→        const activeSession = sessions.find((s) => !s.endTime);
+    36→
+    37→        // Get time blocks for compliance
+    38→        const timeBlocks = await ctx.db
+    39→          .query("timeBlocks")
+    40→          .withIndex("by_user", (q) => q.eq("userId", userId))
+    41→          .collect();
+    42→
+    43→        const clientBlocks = timeBlocks.filter((block) => {
+    44→          const session = sessions.find((s) => s._id === block.sessionId);
+    45→          return session !== undefined;
+    46→        });
+    47→
+    48→        const compliantBlocks = clientBlocks.filter((b) => b.complianceStatus === "compliant").length;
+    49→        const totalBlocks = clientBlocks.length;
+    50→        const protectionScore = totalBlocks > 0 ? Math.round((compliantBlocks / totalBlocks) * 100) : 100;
+    51→
+    52→        return {
+    53→          ...client,
+    54→          totalHours: Math.round(totalHours * 10) / 10,
+    55→          protectionScore,
+    56→          activeSession: activeSession ? true : false,
+    57→          totalValue: Math.round(totalHours * client.hourlyRate * 100) / 100,
+    58→        };
+    59→      })
+    60→    );
+    61→
+    62→    return enrichedClients;
+    63→  },
+    64→});
+    65→
+    66→// Add a new client
+    67→export const addClient = mutation({
+    68→  args: {
+    69→    clientName: v.string(),
+    70→    platform: v.union(
+    71→      v.literal("upwork"),
+    72→      v.literal("fiverr"),
+    73→      v.literal("toptal"),
+    74→      v.literal("freelancer"),
+    75→      v.literal("direct")
+    76→    ),
+    77→    hourlyRate: v.number(),
+    78→    contractType: v.union(v.literal("hourly"), v.literal("fixed")),
+    79→    riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    80→  },
+    81→  handler: async (ctx, args) => {
+    82→    let userId;
+    83→    try {
+    84→      userId = await getAuthUserId(ctx);
+    85→    } catch (error) {
+    86→      return { success: false, error: "Not authenticated" };
+    87→    }
+    88→    if (!userId) return { success: false, error: "Not authenticated" };
+    89→
+    90→    // Check if client already exists
+    91→    const existing = await ctx.db
+    92→      .query("clients")
+    93→      .withIndex("by_user_and_name", (q) =>
+    94→        q.eq("userId", userId).eq("clientName", args.clientName)
+    95→      )
+    96→      .first();
+    97→
+    98→    if (existing) {
+    99→      throw new Error("Client already exists");
+   100→    }
+   101→
+   102→    const clientId = await ctx.db.insert("clients", {
+   103→      userId,
+   104→      clientName: args.clientName,
+   105→      platform: args.platform,
+   106→      hourlyRate: args.hourlyRate,
+   107→      contractType: args.contractType,
+   108→      riskLevel: args.riskLevel,
+   109→      addedAt: Date.now(),
+   110→      lastActivityAt: Date.now(),
+   111→    });
+   112→
+   113→    return { clientId, success: true };
+   114→  },
+   115→});
+   116→
+   117→// Update client risk level
+   118→export const updateClientRisk = mutation({
+   119→  args: {
+   120→    clientId: v.id("clients"),
+   121→    riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+   122→  },
+   123→  handler: async (ctx, args) => {
+   124→    let userId;
+   125→    try {
+   126→      userId = await getAuthUserId(ctx);
+   127→    } catch (error) {
+   128→      return { success: false, error: "Not authenticated" };
+   129→    }
+   130→    if (!userId) return { success: false, error: "Not authenticated" };
+   131→
+   132→    const client = await ctx.db.get(args.clientId);
+   133→    if (!client || client.userId !== userId) {
+   134→      throw new Error("Client not found or unauthorized");
+   135→    }
+   136→
+   137→    await ctx.db.patch(args.clientId, {
+   138→      riskLevel: args.riskLevel,
+   139→    });
+   140→
+   141→    return { success: true };
+   142→  },
+   143→});
+   144→
+   145→// Get client protection details
+   146→export const getClientProtectionDetails = query({
+   147→  args: { clientId: v.id("clients") },
+   148→  handler: async (ctx, args) => {
+   149→    let userId;
+   150→    try {
+   151→      userId = await getAuthUserId(ctx);
+   152→    } catch (error) {
+   153→      return {
+   154→        client: null,
+   155→        totalSessions: 0,
+   156→        totalReports: 0,
+   157→        sessions: [],
+   158→      };
+   159→    }
+   160→    if (!userId) {
+   161→      return {
+   162→        client: null,
+   163→        totalSessions: 0,
+   164→        totalReports: 0,
+   165→        sessions: [],
+   166→      };
+   167→    }
+   168→
+   169→    const client = await ctx.db.get(args.clientId);
+   170→    if (!client || client.userId !== userId) {
+   171→      throw new Error("Client not found or unauthorized");
+   172→    }
+   173→
+   174→    // Get all sessions for this client
+   175→    const sessions = await ctx.db
+   176→      .query("workSessions")
+   177→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   178→      .filter((q) => q.eq(q.field("clientName"), client.clientName))
+   179→      .collect();
+   180→
+   181→    // Get dispute reports for this client
+   182→    const reports = await ctx.db
+   183→      .query("disputeReports")
+   184→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   185→      .collect();
+   186→
+   187→    const clientReports = reports.filter((r) => {
+   188→      const session = sessions.find((s) => s._id === r.sessionId);
+   189→      return session !== undefined;
+   190→    });
+   191→
+   192→    return {
+   193→      client,
+   194→      totalSessions: sessions.length,
+   195→      totalReports: clientReports.length,
+   196→      sessions: sessions.slice(0, 10),
+   197→    };
+   198→  },
+   199→});
+   200→
+   201→// Get client-specific protection score with 4-pillar structure
+   202→export const getClientProtectionScore = query({
+   203→  args: {
+   204→    clientId: v.optional(v.id("clients")),
+   205→  },
+   206→  handler: async (ctx, args) => {
+   207→    let userId;
+   208→    try {
+   209→      userId = await getAuthUserId(ctx);
+   210→    } catch (error) {
+   211→      return {
+   212→        evidenceCount: 0,
+   213→        activityDensity: 0,
+   214→        memoQuality: 0,
+   215→        weeklyHours: 0,
+   216→        hourlyRate: 25,
+   217→        avgMemoWords: 0,
+   218→        clientKeywords: 0,
+   219→        memoSpecificity: 0,
+   220→        requirementAlignment: 0,
+   221→        platformGaps: 0,
+   222→        highRiskGaps: 0,
+   223→        upworkCompliance: 0,
+   224→        fiverrCompliance: 0,
+   225→        toptalCompliance: 0,
+   226→      };
+   227→    }
+   228→    if (!userId) {
+   229→      return {
+   230→        evidenceCount: 0,
+   231→        activityDensity: 0,
+   232→        memoQuality: 0,
+   233→        weeklyHours: 0,
+   234→        hourlyRate: 25,
+   235→        avgMemoWords: 0,
+   236→        clientKeywords: 0,
+   237→        memoSpecificity: 0,
+   238→        requirementAlignment: 0,
+   239→        platformGaps: 0,
+   240→        highRiskGaps: 0,
+   241→        upworkCompliance: 0,
+   242→        fiverrCompliance: 0,
+   243→        toptalCompliance: 0,
+   244→      };
+   245→    }
+   246→
+   247→    const user = await ctx.db.get(userId);
+   248→    if (!user) {
+   249→      return {
+   250→        evidenceCount: 0,
+   251→        activityDensity: 0,
+   252→        memoQuality: 0,
+   253→        weeklyHours: 0,
+   254→        hourlyRate: 25,
+   255→        avgMemoWords: 0,
+   256→        clientKeywords: 0,
+   257→        memoSpecificity: 0,
+   258→        requirementAlignment: 0,
+   259→        platformGaps: 0,
+   260→        highRiskGaps: 0,
+   261→        upworkCompliance: 0,
+   262→        fiverrCompliance: 0,
+   263→        toptalCompliance: 0,
+   264→      };
+   265→    }
+   266→
+   267→    const hourlyRate = user.hourlyRate || 25;
+   268→
+   269→    // Get client filter
+   270→    let clientFilter: string | null = null;
+   271→    if (args.clientId) {
+   272→      const client = await ctx.db.get(args.clientId);
+   273→      if (client && client.userId === userId) {
+   274→        clientFilter = client.clientName;
+   275→      }
+   276→    }
+   277→
+   278→    // Get all work sessions
+   279→    const allSessions = await ctx.db
+   280→      .query("workSessions")
+   281→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   282→      .collect();
+   283→
+   284→    const sessions = clientFilter
+   285→      ? allSessions.filter((s) => s.clientName === clientFilter)
+   286→      : allSessions;
+   287→
+   288→    // Calculate weekly hours
+   289→    const now = Date.now();
+   290→    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+   291→    const recentSessions = sessions.filter((s) => s.startTime >= sevenDaysAgo);
+   292→    const weeklyHours = recentSessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
+   293→
+   294→    // Calculate evidence metrics
+   295→    let totalEvidence = 0;
+   296→    let totalMemoWords = 0;
+   297→    let memoCount = 0;
+   298→    let activityEvents = 0;
+   299→    let totalMinutes = 0;
+   300→
+   301→    for (const session of sessions) {
+   302→      const evidenceSession = await ctx.db
+   303→        .query("evidenceSessions")
+   304→        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+   305→        .first();
+   306→
+   307→      if (evidenceSession) {
+   308→        const events = await ctx.db
+   309→          .query("evidenceEvents")
+   310→          .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
+   311→          .collect();
+   312→
+   313→        totalEvidence += events.length;
+   314→        activityEvents += events.length;
+   315→        totalMinutes += session.totalMinutes || 0;
+   316→
+   317→        // Count memo quality
+   318→        const memos = events.filter((e) => e.kind === "memo");
+   319→        memoCount += memos.length;
+   320→        memos.forEach((m) => {
+   321→          const words = m.data?.text?.split(" ").length || 0;
+   322→          totalMemoWords += words;
+   323→        });
+   324→      }
+   325→    }
+   326→
+   327→    const activityDensity = totalMinutes > 0 ? activityEvents / totalMinutes : 0;
+   328→    const memoQuality = memoCount > 0 ? Math.min(1, (totalMemoWords / memoCount) / 10) : 0;
+   329→    const avgMemoWords = memoCount > 0 ? Math.round(totalMemoWords / memoCount) : 0;
+   330→
+   331→    // Calculate platform compliance (mock data - would be calculated from actual platform requirements)
+   332→    const upworkCompliance = Math.min(100, Math.round(activityDensity * 50 + memoQuality * 50));
+   333→    const fiverrCompliance = Math.min(100, Math.round(activityDensity * 45 + memoQuality * 55));
+   334→    const toptalCompliance = Math.min(100, Math.round(activityDensity * 55 + memoQuality * 45));
+   335→
+   336→    return {
+   337→      evidenceCount: totalEvidence,
+   338→      activityDensity: Math.round(activityDensity * 100) / 100,
+   339→      memoQuality: Math.round(memoQuality * 100) / 100,
+   340→      weeklyHours: Math.round(weeklyHours * 10) / 10,
+   341→      hourlyRate,
+   342→      avgMemoWords,
+   343→      clientKeywords: memoCount,
+   344→      memoSpecificity: memoQuality,
+   345→      requirementAlignment: Math.min(1, memoQuality * 1.2),
+   346→      platformGaps: Math.max(0, 5 - Math.floor(memoQuality * 5)),
+   347→      highRiskGaps: Math.max(0, 3 - Math.floor(activityDensity * 2)),
+   348→      upworkCompliance,
+   349→      fiverrCompliance,
+   350→      toptalCompliance,
+   351→    };
+   352→  },
+   353→});
+   354→
+   355→// Simulate client-specific dispute outcomes
+   356→export const getClientDisputeSimulation = query({
+   357→  args: {
+   358→    clientId: v.optional(v.id("clients")),
+   359→    addMemos: v.optional(v.number()),
+   360→  },
+   361→  handler: async (ctx, args) => {
+   362→    let userId;
+   363→    try {
+   364→      userId = await getAuthUserId(ctx);
+   365→    } catch (error) {
+   366→      return {
+   367→        currentRate: 0,
+   368→        simulatedRate: 0,
+   369→        improvement: 0,
+   370→        protectedValue: 0,
+   371→        description: "Please log in to view dispute simulation",
+   372→      };
+   373→    }
+   374→    if (!userId) {
+   375→      return {
+   376→        currentRate: 0,
+   377→        simulatedRate: 0,
+   378→        improvement: 0,
+   379→        protectedValue: 0,
+   380→        description: "Please log in to view dispute simulation",
+   381→      };
+   382→    }
+   383→
+   384→    const user = await ctx.db.get(userId);
+   385→    if (!user) {
+   386→      return {
+   387→        currentRate: 0,
+   388→        simulatedRate: 0,
+   389→        improvement: 0,
+   390→        protectedValue: 0,
+   391→        description: "User not found",
+   392→      };
+   393→    }
+   394→
+   395→    const hourlyRate = user.hourlyRate || 25;
+   396→
+   397→    // Calculate base protection score inline
+   398→    let simClientFilter: string | null = null;
+   399→    if (args.clientId) {
+   400→      const client = await ctx.db.get(args.clientId);
+   401→      if (client) simClientFilter = client.clientName;
+   402→    }
+   403→
+   404→    const simAllSessions = await ctx.db
+   405→      .query("workSessions")
+   406→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   407→      .collect();
+   408→
+   409→    const simSessions = simClientFilter
+   410→      ? simAllSessions.filter((s) => s.clientName === simClientFilter)
+   411→      : simAllSessions;
+   412→
+   413→    // Calculate base rate from evidence quality
+   414→    let baseRate = 75;
+   415→    if (simSessions.length > 0) {
+   416→      const sessionIds = simSessions.map((s) => s._id);
+   417→      let totalEvidence = 0;
+   418→      let workContextEvidence = 0;
+   419→
+   420→      for (const sessionId of sessionIds) {
+   421→        const evidenceSession = await ctx.db
+   422→          .query("evidenceSessions")
+   423→          .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+   424→          .first();
+   425→
+   426→        if (evidenceSession) {
+   427→          const events = await ctx.db
+   428→            .query("evidenceEvents")
+   429→            .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
+   430→            .collect();
+   431→
+   432→          totalEvidence += events.length;
+   433→          workContextEvidence += events.filter((e) => e.kind === "url" || e.kind === "memo").length;
+   434→        }
+   435→      }
+   436→
+   437→      const clientContextScore = totalEvidence > 0 ? Math.min(100, Math.round((workContextEvidence / totalEvidence) * 150)) : 0;
+   438→      const now = Date.now();
+   439→      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+   440→      const recentSessions = simSessions.filter((s) => s.startTime >= thirtyDaysAgo);
+   441→      const evidenceConsistency = recentSessions.length > 0 ? Math.min(100, recentSessions.length * 10) : 0;
+   442→      
+   443→      baseRate = Math.round(clientContextScore * 0.4 + evidenceConsistency * 0.3 + 80 * 0.3);
+   444→    }
+   445→
+   446→    // Calculate improvement from adding memos
+   447→    const memoImprovement = (args.addMemos || 0) * 0.12;
+   448→    const simulatedRate = Math.min(99, baseRate + memoImprovement);
+   449→
+   450→    // Calculate protected value this month
+   451→    const now = Date.now();
+   452→    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+   453→
+   454→    const monthSessions = await ctx.db
+   455→      .query("workSessions")
+   456→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   457→      .filter((q) => q.gte(q.field("startTime"), thirtyDaysAgo))
+   458→      .collect();
+   459→
+   460→    let monthClientFilter: string | null = null;
+   461→    if (args.clientId) {
+   462→      const client = await ctx.db.get(args.clientId);
+   463→      if (client) monthClientFilter = client.clientName;
+   464→    }
+   465→
+   466→    const filteredSessions = monthClientFilter
+   467→      ? monthSessions.filter((s) => s.clientName === monthClientFilter)
+   468→      : monthSessions;
+   469→
+   470→    const totalHours = filteredSessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
+   471→    const protectedValue = Math.round(totalHours * hourlyRate * (simulatedRate / 100) * 100) / 100;
+   472→
+   473→    return {
+   474→      currentRate: baseRate,
+   475→      simulatedRate: Math.round(simulatedRate),
+   476→      improvement: Math.round(simulatedRate - baseRate),
+   477→      protectedValue,
+   478→      description: `Adding memos for client meetings would increase your dispute success rate to ${Math.round(simulatedRate)}% and protect $${protectedValue.toFixed(2)} this month.`,
+   479→    };
+   480→  },
+   481→});
+   482→
+   483→// Predict client-specific evidence gaps
+   484→export const getClientGapPrediction = query({
+   485→  args: {
+   486→    clientId: v.optional(v.id("clients")),
+   487→  },
+   488→  handler: async (ctx, args) => {
+   489→    let userId;
+   490→    try {
+   491→      userId = await getAuthUserId(ctx);
+   492→    } catch (error) {
+   493→      return {
+   494→        gapProbability: 0,
+   495→        predictedTime: "N/A",
+   496→        confidence: "Low" as const,
+   497→        reason: "Please log in to view gap predictions",
+   498→        hasGapPrediction: false,
+   499→      };
+   500→    }
+   501→    if (!userId) {
+   502→      return {
+   503→        gapProbability: 0,
+   504→        predictedTime: "N/A",
+   505→        confidence: "Low" as const,
+   506→        reason: "Please log in to view gap predictions",
+   507→        hasGapPrediction: false,
+   508→      };
+   509→    }
+   510→
+   511→    // Get historical gap patterns
+   512→    const allSessions = await ctx.db
+   513→      .query("workSessions")
+   514→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   515→      .collect();
+   516→
+   517→    let clientFilter: string | null = null;
+   518→    if (args.clientId) {
+   519→      const client = await ctx.db.get(args.clientId);
+   520→      if (client) clientFilter = client.clientName;
+   521→    }
+   522→
+   523→    const sessions = clientFilter
+   524→      ? allSessions.filter((s) => s.clientName === clientFilter)
+   525→      : allSessions;
+   526→
+   527→    // Analyze time patterns for gaps
+   528→    const hourlyGaps: Record<number, number> = {};
+   529→    for (let i = 0; i < 24; i++) {
+   530→      hourlyGaps[i] = 0;
+   531→    }
+   532→
+   533→    for (const session of sessions) {
+   534→      const evidenceSession = await ctx.db
+   535→        .query("evidenceSessions")
+   536→        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+   537→        .first();
+   538→
+   539→      if (evidenceSession) {
+   540→        const events = await ctx.db
+   541→          .query("evidenceEvents")
+   542→          .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
+   543→          .collect();
+   544→
+   545→        const eventsByHour: Record<number, number> = {};
+   546→        events.forEach((e) => {
+   547→          const hour = new Date(e.t).getHours();
+   548→          eventsByHour[hour] = (eventsByHour[hour] || 0) + 1;
+   549→        });
+   550→
+   551→        Object.keys(eventsByHour).forEach((hourStr) => {
+   552→          const hour = parseInt(hourStr);
+   553→          if (eventsByHour[hour] < 3) {
+   554→            hourlyGaps[hour]++;
+   555→          }
+   556→        });
+   557→      }
+   558→    }
+   559→
+   560→    // Find hour with most gaps
+   561→    let maxGapHour = 15;
+   562→    let maxGaps = 0;
+   563→    Object.entries(hourlyGaps).forEach(([hour, gaps]) => {
+   564→      if (gaps > maxGaps) {
+   565→        maxGaps = gaps;
+   566→        maxGapHour = parseInt(hour);
+   567→      }
+   568→    });
+   569→
+   570→    // Calculate gap probability
+   571→    const clientHistoricalGaps = sessions.length > 0 ? (maxGaps / sessions.length) * 100 : 0;
+   572→    const currentInactivity = 60;
+   573→    const gapProbability = clientHistoricalGaps * 0.7 + currentInactivity * 0.3;
+   574→
+   575→    const predictedTime = `${maxGapHour % 12 || 12}:${Math.floor(Math.random() * 60).toString().padStart(2, "0")} ${maxGapHour >= 12 ? "PM" : "AM"}`;
+   576→
+   577→    return {
+   578→      gapProbability: Math.round(gapProbability),
+   579→      predictedTime,
+   580→      confidence: gapProbability > 70 ? "High" : gapProbability > 50 ? "Medium" : "Low",
+   581→      reason: "Based on your pattern, you typically have evidence gaps during client meetings",
+   582→      hasGapPrediction: gapProbability > 30, // Lowered threshold from 70 to 30 to show predictions more often
+   583→    };
+   584→  },
+   585→});
+   586→
+   587→// Get client policy profile
+   588→export const getClientPolicyProfile = query({
+   589→  args: {
+   590→    clientId: v.optional(v.id("clients")),
+   591→  },
+   592→  handler: async (ctx, args) => {
+   593→    let userId;
+   594→    try {
+   595→      userId = await getAuthUserId(ctx);
+   596→    } catch (error) {
+   597→      return {
+   598→        contextScore: 0,
+   599→        evidenceDensity: 0,
+   600→        complianceRate: 0,
+   601→        actions: [],
+   602→        evidenceRequirements: [],
+   603→      };
+   604→    }
+   605→    if (!userId) {
+   606→      return {
+   607→        contextScore: 0,
+   608→        evidenceDensity: 0,
+   609→        complianceRate: 0,
+   610→        actions: [],
+   611→        evidenceRequirements: [],
+   612→      };
+   613→    }
+   614→
+   615→    // Get client filter
+   616→    let clientFilter: string | null = null;
+   617→    if (args.clientId) {
+   618→      const client = await ctx.db.get(args.clientId);
+   619→      if (client) clientFilter = client.clientName;
+   620→    }
+   621→
+   622→    const allSessions = await ctx.db
+   623→      .query("workSessions")
+   624→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   625→      .collect();
+   626→
+   627→    const sessions = clientFilter
+   628→      ? allSessions.filter((s) => s.clientName === clientFilter)
+   629→      : allSessions;
+   630→
+   631→    // Calculate context score (quality of work context in evidence)
+   632→    let totalEvidence = 0;
+   633→    let contextEvidence = 0;
+   634→
+   635→    for (const session of sessions) {
+   636→      const evidenceSession = await ctx.db
+   637→        .query("evidenceSessions")
+   638→        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+   639→        .first();
+   640→
+   641→      if (evidenceSession) {
+   642→        const events = await ctx.db
+   643→          .query("evidenceEvents")
+   644→          .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
+   645→          .collect();
+   646→
+   647→        totalEvidence += events.length;
+   648→        contextEvidence += events.filter((e) => e.kind === "memo" || e.kind === "url").length;
+   649→      }
+   650→    }
+   651→
+   652→    const contextScore = totalEvidence > 0 ? Math.min(100, Math.round((contextEvidence / totalEvidence) * 120)) : 0;
+   653→
+   654→    // Calculate evidence density (evidence per session)
+   655→    const evidenceDensity = sessions.length > 0 ? Math.round((totalEvidence / sessions.length) * 10) / 10 : 0;
+   656→
+   657→    // Calculate compliance rate
+   658→    const timeBlocks = await ctx.db
+   659→      .query("timeBlocks")
+   660→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   661→      .collect();
+   662→
+   663→    const clientBlocks = timeBlocks.filter((block) => {
+   664→      const session = sessions.find((s) => s._id === block.sessionId);
+   665→      return session !== undefined;
+   666→    });
+   667→
+   668→    const compliantBlocks = clientBlocks.filter((b) => b.complianceStatus === "compliant").length;
+   669→    const complianceRate = clientBlocks.length > 0 ? Math.round((compliantBlocks / clientBlocks.length) * 100) : 100;
+   670→
+   671→    // Generate protection plan actions
+   672→    const actions = [];
+   673→    if (contextScore < 85) {
+   674→      actions.push({
+   675→        action: "Add mobile context to 3 screenshots",
+   676→        impact: "+12% dispute success",
+   677→        priority: 1,
+   678→      });
+   679→    }
+   680→    if (evidenceDensity < 3) {
+   681→      actions.push({
+   682→        action: "Add design process memo to next 2 work sessions",
+   683→        impact: "+9% dispute success",
+   684→        priority: 2,
+   685→      });
+   686→    }
+   687→    if (complianceRate < 90) {
+   688→      actions.push({
+   689→        action: "Increase screenshot frequency to meet compliance threshold",
+   690→        impact: "+7% protection score",
+   691→        priority: 3,
+   692→      });
+   693→    }
+   694→
+   695→    return {
+   696→      contextScore,
+   697→      evidenceDensity,
+   698→      complianceRate,
+   699→      actions,
+   700→      evidenceRequirements: [
+   701→        "Screenshots showing work progress",
+   702→        "Memo with work context for each session",
+   703→        "Daily evidence updates (min 3/day)",
+   704→      ],
+   705→    };
+   706→  },
+   707→});
+   708→
+   709→// Get client trust score
+   710→export const getClientTrustScore = query({
+   711→  args: {
+   712→    clientId: v.optional(v.id("clients")),
+   713→  },
+   714→  handler: async (ctx, args) => {
+   715→    let userId;
+   716→    try {
+   717→      userId = await getAuthUserId(ctx);
+   718→    } catch (error) {
+   719→      return {
+   720→        score: 0,
+   721→        trustLevel: "Unknown" as const,
+   722→        paymentReliability: 0,
+   723→        communicationResponsiveness: 0,
+   724→        disputeHistory: 0,
+   725→        relationshipDuration: 0,
+   726→      };
+   727→    }
+   728→    if (!userId) {
+   729→      return {
+   730→        score: 0,
+   731→        trustLevel: "Unknown" as const,
+   732→        paymentReliability: 0,
+   733→        communicationResponsiveness: 0,
+   734→        disputeHistory: 0,
+   735→        relationshipDuration: 0,
+   736→      };
+   737→    }
+   738→
+   739→    // Get client
+   740→    let client = null;
+   741→    if (args.clientId) {
+   742→      client = await ctx.db.get(args.clientId);
+   743→      if (!client || client.userId !== userId) {
+   744→        return {
+   745→          score: 0,
+   746→          trustLevel: "Unknown" as const,
+   747→          paymentReliability: 0,
+   748→          communicationResponsiveness: 0,
+   749→          disputeHistory: 0,
+   750→          relationshipDuration: 0,
+   751→        };
+   752→      }
+   753→    }
+   754→
+   755→    if (!client) {
+   756→      return {
+   757→        score: 0,
+   758→        trustLevel: "Unknown",
+   759→        paymentReliability: 0,
+   760→        communicationResponsiveness: 0,
+   761→        disputeHistory: 0,
+   762→        relationshipDuration: 0,
+   763→      };
+   764→    }
+   765→
+   766→    // Calculate payment reliability (mock data - in production would track actual payments)
+   767→    const latePayments = 0; // Would track from payment history
+   768→    const paymentReliability = Math.max(0, 100 - latePayments * 5);
+   769→
+   770→    // Calculate communication responsiveness (based on session activity)
+   771→    const allSessions = await ctx.db
+   772→      .query("workSessions")
+   773→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   774→      .filter((q) => q.eq(q.field("clientName"), client.clientName))
+   775→      .collect();
+   776→
+   777→    const averageResponseTime = 24; // Mock - would calculate from actual communication data
+   778→    const communicationResponsiveness = Math.max(0, 100 - averageResponseTime * 0.5);
+   779→
+   780→    // Calculate dispute history
+   781→    const allReports = await ctx.db
+   782→      .query("disputeReports")
+   783→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   784→      .collect();
+   785→
+   786→    const clientReports = allReports.filter((r) => {
+   787→      const session = allSessions.find((s) => s._id === r.sessionId);
+   788→      return session !== undefined;
+   789→    });
+   790→
+   791→    const disputeCount = clientReports.length;
+   792→    const disputeHistory = Math.max(0, 100 - disputeCount * 10);
+   793→
+   794→    // Calculate relationship duration (in months)
+   795→    const now = Date.now();
+   796→    const clientAge = now - client.addedAt;
+   797→    const durationMonths = Math.floor(clientAge / (30 * 24 * 60 * 60 * 1000));
+   798→    const relationshipDuration = Math.min(durationMonths * 2, 100);
+   799→
+   800→    // Calculate overall trust score
+   801→    const score = Math.round(
+   802→      paymentReliability * 0.4 +
+   803→        communicationResponsiveness * 0.3 +
+   804→        disputeHistory * 0.2 +
+   805→        relationshipDuration * 0.1
+   806→    );
+   807→
+   808→    // Determine trust level
+   809→    let trustLevel = "Unknown";
+   810→    if (score >= 80) trustLevel = "High Trust";
+   811→    else if (score >= 60) trustLevel = "Medium Trust";
+   812→    else if (score >= 40) trustLevel = "Low Trust";
+   813→    else trustLevel = "High Risk";
+   814→
+   815→    return {
+   816→      score,
+   817→      trustLevel,
+   818→      paymentReliability,
+   819→      communicationResponsiveness,
+   820→      disputeHistory,
+   821→      relationshipDuration: durationMonths,
+   822→    };
+   823→  },
+   824→});
+   825→
+   826→// Get client payment pattern analysis
+   827→export const getClientPaymentPattern = query({
+   828→  args: {
+   829→    clientId: v.optional(v.id("clients")),
+   830→  },
+   831→  handler: async (ctx, args) => {
+   832→    let userId;
+   833→    try {
+   834→      userId = await getAuthUserId(ctx);
+   835→    } catch (error) {
+   836→      return {
+   837→        hasPattern: false,
+   838→        disputeCycle: null,
+   839→        evidenceThreshold: 0,
+   840→        highRiskPeriod: null,
+   841→        paymentTriggers: [],
+   842→        protectionPlan: [],
+   843→        disputeRate: 0,
+   844→      };
+   845→    }
+   846→    if (!userId) {
+   847→      return {
+   848→        hasPattern: false,
+   849→        disputeCycle: null,
+   850→        evidenceThreshold: 0,
+   851→        highRiskPeriod: null,
+   852→        paymentTriggers: [],
+   853→        protectionPlan: [],
+   854→        disputeRate: 0,
+   855→      };
+   856→    }
+   857→
+   858→    // Get client filter
+   859→    let clientFilter: string | null = null;
+   860→    if (args.clientId) {
+   861→      const client = await ctx.db.get(args.clientId);
+   862→      if (client) clientFilter = client.clientName;
+   863→    }
+   864→
+   865→    const allSessions = await ctx.db
+   866→      .query("workSessions")
+   867→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   868→      .collect();
+   869→
+   870→    const sessions = clientFilter
+   871→      ? allSessions.filter((s) => s.clientName === clientFilter)
+   872→      : allSessions;
+   873→
+   874→    if (sessions.length === 0) {
+   875→      return {
+   876→        hasPattern: false,
+   877→        disputeCycle: null,
+   878→        evidenceThreshold: 0,
+   879→        highRiskPeriod: null,
+   880→        paymentTriggers: [],
+   881→        protectionPlan: [],
+   882→        disputeRate: 0,
+   883→      };
+   884→    }
+   885→
+   886→    // Analyze evidence quality patterns
+   887→    let totalEvidence = 0;
+   888→    let lowQualityCount = 0;
+   889→    const evidenceBySession: Record<string, number> = {};
+   890→
+   891→    for (const session of sessions) {
+   892→      const evidenceSession = await ctx.db
+   893→        .query("evidenceSessions")
+   894→        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+   895→        .first();
+   896→
+   897→      if (evidenceSession) {
+   898→        const events = await ctx.db
+   899→          .query("evidenceEvents")
+   900→          .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
+   901→          .collect();
+   902→
+   903→        const qualityScore = events.length * 10;
+   904→        evidenceBySession[session._id] = qualityScore;
+   905→        totalEvidence += events.length;
+   906→        
+   907→        if (qualityScore < 80) {
+   908→          lowQualityCount++;
+   909→        }
+   910→      }
+   911→    }
+   912→
+   913→    // Calculate evidence threshold
+   914→    const evidenceThreshold = sessions.length > 0 ? Math.round((totalEvidence / sessions.length) * 10) : 80;
+   915→
+   916→    // Identify dispute cycle pattern
+   917→    const disputeReports = await ctx.db
+   918→      .query("disputeReports")
+   919→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   920→      .collect();
+   921→
+   922→    const clientDisputes = disputeReports.filter((r) => {
+   923→      const session = sessions.find((s) => s._id === r.sessionId);
+   924→      return session !== undefined;
+   925→    });
+   926→
+   927→    // Analyze dispute timing patterns
+   928→    const disputeDates = clientDisputes.map((d) => new Date(d.generatedAt));
+   929→    let disputeCycle = "No pattern detected";
+   930→    
+   931→    if (disputeDates.length >= 2) {
+   932→      const dayOfWeek = disputeDates[0].getDay();
+   933→      const weekOfMonth = Math.ceil(disputeDates[0].getDate() / 7);
+   934→      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+   935→      disputeCycle = `Every ${weekOfMonth}${weekOfMonth === 1 ? "st" : weekOfMonth === 2 ? "nd" : weekOfMonth === 3 ? "rd" : "th"} ${days[dayOfWeek]}`;
+   936→    }
+   937→
+   938→    // Identify payment triggers
+   939→    const paymentTriggers = [];
+   940→    if (lowQualityCount > sessions.length * 0.3) {
+   941→      paymentTriggers.push(`Evidence quality < ${evidenceThreshold}`);
+   942→    }
+   943→    if (sessions.length > 5 && totalEvidence / sessions.length < 3) {
+   944→      paymentTriggers.push("Low evidence density (< 3 items per session)");
+   945→    }
+   946→    paymentTriggers.push("No client communication 2 days before payment");
+   947→
+   948→    // Generate protection plan
+   949→    const protectionPlan = [];
+   950→    
+   951→    if (evidenceThreshold < 80) {
+   952→      protectionPlan.push({
+   953→        action: `Ensure evidence quality > 80 before payment periods`,
+   954→        impact: "95% payment success",
+   955→        priority: 1,
+   956→      });
+   957→    }
+   958→    
+   959→    protectionPlan.push({
+   960→      action: "Communicate with client 2 days before payment",
+   961→      impact: "90% payment success",
+   962→      priority: 2,
+   963→    });
+   964→
+   965→    if (totalEvidence / sessions.length < 5) {
+   966→      protectionPlan.push({
+   967→        action: "Increase evidence collection to 5+ items per session",
+   968→        impact: "85% dispute prevention",
+   969→        priority: 3,
+   970→      });
+   971→    }
+   972→
+   973→    return {
+   974→      hasPattern: clientDisputes.length > 0 || lowQualityCount > 0,
+   975→      disputeCycle,
+   976→      evidenceThreshold,
+   977→      highRiskPeriod: "3 days before payment",
+   978→      paymentTriggers,
+   979→      protectionPlan,
+   980→      disputeRate: sessions.length > 0 ? Math.round((clientDisputes.length / sessions.length) * 100) : 0,
+   981→    };
+   982→  },
+   983→});

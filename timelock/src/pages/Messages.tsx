@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { MessageSquare, Plus } from "lucide-react";
-import { ChannelList, type Channel, type AvailableMember } from "@/components/messaging/ChannelList";
+import { ChannelList, type Channel } from "@/components/messaging/ChannelList";
 import { ChannelHeader } from "@/components/messaging/ChannelHeader";
 import { MessageList, type Message } from "@/components/messaging/MessageList";
 import { MessageInput } from "@/components/messaging/MessageInput";
@@ -18,11 +18,10 @@ import { toast } from "sonner";
 export default function Messages() {
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const { user } = useAuth();
-  const currentUserId = (user as any)?._id ?? "";
+  const currentUserId = (user as Record<string, unknown>)?._id as string ?? "";
 
   // ── Convex API references ──
-  const messagingApi = api.messaging.channels;
-  const messagingMessagesApi = api.messaging.messages;
+  // Used via api.messaging.channels.* and api.messaging.messages.* below
 
   // Only use Convex when workspace is connected with a valid ID
   const canUseConvex = isConvexConnected && isValidConvexId(activeWorkspaceId);
@@ -31,15 +30,15 @@ export default function Messages() {
   const convexChannels = useQuery(
     canUseConvex ? api.messaging.channels.listChannels : "skip",
     canUseConvex ? { workspaceId: activeWorkspaceId as Id<"workspaces"> } : "skip"
-  ) as any[] | undefined;
+  ) as unknown[] | undefined;
 
   // ── Local State ──
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const [channels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
-  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  const [messagesMap] = useState<Record<string, Message[]>>({});
   const [showMemberList, setShowMemberList] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [threadRepliesMap, setThreadRepliesMap] = useState<Record<string, ThreadReply[]>>({});
+  const [threadRepliesMap] = useState<Record<string, ThreadReply[]>>({});
 
   // ── Determine data source ──
   const isConvexAvailable = convexChannels !== undefined;
@@ -47,7 +46,7 @@ export default function Messages() {
   // Use Convex channels when available, otherwise use local state (empty)
   const activeChannels: Channel[] = useMemo(() => {
     if (convexChannels && convexChannels.length > 0) {
-      return convexChannels.map((ch: any) => ({
+      return convexChannels.map((ch: Record<string, unknown>) => ({
         id: ch._id,
         name: ch.name ?? "",
         type: (ch.type ?? "channel") as "channel" | "dm",
@@ -68,19 +67,19 @@ export default function Messages() {
   const convexMessages = useQuery(
     isConvexChannel ? api.messaging.messages.listMessages : "skip",
     isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
-  ) as any[] | undefined;
+  ) as Record<string, unknown>[] | undefined;
 
   // ── Convex thread replies ──
   const convexThreadReplies = useQuery(
     activeThreadId && isConvexChannel ? api.messaging.messages.getThreadReplies : "skip",
     activeThreadId && isConvexChannel ? { parentMessageId: activeThreadId as Id<"messages"> } : "skip"
-  ) as any[] | undefined;
+  ) as Record<string, unknown>[] | undefined;
 
   // ── Convex channel members ──
   const convexMembers = useQuery(
     isConvexChannel ? api.messaging.channels.getChannelMembers : "skip",
     isConvexChannel ? { channelId: activeChannelId as Id<"channels"> } : "skip"
-  ) as any[] | undefined;
+  ) as Record<string, unknown>[] | undefined;
 
   // ── Convex Mutations ──
   const markChannelReadMutation = useMutation(api.messaging.messages.markChannelRead);
@@ -96,20 +95,23 @@ export default function Messages() {
   // Map Convex messages → frontend Message[] when available
   const activeMessages: Message[] = useMemo(() => {
     if (isConvexChannel && convexMessages && convexMessages.length > 0) {
-      return convexMessages.map((m: any) => ({
-        id: m._id,
-        authorId: m.authorId ?? "",
-        authorName: m.authorName ?? "Unknown",
-        content: m.content ?? "",
-        timestamp: m._creationTime ?? Date.now(),
-        isEdited: m.isEdited ?? false,
-        isPinned: m.isPinned ?? false,
-        reactions: m.reactions ?? [],
-        threadReplyCount: m.threadReplyCount ?? 0,
-        readBy: m.readBy ?? [],
-      }));
+      return convexMessages
+        .filter((m: Record<string, unknown>) => !m.parentId) // Only show top-level messages in main list
+        .map((m: Record<string, unknown>) => ({
+          id: m._id,
+          authorId: m.authorId ?? "",
+          authorName: m.authorName ?? "Unknown",
+          content: m.content ?? "",
+          timestamp: m._creationTime ?? Date.now(),
+          isEdited: m.isEdited ?? false,
+          isPinned: m.isPinned ?? false,
+          parentId: m.parentId ?? undefined,
+          reactions: m.reactions ?? [],
+          threadReplyCount: m.threadReplyCount ?? 0,
+          readBy: m.readBy ?? [],
+        }));
     }
-    return activeChannelId ? messagesMap[activeChannelId] || [] : [];
+    return activeChannelId ? (messagesMap[activeChannelId] || []).filter((m) => !m.parentId) : [];
   }, [isConvexChannel, convexMessages, activeChannelId, messagesMap]);
 
   const activeThreadParent = activeThreadId
@@ -118,7 +120,7 @@ export default function Messages() {
 
   const activeThreadReplies: ThreadReply[] = useMemo(() => {
     if (isConvexChannel && convexThreadReplies && convexThreadReplies.length > 0) {
-      return convexThreadReplies.map((r: any) => ({
+      return convexThreadReplies.map((r: Record<string, unknown>) => ({
         id: r._id,
         authorId: r.authorId ?? "",
         authorName: r.authorName ?? "Unknown",
@@ -132,7 +134,7 @@ export default function Messages() {
   // Map Convex members → Member[] when available
   const activeMembers: Member[] = useMemo(() => {
     if (isConvexChannel && convexMembers && convexMembers.length > 0) {
-      return convexMembers.map((m: any) => ({
+      return convexMembers.map((m: Record<string, unknown>) => ({
         id: m.userId ?? m._id,
         name: m.name ?? "Unknown",
         role: m.role === "admin" ? "admin" : "member",
@@ -149,7 +151,7 @@ export default function Messages() {
 
     // Mark as read in Convex
     if (isValidConvexId(channelId)) {
-      markChannelReadMutation({ channelId: channelId as Id<"channels"> }).catch((err: any) => {
+      markChannelReadMutation({ channelId: channelId as Id<"channels"> }).catch((err: unknown) => {
         console.warn("Failed to mark channel as read:", err);
       });
     }
@@ -165,14 +167,14 @@ export default function Messages() {
       workspaceId: activeWorkspaceId as Id<"workspaces">,
       isPrivate,
       type: "channel" as const,
-      memberIds: memberIds && memberIds.length > 0 ? memberIds : undefined,
-    }).then((result: any) => {
-      if (result?._id) {
-        setActiveChannelId(result._id);
+      memberIds: memberIds && memberIds.length > 0 ? memberIds as Id<"users">[] : undefined,
+    }).then((result: unknown) => {
+      if (result) {
+        setActiveChannelId(result as string);
         setActiveThreadId(null);
       }
-    }).catch((err: any) => {
-      toast.error("Failed to create channel", { description: err?.message || "Unknown error" });
+    }).catch((err: unknown) => {
+      toast.error("Failed to create channel", { description: String(err) });
     });
   }, [activeWorkspaceId, createChannelMutation]);
 
@@ -183,8 +185,8 @@ export default function Messages() {
       sendMessageMutation({
         channelId: activeChannelId as Id<"channels">,
         content,
-      }).catch((err: any) => {
-        toast.error("Failed to send message", { description: err?.message || "Unknown error" });
+      }).catch((err: unknown) => {
+        toast.error("Failed to send message", { description: String(err) });
       });
     },
     [activeChannelId, sendMessageMutation]
@@ -195,8 +197,8 @@ export default function Messages() {
       toggleReactionMutation({
         messageId: messageId as Id<"messages">,
         emoji,
-      }).catch((err: any) => {
-        toast.error("Failed to toggle reaction", { description: err?.message || "Unknown error" });
+      }).catch((err: unknown) => {
+        toast.error("Failed to toggle reaction", { description: String(err) });
       });
     },
     [toggleReactionMutation]
@@ -204,8 +206,10 @@ export default function Messages() {
 
   const handlePin = useCallback(
     (messageId: string) => {
-      togglePinMutation({ messageId: messageId as Id<"messages"> }).catch((err: any) => {
-        toast.error("Failed to toggle pin", { description: err?.message || "Unknown error" });
+      togglePinMutation({ messageId: messageId as Id<"messages"> }).then(() => {
+        toast.success("Pin status updated");
+      }).catch((err: unknown) => {
+        toast.error("Failed to toggle pin", { description: String(err) });
       });
     },
     [togglePinMutation]
@@ -213,8 +217,8 @@ export default function Messages() {
 
   const handleEdit = useCallback(
     (messageId: string, newContent: string) => {
-      editMessageMutation({ messageId: messageId as Id<"messages">, content: newContent }).catch((err: any) => {
-        toast.error("Failed to edit message", { description: err?.message || "Unknown error" });
+      editMessageMutation({ messageId: messageId as Id<"messages">, content: newContent }).catch((err: unknown) => {
+        toast.error("Failed to edit message", { description: String(err) });
       });
     },
     [editMessageMutation]
@@ -222,8 +226,8 @@ export default function Messages() {
 
   const handleDelete = useCallback(
     (messageId: string) => {
-      deleteMessageMutation({ messageId: messageId as Id<"messages"> }).catch((err: any) => {
-        toast.error("Failed to delete message", { description: err?.message || "Unknown error" });
+      deleteMessageMutation({ messageId: messageId as Id<"messages"> }).catch((err: unknown) => {
+        toast.error("Failed to delete message", { description: String(err) });
       });
     },
     [deleteMessageMutation]
@@ -245,8 +249,8 @@ export default function Messages() {
         channelId: activeChannelId as Id<"channels">,
         content,
         parentId: parentId as Id<"messages">,
-      }).catch((err: any) => {
-        toast.error("Failed to send reply", { description: err?.message || "Unknown error" });
+      }).catch((err: unknown) => {
+        toast.error("Failed to send reply", { description: String(err) });
       });
     },
     [activeChannelId, sendMessageMutation]

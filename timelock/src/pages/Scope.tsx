@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -548,17 +549,20 @@ function ChangeOrderSkeleton() {
 // ─── Main Scope Page ────────────────────────────────────────────────────────
 
 export default function Scope() {
+  const [searchParams] = useSearchParams();
+  const proposalIdFromUrl = searchParams.get("proposalId");
+
   const [selectedScopeId, setSelectedScopeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("definitions");
 
   // Dialog states
-  const [showCreateScope, setShowCreateScope] = useState(false);
+  const [showCreateScope, setShowCreateScope] = useState(!!proposalIdFromUrl);
   const [showCreateChangeOrder, setShowCreateChangeOrder] = useState(false);
   const [showFormalizeDialog, setShowFormalizeDialog] = useState(false);
 
   // Create scope form
-  const [newScopeTitle, setNewScopeTitle] = useState("");
-  const [newScopeDescription, setNewScopeDescription] = useState("");
+  const [newScopeTitle, setNewScopeTitle] = useState(proposalIdFromUrl ? "Scope for Proposal" : "");
+  const [newScopeDescription, setNewScopeDescription] = useState(proposalIdFromUrl ? "Scope definition from signed proposal" : "");
   const [newScopeRevisionLimit, setNewScopeRevisionLimit] = useState("3");
   const [newScopeEstimatedHours, setNewScopeEstimatedHours] = useState("");
 
@@ -586,6 +590,12 @@ export default function Scope() {
     selectedScopeId ? api.scope.crud.getChangeOrders : "skip",
     selectedScopeId ? { scopeId: selectedScopeId as any } : "skip"
   ) as ScopeChangeOrder[] | undefined;
+
+  // Fetch proposal data if coming from proposal page
+  const proposalData = useQuery(
+    proposalIdFromUrl ? api.proposals.crud.getProposal : "skip",
+    proposalIdFromUrl ? { proposalId: proposalIdFromUrl as any } : "skip"
+  ) as any | undefined;
 
   // ─── Convex Mutations ────────────────────────────────────────────────────
   const createScopeMutation = useMutation(api.scope.crud.createScopeDefinition);
@@ -616,6 +626,32 @@ export default function Scope() {
     }
   }, [scopes, selectedScopeId]);
 
+  // Pre-populate scope form from proposal data when navigating from Proposals page
+  useEffect(() => {
+    if (proposalIdFromUrl && proposalData && showCreateScope) {
+      if (proposalData.title && newScopeTitle === "Scope for Proposal") {
+        setNewScopeTitle(`Scope: ${proposalData.title}`);
+      }
+      if (proposalData.sections) {
+        // Extract text sections to build a richer description
+        const textSections = proposalData.sections
+          .filter((s: any) => s.type === "text" || s.type === "heading")
+          .map((s: any) => s.content)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join("; ");
+        if (textSections && newScopeDescription === "Scope definition from signed proposal") {
+          setNewScopeDescription(textSections);
+        }
+      }
+      if (proposalData.totalValue && !newScopeEstimatedHours) {
+        // Estimate hours from total value assuming a default rate
+        const estimatedHours = Math.round(proposalData.totalValue / 75);
+        setNewScopeEstimatedHours(String(estimatedHours > 0 ? estimatedHours : 40));
+      }
+    }
+  }, [proposalIdFromUrl, proposalData, showCreateScope]);
+
   // ─── Computed Values ─────────────────────────────────────────────────────
   const selectedScope = scopes?.find(s => s._id === selectedScopeId) ?? null;
 
@@ -639,6 +675,7 @@ export default function Scope() {
         revisionLimit: parseInt(newScopeRevisionLimit) || 3,
         totalEstimatedHours: newScopeEstimatedHours ? parseInt(newScopeEstimatedHours) : undefined,
         deliverables: [],
+        proposalId: proposalIdFromUrl || undefined,
       } as any);
       toast.success("Scope definition created successfully!");
       setShowCreateScope(false);

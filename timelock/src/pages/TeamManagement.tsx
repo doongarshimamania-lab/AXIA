@@ -319,18 +319,23 @@ export default function TeamManagement() {
 
   // ─── Team CRUD Handlers ────────────────────────────────────────────────────
   const handleCreateTeam = async () => {
-    if (!teamName.trim() || !activeWorkspaceId) return;
+    if (!teamName.trim()) {
+      toast.error("Team name is required");
+      return;
+    }
+    if (!activeWorkspaceId || !hasRealWorkspaceId) {
+      toast.error("No workspace selected. Please select a workspace first.");
+      return;
+    }
     setIsCreatingTeam(true);
     try {
-      if (createTeamMutation && hasRealWorkspaceId) {
-        await createTeamMutation({
-          workspaceId: activeWorkspaceId as any,
-          name: teamName.trim(),
-          color: teamColor,
-          description: teamDescription.trim() || undefined,
-          isCrossTeam: teamIsCrossTeam || undefined,
-        });
-      }
+      await createTeamMutation({
+        workspaceId: activeWorkspaceId as any,
+        name: teamName.trim(),
+        color: teamColor,
+        description: teamDescription.trim() || undefined,
+        isCrossTeam: teamIsCrossTeam || undefined,
+      });
       toast.success(`Team "${teamName}" created!`);
       setShowCreateTeamDialog(false);
       setTeamName("");
@@ -721,7 +726,7 @@ export default function TeamManagement() {
                                 title="Change role"
                                 onClick={() => {
                                   setMemberToChangeRole(member);
-                                  setNewRole(member.role === "manager" ? "member" : "manager");
+                                  setNewRole(member.role);
                                 }}
                               >
                                 <Shield className="w-4 h-4" />
@@ -922,13 +927,13 @@ export default function TeamManagement() {
 
         {/* ─── Invite Dialog ──────────────────────────────────────────────────── */}
         <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
                 Invite Team Member
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Send an invitation to join your workspace.
               </DialogDescription>
             </DialogHeader>
@@ -948,7 +953,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={inviteRole} onValueChange={(v: any) => setInviteRole(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -986,7 +991,7 @@ export default function TeamManagement() {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
               <Button onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
                 {isInviting ? (
@@ -1020,16 +1025,16 @@ export default function TeamManagement() {
 
         {/* ─── Change Role Dialog ─────────────────────────────────────────────── */}
         <Dialog open={!!memberToChangeRole} onOpenChange={() => setMemberToChangeRole(null)}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle>Change Role</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Change {memberToChangeRole?.name}'s role in this workspace.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <div className="space-y-4 py-4">
               <Select value={newRole} onValueChange={(v: any) => setNewRole(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1038,7 +1043,7 @@ export default function TeamManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>Cancel</Button>
               <Button onClick={handleChangeRole}>Update Role</Button>
             </DialogFooter>
@@ -1047,13 +1052,13 @@ export default function TeamManagement() {
 
         {/* ─── Create Team Dialog ─────────────────────────────────────────────── */}
         <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />
                 Create Team
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Create a team to organize members and control access to records.
               </DialogDescription>
             </DialogHeader>
@@ -1110,7 +1115,7 @@ export default function TeamManagement() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowCreateTeamDialog(false)}>Cancel</Button>
               <Button onClick={handleCreateTeam} disabled={isCreatingTeam || !teamName.trim()}>
                 {isCreatingTeam ? (
@@ -1125,13 +1130,13 @@ export default function TeamManagement() {
 
         {/* ─── Edit Team Dialog ───────────────────────────────────────────────── */}
         <Dialog open={!!editingTeam} onOpenChange={() => setEditingTeam(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Pencil className="w-5 h-5" />
                 Edit Team
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Update team details for "{editingTeam?.name}"
               </DialogDescription>
             </DialogHeader>
@@ -1169,7 +1174,7 @@ export default function TeamManagement() {
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingTeam(null)}>Cancel</Button>
               <Button onClick={handleUpdateTeam} disabled={isUpdatingTeam}>
                 {isUpdatingTeam ? (
@@ -1207,13 +1212,13 @@ export default function TeamManagement() {
 
         {/* ─── Add Member to Team Dialog ──────────────────────────────────────── */}
         <Dialog open={!!teamToAddMember} onOpenChange={() => setTeamToAddMember(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
                 Add Member to {teamToAddMember?.name}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Select a workspace member to add to this team.
               </DialogDescription>
             </DialogHeader>
@@ -1221,7 +1226,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Select Member</Label>
                 <Select value={addMemberUserId} onValueChange={setAddMemberUserId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a member..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -1243,7 +1248,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Team Role</Label>
                 <Select value={addMemberRole} onValueChange={(v: any) => setAddMemberRole(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1263,7 +1268,7 @@ export default function TeamManagement() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setTeamToAddMember(null)}>Cancel</Button>
               <Button onClick={handleAddTeamMember} disabled={isAddingTeamMember || !addMemberUserId}>
                 {isAddingTeamMember ? (

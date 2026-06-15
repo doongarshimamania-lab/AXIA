@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -48,10 +50,20 @@ function formatDate(ts: number) {
 export default function TimeTracking() {
   const { tier } = useSubscriptionTier();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
 
   // ─── Convex queries ──────────────────────────────────────────────────────
-  const currentSession = useQuery(api.tracking.crud.getCurrentSession, {});
-  const sessionsData = useQuery(api.tracking.crud.getSessions, {});
+  const currentSession = useQuery(api.tracking.crud.getCurrentSession,
+    workspaceId ? { workspaceId } : {}
+  );
+  const sessionsData = useQuery(api.tracking.crud.getSessions,
+    workspaceId ? { workspaceId } : {}
+  );
+  const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
+  const clients = useQuery(api.clients.crud.getClients,
+    workspaceId ? { workspaceId } : {}
+  );
 
   // ─── Convex mutations ────────────────────────────────────────────────────
   const startSessionMutation = useMutation(api.tracking.crud.startSession);
@@ -99,8 +111,47 @@ export default function TimeTracking() {
 
   const isLoading = !authLoading && sessionsData === undefined && !queryTimeout && !isDemoMode;
 
+  // ─── Derived data from projects & clients ──────────────────────────────
+  // Build a lookup map for projects by _id so we can resolve the selected project
+  const projectMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (projects) {
+      for (const p of projects) {
+        map.set(p._id, p);
+      }
+    }
+    return map;
+  }, [projects]);
+
+  // Build a lookup map for clients by _id
+  const clientMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (clients) {
+      for (const c of clients) {
+        map.set(c._id, c);
+      }
+    }
+    return map;
+  }, [clients]);
+
+  // Resolve the selected project's client info
+  const selectedProjectData = selectedProject ? projectMap.get(selectedProject) : null;
+  const selectedClientData = selectedProjectData?.clientId
+    ? clientMap.get(selectedProjectData.clientId)
+    : null;
+
   // ─── Map Convex data ────────────────────────────────────────────────────
-  const realSessions = (sessionsData ?? []).filter((s: any) => s.endTime !== undefined);
+  // Compute totalMinutes from startTime/endTime when totalMinutes is missing
+  const realSessions = (sessionsData ?? [])
+    .filter((s: any) => s.endTime !== undefined)
+    .map((s: any) => ({
+      ...s,
+      totalMinutes:
+        s.totalMinutes ??
+        (s.endTime && s.startTime
+          ? Math.floor((s.endTime - s.startTime) / (1000 * 60))
+          : 0),
+    }));
   const timeEntries = realSessions;
 
   const activeSession = isDemoMode ? null : currentSession;
@@ -150,20 +201,26 @@ export default function TimeTracking() {
     }
 
     if (isDemoMode) {
-      toast.success("Timer started! (Demo mode)", { description: `Tracking time for ${selectedProject}` });
+      toast.success("Timer started! (Demo mode)", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
       return;
     }
 
     setIsStarting(true);
     try {
+      // Resolve the project name from the selected project ID
+      const projectName = selectedProjectData?.projectName ?? selectedProject;
+      const clientName = selectedClientData?.clientName ?? "Unknown Client";
+      const hourlyRate = selectedProjectData?.hourlyRate ?? selectedClientData?.hourlyRate ?? 75;
+
       await startSessionMutation({
-        projectName: selectedProject,
-        clientName: "Current Client",
-        hourlyRate: 75,
+        projectName,
+        clientName,
+        hourlyRate,
         platform: selectedPlatform,
         notes: entryMemo || undefined,
+        workspaceId,
       });
-      toast.success("Timer started!", { description: `Tracking time for ${selectedProject}` });
+      toast.success("Timer started!", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
       setEntryMemo("");
     } catch (err: any) {
       toast.error(err?.message || "Failed to start timer");
@@ -249,6 +306,7 @@ export default function TimeTracking() {
         notes: manualMemo || undefined,
         startTime: startDate.getTime(),
         endTime: endDate.getTime(),
+        workspaceId,
       });
       toast.success("Manual entry added!", {
         description: `${formatDuration(Math.floor(duration / 60000))} for ${manualProject || "Unassigned"}`,
@@ -488,11 +546,15 @@ export default function TimeTracking() {
                             <SelectValue placeholder="Select project" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Website Redesign">Website Redesign</SelectItem>
-                            <SelectItem value="Mobile App MVP">Mobile App MVP</SelectItem>
-                            <SelectItem value="Brand Identity">Brand Identity</SelectItem>
-                            <SelectItem value="Dashboard Analytics">Dashboard Analytics</SelectItem>
-                            <SelectItem value="E-commerce Platform">E-commerce Platform</SelectItem>
+                            {projects && projects.length > 0 ? (
+                              projects.map((project: any) => (
+                                <SelectItem key={project._id} value={project._id}>
+                                  {project.projectName}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="_none" disabled>No projects found</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

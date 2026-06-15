@@ -10,7 +10,6 @@ import {
 import {
   Smile,
   Reply,
-  MoreHorizontal,
   Pin,
   Pencil,
   Trash2,
@@ -30,6 +29,7 @@ export interface Message {
   timestamp: number;
   isEdited: boolean;
   isPinned: boolean;
+  parentId?: string;
   reactions: { emoji: string; count: number; hasReacted: boolean }[];
   threadReplyCount: number;
   lastThreadReplyTime?: number;
@@ -196,6 +196,12 @@ export function MessageList({
                         <span className="text-[11px] text-muted-foreground">
                           {formatTime(msg.timestamp)}
                         </span>
+                        {msg.isPinned && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                            <Pin className="h-2.5 w-2.5" />
+                            Pinned
+                          </span>
+                        )}
                       </div>
                     )}
 

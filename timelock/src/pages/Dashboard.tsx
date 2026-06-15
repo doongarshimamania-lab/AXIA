@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,7 +18,6 @@ import {
   Send,
   DollarSign,
   Loader2,
-  Eye,
   FileSignature,
   CreditCard,
   ArrowUpRight,
@@ -59,18 +57,6 @@ function fmtCompactCurrency(n: number): string {
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return fmtCurrency(n);
 }
-function fmtRelative(ts: number): string {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString();
-}
-
 // ─── Animated Number Counter ──────────────────────────────────────────────
 function AnimatedNumber({ value, duration = 1200, prefix = "", suffix = "", decimals = 0 }: {
   value: number; duration?: number; prefix?: string; suffix?: string; decimals?: number;
@@ -242,10 +228,6 @@ export default function Dashboard() {
   const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, queryArgs);
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
   const projectsData = useQuery(api.projects.projectProtection.getMyProjects, {});
-  const deals = useQuery(api.pipeline.crud.getDeals, queryArgs);
-  const proposals = useQuery(api.proposals.crud.getProposals, queryArgs);
-  const invoices = useQuery(api.billing.crud.getInvoices, queryArgs);
-
   const seedAll = useMutation(api.autoSeed.autoSeed);
 
   // ─── Derived data ───────────────────────────────────────────────────────
@@ -309,34 +291,6 @@ export default function Dashboard() {
     if (base === 0) return [0, 0, 0, 0, 0, 0, 0];
     return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (0.4 + i * 0.1) + Math.cos(i * 1.2) * 1)));
   }, [totalProjects]);
-
-  // ─── Recent items for activity ──────────────────────────────────────────
-  const recentItems = useMemo(() => {
-    const items: { id: string; type: string; title: string; subtitle: string; status: string; timestamp: number; href: string; icon: React.ElementType; iconColor: string }[] = [];
-    if (deals && Array.isArray(deals)) {
-      for (const d of deals.slice(0, 5)) {
-        items.push({ id: `deal-${(d as any)._id}`, type: "deal", title: d.title ?? "Untitled Deal", subtitle: fmtCurrency(d.value ?? 0), status: ((d as any).stageName ?? "Pipeline").toLowerCase(), timestamp: d.updatedAt ?? d.createdAt ?? Date.now(), href: "/pipeline", icon: Kanban, iconColor: "text-violet-500 bg-violet-500/10" });
-      }
-    }
-    if (proposals && Array.isArray(proposals)) {
-      for (const p of proposals.slice(0, 5)) {
-        const st = p.status ?? "draft";
-        const ic = st === "signed" ? CheckCircle2 : st === "viewed" ? Eye : st === "sent" ? Send : FileText;
-        const icCol = st === "signed" ? "text-emerald-500 bg-emerald-500/10" : st === "viewed" ? "text-blue-500 bg-blue-500/10" : st === "sent" ? "text-sky-500 bg-sky-500/10" : "text-muted-foreground bg-muted/50";
-        items.push({ id: `proposal-${(p as any)._id}`, type: "proposal", title: p.title ?? "Untitled Proposal", subtitle: `${fmtCurrency(p.totalValue ?? 0)}`, status: st, timestamp: p.updatedAt ?? p.createdAt ?? Date.now(), href: "/proposals", icon: ic, iconColor: icCol });
-      }
-    }
-    if (invoices && Array.isArray(invoices)) {
-      for (const inv of invoices.slice(0, 5)) {
-        const st = inv.status ?? "draft";
-        const ic = st === "paid" ? CheckCircle2 : st === "overdue" ? AlertCircle : Receipt;
-        const icCol = st === "paid" ? "text-emerald-500 bg-emerald-500/10" : st === "overdue" ? "text-red-500 bg-red-500/10" : "text-amber-500 bg-amber-500/10";
-        items.push({ id: `invoice-${(inv as any)._id}`, type: "invoice", title: `${(inv as any).invoiceNumber ?? "Invoice"} — ${inv.clientName ?? "No client"}`, subtitle: fmtCurrency(inv.total ?? 0), status: st, timestamp: (inv as any).updatedAt ?? (inv as any).createdAt ?? Date.now(), href: "/invoices", icon: ic, iconColor: icCol });
-      }
-    }
-    items.sort((a, b) => b.timestamp - a.timestamp);
-    return items.slice(0, 8);
-  }, [deals, proposals, invoices]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────
   const handleSeed = async () => {
@@ -781,58 +735,6 @@ export default function Dashboard() {
                         <ChevronRight className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                       </motion.button>
                     ))}
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* ── Recent Activity ── */}
-              <motion.div variants={itemVariants}>
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      Recent Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {recentItems.length === 0 ? (
-                      <div className="py-6 text-center text-sm text-muted-foreground">
-                        No recent activity
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {recentItems.map((item, i) => (
-                          <motion.button
-                            key={item.id}
-                            onClick={() => navigate(item.href)}
-                            className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.05 * i, duration: 0.25 }}
-                          >
-                            <div className={`h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0 ${item.iconColor}`}>
-                              <item.icon className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-foreground truncate">{item.title}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground">{item.subtitle}</span>
-                                <span className="text-[10px] text-muted-foreground/50">{fmtRelative(item.timestamp)}</span>
-                              </div>
-                            </div>
-                            <Badge
-                              variant={
-                                ["won", "signed", "paid", "completed"].includes(item.status) ? "default" :
-                                ["lost", "declined", "overdue"].includes(item.status) ? "destructive" : "secondary"
-                              }
-                              className="text-[9px] h-4 px-1.5 flex-shrink-0"
-                            >
-                              {item.status}
-                            </Badge>
-                          </motion.button>
-                        ))}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </motion.div>
