@@ -20,7 +20,12 @@ export const trackingTables = {
     platform: v.optional(v.union(v.literal("upwork"), v.literal("fiverr"), v.literal("toptal"), v.literal("manual"))),
     notes: v.optional(v.string()),
     isManualEntry: v.optional(v.boolean()),
+    invoiced: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("stopped"), v.literal("completed"))),
+    // Invoice linking fields
+    clientId: v.optional(v.id("clients")),
+    projectId_fk: v.optional(v.id("projects")),
+    invoiceId: v.optional(v.id("invoices")),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
@@ -28,7 +33,10 @@ export const trackingTables = {
     .index("by_user_and_project", ["userId", "projectName"])
     .index("by_user_and_date", ["userId", "startTime"])
     .index("by_workspace", ["workspaceId"])
-    .index("by_team", ["teamId"]),
+    .index("by_team", ["teamId"])
+    .index("by_client", ["clientId"])
+    .index("by_project_invoiced", ["projectId_fk", "invoiced"])
+    .index("by_invoice", ["invoiceId"]),
 
   timeBlocks: defineTable({
     sessionId: v.id("workSessions"),
