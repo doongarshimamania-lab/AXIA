@@ -353,7 +353,7 @@ export default function ClientWorkspace() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             <div className="flex items-center gap-2 mb-2">
               <FolderKanban className="w-4 h-4 text-violet-500" />
@@ -385,6 +385,81 @@ export default function ClientWorkspace() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{team?.length ?? 0}</p>
           </div>
         </div>
+
+        {/* Completion & Activity Overview Bar */}
+        {projects && projects.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Avg. Completion</span>
+                <span className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                  {projects.length > 0
+                    ? Math.round(projects.reduce((sum, p) => sum + p.completionPct, 0) / projects.length)
+                    : 0}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all"
+                  style={{
+                    width: `${projects.length > 0 ? Math.round(projects.reduce((sum, p) => sum + p.completionPct, 0) / projects.length) : 0}%`,
+                  }}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">
+                  {projects.reduce((sum, p) => sum + p.completedDeliverables, 0)}/{projects.reduce((sum, p) => sum + p.totalDeliverables, 0)} deliverables
+                </span>
+                <span className="text-[10px] text-gray-400">
+                  {projects.filter((p) => p.completionPct === 100).length} complete
+                </span>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Timer className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Active Projects</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {projects.filter((p) => p.status === "active").length}
+                </p>
+                <span className="text-xs text-gray-400">
+                  of {projects.length} total
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {projects.filter((p) => p.status === "active").slice(0, 3).map((p) => (
+                  <span key={p._id} className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                    {p.projectName.length > 15 ? p.projectName.slice(0, 15) + "..." : p.projectName}
+                  </span>
+                ))}
+                {projects.filter((p) => p.status === "active").length > 3 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-500">
+                    +{projects.filter((p) => p.status === "active").length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Invoice Summary</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {invoices ? invoices.filter((i) => i.status === "paid").length : 0}
+                </p>
+                <span className="text-xs text-gray-400">paid</span>
+              </div>
+              <div className="mt-2 text-[10px] text-gray-400">
+                {invoices
+                  ? `${invoices.filter((i) => i.status === "pending" || i.status === "sent" || i.status === "viewed" || i.status === "overdue").length} pending · ${formatCurrency(invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.total, 0))} total paid`
+                  : "Loading..."}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">

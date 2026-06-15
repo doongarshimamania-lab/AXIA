@@ -58,6 +58,8 @@ import type * as messaging_messages from "../messaging/messages.js";
 import type * as network_premiumNetwork from "../network/premiumNetwork.js";
 import type * as permissions from "../permissions.js";
 import type * as permissions_shareRecord from "../permissions/shareRecord.js";
+import type * as permissions_shareRecords from "../permissions/shareRecords.js";
+import type * as permissions_transferOwnership from "../permissions/transferOwnership.js";
 import type * as pipeline_bulkImport from "../pipeline/bulkImport.js";
 import type * as pipeline_crud from "../pipeline/crud.js";
 import type * as platforms_complianceStorage from "../platforms/complianceStorage.js";
@@ -194,6 +196,8 @@ declare const fullApi: ApiFromModules<{
   "network/premiumNetwork": typeof network_premiumNetwork;
   permissions: typeof permissions;
   "permissions/shareRecord": typeof permissions_shareRecord;
+  "permissions/shareRecords": typeof permissions_shareRecords;
+  "permissions/transferOwnership": typeof permissions_transferOwnership;
   "pipeline/bulkImport": typeof pipeline_bulkImport;
   "pipeline/crud": typeof pipeline_crud;
   "platforms/complianceStorage": typeof platforms_complianceStorage;

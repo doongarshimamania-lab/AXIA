@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Share2 } from "lucide-react";
+import { Loader2, Plus, Share2, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { useNavigate, useSearchParams } from "react-router";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { ShareDialog } from "@/components/ShareDialog";
+import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
@@ -70,6 +71,7 @@ export default function Projects() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const seedTestProjectsMutation = useMutation(api.seedProjects.seedTestProjects);
 
@@ -172,6 +174,17 @@ export default function Projects() {
                 Share
               </Button>
             )}
+            {perms.isOwner && selectedProjectId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                onClick={() => setShowTransferDialog(true)}
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                Transfer Ownership
+              </Button>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -242,6 +255,17 @@ export default function Projects() {
             toast.error(err?.message || "Failed to remove access");
           }
         }}
+      />
+
+      {/* Transfer Ownership Dialog */}
+      <TransferOwnershipDialog
+        open={showTransferDialog}
+        onOpenChange={setShowTransferDialog}
+        recordId={selectedProjectId || ""}
+        recordType="project"
+        recordName={selectedProject?.projectName || "Unknown Project"}
+        currentOwnerId={(selectedProject as any)?.userId}
+        onTransferComplete={() => setShowTransferDialog(false)}
       />
     </div>
   );

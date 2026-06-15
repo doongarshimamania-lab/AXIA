@@ -16,8 +16,9 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
+import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
@@ -61,6 +62,7 @@ export default function Clients() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
   const { isDisconnected } = useConvexConnectionState();
@@ -305,6 +307,17 @@ export default function Clients() {
                         Share
                       </Button>
                     )}
+                    {perms.isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        onClick={() => setShowTransferDialog(true)}
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Transfer Ownership
+                      </Button>
+                    )}
                     {(canDeleteRecords || perms.canDelete) && (
                       <Button
                         variant="outline"
@@ -504,6 +517,17 @@ export default function Clients() {
               toast.error(err?.message || "Failed to remove access");
             }
           }}
+        />
+
+        {/* Transfer Ownership Dialog */}
+        <TransferOwnershipDialog
+          open={showTransferDialog}
+          onOpenChange={setShowTransferDialog}
+          recordId={selectedClientId || ""}
+          recordType="client"
+          recordName={(selectedClient as any)?.clientName || (selectedClient as any)?.name || "Unknown Client"}
+          currentOwnerId={(selectedClient as any)?.userId}
+          onTransferComplete={() => setShowTransferDialog(false)}
         />
 
         {/* Bulk Import Dialog */}

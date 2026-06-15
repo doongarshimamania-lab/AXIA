@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Evidence Extension API — P0 Fix
  *

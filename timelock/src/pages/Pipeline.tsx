@@ -70,8 +70,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Share2,
 } from "lucide-react";
 import { PageLayout } from "@/components/design-system/PageLayout";
+import { ShareRecordsPanel } from "@/components/ShareRecordsPanel";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -258,6 +260,7 @@ export default function Pipeline() {
   const [isCreating, setIsCreating] = useState(false);
   const [dragOverStageId, setDragOverStageId] = useState<Id<"pipelineStages"> | null>(null);
   const [isCreatingProposal, setIsCreatingProposal] = useState<string | null>(null); // dealId being processed
+  const [activeTab, setActiveTab] = useState<"pipeline" | "share-records">("pipeline");
 
   // ── Create Deal Form State ──
   const [formTitle, setFormTitle] = useState("");
@@ -1007,6 +1010,43 @@ export default function Pipeline() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── Tab Navigation: Pipeline | Share Records ── */}
+        <div className="flex items-center gap-1 border-b border-border pb-0 mt-6">
+          <button
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "pipeline"
+                ? "border-[#8B5CF6] text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("pipeline")}
+          >
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Pipeline
+            </div>
+          </button>
+          <button
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "share-records"
+                ? "border-[#8B5CF6] text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("share-records")}
+          >
+            <div className="flex items-center gap-2">
+              <Share2 className="h-4 w-4" />
+              Share Records
+            </div>
+          </button>
+        </div>
+
+        {/* ── Tab Content ── */}
+        {activeTab === "share-records" && (
+          <div className="mt-6">
+            <ShareRecordsPanel />
           </div>
         )}
       </PageLayout>

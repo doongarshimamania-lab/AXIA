@@ -1,10 +1,6 @@
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-export async function auth(ctx: QueryCtx | MutationCtx) {
-  return getAuthenticatedUser(ctx);
-}
-
 export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
@@ -13,7 +9,7 @@ export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   return userId;
 }
 
-// Alias used by channelMutations and messageMutations
+// auth is an alias for getAuthenticatedUser — used by channelMutations and messageMutations
 export const auth = getAuthenticatedUser;
 
 export async function getChannelMember(
