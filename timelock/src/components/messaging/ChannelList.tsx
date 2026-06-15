@@ -17,6 +17,8 @@ import {
   Search,
   MessageSquare,
   Users,
+  X,
+  Check,
 } from "lucide-react";
 
 export interface Channel {
@@ -31,11 +33,19 @@ export interface Channel {
   avatar?: string;
 }
 
+export interface AvailableMember {
+  id: string;
+  name: string;
+  role: string;
+  isOnline?: boolean;
+}
+
 interface ChannelListProps {
   channels: Channel[];
   activeChannelId: string | null;
   onChannelSelect: (channelId: string) => void;
-  onCreateChannel: (name: string, isPrivate: boolean) => void;
+  onCreateChannel: (name: string, isPrivate: boolean, memberIds?: string[]) => void;
+  availableMembers?: AvailableMember[];
 }
 
 export function ChannelList({
@@ -43,11 +53,14 @@ export function ChannelList({
   activeChannelId,
   onChannelSelect,
   onCreateChannel,
+  availableMembers = [],
 }: ChannelListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [isNewPrivate, setIsNewPrivate] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
 
   const filteredChannels = useMemo(() => {
     if (!searchQuery.trim()) return channels;
@@ -60,12 +73,43 @@ export function ChannelList({
 
   const totalUnread = channels.reduce((sum, c) => sum + c.unreadCount, 0);
 
+  // Filter members by search
+  const filteredMembers = useMemo(() => {
+    if (!memberSearchQuery.trim()) return availableMembers;
+    const q = memberSearchQuery.toLowerCase();
+    return availableMembers.filter((m) => m.name.toLowerCase().includes(q));
+  }, [availableMembers, memberSearchQuery]);
+
+  const toggleMember = (memberId: string) => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) {
+        next.delete(memberId);
+      } else {
+        next.add(memberId);
+      }
+      return next;
+    });
+  };
+
   const handleCreate = () => {
     if (newChannelName.trim()) {
-      onCreateChannel(newChannelName.trim(), isNewPrivate);
+      onCreateChannel(newChannelName.trim(), isNewPrivate, Array.from(selectedMemberIds));
       setNewChannelName("");
       setIsNewPrivate(false);
+      setSelectedMemberIds(new Set());
+      setMemberSearchQuery("");
       setShowCreateDialog(false);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setShowCreateDialog(open);
+    if (!open) {
+      setNewChannelName("");
+      setIsNewPrivate(false);
+      setSelectedMemberIds(new Set());
+      setMemberSearchQuery("");
     }
   };
 
@@ -194,7 +238,7 @@ export function ChannelList({
       </ScrollArea>
 
       {/* Create Channel Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -203,6 +247,7 @@ export function ChannelList({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* Channel Name */}
             <div>
               <label className="text-sm font-medium mb-1.5 block">
                 Channel Name
@@ -214,37 +259,132 @@ export function ChannelList({
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsNewPrivate(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
-                  !isNewPrivate
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                }`}
-              >
-                <Hash className="h-4 w-4" />
-                Public
-              </button>
-              <button
-                onClick={() => setIsNewPrivate(true)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
-                  isNewPrivate
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                }`}
-              >
-                <Lock className="h-4 w-4" />
-                Private
-              </button>
+
+            {/* Privacy Toggle */}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">
+                Visibility
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsNewPrivate(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm flex-1 ${
+                    !isNewPrivate
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <Hash className="h-4 w-4" />
+                  Public
+                </button>
+                <button
+                  onClick={() => setIsNewPrivate(true)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm flex-1 ${
+                    isNewPrivate
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <Lock className="h-4 w-4" />
+                  Private
+                </button>
+              </div>
             </div>
+
+            {/* Member Selection */}
+            {availableMembers.length > 0 && (
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  Add Members
+                  {selectedMemberIds.size > 0 && (
+                    <span className="text-muted-foreground font-normal ml-1">
+                      ({selectedMemberIds.size} selected)
+                    </span>
+                  )}
+                </label>
+
+                {/* Selected members chips */}
+                {selectedMemberIds.size > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {Array.from(selectedMemberIds).map((memberId) => {
+                      const member = availableMembers.find((m) => m.id === memberId);
+                      if (!member) return null;
+                      return (
+                        <button
+                          key={memberId}
+                          onClick={() => toggleMember(memberId)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                        >
+                          {member.name}
+                          <X className="h-3 w-3" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Member search */}
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search members..."
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    className="pl-8 h-8 text-xs"
+                  />
+                </div>
+
+                {/* Member list */}
+                <div className="max-h-[200px] overflow-y-auto border border-border rounded-lg divide-y divide-border">
+                  {filteredMembers.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-muted-foreground">
+                      No members found
+                    </div>
+                  ) : (
+                    filteredMembers.map((member) => {
+                      const isSelected = selectedMemberIds.has(member.id);
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => toggleMember(member.id)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
+                            isSelected
+                              ? "bg-primary/10"
+                              : "hover:bg-accent"
+                          }`}
+                        >
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-gradient-to-br from-violet-400 to-indigo-500 text-white"
+                          }`}>
+                            {isSelected ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              member.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{member.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{member.role}</p>
+                          </div>
+                          {member.isOnline && (
+                            <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={!newChannelName.trim()}>
-              Create
+              Create Channel
             </Button>
           </DialogFooter>
         </DialogContent>

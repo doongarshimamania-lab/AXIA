@@ -71,181 +71,7 @@ interface ReminderSettings {
   defaultChannel?: "email" | "sms" | "whatsapp";
 }
 
-// ─── Mock Data ──────────────────────────────────────────────────────────────
 
-const mockNow = Date.now();
-const mockDay = 86400000;
-
-const MOCK_OVERDUE_INVOICES: OverdueInvoice[] = [
-  {
-    _id: "mock_inv_1",
-    invoiceNumber: "INV-003",
-    clientName: "GlobalMedia",
-    clientEmail: "accounts@globalmedia.com",
-    status: "overdue",
-    issueDate: mockNow - 45 * mockDay,
-    dueDate: mockNow - 15 * mockDay,
-    total: 14300,
-    currency: "USD",
-    daysPastDue: 15,
-    reminders: [
-      {
-        _id: "rem_1",
-        invoiceId: "mock_inv_1",
-        dayNumber: 3,
-        channel: "email",
-        tone: "friendly",
-        subject: "Just a friendly reminder — Invoice INV-003",
-        body: "Hi GlobalMedia,\n\nJust a friendly reminder that invoice INV-003 for $14,300.00 is past due.",
-        status: "sent",
-        scheduledAt: mockNow - 12 * mockDay,
-        sentAt: mockNow - 12 * mockDay,
-        createdAt: mockNow - 12 * mockDay,
-      },
-      {
-        _id: "rem_2",
-        invoiceId: "mock_inv_1",
-        dayNumber: 7,
-        channel: "email",
-        tone: "firm",
-        subject: "Payment reminder — Invoice INV-003 is now past due",
-        body: "Hi GlobalMedia,\n\nYour invoice INV-003 for $14,300.00 is now past due.",
-        status: "sent",
-        scheduledAt: mockNow - 8 * mockDay,
-        sentAt: mockNow - 8 * mockDay,
-        createdAt: mockNow - 8 * mockDay,
-      },
-      {
-        _id: "rem_3",
-        invoiceId: "mock_inv_1",
-        dayNumber: 14,
-        channel: "email",
-        tone: "urgent",
-        subject: "URGENT: Final notice — Invoice INV-003 is significantly overdue",
-        body: "Hi GlobalMedia,\n\nThis is a final notice. Invoice INV-003 for $14,300.00 is significantly overdue.",
-        status: "scheduled",
-        scheduledAt: mockNow - 1 * mockDay,
-        createdAt: mockNow - 1 * mockDay,
-      },
-    ],
-    lastReminderSent: {
-      _id: "rem_2",
-      invoiceId: "mock_inv_1",
-      dayNumber: 7,
-      channel: "email",
-      tone: "firm",
-      subject: "Payment reminder — Invoice INV-003 is now past due",
-      body: "Hi GlobalMedia,\n\nYour invoice INV-003 for $14,300.00 is now past due.",
-      status: "sent",
-      scheduledAt: mockNow - 8 * mockDay,
-      sentAt: mockNow - 8 * mockDay,
-      createdAt: mockNow - 8 * mockDay,
-    },
-    nextScheduledReminder: {
-      _id: "rem_3",
-      invoiceId: "mock_inv_1",
-      dayNumber: 14,
-      channel: "email",
-      tone: "urgent",
-      subject: "URGENT: Final notice — Invoice INV-003 is significantly overdue",
-      body: "Hi GlobalMedia,\n\nThis is a final notice. Invoice INV-003 for $14,300.00 is significantly overdue.",
-      status: "scheduled",
-      scheduledAt: mockNow - 1 * mockDay,
-      createdAt: mockNow - 1 * mockDay,
-    },
-  },
-  {
-    _id: "mock_inv_2",
-    invoiceNumber: "INV-005",
-    clientName: "NovaTech Labs",
-    clientEmail: "billing@novatech.io",
-    status: "overdue",
-    issueDate: mockNow - 60 * mockDay,
-    dueDate: mockNow - 30 * mockDay,
-    total: 8750,
-    currency: "USD",
-    daysPastDue: 30,
-    reminders: [
-      {
-        _id: "rem_4",
-        invoiceId: "mock_inv_2",
-        dayNumber: 3,
-        channel: "email",
-        tone: "friendly",
-        subject: "Just a friendly reminder — Invoice INV-005",
-        body: "Hi NovaTech Labs,\n\nJust a friendly reminder that invoice INV-005 for $8,750.00 is past due.",
-        status: "sent",
-        scheduledAt: mockNow - 27 * mockDay,
-        sentAt: mockNow - 27 * mockDay,
-        createdAt: mockNow - 27 * mockDay,
-      },
-      {
-        _id: "rem_5",
-        invoiceId: "mock_inv_2",
-        dayNumber: 7,
-        channel: "email",
-        tone: "firm",
-        subject: "Payment reminder — Invoice INV-005 is now past due",
-        body: "Hi NovaTech Labs,\n\nYour invoice INV-005 for $8,750.00 is now past due.",
-        status: "sent",
-        scheduledAt: mockNow - 23 * mockDay,
-        sentAt: mockNow - 23 * mockDay,
-        createdAt: mockNow - 23 * mockDay,
-      },
-      {
-        _id: "rem_6",
-        invoiceId: "mock_inv_2",
-        dayNumber: 14,
-        channel: "email",
-        tone: "urgent",
-        subject: "URGENT: Final notice — Invoice INV-005 is significantly overdue",
-        body: "Hi NovaTech Labs,\n\nThis is a final notice. Invoice INV-005 for $8,750.00 is significantly overdue.",
-        status: "sent",
-        scheduledAt: mockNow - 16 * mockDay,
-        sentAt: mockNow - 16 * mockDay,
-        createdAt: mockNow - 16 * mockDay,
-      },
-    ],
-    lastReminderSent: {
-      _id: "rem_6",
-      invoiceId: "mock_inv_2",
-      dayNumber: 14,
-      channel: "email",
-      tone: "urgent",
-      subject: "URGENT: Final notice — Invoice INV-005 is significantly overdue",
-      body: "Hi NovaTech Labs,\n\nThis is a final notice. Invoice INV-005 for $8,750.00 is significantly overdue.",
-      status: "sent",
-      scheduledAt: mockNow - 16 * mockDay,
-      sentAt: mockNow - 16 * mockDay,
-      createdAt: mockNow - 16 * mockDay,
-    },
-    nextScheduledReminder: null,
-  },
-  {
-    _id: "mock_inv_3",
-    invoiceNumber: "INV-007",
-    clientName: "StarterCo",
-    clientEmail: "pay@starterco.com",
-    status: "overdue",
-    issueDate: mockNow - 17 * mockDay,
-    dueDate: mockNow - 3 * mockDay,
-    total: 2200,
-    currency: "USD",
-    daysPastDue: 3,
-    reminders: [],
-    lastReminderSent: null,
-    nextScheduledReminder: null,
-  },
-];
-
-const MOCK_SETTINGS: ReminderSettings = {
-  autoRemindersEnabled: true,
-  day3Enabled: true,
-  day7Enabled: true,
-  day14Enabled: true,
-  day21Enabled: false,
-  defaultChannel: "email",
-};
 
 // ─── Reminder Templates ─────────────────────────────────────────────────────
 
@@ -412,17 +238,22 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
   const scheduleAutoReminders = useMutation(api.billing.reminders.scheduleAutoReminders);
   const updateReminderSettings = useMutation(api.billing.reminders.updateReminderSettings);
 
-  // ── Fallback to Mock Data ────────────────────────────────────────────────
+  // ── Data with safe fallbacks ────────────────────────────────────────────────
   const safeOverdueInvoices = useMemo(() => {
     if (overdueInvoices && overdueInvoices.length > 0) return overdueInvoices;
-    if (overdueInvoices === undefined && overdueCount > 0) return MOCK_OVERDUE_INVOICES;
-    if (overdueCount > 0) return MOCK_OVERDUE_INVOICES;
     return [];
-  }, [overdueInvoices, overdueCount]);
+  }, [overdueInvoices]);
 
   const safeSettings: ReminderSettings = useMemo(() => {
     if (reminderSettings) return reminderSettings;
-    return MOCK_SETTINGS;
+    return {
+      autoRemindersEnabled: false,
+      day3Enabled: true,
+      day7Enabled: true,
+      day14Enabled: true,
+      day21Enabled: false,
+      defaultChannel: "email",
+    };
   }, [reminderSettings]);
 
   // ── Don't render if no overdue invoices ──────────────────────────────────

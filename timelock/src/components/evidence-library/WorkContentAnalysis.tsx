@@ -18,11 +18,11 @@ interface WorkContentAnalysisProps {
 }
 
 export function WorkContentAnalysis({ qualityScore, hasAccess, contentData }: WorkContentAnalysisProps) {
-  const score = contentData?.score || 88;
-  const workRelated = contentData?.workRelatedCount || 228;
-  const total = contentData?.totalCount || 245;
-  const flagged = contentData?.flaggedCount || 17;
-  const contextIssues = contentData?.contextIssues || "17 items flagged for potential non-work activity. Review and add context notes.";
+  const score = contentData?.score ?? 0;
+  const workRelated = contentData?.workRelatedCount ?? 0;
+  const total = contentData?.totalCount ?? 0;
+  const flagged = contentData?.flaggedCount ?? 0;
+  const contextIssues = contentData?.contextIssues ?? "No content analysis data available.";
 
   return (
     <Card className="p-6 bg-[#1E293B] border-[#334155]">

@@ -16,85 +16,12 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Info, Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
-
-// ─── Mock data for demo mode (unauthenticated) ──────────────────────────
-const MOCK_CLIENTS = [
-  {
-    _id: "client_1" as any,
-    clientName: "TechCorp Solutions",
-    platform: "upwork" as const,
-    hourlyRate: 85,
-    contractType: "hourly" as const,
-    riskLevel: "low" as const,
-    protectionScore: 94,
-    totalHours: 127.5,
-    totalValue: 10837.5,
-    activeSession: false,
-    addedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 2 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_2" as any,
-    clientName: "StartupHub Inc",
-    platform: "fiverr" as const,
-    hourlyRate: 65,
-    contractType: "fixed" as const,
-    riskLevel: "medium" as const,
-    protectionScore: 78,
-    totalHours: 89.0,
-    totalValue: 5785.0,
-    activeSession: true,
-    addedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 15 * 60 * 1000,
-  },
-  {
-    _id: "client_3" as any,
-    clientName: "Global Enterprises",
-    platform: "toptal" as const,
-    hourlyRate: 120,
-    contractType: "hourly" as const,
-    riskLevel: "high" as const,
-    protectionScore: 65,
-    totalHours: 156.0,
-    totalValue: 18720.0,
-    activeSession: false,
-    addedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_4" as any,
-    clientName: "Digital Marketing Co",
-    platform: "freelancer" as const,
-    hourlyRate: 45,
-    contractType: "hourly" as const,
-    riskLevel: "low" as const,
-    protectionScore: 88,
-    totalHours: 67.0,
-    totalValue: 3015.0,
-    activeSession: false,
-    addedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 48 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_5" as any,
-    clientName: "Creative Studios",
-    platform: "direct" as const,
-    hourlyRate: 95,
-    contractType: "fixed" as const,
-    riskLevel: "medium" as const,
-    protectionScore: 72,
-    totalHours: 103.5,
-    totalValue: 9832.5,
-    activeSession: false,
-    addedAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 72 * 60 * 60 * 1000,
-  },
-];
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 export default function Clients() {
   const { tier: subscriptionTier } = useSubscriptionTier();
@@ -107,12 +34,9 @@ export default function Clients() {
   // ─── Permissions ────────────────────────────────────────────────────────
   const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
 
-  // ─── Permissions for selected client (hook MUST be at top level) ──────
-  const perms = usePermissions(selectedClient as any);
-
   // ─── Convex mutations for sharing ───────────────────────────────────────
-  const shareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any)["permissions/shareRecord"]?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
 
   // ─── Convex queries ────────────────────────────────────────────────────
   const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip");
@@ -163,8 +87,8 @@ export default function Clients() {
     lastActivityAt: c.lastActivityAt,
   }));
 
-  // Use mock data in demo mode, real data otherwise
-  const clients = isDemoMode ? MOCK_CLIENTS : realClients;
+  // Use real clients only (empty array when demo/disconnected)
+  const clients = realClients;
 
   // ─── Auto-select first client ──────────────────────────────────────────
   useEffect(() => {
@@ -174,7 +98,11 @@ export default function Clients() {
   }, [clients, selectedClientId]);
 
   // ─── Get selected client object ────────────────────────────────────────
+  // IMPORTANT: Must be computed BEFORE usePermissions() call below
   const selectedClient = clients.find((c: any) => c._id === selectedClientId) ?? null;
+
+  // ─── Permissions for selected client (hook MUST be at top level) ──────
+  const perms = usePermissions(selectedClient as any);
 
   // ─── Handlers ──────────────────────────────────────────────────────────
   const handleAddClient = async () => {
@@ -244,10 +172,10 @@ export default function Clients() {
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="flex-1 transition-all duration-300 p-8 space-y-6">
+      <PageLayout spaced>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
               Clients
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -290,16 +218,22 @@ export default function Clients() {
 
         {/* Demo mode banner */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real clients.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your clients</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to manage client policy profiles and protection settings.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Loading state */}
@@ -581,7 +515,7 @@ export default function Clients() {
             toast.success("Import complete");
           }}
         />
-      </div>
+      </PageLayout>
     </div>
   );
 }

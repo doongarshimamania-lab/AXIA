@@ -1,0 +1,920 @@
+     1→import { useState } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import {
+     5→  Key,
+     6→  Plus,
+     7→  Copy,
+     8→  Eye,
+     9→  EyeOff,
+    10→  Trash2,
+    11→  Webhook,
+    12→  BarChart3,
+    13→  BookOpen,
+    14→  Shield,
+    15→  AlertTriangle,
+    16→  Loader2,
+    17→  ExternalLink,
+    18→  Zap,
+    19→  Clock,
+    20→  Activity,
+    21→} from "lucide-react";
+    22→import {
+    23→  Card,
+    24→  CardContent,
+    25→  CardHeader,
+    26→  CardTitle,
+    27→  CardDescription,
+    28→} from "@/components/ui/card";
+    29→import { Button } from "@/components/ui/button";
+    30→import { Badge } from "@/components/ui/badge";
+    31→import { Input } from "@/components/ui/input";
+    32→import { Label } from "@/components/ui/label";
+    33→import { Separator } from "@/components/ui/separator";
+    34→import {
+    35→  Dialog,
+    36→  DialogContent,
+    37→  DialogDescription,
+    38→  DialogFooter,
+    39→  DialogHeader,
+    40→  DialogTitle,
+    41→} from "@/components/ui/dialog";
+    42→import {
+    43→  AlertDialog,
+    44→  AlertDialogAction,
+    45→  AlertDialogCancel,
+    46→  AlertDialogContent,
+    47→  AlertDialogDescription,
+    48→  AlertDialogFooter,
+    49→  AlertDialogHeader,
+    50→  AlertDialogTitle,
+    51→} from "@/components/ui/alert-dialog";
+    52→import { Checkbox } from "@/components/ui/checkbox";
+    53→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    54→import { PageLayout } from "@/components/design-system/PageLayout";
+    55→
+    56→// --- Types ---
+    57→interface ApiKey {
+    58→  id: string;
+    59→  name: string;
+    60→  keyPrefix: string;
+    61→  secretMasked: string;
+    62→  secretFull: string;
+    63→  createdAt: number;
+    64→  lastUsedAt: number | null;
+    65→  status: "active" | "revoked";
+    66→}
+    67→
+    68→interface WebhookConfig {
+    69→  url: string;
+    70→  events: string[];
+    71→  active: boolean;
+    72→}
+    73→
+    74→// --- Mock Data ---
+    75→const MOCK_API_KEYS: ApiKey[] = [
+    76→  {
+    77→    id: "key_1",
+    78→    name: "Production API",
+    79→    keyPrefix: "tl_prod_",
+    80→    secretMasked: "tl_prod_••••••••••••••••a4f2",
+    81→    secretFull: "tl_prod_sk_9x8m7k6j5h4g3f2d1a4f2",
+    82→    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
+    83→    lastUsedAt: Date.now() - 2 * 60 * 60 * 1000,
+    84→    status: "active",
+    85→  },
+    86→  {
+    87→    id: "key_2",
+    88→    name: "Staging Environment",
+    89→    keyPrefix: "tl_stag_",
+    90→    secretMasked: "tl_stag_••••••••••••••••b7e1",
+    91→    secretFull: "tl_stag_sk_3w4e5r6t7y8u9i0ob7e1",
+    92→    createdAt: Date.now() - 12 * 24 * 60 * 60 * 1000,
+    93→    lastUsedAt: Date.now() - 24 * 60 * 60 * 1000,
+    94→    status: "active",
+    95→  },
+    96→  {
+    97→    id: "key_3",
+    98→    name: "Legacy Integration",
+    99→    keyPrefix: "tl_test_",
+   100→    secretMasked: "tl_test_••••••••••••••••c9d0",
+   101→    secretFull: "tl_test_sk_1a2s3d4f5g6h7j8kc9d0",
+   102→    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   103→    lastUsedAt: null,
+   104→    status: "revoked",
+   105→  },
+   106→];
+   107→
+   108→const WEBHOOK_EVENTS = [
+   109→  { id: "evidence.created", label: "Evidence Created" },
+   110→  { id: "evidence.exported", label: "Evidence Exported" },
+   111→  { id: "project.milestone", label: "Milestone Reached" },
+   112→  { id: "payment.received", label: "Payment Received" },
+   113→  { id: "dispute.opened", label: "Dispute Opened" },
+   114→  { id: "protection.alert", label: "Protection Alert" },
+   115→];
+   116→
+   117→// --- Helpers ---
+   118→function formatDate(ts: number): string {
+   119→  return new Date(ts).toLocaleDateString("en-US", {
+   120→    year: "numeric",
+   121→    month: "short",
+   122→    day: "numeric",
+   123→  });
+   124→}
+   125→
+   126→function timeAgo(ts: number | null): string {
+   127→  if (!ts) return "Never";
+   128→  const diff = Date.now() - ts;
+   129→  const mins = Math.floor(diff / 60000);
+   130→  if (mins < 1) return "Just now";
+   131→  if (mins < 60) return `${mins}m ago`;
+   132→  const hrs = Math.floor(mins / 60);
+   133→  if (hrs < 24) return `${hrs}h ago`;
+   134→  const days = Math.floor(hrs / 24);
+   135→  return `${days}d ago`;
+   136→}
+   137→
+   138→function generateMockKey(prefix: string = "tl_prod_"): string {
+   139→  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+   140→  let result = prefix + "sk_";
+   141→  for (let i = 0; i < 20; i++) {
+   142→    result += chars.charAt(Math.floor(Math.random() * chars.length));
+   143→  }
+   144→  return result;
+   145→}
+   146→
+   147→function maskKey(key: string): string {
+   148→  const prefix = key.substring(0, key.indexOf("sk_") + 3);
+   149→  const suffix = key.slice(-4);
+   150→  return `${prefix}${"•".repeat(16)}${suffix}`;
+   151→}
+   152→
+   153→// --- Component ---
+   154→export default function ApiSettings() {
+   155→  const { tier } = useSubscriptionTier();
+   156→  const isPro = tier === "pro" || tier === "expert";
+   157→
+   158→  const rateLimit = isPro ? 10000 : 100;
+   159→  const requestsToday = isPro ? 3427 : 67;
+   160→  const errorRate = 0.3;
+   161→
+   162→  // API Keys state
+   163→  const [apiKeys, setApiKeys] = useState<ApiKey[]>(MOCK_API_KEYS);
+   164→  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+   165→  const [showCreateDialog, setShowCreateDialog] = useState(false);
+   166→  const [showRevokeDialog, setShowRevokeDialog] = useState(false);
+   167→  const [keyToRevoke, setKeyToRevoke] = useState<string | null>(null);
+   168→  const [newKeyName, setNewKeyName] = useState("");
+   169→  const [isCreating, setIsCreating] = useState(false);
+   170→  const [isRevoking, setIsRevoking] = useState(false);
+   171→  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+   172→
+   173→  // Webhook state
+   174→  const [webhook, setWebhook] = useState<WebhookConfig>({
+   175→    url: "https://myapp.com/api/axia-webhook",
+   176→    events: ["evidence.created", "protection.alert"],
+   177→    active: true,
+   178→  });
+   179→  const [isSavingWebhook, setIsSavingWebhook] = useState(false);
+   180→
+   181→  // Toggle key visibility
+   182→  const toggleReveal = (keyId: string) => {
+   183→    setRevealedKeys((prev) => {
+   184→      const next = new Set(prev);
+   185→      if (next.has(keyId)) next.delete(keyId);
+   186→      else next.add(keyId);
+   187→      return next;
+   188→    });
+   189→  };
+   190→
+   191→  // Copy to clipboard
+   192→  const copyKey = async (text: string) => {
+   193→    try {
+   194→      await navigator.clipboard.writeText(text);
+   195→      toast.success("API key copied to clipboard");
+   196→    } catch {
+   197→      toast.error("Failed to copy to clipboard");
+   198→    }
+   199→  };
+   200→
+   201→  // Generate new key
+   202→  const handleCreateKey = async () => {
+   203→    if (!newKeyName.trim()) {
+   204→      toast.error("Please enter a name for your API key");
+   205→      return;
+   206→    }
+   207→    setIsCreating(true);
+   208→    // Simulate API call
+   209→    await new Promise((r) => setTimeout(r, 1200));
+   210→    const fullKey = generateMockKey("tl_prod_");
+   211→    const newApiKey: ApiKey = {
+   212→      id: `key_${Date.now()}`,
+   213→      name: newKeyName.trim(),
+   214→      keyPrefix: "tl_prod_",
+   215→      secretMasked: maskKey(fullKey),
+   216→      secretFull: fullKey,
+   217→      createdAt: Date.now(),
+   218→      lastUsedAt: null,
+   219→      status: "active",
+   220→    };
+   221→    setApiKeys((prev) => [newApiKey, ...prev]);
+   222→    setNewlyCreatedKey(fullKey);
+   223→    setNewKeyName("");
+   224→    setIsCreating(false);
+   225→    toast.success("API key created successfully");
+   226→  };
+   227→
+   228→  // Revoke key
+   229→  const handleRevokeKey = async () => {
+   230→    if (!keyToRevoke) return;
+   231→    setIsRevoking(true);
+   232→    await new Promise((r) => setTimeout(r, 800));
+   233→    setApiKeys((prev) =>
+   234→      prev.map((k) =>
+   235→        k.id === keyToRevoke ? { ...k, status: "revoked" as const } : k
+   236→      )
+   237→    );
+   238→    setShowRevokeDialog(false);
+   239→    setKeyToRevoke(null);
+   240→    setIsRevoking(false);
+   241→    toast.success("API key revoked");
+   242→  };
+   243→
+   244→  // Delete key
+   245→  const handleDeleteKey = async (keyId: string) => {
+   246→    setApiKeys((prev) => prev.filter((k) => k.id !== keyId));
+   247→    toast.success("API key deleted");
+   248→  };
+   249→
+   250→  // Save webhook
+   251→  const handleSaveWebhook = async () => {
+   252→    if (!webhook.url.trim()) {
+   253→      toast.error("Please enter a webhook URL");
+   254→      return;
+   255→    }
+   256→    try {
+   257→      new URL(webhook.url);
+   258→    } catch {
+   259→      toast.error("Please enter a valid URL");
+   260→      return;
+   261→    }
+   262→    if (webhook.events.length === 0) {
+   263→      toast.error("Please select at least one event");
+   264→      return;
+   265→    }
+   266→    setIsSavingWebhook(true);
+   267→    await new Promise((r) => setTimeout(r, 1000));
+   268→    setIsSavingWebhook(false);
+   269→    toast.success("Webhook configuration saved");
+   270→  };
+   271→
+   272→  // Toggle webhook event
+   273→  const toggleWebhookEvent = (eventId: string) => {
+   274→    setWebhook((prev) => ({
+   275→      ...prev,
+   276→      events: prev.events.includes(eventId)
+   277→        ? prev.events.filter((e) => e !== eventId)
+   278→        : [...prev.events, eventId],
+   279→    }));
+   280→  };
+   281→
+   282→  const activeKeys = apiKeys.filter((k) => k.status === "active");
+   283→  const revokedKeys = apiKeys.filter((k) => k.status === "revoked");
+   284→
+   285→  return (
+   286→    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+   287→      <div className="w-full min-h-screen bg-background text-foreground">
+   288→        <PageLayout narrow>
+   289→          {/* Header */}
+   290→          <div className="mb-8">
+   291→            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   292→              API Settings
+   293→            </h1>
+   294→            <p className="text-[16px] text-muted-foreground">
+   295→              Manage API keys, webhooks, and monitor your integration usage
+   296→            </p>
+   297→          </div>
+   298→
+   299→          <div className="space-y-6">
+   300→            {/* Tier Info Banner */}
+   301→            <Card className="border-primary/20 bg-primary/5">
+   302→              <CardContent className="p-4">
+   303→                <div className="flex items-center justify-between flex-wrap gap-3">
+   304→                  <div className="flex items-center gap-3">
+   305→                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+   306→                      <Shield className="h-5 w-5 text-primary" />
+   307→                    </div>
+   308→                    <div>
+   309→                      <div className="flex items-center gap-2">
+   310→                        <span className="font-semibold text-foreground">
+   311→                          {isPro ? "Pro Plan" : "Free Plan"}
+   312→                        </span>
+   313→                        <Badge
+   314→                          variant={isPro ? "default" : "secondary"}
+   315→                          className={
+   316→                            isPro
+   317→                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+   318→                              : ""
+   319→                          }
+   320→                        >
+   321→                          {isPro ? "10,000 req/day" : "100 req/day"}
+   322→                        </Badge>
+   323→                      </div>
+   324→                      <p className="text-sm text-muted-foreground">
+   325→                        {isPro
+   326→                          ? "You have access to the full API with higher rate limits."
+   327→                          : "Upgrade to Pro for 10,000 requests/day and priority support."}
+   328→                      </p>
+   329→                    </div>
+   330→                  </div>
+   331→                  {!isPro && (
+   332→                    <Button size="sm" className="gap-1.5">
+   333→                      <Zap className="h-3.5 w-3.5" />
+   334→                      Upgrade
+   335→                    </Button>
+   336→                  )}
+   337→                </div>
+   338→              </CardContent>
+   339→            </Card>
+   340→
+   341→            {/* API Usage Stats */}
+   342→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   343→              <Card>
+   344→                <CardContent className="p-4">
+   345→                  <div className="flex items-center gap-3">
+   346→                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+   347→                      <Activity className="h-5 w-5 text-blue-500" />
+   348→                    </div>
+   349→                    <div>
+   350→                      <p className="text-sm text-muted-foreground">
+   351→                        Requests Today
+   352→                      </p>
+   353→                      <p className="text-2xl font-bold text-foreground">
+   354→                        {requestsToday.toLocaleString()}
+   355→                      </p>
+   356→                    </div>
+   357→                  </div>
+   358→                  <div className="mt-3">
+   359→                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+   360→                      <span>Usage</span>
+   361→                      <span>
+   362→                        {((requestsToday / rateLimit) * 100).toFixed(1)}%
+   363→                      </span>
+   364→                    </div>
+   365→                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+   366→                      <div
+   367→                        className="h-full rounded-full bg-blue-500 transition-all"
+   368→                        style={{
+   369→                          width: `${Math.min(
+   370→                            (requestsToday / rateLimit) * 100,
+   371→                            100
+   372→                          )}%`,
+   373→                        }}
+   374→                      />
+   375→                    </div>
+   376→                  </div>
+   377→                </CardContent>
+   378→              </Card>
+   379→
+   380→              <Card>
+   381→                <CardContent className="p-4">
+   382→                  <div className="flex items-center gap-3">
+   383→                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+   384→                      <Clock className="h-5 w-5 text-amber-500" />
+   385→                    </div>
+   386→                    <div>
+   387→                      <p className="text-sm text-muted-foreground">
+   388→                        Rate Limit
+   389→                      </p>
+   390→                      <p className="text-2xl font-bold text-foreground">
+   391→                        {rateLimit.toLocaleString()}
+   392→                      </p>
+   393→                    </div>
+   394→                  </div>
+   395→                  <p className="text-xs text-muted-foreground mt-3">
+   396→                    {isPro
+   397→                      ? "10,000 requests per day"
+   398→                      : "100 requests per day"}{" "}
+   399→                    &middot; Resets at midnight UTC
+   400→                  </p>
+   401→                </CardContent>
+   402→              </Card>
+   403→
+   404→              <Card>
+   405→                <CardContent className="p-4">
+   406→                  <div className="flex items-center gap-3">
+   407→                    <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+   408→                      <BarChart3 className="h-5 w-5 text-emerald-500" />
+   409→                    </div>
+   410→                    <div>
+   411→                      <p className="text-sm text-muted-foreground">
+   412→                        Error Rate
+   413→                      </p>
+   414→                      <p className="text-2xl font-bold text-foreground">
+   415→                        {errorRate}%
+   416→                      </p>
+   417→                    </div>
+   418→                  </div>
+   419→                  <p className="text-xs text-muted-foreground mt-3">
+   420→                    {errorRate < 1
+   421→                      ? "Healthy — error rate below 1%"
+   422→                      : errorRate < 5
+   423→                        ? "Normal — error rate under 5%"
+   424→                        : "Elevated — consider checking your integration"}
+   425→                  </p>
+   426→                </CardContent>
+   427→              </Card>
+   428→            </div>
+   429→
+   430→            {/* API Keys Section */}
+   431→            <Card>
+   432→              <CardHeader>
+   433→                <div className="flex items-center justify-between flex-wrap gap-3">
+   434→                  <div>
+   435→                    <CardTitle className="flex items-center gap-2">
+   436→                      <Key className="h-5 w-5" />
+   437→                      API Keys
+   438→                    </CardTitle>
+   439→                    <CardDescription>
+   440→                      Create and manage API keys for programmatic access
+   441→                    </CardDescription>
+   442→                  </div>
+   443→                  <Button
+   444→                    onClick={() => {
+   445→                      setNewlyCreatedKey(null);
+   446→                      setShowCreateDialog(true);
+   447→                    }}
+   448→                    className="gap-1.5"
+   449→                  >
+   450→                    <Plus className="h-4 w-4" />
+   451→                    Generate Key
+   452→                  </Button>
+   453→                </div>
+   454→              </CardHeader>
+   455→              <CardContent>
+   456→                {apiKeys.length === 0 ? (
+   457→                  <div className="text-center py-10 text-muted-foreground">
+   458→                    <Key className="h-12 w-12 mx-auto mb-3 opacity-40" />
+   459→                    <p className="font-medium">No API keys yet</p>
+   460→                    <p className="text-sm mt-1">
+   461→                      Generate your first key to start integrating with Axia.
+   462→                    </p>
+   463→                  </div>
+   464→                ) : (
+   465→                  <div className="space-y-3">
+   466→                    {/* Active Keys */}
+   467→                    {activeKeys.length > 0 && (
+   468→                      <div className="space-y-3">
+   469→                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+   470→                          Active ({activeKeys.length})
+   471→                        </p>
+   472→                        {activeKeys.map((apiKey) => (
+   473→                          <div
+   474→                            key={apiKey.id}
+   475→                            className="flex items-center justify-between p-4 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors"
+   476→                          >
+   477→                            <div className="flex-1 min-w-0">
+   478→                              <div className="flex items-center gap-2 mb-1">
+   479→                                <span className="font-semibold text-foreground">
+   480→                                  {apiKey.name}
+   481→                                </span>
+   482→                                <Badge
+   483→                                  variant="default"
+   484→                                  className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]"
+   485→                                >
+   486→                                  Active
+   487→                                </Badge>
+   488→                              </div>
+   489→                              <div className="flex items-center gap-2 mb-2">
+   490→                                <code className="text-xs bg-muted px-2 py-1 rounded font-mono select-all">
+   491→                                  {revealedKeys.has(apiKey.id)
+   492→                                    ? apiKey.secretFull
+   493→                                    : apiKey.secretMasked}
+   494→                                </code>
+   495→                                <Button
+   496→                                  variant="ghost"
+   497→                                  size="icon"
+   498→                                  className="h-7 w-7"
+   499→                                  onClick={() => toggleReveal(apiKey.id)}
+   500→                                >
+   501→                                  {revealedKeys.has(apiKey.id) ? (
+   502→                                    <EyeOff className="h-3.5 w-3.5" />
+   503→                                  ) : (
+   504→                                    <Eye className="h-3.5 w-3.5" />
+   505→                                  )}
+   506→                                </Button>
+   507→                                <Button
+   508→                                  variant="ghost"
+   509→                                  size="icon"
+   510→                                  className="h-7 w-7"
+   511→                                  onClick={() =>
+   512→                                    copyKey(
+   513→                                      revealedKeys.has(apiKey.id)
+   514→                                        ? apiKey.secretFull
+   515→                                        : apiKey.secretMasked
+   516→                                    )
+   517→                                  }
+   518→                                >
+   519→                                  <Copy className="h-3.5 w-3.5" />
+   520→                                </Button>
+   521→                              </div>
+   522→                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   523→                                <span>Created {formatDate(apiKey.createdAt)}</span>
+   524→                                <span>
+   525→                                  Last used {timeAgo(apiKey.lastUsedAt)}
+   526→                                </span>
+   527→                              </div>
+   528→                            </div>
+   529→                            <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+   530→                              <Button
+   531→                                variant="outline"
+   532→                                size="sm"
+   533→                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+   534→                                onClick={() => {
+   535→                                  setKeyToRevoke(apiKey.id);
+   536→                                  setShowRevokeDialog(true);
+   537→                                }}
+   538→                              >
+   539→                                Revoke
+   540→                              </Button>
+   541→                              <Button
+   542→                                variant="ghost"
+   543→                                size="icon"
+   544→                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+   545→                                onClick={() => handleDeleteKey(apiKey.id)}
+   546→                              >
+   547→                                <Trash2 className="h-4 w-4" />
+   548→                              </Button>
+   549→                            </div>
+   550→                          </div>
+   551→                        ))}
+   552→                      </div>
+   553→                    )}
+   554→
+   555→                    {/* Revoked Keys */}
+   556→                    {revokedKeys.length > 0 && (
+   557→                      <>
+   558→                        <Separator className="my-4" />
+   559→                        <div className="space-y-3">
+   560→                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+   561→                            Revoked ({revokedKeys.length})
+   562→                          </p>
+   563→                          {revokedKeys.map((apiKey) => (
+   564→                            <div
+   565→                              key={apiKey.id}
+   566→                              className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border opacity-60"
+   567→                            >
+   568→                              <div className="flex-1 min-w-0">
+   569→                                <div className="flex items-center gap-2 mb-1">
+   570→                                  <span className="font-semibold text-foreground">
+   571→                                    {apiKey.name}
+   572→                                  </span>
+   573→                                  <Badge variant="secondary" className="text-[10px]">
+   574→                                    Revoked
+   575→                                  </Badge>
+   576→                                </div>
+   577→                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   578→                                  <span>
+   579→                                    Created {formatDate(apiKey.createdAt)}
+   580→                                  </span>
+   581→                                </div>
+   582→                              </div>
+   583→                              <Button
+   584→                                variant="ghost"
+   585→                                size="icon"
+   586→                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+   587→                                onClick={() => handleDeleteKey(apiKey.id)}
+   588→                              >
+   589→                                <Trash2 className="h-4 w-4" />
+   590→                              </Button>
+   591→                            </div>
+   592→                          ))}
+   593→                        </div>
+   594→                      </>
+   595→                    )}
+   596→                  </div>
+   597→                )}
+   598→              </CardContent>
+   599→            </Card>
+   600→
+   601→            {/* Webhook Configuration */}
+   602→            <Card>
+   603→              <CardHeader>
+   604→                <CardTitle className="flex items-center gap-2">
+   605→                  <Webhook className="h-5 w-5" />
+   606→                  Webhook Configuration
+   607→                </CardTitle>
+   608→                <CardDescription>
+   609→                  Receive real-time notifications when events occur in Axia
+   610→                </CardDescription>
+   611→              </CardHeader>
+   612→              <CardContent className="space-y-5">
+   613→                <div className="space-y-2">
+   614→                  <Label htmlFor="webhook-url">Webhook URL</Label>
+   615→                  <Input
+   616→                    id="webhook-url"
+   617→                    placeholder="https://your-app.com/api/webhook"
+   618→                    value={webhook.url}
+   619→                    onChange={(e) =>
+   620→                      setWebhook((prev) => ({ ...prev, url: e.target.value }))
+   621→                    }
+   622→                  />
+   623→                  <p className="text-xs text-muted-foreground">
+   624→                    We'll send POST requests to this URL when selected events fire.
+   625→                  </p>
+   626→                </div>
+   627→
+   628→                <div className="space-y-3">
+   629→                  <Label>Events to Listen For</Label>
+   630→                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   631→                    {WEBHOOK_EVENTS.map((event) => (
+   632→                      <label
+   633→                        key={event.id}
+   634→                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 transition-colors cursor-pointer"
+   635→                      >
+   636→                        <Checkbox
+   637→                          checked={webhook.events.includes(event.id)}
+   638→                          onCheckedChange={() => toggleWebhookEvent(event.id)}
+   639→                        />
+   640→                        <div>
+   641→                          <p className="text-sm font-medium text-foreground">
+   642→                            {event.label}
+   643→                          </p>
+   644→                          <p className="text-xs text-muted-foreground font-mono">
+   645→                            {event.id}
+   646→                          </p>
+   647→                        </div>
+   648→                      </label>
+   649→                    ))}
+   650→                  </div>
+   651→                </div>
+   652→
+   653→                <Separator />
+   654→
+   655→                <div className="flex items-center justify-between">
+   656→                  <div>
+   657→                    <p className="text-sm font-medium text-foreground">
+   658→                      Webhook Status
+   659→                    </p>
+   660→                    <p className="text-xs text-muted-foreground">
+   661→                      {webhook.active
+   662→                        ? "Webhook is active and will receive events"
+   663→                        : "Webhook is paused — no events will be sent"}
+   664→                    </p>
+   665→                  </div>
+   666→                  <Button
+   667→                    variant={webhook.active ? "outline" : "default"}
+   668→                    size="sm"
+   669→                    onClick={() =>
+   670→                      setWebhook((prev) => ({
+   671→                        ...prev,
+   672→                        active: !prev.active,
+   673→                      }))
+   674→                    }
+   675→                  >
+   676→                    {webhook.active ? "Pause" : "Enable"}
+   677→                  </Button>
+   678→                </div>
+   679→
+   680→                <div className="flex justify-end">
+   681→                  <Button
+   682→                    onClick={handleSaveWebhook}
+   683→                    disabled={isSavingWebhook}
+   684→                    className="gap-1.5"
+   685→                  >
+   686→                    {isSavingWebhook ? (
+   687→                      <>
+   688→                        <Loader2 className="h-4 w-4 animate-spin" />
+   689→                        Saving...
+   690→                      </>
+   691→                    ) : (
+   692→                      "Save Webhook"
+   693→                    )}
+   694→                  </Button>
+   695→                </div>
+   696→              </CardContent>
+   697→            </Card>
+   698→
+   699→            {/* API Documentation */}
+   700→            <Card>
+   701→              <CardHeader>
+   702→                <CardTitle className="flex items-center gap-2">
+   703→                  <BookOpen className="h-5 w-5" />
+   704→                  API Documentation
+   705→                </CardTitle>
+   706→                <CardDescription>
+   707→                  Resources to help you integrate Axia into your workflow
+   708→                </CardDescription>
+   709→              </CardHeader>
+   710→              <CardContent>
+   711→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   712→                  {[
+   713→                    {
+   714→                      title: "Getting Started Guide",
+   715→                      desc: "Learn the basics of the Axia API",
+   716→                      icon: "🚀",
+   717→                    },
+   718→                    {
+   719→                      title: "Authentication Docs",
+   720→                      desc: "API key authentication & best practices",
+   721→                      icon: "🔐",
+   722→                    },
+   723→                    {
+   724→                      title: "Webhooks Reference",
+   725→                      desc: "Event payloads and retry logic",
+   726→                      icon: "📡",
+   727→                    },
+   728→                    {
+   729→                      title: "API Reference",
+   730→                      desc: "Full endpoint documentation & examples",
+   731→                      icon: "📖",
+   732→                    },
+   733→                  ].map((doc) => (
+   734→                    <button
+   735→                      key={doc.title}
+   736→                      className="flex items-start gap-3 p-4 rounded-lg border border-border hover:border-primary/30 hover:bg-muted/50 transition-colors text-left group"
+   737→                      onClick={() =>
+   738→                        toast.info("Documentation portal coming soon!")
+   739→                      }
+   740→                    >
+   741→                      <span className="text-2xl flex-shrink-0">{doc.icon}</span>
+   742→                      <div className="flex-1 min-w-0">
+   743→                        <div className="flex items-center gap-1.5">
+   744→                          <p className="font-medium text-foreground text-sm">
+   745→                            {doc.title}
+   746→                          </p>
+   747→                          <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+   748→                        </div>
+   749→                        <p className="text-xs text-muted-foreground mt-0.5">
+   750→                          {doc.desc}
+   751→                        </p>
+   752→                      </div>
+   753→                    </button>
+   754→                  ))}
+   755→                </div>
+   756→              </CardContent>
+   757→            </Card>
+   758→          </div>
+   759→        </PageLayout>
+   760→      </div>
+   761→
+   762→      {/* Create API Key Dialog */}
+   763→      <Dialog
+   764→        open={showCreateDialog}
+   765→        onOpenChange={(open) => {
+   766→          setShowCreateDialog(open);
+   767→          if (!open) {
+   768→            setNewKeyName("");
+   769→            setNewlyCreatedKey(null);
+   770→          }
+   771→        }}
+   772→      >
+   773→        <DialogContent className="max-w-md">
+   774→          <DialogHeader>
+   775→            <DialogTitle>Generate New API Key</DialogTitle>
+   776→            <DialogDescription>
+   777→              Create a new API key to authenticate with the Axia API.
+   778→            </DialogDescription>
+   779→          </DialogHeader>
+   780→
+   781→          {!newlyCreatedKey ? (
+   782→            <>
+   783→              <div className="space-y-4 py-4">
+   784→                <div className="space-y-2">
+   785→                  <Label htmlFor="key-name">Key Name</Label>
+   786→                  <Input
+   787→                    id="key-name"
+   788→                    placeholder="e.g. Production API, CI/CD Pipeline"
+   789→                    value={newKeyName}
+   790→                    onChange={(e) => setNewKeyName(e.target.value)}
+   791→                    onKeyDown={(e) => {
+   792→                      if (e.key === "Enter") handleCreateKey();
+   793→                    }}
+   794→                  />
+   795→                  <p className="text-xs text-muted-foreground">
+   796→                    Give your key a descriptive name to identify it later.
+   797→                  </p>
+   798→                </div>
+   799→
+   800→                <div className="bg-muted p-3 rounded-lg border flex items-start gap-3">
+   801→                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+   802→                  <div className="text-xs text-muted-foreground">
+   803→                    <p className="font-semibold text-foreground mb-1">
+   804→                      Security Notice
+   805→                    </p>
+   806→                    <p>
+   807→                      The full API key will only be shown once after creation.
+   808→                      Make sure to copy it and store it securely.
+   809→                    </p>
+   810→                  </div>
+   811→                </div>
+   812→              </div>
+   813→              <DialogFooter className="flex-row gap-2 sm:gap-2">
+   814→                <Button
+   815→                  variant="outline"
+   816→                  onClick={() => setShowCreateDialog(false)}
+   817→                  disabled={isCreating}
+   818→                  className="flex-1"
+   819→                >
+   820→                  Cancel
+   821→                </Button>
+   822→                <Button
+   823→                  onClick={handleCreateKey}
+   824→                  disabled={isCreating || !newKeyName.trim()}
+   825→                  className="flex-1"
+   826→                >
+   827→                  {isCreating ? (
+   828→                    <>
+   829→                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   830→                      Generating...
+   831→                    </>
+   832→                  ) : (
+   833→                    <>
+   834→                      <Key className="mr-2 h-4 w-4" />
+   835→                      Generate Key
+   836→                    </>
+   837→                  )}
+   838→                </Button>
+   839→              </DialogFooter>
+   840→            </>
+   841→          ) : (
+   842→            <>
+   843→              <div className="space-y-4 py-4">
+   844→                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg">
+   845→                  <p className="text-sm font-semibold text-emerald-600 mb-2">
+   846→                    API Key Created Successfully
+   847→                  </p>
+   848→                  <div className="flex items-center gap-2">
+   849→                    <code className="text-xs bg-muted px-3 py-2 rounded font-mono break-all select-all flex-1">
+   850→                      {newlyCreatedKey}
+   851→                    </code>
+   852→                    <Button
+   853→                      variant="outline"
+   854→                      size="icon"
+   855→                      className="h-8 w-8 flex-shrink-0"
+   856→                      onClick={() => copyKey(newlyCreatedKey)}
+   857→                    >
+   858→                      <Copy className="h-3.5 w-3.5" />
+   859→                    </Button>
+   860→                  </div>
+   861→                  <p className="text-xs text-amber-600 mt-2">
+   862→                    Copy this key now — you won't be able to see it again.
+   863→                  </p>
+   864→                </div>
+   865→              </div>
+   866→              <DialogFooter>
+   867→                <Button
+   868→                  onClick={() => {
+   869→                    setShowCreateDialog(false);
+   870→                    setNewlyCreatedKey(null);
+   871→                  }}
+   872→                  className="w-full"
+   873→                >
+   874→                  Done
+   875→                </Button>
+   876→              </DialogFooter>
+   877→            </>
+   878→          )}
+   879→        </DialogContent>
+   880→      </Dialog>
+   881→
+   882→      {/* Revoke Key Confirmation */}
+   883→      <AlertDialog open={showRevokeDialog} onOpenChange={setShowRevokeDialog}>
+   884→        <AlertDialogContent>
+   885→          <AlertDialogHeader>
+   886→            <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+   887→            <AlertDialogDescription className="space-y-2">
+   888→              <p>
+   889→                This will immediately disable the API key. Any applications using
+   890→                this key will lose access.
+   891→              </p>
+   892→              <p className="font-semibold text-foreground">
+   893→                This action cannot be undone. You'll need to generate a new key
+   894→                if you want to restore access.
+   895→              </p>
+   896→            </AlertDialogDescription>
+   897→          </AlertDialogHeader>
+   898→          <AlertDialogFooter>
+   899→            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
+   900→            <AlertDialogAction
+   901→              onClick={handleRevokeKey}
+   902→              disabled={isRevoking}
+   903→              className="bg-destructive hover:bg-destructive/90"
+   904→            >
+   905→              {isRevoking ? (
+   906→                <>
+   907→                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   908→                  Revoking...
+   909→                </>
+   910→              ) : (
+   911→                "Revoke Key"
+   912→              )}
+   913→            </AlertDialogAction>
+   914→          </AlertDialogFooter>
+   915→        </AlertDialogContent>
+   916→      </AlertDialog>
+   917→    </motion.div>
+   918→  );
+   919→}
+   920→

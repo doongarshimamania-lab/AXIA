@@ -1,0 +1,957 @@
+     1→     1→// @ts-nocheck — Convex backend file with schema types not yet in generated types
+     2→     2→import { mutation } from "./_generated/server";
+     3→     3→import { getAuthUserId } from "@convex-dev/auth/server";
+     4→     4→
+     5→     5→function generateToken(): string {
+     6→     6→  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+     7→     7→  let result = "";
+     8→     8→  for (let i = 0; i < 32; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+     9→     9→  return result;
+    10→    10→}
+    11→    11→
+    12→    12→/**
+    13→    13→ * Auto-seed: Called automatically after first auth.
+    14→    14→ * Seeds workspaces, pipeline stages, deals, proposals, invoices, clients,
+    15→    15→ * projects, messaging channels/messages, tags, goals, and scope definitions.
+    16→    16→ * Idempotent — skips if data already exists for the user.
+    17→    17→ *
+    18→    18→ * IMPORTANT: Field names must match the actual Convex table schemas exactly.
+    19→    19→ * See src/convex/tables/*.ts for schema definitions.
+    20→    20→ */
+    21→    21→export const autoSeed = mutation({
+    22→    22→  args: {},
+    23→    23→  handler: async (ctx) => {
+    24→    24→    const userId = await getAuthUserId(ctx);
+    25→    25→    if (!userId) return { seeded: false, reason: "not_authenticated" };
+    26→    26→
+    27→    27→    const now = Date.now();
+    28→    28→    const day = 86400000;
+    29→    29→    const results: string[] = [];
+    30→    30→
+    31→    31→    // ─── 1. Ensure user profile fields ─────────────────────────────────────
+    32→    32→    const user = await ctx.db.get(userId);
+    33→    33→    if (user) {
+    34→    34→      const patches: Record<string, any> = {};
+    35→    35→      if (!user.subscriptionTier) patches.subscriptionTier = "pro";
+    36→    36→      if (!user.hourlyRate) patches.hourlyRate = 85;
+    37→    37→      if (!user.joinedAt) patches.joinedAt = now;
+    38→    38→      if (!user.onboardingComplete) patches.onboardingComplete = true;
+    39→    39→      if (!user.onboardingCompletedAt) patches.onboardingCompletedAt = now;
+    40→    40→      if (!user.professionalBio) patches.professionalBio = "Experienced freelancer specializing in full-stack development and design.";
+    41→    41→      if (user.protectedHours === undefined) patches.protectedHours = 120;
+    42→    42→      if (user.protectedValue === undefined) patches.protectedValue = 10200;
+    43→    43→      if (Object.keys(patches).length > 0) {
+    44→    44→        await ctx.db.patch(userId, patches);
+    45→    45→        results.push("user_profile");
+    46→    46→      }
+    47→    47→    }
+    48→    48→
+    49→    49→    // ─── 2. Seed Personal Workspace ────────────────────────────────────────
+    50→    50→    let personalWorkspaceId: any;
+    51→    51→    const existingPersonalWs = await ctx.db
+    52→    52→      .query("workspaces")
+    53→    53→      .withIndex("by_owner_and_type", (q: any) => q.eq("ownerId", userId).eq("type", "personal"))
+    54→    54→      .first();
+    55→    55→
+    56→    56→    if (existingPersonalWs) {
+    57→    57→      personalWorkspaceId = existingPersonalWs._id;
+    58→    58→    } else {
+    59→    59→      personalWorkspaceId = await ctx.db.insert("workspaces", {
+    60→    60→        ownerId: userId,
+    61→    61→        name: "My Workspace",
+    62→    62→        type: "personal",
+    63→    63→        description: "Your personal freelancer workspace",
+    64→    64→        createdAt: now,
+    65→    65→        updatedAt: now,
+    66→    66→      });
+    67→    67→      await ctx.db.insert("workspaceMembers", {
+    68→    68→        workspaceId: personalWorkspaceId,
+    69→    69→        userId,
+    70→    70→        role: "owner",
+    71→    71→        status: "active",
+    72→    72→        title: "Freelancer",
+    73→    73→        joinedAt: now,
+    74→    74→        lastActiveAt: now,
+    75→    75→      });
+    76→    76→      results.push("personal_workspace");
+    77→    77→    }
+    78→    78→
+    79→    79→    // ─── 3. Seed Team Workspace ────────────────────────────────────────────
+    80→    80→    let teamWorkspaceId: any;
+    81→    81→    const existingTeamWs = await ctx.db
+    82→    82→      .query("workspaces")
+    83→    83→      .withIndex("by_owner_and_type", (q: any) => q.eq("ownerId", userId).eq("type", "team"))
+    84→    84→      .first();
+    85→    85→
+    86→    86→    if (existingTeamWs) {
+    87→    87→      teamWorkspaceId = existingTeamWs._id;
+    88→    88→    } else {
+    89→    89→      teamWorkspaceId = await ctx.db.insert("workspaces", {
+    90→    90→        ownerId: userId,
+    91→    91→        name: "Axia Agency",
+    92→    92→        type: "team",
+    93→    93→        description: "Full-service digital agency workspace — design, development, and strategy",
+    94→    94→        createdAt: now,
+    95→    95→        updatedAt: now,
+    96→    96→      });
+    97→    97→      await ctx.db.insert("workspaceMembers", {
+    98→    98→        workspaceId: teamWorkspaceId,
+    99→    99→        userId,
+   100→   100→        role: "owner",
+   101→   101→        status: "active",
+   102→   102→        title: "Founder & Creative Director",
+   103→   103→        joinedAt: now,
+   104→   104→        lastActiveAt: now,
+   105→   105→      });
+   106→   106→      results.push("team_workspace");
+   107→   107→    }
+   108→   108→
+   109→   109→    // ─── 4. Seed Pipeline Stages ───────────────────────────────────────────
+   110→   110→    // Schema: pipelineStages { userId, name, color, order, isDefault?, createdAt }
+   111→   111→    const existingStages = await ctx.db
+   112→   112→      .query("pipelineStages")
+   113→   113→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   114→   114→      .collect();
+   115→   115→
+   116→   116→    let stageIds: string[] = [];
+   117→   117→    if (existingStages.length === 0) {
+   118→   118→      const defaults = [
+   119→   119→        { name: "Lead", color: "#6366f1" },
+   120→   120→        { name: "Qualified", color: "#8b5cf6" },
+   121→   121→        { name: "Proposal", color: "#a855f7" },
+   122→   122→        { name: "Negotiation", color: "#c084fc" },
+   123→   123→        { name: "Won", color: "#22c55e" },
+   124→   124→        { name: "Lost", color: "#ef4444" },
+   125→   125→      ];
+   126→   126→      for (let i = 0; i < defaults.length; i++) {
+   127→   127→        const id = await ctx.db.insert("pipelineStages", {
+   128→   128→          userId,
+   129→   129→          createdBy: userId,
+   130→   130→          name: defaults[i].name,
+   131→   131→          color: defaults[i].color,
+   132→   132→          order: i,
+   133→   133→          isDefault: true,
+   134→   134→          createdAt: now,
+   135→   135→        });
+   136→   136→        stageIds.push(id);
+   137→   137→      }
+   138→   138→      results.push("pipeline_stages");
+   139→   139→    } else {
+   140→   140→      stageIds = existingStages.sort((a, b) => a.order - b.order).map(s => s._id);
+   141→   141→    }
+   142→   142→
+   143→   143→    // ─── 5. Seed Pipeline Deals ────────────────────────────────────────────
+   144→   144→    // Schema: deals { userId, stageId, clientId?, proposalId?, title, description?, value, probability, currency?, source?, contactEmail?, contactName?, expectedCloseDate?, notes?, order, createdAt, updatedAt }
+   145→   145→    const existingDeals = await ctx.db
+   146→   146→      .query("deals")
+   147→   147→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   148→   148→      .collect();
+   149→   149→
+   150→   150→    if (existingDeals.length === 0 && stageIds.length >= 6) {
+   151→   151→      const mockDeals = [
+   152→   152→        { title: "E-Commerce Platform Build", value: 12000, probability: 10, source: "upwork", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 60 * day, stageIdx: 0, description: "Full e-commerce platform with product catalog, cart, checkout, and admin dashboard." },
+   153→   153→        { title: "AI Chatbot Integration", value: 6000, probability: 10, source: "fiverr", contactName: "Nina Patel", contactEmail: "nina@smartassist.ai", expectedCloseDate: now + 75 * day, stageIdx: 0, description: "Custom AI chatbot with NLP capabilities for customer support automation." },
+   154→   154→        { title: "Real Estate Listing Portal", value: 18000, probability: 15, source: "linkedin", contactName: "Marcus Rivera", contactEmail: "marcus@primeproperty.com", expectedCloseDate: now + 90 * day, stageIdx: 0, description: "Property listing portal with map search, virtual tours, and agent management." },
+   155→   155→        { title: "EdTech Course Platform", value: 9500, probability: 10, source: "referral", contactName: "Prof. Anika Desai", contactEmail: "anika@learnvista.edu", expectedCloseDate: now + 50 * day, stageIdx: 0, description: "Online course platform with video hosting, quizzes, and certificate generation." },
+   156→   156→        { title: "Fitness App MVP", value: 7500, probability: 8, source: "upwork", contactName: "Jake Morrison", contactEmail: "jake@fittrack.app", expectedCloseDate: now + 40 * day, stageIdx: 0, description: "MVP fitness tracking app with workout plans and progress photos." },
+   157→   157→        { title: "SaaS Dashboard Redesign", value: 8500, probability: 25, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now + 45 * day, stageIdx: 1, description: "Complete redesign of analytics dashboard with real-time data visualization." },
+   158→   158→        { title: "Digital Marketing Landing Pages", value: 4500, probability: 25, source: "upwork", contactName: "Lisa Park", contactEmail: "lisa@digitalmarketingco.com", expectedCloseDate: now + 30 * day, stageIdx: 1, description: "5 A/B tested landing pages with analytics tracking and conversion optimization." },
+   159→   159→        { title: "Supply Chain Management System", value: 32000, probability: 30, source: "direct", contactName: "Robert Chang", contactEmail: "rchang@logisync.com", expectedCloseDate: now + 60 * day, stageIdx: 1, description: "End-to-end supply chain management with inventory tracking and vendor management." },
+   160→   160→        { title: "Restaurant POS & Ordering", value: 14000, probability: 20, source: "referral", contactName: "Maria Santos", contactEmail: "maria@freshbites.co", expectedCloseDate: now + 35 * day, stageIdx: 1, description: "Point-of-sale system with online ordering and kitchen display integration." },
+   161→   161→        { title: "Mobile Banking App", value: 25000, probability: 50, source: "referral", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now + 30 * day, stageIdx: 2, description: "Full-featured mobile banking app with biometric auth and real-time transactions." },
+   162→   162→        { title: "Creative Studios Motion Design", value: 7500, probability: 50, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 21 * day, stageIdx: 2, description: "Motion graphics reel and social media content package for brand launch." },
+   163→   163→        { title: "Healthcare Patient Portal", value: 35000, probability: 45, source: "direct", contactName: "Dr. Robert Singh", contactEmail: "robert@medportal.health", expectedCloseDate: now + 28 * day, stageIdx: 2, description: "HIPAA-compliant patient portal with appointment scheduling and secure messaging." },
+   164→   164→        { title: "Brand Identity for NovaTech", value: 8500, probability: 55, source: "fiverr", contactName: "Aisha Khan", contactEmail: "aisha@novatech.io", expectedCloseDate: now + 14 * day, stageIdx: 2, description: "Complete brand identity package: logo, color palette, typography, and brand guidelines." },
+   165→   165→        { title: "Full-Stack SaaS Platform", value: 45000, probability: 70, source: "referral", contactName: "Rachel Green", contactEmail: "rachel@scaleup.io", expectedCloseDate: now + 7 * day, stageIdx: 3, description: "Multi-tenant SaaS platform with subscription billing and white-label capabilities." },
+   166→   166→        { title: "StartupHub Mobile App Phase 2", value: 9500, probability: 70, source: "fiverr", contactName: "Sarah Mitchell", contactEmail: "sarah@startuphub.co", expectedCloseDate: now + 10 * day, stageIdx: 3, description: "Phase 2 of StartupHub mobile app: push notifications, payment integration, and analytics." },
+   167→   167→        { title: "Insurance Claims Platform", value: 28000, probability: 65, source: "linkedin", contactName: "Vikram Mehta", contactEmail: "vikram@insureflow.com", expectedCloseDate: now + 14 * day, stageIdx: 3, description: "Claims processing platform with document OCR and automated workflows." },
+   168→   168→        { title: "TechCorp Website Redesign", value: 12000, probability: 100, source: "direct", contactName: "David Chen", contactEmail: "david@techcorp.io", expectedCloseDate: now - 5 * day, stageIdx: 4, description: "Complete website redesign with responsive design and CMS integration." },
+   169→   169→        { title: "FinServe Analytics Platform", value: 22000, probability: 100, source: "upwork", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now - 10 * day, stageIdx: 4, description: "Financial analytics platform with real-time market data and portfolio tracking." },
+   170→   170→        { title: "Social Media App (Lost)", value: 30000, probability: 0, source: "linkedin", contactName: "Kevin Park", contactEmail: "kevin@socialnext.com", expectedCloseDate: now - 20 * day, stageIdx: 5, description: "Social networking app that went to a competitor." },
+   171→   171→      ];
+   172→   172→
+   173→   173→      for (let i = 0; i < mockDeals.length; i++) {
+   174→   174→        const deal = mockDeals[i];
+   175→   175→        const stageId = stageIds[deal.stageIdx] as any;
+   176→   176→        if (!stageId) continue;
+   177→   177→        await ctx.db.insert("deals", {
+   178→   178→          userId,
+   179→   179→          stageId,
+   180→   180→          title: deal.title,
+   181→   181→          value: deal.value,
+   182→   182→          probability: deal.probability,
+   183→   183→          source: deal.source,
+   184→   184→          contactName: deal.contactName,
+   185→   185→          contactEmail: deal.contactEmail,
+   186→   186→          expectedCloseDate: deal.expectedCloseDate,
+   187→   187→          currency: "USD",
+   188→   188→          description: deal.description,
+   189→   189→          notes: "",
+   190→   190→          order: i,
+   191→   191→          createdAt: now - Math.floor(Math.random() * 30) * day,
+   192→   192→          updatedAt: now,
+   193→   193→        });
+   194→   194→      }
+   195→   195→      results.push("deals");
+   196→   196→    }
+   197→   197→
+   198→   198→    // ─── 6. Seed Clients ───────────────────────────────────────────────────
+   199→   199→    // Schema: clients { userId, clientName, platform, hourlyRate, contractType, riskLevel, addedAt, lastActivityAt }
+   200→   200→    let clientIds: string[] = [];
+   201→   201→    const existingClients = await ctx.db
+   202→   202→      .query("clients")
+   203→   203→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   204→   204→      .collect();
+   205→   205→
+   206→   206→    if (existingClients.length === 0) {
+   207→   207→      const mockClients = [
+   208→   208→        { clientName: "TechCorp Solutions", platform: "upwork" as const, hourlyRate: 85, contractType: "hourly" as const, riskLevel: "low" as const },
+   209→   209→        { clientName: "StartupHub Inc", platform: "fiverr" as const, hourlyRate: 65, contractType: "hourly" as const, riskLevel: "medium" as const },
+   210→   210→        { clientName: "Global Enterprises", platform: "toptal" as const, hourlyRate: 120, contractType: "hourly" as const, riskLevel: "high" as const },
+   211→   211→        { clientName: "Digital Marketing Co", platform: "freelancer" as const, hourlyRate: 45, contractType: "hourly" as const, riskLevel: "low" as const },
+   212→   212→        { clientName: "Creative Studios", platform: "direct" as const, hourlyRate: 95, contractType: "fixed" as const, riskLevel: "medium" as const },
+   213→   213→        { clientName: "FinServe Analytics", platform: "upwork" as const, hourlyRate: 110, contractType: "hourly" as const, riskLevel: "low" as const },
+   214→   214→      ];
+   215→   215→
+   216→   216→      for (const client of mockClients) {
+   217→   217→        const id = await ctx.db.insert("clients", {
+   218→   218→          userId,
+   219→   219→          ...client,
+   220→   220→          addedAt: now - Math.floor(Math.random() * 60) * day,
+   221→   221→          lastActivityAt: now,
+   222→   222→        });
+   223→   223→        clientIds.push(id);
+   224→   224→      }
+   225→   225→      results.push("clients");
+   226→   226→    } else {
+   227→   227→      clientIds = existingClients.map(c => c._id);
+   228→   228→    }
+   229→   229→
+   230→   230→    // ─── 7. Seed Projects ──────────────────────────────────────────────────
+   231→   231→    // Schema: projects { userId, clientId, projectName, hourlyRate, projectType, protectionLevel, status, createdAt, lastActivityAt }
+   232→   232→    // Note: status only allows "active" or "archived"
+   233→   233→    const existingProjects = await ctx.db
+   234→   234→      .query("projects")
+   235→   235→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   236→   236→      .collect();
+   237→   237→
+   238→   238→    if (existingProjects.length === 0 && clientIds.length > 0) {
+   239→   239→      const mockProjects = [
+   240→   240→        { clientId: clientIds[0] as any, projectName: "TechCorp Website Redesign", hourlyRate: 85, projectType: "ongoing" as const, protectionLevel: "enhanced" as const },
+   241→   241→        { clientId: clientIds[1] as any, projectName: "StartupHub Mobile App MVP", hourlyRate: 65, projectType: "milestone" as const, protectionLevel: "enhanced" as const },
+   242→   242→        { clientId: clientIds[2] as any, projectName: "GlobalEnt Data Dashboard", hourlyRate: 120, projectType: "ongoing" as const, protectionLevel: "maximum" as const },
+   243→   243→        { clientId: clientIds[3] as any, projectName: "DigiMark Brand Identity", hourlyRate: 45, projectType: "fixed" as const, protectionLevel: "standard" as const },
+   244→   244→        { clientId: clientIds[4] as any, projectName: "Creative Studios Motion Reel", hourlyRate: 95, projectType: "fixed" as const, protectionLevel: "enhanced" as const },
+   245→   245→        { clientId: clientIds[5] as any, projectName: "FinServe Analytics Platform", hourlyRate: 110, projectType: "ongoing" as const, protectionLevel: "maximum" as const },
+   246→   246→        { clientId: clientIds[0] as any, projectName: "TechCorp API Integration", hourlyRate: 85, projectType: "fixed" as const, protectionLevel: "enhanced" as const },
+   247→   247→        { clientId: clientIds[1] as any, projectName: "StartupHub Landing Pages", hourlyRate: 65, projectType: "fixed" as const, protectionLevel: "standard" as const },
+   248→   248→      ];
+   249→   249→
+   250→   250→      for (const project of mockProjects) {
+   251→   251→        await ctx.db.insert("projects", {
+   252→   252→          userId,
+   253→   253→          ...project,
+   254→   254→          status: "active",
+   255→   255→          createdAt: now - Math.floor(Math.random() * 60) * day,
+   256→   256→          lastActivityAt: now,
+   257→   257→        });
+   258→   258→      }
+   259→   259→      results.push("projects");
+   260→   260→    }
+   261→   261→
+   262→   262→    // ─── 8. Seed Proposals ─────────────────────────────────────────────────
+   263→   263→    // Schema: proposals { userId, clientId?, dealId?, title, status, publicToken, sections, totalValue, currency?, validUntil?, templateId?, clientName?, clientEmail?, sentAt?, viewedAt?, signedAt?, signatureData?, notes?, createdAt, updatedAt }
+   264→   264→    const existingProposals = await ctx.db
+   265→   265→      .query("proposals")
+   266→   266→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   267→   267→      .collect();
+   268→   268→
+   269→   269→    if (existingProposals.length === 0) {
+   270→   270→      // Seed templates first
+   271→   271→      // Schema: proposalTemplates { userId?, name, industry?, description?, sections, isSystem?, usageCount?, createdAt }
+   272→   272→      const existingTemplates = await ctx.db
+   273→   273→        .query("proposalTemplates")
+   274→   274→        .withIndex("by_system", (q) => q.eq("isSystem", true))
+   275→   275→        .collect();
+   276→   276→
+   277→   277→      if (existingTemplates.length === 0) {
+   278→   278→        const templates = [
+   279→   279→          {
+   280→   280→            name: "Web Development Proposal",
+   281→   281→            industry: "Technology",
+   282→   282→            description: "Professional proposal for web dev projects",
+   283→   283→            sections: [
+   284→   284→              { id: "1", type: "heading" as const, content: "Project Overview" },
+   285→   285→              { id: "2", type: "text" as const, content: "We will build a modern, responsive web application." },
+   286→   286→              { id: "3", type: "pricing" as const, content: "Development Package", metadata: { items: [{ name: "Frontend", price: 5000 }, { name: "Backend", price: 7000 }] } },
+   287→   287→              { id: "4", type: "terms" as const, content: "30% upfront, 40% at MVP, 30% on delivery." },
+   288→   288→            ],
+   289→   289→            isSystem: true,
+   290→   290→            usageCount: 0,
+   291→   291→            createdAt: now,
+   292→   292→          },
+   293→   293→          {
+   294→   294→            name: "Design & Branding Proposal",
+   295→   295→            industry: "Creative",
+   296→   296→            description: "Template for design services",
+   297→   297→            sections: [
+   298→   298→              { id: "1", type: "heading" as const, content: "Creative Brief" },
+   299→   299→              { id: "2", type: "text" as const, content: "We'll craft a cohesive brand identity." },
+   300→   300→              { id: "3", type: "pricing" as const, content: "Design Package", metadata: { items: [{ name: "Logo", price: 3000 }, { name: "Guidelines", price: 2000 }] } },
+   301→   301→              { id: "4", type: "terms" as const, content: "Includes 3 revision rounds." },
+   302→   302→            ],
+   303→   303→            isSystem: true,
+   304→   304→            usageCount: 0,
+   305→   305→            createdAt: now,
+   306→   306→          },
+   307→   307→        ];
+   308→   308→
+   309→   309→        for (const t of templates) {
+   310→   310→          await ctx.db.insert("proposalTemplates", t);
+   311→   311→        }
+   312→   312→        results.push("proposal_templates");
+   313→   313→      }
+   314→   314→
+   315→   315→      const mockProposals = [
+   316→   316→        {
+   317→   317→          title: "E-commerce Platform Redesign",
+   318→   318→          status: "signed" as const,
+   319→   319→          clientName: "TechCorp Solutions",
+   320→   320→          clientEmail: "david.chen@techcorp.io",
+   321→   321→          totalValue: 28000,
+   322→   322→          sections: [
+   323→   323→            { id: "1", type: "heading" as const, content: "Project Overview" },
+   324→   324→            { id: "2", type: "text" as const, content: "Complete redesign of the e-commerce platform with modern UX." },
+   325→   325→            { id: "3", type: "pricing" as const, content: "Full Package", metadata: { items: [{ name: "Design", price: 8000 }, { name: "Development", price: 15000 }, { name: "QA", price: 5000 }] } },
+   326→   326→            { id: "4", type: "terms" as const, content: "30% upfront, 40% at MVP, 30% on delivery." },
+   327→   327→          ],
+   328→   328→          sentAt: now - 20 * day,
+   329→   329→          viewedAt: now - 18 * day,
+   330→   330→          signedAt: now - 10 * day,
+   331→   331→        },
+   332→   332→        {
+   333→   333→          title: "Mobile Banking App",
+   334→   334→          status: "sent" as const,
+   335→   335→          clientName: "FinServe Analytics",
+   336→   336→          clientEmail: "cto@finserve.io",
+   337→   337→          totalValue: 45000,
+   338→   338→          sections: [
+   339→   339→            { id: "1", type: "heading" as const, content: "Mobile Banking Solution" },
+   340→   340→            { id: "2", type: "text" as const, content: "Secure, scalable mobile banking application." },
+   341→   341→            { id: "3", type: "pricing" as const, content: "Enterprise Package", metadata: { items: [{ name: "iOS App", price: 18000 }, { name: "Android App", price: 18000 }, { name: "Backend API", price: 9000 }] } },
+   342→   342→            { id: "4", type: "terms" as const, content: "25% upfront, milestones-based billing." },
+   343→   343→          ],
+   344→   344→          sentAt: now - 5 * day,
+   345→   345→          viewedAt: now - 3 * day,
+   346→   346→        },
+   347→   347→        {
+   348→   348→          title: "Brand Identity for HealthTech",
+   349→   349→          status: "viewed" as const,
+   350→   350→          clientName: "MediTech Inc",
+   351→   351→          clientEmail: "marketing@meditech.org",
+   352→   352→          totalValue: 12000,
+   353→   353→          sections: [
+   354→   354→            { id: "1", type: "heading" as const, content: "Brand Identity Package" },
+   355→   355→            { id: "2", type: "text" as const, content: "Complete brand identity for healthcare startup." },
+   356→   356→            { id: "3", type: "pricing" as const, content: "Branding Package", metadata: { items: [{ name: "Logo Design", price: 4000 }, { name: "Brand Guidelines", price: 3000 }, { name: "Marketing Kit", price: 5000 }] } },
+   357→   357→          ],
+   358→   358→          sentAt: now - 7 * day,
+   359→   359→          viewedAt: now - 5 * day,
+   360→   360→        },
+   361→   361→        {
+   362→   362→          title: "Data Analytics Dashboard",
+   363→   363→          status: "draft" as const,
+   364→   364→          clientName: "DataViz Co",
+   365→   365→          clientEmail: "ops@dataviz.co",
+   366→   366→          totalValue: 20000,
+   367→   367→          sections: [
+   368→   368→            { id: "1", type: "heading" as const, content: "Analytics Dashboard" },
+   369→   369→            { id: "2", type: "text" as const, content: "Real-time data visualization platform." },
+   370→   370→            { id: "3", type: "pricing" as const, content: "Dashboard Package", metadata: { items: [{ name: "Frontend", price: 8000 }, { name: "Data Pipeline", price: 7000 }, { name: "Visualization Engine", price: 5000 }] } },
+   371→   371→          ],
+   372→   372→        },
+   373→   373→        {
+   374→   374→          title: "Social Platform MVP",
+   375→   375→          status: "declined" as const,
+   376→   376→          clientName: "SocialNext",
+   377→   377→          clientEmail: "founders@socialnext.com",
+   378→   378→          totalValue: 35000,
+   379→   379→          sections: [
+   380→   380→            { id: "1", type: "heading" as const, content: "Social Platform MVP" },
+   381→   381→            { id: "2", type: "text" as const, content: "Complete social networking MVP." },
+   382→   382→            { id: "3", type: "pricing" as const, content: "MVP Package", metadata: { items: [{ name: "Core Features", price: 20000 }, { name: "User Auth", price: 5000 }, { name: "Notifications", price: 10000 }] } },
+   383→   383→          ],
+   384→   384→          sentAt: now - 30 * day,
+   385→   385→        },
+   386→   386→        {
+   387→   387→          title: "SaaS Dashboard Redesign Proposal",
+   388→   388→          status: "sent" as const,
+   389→   389→          clientName: "CloudMetrics",
+   390→   390→          clientEmail: "jen@cloudmetrics.io",
+   391→   391→          totalValue: 8500,
+   392→   392→          sections: [
+   393→   393→            { id: "1", type: "heading" as const, content: "Dashboard Redesign" },
+   394→   394→            { id: "2", type: "text" as const, content: "Complete redesign of analytics dashboard." },
+   395→   395→            { id: "3", type: "pricing" as const, content: "Redesign Package", metadata: { items: [{ name: "UI Redesign", price: 4500 }, { name: "Data Viz Components", price: 4000 }] } },
+   396→   396→          ],
+   397→   397→          sentAt: now - 3 * day,
+   398→   398→          viewedAt: now - 2 * day,
+   399→   399→        },
+   400→   400→        {
+   401→   401→          title: "Creative Studios Motion Design Package",
+   402→   402→          status: "viewed" as const,
+   403→   403→          clientName: "Creative Studios",
+   404→   404→          clientEmail: "tom@creativestudios.art",
+   405→   405→          totalValue: 7500,
+   406→   406→          sections: [
+   407→   407→            { id: "1", type: "heading" as const, content: "Motion Design Package" },
+   408→   408→            { id: "2", type: "text" as const, content: "Motion graphics reel and social media content package." },
+   409→   409→            { id: "3", type: "pricing" as const, content: "Motion Package", metadata: { items: [{ name: "Motion Graphics", price: 5000 }, { name: "Social Content", price: 2500 }] } },
+   410→   410→          ],
+   411→   411→          sentAt: now - 10 * day,
+   412→   412→          viewedAt: now - 9 * day,
+   413→   413→        },
+   414→   414→      ];
+   415→   415→
+   416→   416→      for (const p of mockProposals) {
+   417→   417→        const { status, sentAt, viewedAt, signedAt, ...rest } = p;
+   418→   418→        await ctx.db.insert("proposals", {
+   419→   419→          userId,
+   420→   420→          ...rest,
+   421→   421→          status,
+   422→   422→          publicToken: generateToken(),
+   423→   423→          currency: "USD",
+   424→   424→          validUntil: now + 30 * day,
+   425→   425→          sentAt,
+   426→   426→          viewedAt,
+   427→   427→          signedAt,
+   428→   428→          notes: "",
+   429→   429→          createdAt: now - Math.floor(Math.random() * 30) * day,
+   430→   430→          updatedAt: now,
+   431→   431→        });
+   432→   432→      }
+   433→   433→      results.push("proposals");
+   434→   434→    }
+   435→   435→
+   436→   436→    // ─── 9. Seed Invoices ──────────────────────────────────────────────────
+   437→   437→    // Schema: invoices { userId, clientId?, invoiceNumber, publicToken, status, issueDate, dueDate, paidDate?, clientName?, clientEmail?, lineItems, subtotal, taxRate?, taxAmount?, total, currency?, notes?, proofCount?, hasValidatedBilling?, sentAt?, viewedAt?, createdAt, updatedAt }
+   438→   438→    const existingInvoices = await ctx.db
+   439→   439→      .query("invoices")
+   440→   440→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   441→   441→      .collect();
+   442→   442→
+   443→   443→    if (existingInvoices.length === 0) {
+   444→   444→      const mockInvoices = [
+   445→   445→        {
+   446→   446→          clientName: "TechCorp Solutions",
+   447→   447→          clientEmail: "billing@techcorp.io",
+   448→   448→          status: "paid" as const,
+   449→   449→          lineItems: [
+   450→   450→            { id: "li1", description: "Website Redesign — Phase 1: Discovery & Wireframes", quantity: 20, rate: 85, amount: 1700, hasProof: true },
+   451→   451→            { id: "li2", description: "Website Redesign — Phase 2: UI Design", quantity: 25, rate: 85, amount: 2125, hasProof: true },
+   452→   452→          ],
+   453→   453→          subtotal: 3825, taxRate: 0, taxAmount: 0, total: 3825,
+   454→   454→          issueDate: now - 60 * day, dueDate: now - 30 * day, paidDate: now - 25 * day,
+   455→   455→          proofCount: 8, hasValidatedBilling: true,
+   456→   456→        },
+   457→   457→        {
+   458→   458→          clientName: "Global Enterprises",
+   459→   459→          clientEmail: "procurement@globalent.com",
+   460→   460→          status: "overdue" as const,
+   461→   461→          lineItems: [
+   462→   462→            { id: "li3", description: "Data Dashboard — Backend Architecture", quantity: 40, rate: 120, amount: 4800, hasProof: true },
+   463→   463→            { id: "li4", description: "Data Dashboard — Frontend Components", quantity: 30, rate: 120, amount: 3600, hasProof: false },
+   464→   464→          ],
+   465→   465→          subtotal: 8400, taxRate: 0, taxAmount: 0, total: 8400,
+   466→   466→          issueDate: now - 45 * day, dueDate: now - 15 * day,
+   467→   467→          proofCount: 3, hasValidatedBilling: true,
+   468→   468→        },
+   469→   469→        {
+   470→   470→          clientName: "StartupHub Inc",
+   471→   471→          clientEmail: "finance@startuphub.co",
+   472→   472→          status: "sent" as const,
+   473→   473→          lineItems: [
+   474→   474→            { id: "li5", description: "Mobile App MVP — Sprint 1: Auth & Dashboard", quantity: 30, rate: 65, amount: 1950, hasProof: true },
+   475→   475→          ],
+   476→   476→          subtotal: 1950, taxRate: 0, taxAmount: 0, total: 1950,
+   477→   477→          issueDate: now - 7 * day, dueDate: now + 23 * day,
+   478→   478→          proofCount: 4, hasValidatedBilling: true,
+   479→   479→        },
+   480→   480→        {
+   481→   481→          clientName: "FinServe Analytics",
+   482→   482→          clientEmail: "cto@finserve.io",
+   483→   483→          status: "sent" as const,
+   484→   484→          lineItems: [
+   485→   485→            { id: "li6", description: "Analytics Platform — Month 1 Retainer", quantity: 52, rate: 110, amount: 5720, hasProof: true },
+   486→   486→          ],
+   487→   487→          subtotal: 5720, taxRate: 0, taxAmount: 0, total: 5720,
+   488→   488→          issueDate: now - 5 * day, dueDate: now + 25 * day,
+   489→   489→          proofCount: 6, hasValidatedBilling: true,
+   490→   490→        },
+   491→   491→        {
+   492→   492→          clientName: "Digital Marketing Co",
+   493→   493→          clientEmail: "lisa@digitalmarketingco.com",
+   494→   494→          status: "draft" as const,
+   495→   495→          lineItems: [
+   496→   496→            { id: "li7", description: "Brand Identity — Logo & Guidelines", quantity: 32, rate: 45, amount: 1440, hasProof: false },
+   497→   497→          ],
+   498→   498→          subtotal: 1440, taxRate: 0, taxAmount: 0, total: 1440,
+   499→   499→          issueDate: now, dueDate: now + 30 * day,
+   500→   500→          proofCount: 0, hasValidatedBilling: false,
+   501→   501→        },
+   502→   502→        {
+   503→   503→          clientName: "TechCorp Solutions",
+   504→   504→          clientEmail: "billing@techcorp.io",
+   505→   505→          status: "paid" as const,
+   506→   506→          lineItems: [
+   507→   507→            { id: "li8", description: "API Integration — CRM Connector", quantity: 25, rate: 85, amount: 2125, hasProof: true },
+   508→   508→            { id: "li9", description: "API Integration — ERP Sync Module", quantity: 38, rate: 85, amount: 3230, hasProof: true },
+   509→   509→          ],
+   510→   510→          subtotal: 5355, taxRate: 0, taxAmount: 0, total: 5355,
+   511→   511→          issueDate: now - 90 * day, dueDate: now - 60 * day, paidDate: now - 55 * day,
+   512→   512→          proofCount: 12, hasValidatedBilling: true,
+   513→   513→        },
+   514→   514→      ];
+   515→   515→
+   516→   516→      for (let i = 0; i < mockInvoices.length; i++) {
+   517→   517→        const inv = mockInvoices[i];
+   518→   518→        await ctx.db.insert("invoices", {
+   519→   519→          userId,
+   520→   520→          invoiceNumber: `INV-2024-${String(i + 1).padStart(3, "0")}`,
+   521→   521→          publicToken: generateToken(),
+   522→   522→          currency: "USD",
+   523→   523→          notes: "",
+   524→   524→          sentAt: inv.status !== "draft" ? inv.issueDate : undefined,
+   525→   525→          viewedAt: inv.status === "paid" ? inv.issueDate + day : undefined,
+   526→   526→          createdAt: inv.issueDate,
+   527→   527→          updatedAt: now,
+   528→   528→          ...inv,
+   529→   529→        });
+   530→   530→      }
+   531→   531→      results.push("invoices");
+   532→   532→    }
+   533→   533→
+   534→   534→    // ─── 10. Seed Messaging Channels & Messages ────────────────────────────
+   535→   535→    // Schema: channels { name, workspaceId, type, isPrivate, description?, createdBy, isArchived, lastMessageAt? }
+   536→   536→    const existingChannels = await ctx.db
+   537→   537→      .query("channels")
+   538→   538→      .withIndex("by_workspace", (q: any) => q.eq("workspaceId", teamWorkspaceId))
+   539→   539→      .collect();
+   540→   540→
+   541→   541→    if (existingChannels.length === 0) {
+   542→   542→      const channelsToCreate = [
+   543→   543→        { name: "general", type: "channel" as const, isPrivate: false, description: "General team discussion" },
+   544→   544→        { name: "project-updates", type: "channel" as const, isPrivate: false, description: "Project status and updates" },
+   545→   545→        { name: "client-escalations", type: "channel" as const, isPrivate: true, description: "Client issues and escalations" },
+   546→   546→        { name: "evidence-review", type: "channel" as const, isPrivate: false, description: "Evidence collection and review" },
+   547→   547→        { name: "billing", type: "channel" as const, isPrivate: true, description: "Invoice and payment discussions" },
+   548→   548→      ];
+   549→   549→
+   550→   550→      const channelIds: any[] = [];
+   551→   551→      for (const ch of channelsToCreate) {
+   552→   552→        const channelId = await ctx.db.insert("channels", {
+   553→   553→          name: ch.name,
+   554→   554→          workspaceId: teamWorkspaceId,
+   555→   555→          type: ch.type,
+   556→   556→          isPrivate: ch.isPrivate,
+   557→   557→          description: ch.description,
+   558→   558→          createdBy: userId,
+   559→   559→          isArchived: false,
+   560→   560→          lastMessageAt: now - Math.floor(Math.random() * 60) * 60 * 1000,
+   561→   561→        });
+   562→   562→
+   563→   563→        // Add user as admin member
+   564→   564→        await ctx.db.insert("channelMembers", {
+   565→   565→          channelId,
+   566→   566→          userId,
+   567→   567→          workspaceId: teamWorkspaceId,
+   568→   568→          role: "admin",
+   569→   569→          isMuted: false,
+   570→   570→          joinedAt: now - 30 * day,
+   571→   571→          lastReadAt: now - 5 * 60 * 1000,
+   572→   572→        });
+   573→   573→
+   574→   574→        channelIds.push(channelId);
+   575→   575→      }
+   576→   576→
+   577→   577→      // Seed messages for the first few channels
+   578→   578→      const messagesByChannel: Record<number, string[]> = {
+   579→   579→        0: [ // general
+   580→   580→          "Good morning team! Quick update on the TechCorp project — we've collected all the evidence files and the timeline report is ready for review.",
+   581→   581→          "Nice work! I'll take a look at the timeline report this afternoon.",
+   582→   582→          "Hey team, sprint review at 3pm today. Please make sure your status updates are in before the meeting.",
+   583→   583→          "Also, just a reminder that the client onboarding for StartupHub is tomorrow.",
+   584→   584→          "On it! I'll have everything ready by EOD.",
+   585→   585→        ],
+   586→   586→        1: [ // project-updates
+   587→   587→          "Design mockups for the new dashboard are uploaded to Figma. Link in the project channel.",
+   588→   588→          "API integration for the banking app is 80% complete. Should be done by Friday.",
+   589→   589→          "Brand identity package for Digital Marketing Co is in final review.",
+   590→   590→        ],
+   591→   591→        2: [ // client-escalations
+   592→   592→          "Urgent: Global Enterprises has filed a dispute claiming work was not delivered per the contract terms. I've pulled the contract and work evidence — need eyes on this ASAP.",
+   593→   593→          "I'll review the contract terms and prepare our response.",
+   594→   594→          "Evidence package is ready. Sending to legal for review.",
+   595→   595→        ],
+   596→   596→        3: [ // evidence-review
+   597→   597→          "New screenshots attached for the Upwork project. The client changed requirements mid-sprint but we have documented everything.",
+   598→   598→          "Work diary screenshots for FinServe are verified and ready.",
+   599→   599→        ],
+   600→   600→        4: [ // billing
+   601→   601→          "Invoice INV-2024-001 paid by TechCorp. Marking as received.",
+   602→   602→          "Global Enterprises invoice is 15 days overdue. Follow-up sent.",
+   603→   603→          "New invoice created for Digital Marketing Co — pending review before sending.",
+   604→   604→        ],
+   605→   605→      };
+   606→   606→
+   607→   607→      for (const [channelIdx, messages] of Object.entries(messagesByChannel)) {
+   608→   608→        const channelId = channelIds[parseInt(channelIdx)];
+   609→   609→        if (!channelId) continue;
+   610→   610→
+   611→   611→        for (let i = 0; i < messages.length; i++) {
+   612→   612→          await ctx.db.insert("messages", {
+   613→   613→            channelId,
+   614→   614→            workspaceId: teamWorkspaceId,
+   615→   615→            authorId: userId,
+   616→   616→            content: messages[i],
+   617→   617→            isEdited: false,
+   618→   618→            isPinned: (i === 0 || i === 2) ? true : false,
+   619→   619→            isDeleted: false,
+   620→   620→          });
+   621→   621→        }
+   622→   622→      }
+   623→   623→
+   624→   624→      results.push("messaging");
+   625→   625→    }
+   626→   626→
+   627→   627→    // ─── 11. Seed Tags ─────────────────────────────────────────────────────
+   628→   628→    // Schema: tags { userId, workspaceId?, name, color, category?, usageCount, createdAt }
+   629→   629→    const existingTags = await ctx.db
+   630→   630→      .query("tags")
+   631→   631→      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+   632→   632→      .collect();
+   633→   633→
+   634→   634→    if (existingTags.length === 0) {
+   635→   635→      const mockTags = [
+   636→   636→        { name: "Web Development", color: "#3b82f6", category: "project" },
+   637→   637→        { name: "Mobile App", color: "#8b5cf6", category: "project" },
+   638→   638→        { name: "Design", color: "#ec4899", category: "project" },
+   639→   639→        { name: "Branding", color: "#f59e0b", category: "client" },
+   640→   640→        { name: "API Integration", color: "#10b981", category: "project" },
+   641→   641→        { name: "Data Visualization", color: "#06b6d4", category: "project" },
+   642→   642→        { name: "E-Commerce", color: "#f97316", category: "project" },
+   643→   643→        { name: "Enterprise", color: "#6366f1", category: "client" },
+   644→   644→        { name: "MVP", color: "#14b8a6", category: "project" },
+   645→   645→        { name: "Healthcare", color: "#ef4444", category: "client" },
+   646→   646→        { name: "Fintech", color: "#84cc16", category: "client" },
+   647→   647→        { name: "Marketing", color: "#a855f7", category: "project" },
+   648→   648→      ];
+   649→   649→
+   650→   650→      for (const tag of mockTags) {
+   651→   651→        await ctx.db.insert("tags", {
+   652→   652→          userId,
+   653→   653→          workspaceId: teamWorkspaceId,
+   654→   654→          name: tag.name,
+   655→   655→          color: tag.color,
+   656→   656→          category: tag.category,
+   657→   657→          usageCount: Math.floor(Math.random() * 10) + 1,
+   658→   658→          createdAt: now,
+   659→   659→        });
+   660→   660→      }
+   661→   661→      results.push("tags");
+   662→   662→    }
+   663→   663→
+   664→   664→    // ─── 12. Seed Goals ────────────────────────────────────────────────────
+   665→   665→    // Schema: goals { userId, workspaceId?, title, description?, type, target, current, unit, deadline?, status, milestones?, streak?, lastCheckIn?, createdAt, updatedAt }
+   666→   666→    const existingGoals = await ctx.db
+   667→   667→      .query("goals")
+   668→   668→      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+   669→   669→      .collect();
+   670→   670→
+   671→   671→    if (existingGoals.length === 0) {
+   672→   672→      const mockGoals = [
+   673→   673→        {
+   674→   674→          title: "Reach $10K Monthly Revenue",
+   675→   675→          description: "Achieve consistent $10K+ monthly revenue from freelance and agency projects by end of Q2.",
+   676→   676→          type: "revenue",
+   677→   677→          target: 10000,
+   678→   678→          current: 7800,
+   679→   679→          unit: "USD",
+   680→   680→          deadline: now + 30 * day,
+   681→   681→          status: "in_progress",
+   682→   682→          milestones: [
+   683→   683→            { id: "ms1", title: "Close 3 new deals", completed: true },
+   684→   684→            { id: "ms2", title: "Increase hourly rate to $95", completed: true },
+   685→   685→            { id: "ms3", title: "Land one enterprise client", completed: false },
+   686→   686→          ],
+   687→   687→        },
+   688→   688→        {
+   689→   689→          title: "Complete 50 Protected Hours",
+   690→   690→          description: "Log 50 hours of protected work time with full evidence collection and compliance tracking.",
+   691→   691→          type: "hours",
+   692→   692→          target: 50,
+   693→   693→          current: 32,
+   694→   694→          unit: "hours",
+   695→   695→          deadline: now + 14 * day,
+   696→   696→          status: "in_progress",
+   697→   697→          milestones: [
+   698→   698→            { id: "ms4", title: "Set up time tracking for all active projects", completed: true },
+   699→   699→            { id: "ms5", title: "Reach 25 protected hours", completed: true },
+   700→   700→            { id: "ms6", title: "Reach 50 protected hours", completed: false },
+   701→   701→          ],
+   702→   702→        },
+   703→   703→        {
+   704→   704→          title: "Achieve 95% Protection Score",
+   705→   705→          description: "Maintain a protection score of 95% or higher across all active projects and clients.",
+   706→   706→          type: "protection",
+   707→   707→          target: 95,
+   708→   708→          current: 88,
+   709→   709→          unit: "%",
+   710→   710→          deadline: now + 60 * day,
+   711→   711→          status: "in_progress",
+   712→   712→          milestones: [
+   713→   713→            { id: "ms7", title: "Audit all client contracts", completed: true },
+   714→   714→            { id: "ms8", title: "Set up scope tracking for all projects", completed: false },
+   715→   715→            { id: "ms9", title: "Resolve all compliance alerts", completed: false },
+   716→   716→          ],
+   717→   717→        },
+   718→   718→        {
+   719→   719→          title: "Win 5 Pipeline Deals",
+   720→   720→          description: "Convert 5 deals from the pipeline into signed contracts this quarter.",
+   721→   721→          type: "clients",
+   722→   722→          target: 5,
+   723→   723→          current: 2,
+   724→   724→          unit: "deals",
+   725→   725→          deadline: now + 45 * day,
+   726→   726→          status: "in_progress",
+   727→   727→          milestones: [
+   728→   728→            { id: "ms10", title: "Send proposals to all qualified leads", completed: true },
+   729→   729→            { id: "ms11", title: "Win 3 deals", completed: false },
+   730→   730→            { id: "ms12", title: "Win 5 deals total", completed: false },
+   731→   731→          ],
+   732→   732→        },
+   733→   733→        {
+   734→   734→          title: "Zero Overdue Invoices",
+   735→   735→          description: "Ensure all invoices are paid on time with proactive follow-ups and payment reminders.",
+   736→   736→          type: "custom",
+   737→   737→          target: 0,
+   738→   738→          current: 1,
+   739→   739→          unit: "invoices",
+   740→   740→          deadline: now + 21 * day,
+   741→   741→          status: "in_progress",
+   742→   742→          milestones: [
+   743→   743→            { id: "ms13", title: "Set up payment reminders", completed: true },
+   744→   744→            { id: "ms14", title: "Follow up on all overdue invoices", completed: false },
+   745→   745→          ],
+   746→   746→        },
+   747→   747→        {
+   748→   748→          title: "Onboard 8 Team Members",
+   749→   749→          description: "Build a full agency team with 8 active members covering design, development, and strategy.",
+   750→   750→          type: "custom",
+   751→   751→          target: 8,
+   752→   752→          current: 6,
+   753→   753→          unit: "members",
+   754→   754→          deadline: now + 30 * day,
+   755→   755→          status: "in_progress",
+   756→   756→          milestones: [
+   757→   757→            { id: "ms15", title: "Hire senior developer", completed: true },
+   758→   758→            { id: "ms16", title: "Hire UI/UX designer", completed: true },
+   759→   759→            { id: "ms17", title: "Hire motion designer", completed: false },
+   760→   760→            { id: "ms18", title: "Hire backend developer", completed: false },
+   761→   761→          ],
+   762→   762→        },
+   763→   763→      ];
+   764→   764→
+   765→   765→      for (const goal of mockGoals) {
+   766→   766→        await ctx.db.insert("goals", {
+   767→   767→          userId,
+   768→   768→          workspaceId: teamWorkspaceId,
+   769→   769→          title: goal.title,
+   770→   770→          description: goal.description,
+   771→   771→          type: goal.type,
+   772→   772→          target: goal.target,
+   773→   773→          current: goal.current,
+   774→   774→          unit: goal.unit,
+   775→   775→          deadline: goal.deadline,
+   776→   776→          status: goal.status,
+   777→   777→          milestones: goal.milestones,
+   778→   778→          createdAt: now - Math.floor(Math.random() * 30) * day,
+   779→   779→          updatedAt: now,
+   780→   780→        });
+   781→   781→      }
+   782→   782→      results.push("goals");
+   783→   783→    }
+   784→   784→
+   785→   785→    // ─── 13. Seed Scope Definitions ────────────────────────────────────────
+   786→   786→    // Schema: scopeDefinitions { userId, projectId?, proposalId?, title, description, deliverables, totalEstimatedHours?, revisionLimit, revisionCount, status, clientApprovedAt?, approvalToken?, createdAt, updatedAt }
+   787→   787→    const existingScope = await ctx.db
+   788→   788→      .query("scopeDefinitions")
+   789→   789→      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+   790→   790→      .collect();
+   791→   791→
+   792→   792→    if (existingScope.length === 0 && clientIds.length > 0) {
+   793→   793→      const scopeItems = [
+   794→   794→        {
+   795→   795→          projectId: undefined,
+   796→   796→          proposalId: undefined,
+   797→   797→          title: "TechCorp Website Redesign Scope",
+   798→   798→          description: "Complete redesign of TechCorp corporate website including responsive design, new brand identity, CMS integration, and SEO optimization.",
+   799→   799→          deliverables: [
+   800→   800→            { id: "d1", name: "Homepage redesign", description: "Modern responsive homepage with hero section, features, and CTA", estimatedHours: 20, status: "completed" as const },
+   801→   801→            { id: "d2", name: "Product pages", description: "Product listing and detail pages with filtering", estimatedHours: 15, status: "in_progress" as const },
+   802→   802→            { id: "d3", name: "CMS integration", description: "Content management system with WYSIWYG editor", estimatedHours: 25, status: "pending" as const },
+   803→   803→          ],
+   804→   804→          totalEstimatedHours: 60,
+   805→   805→          revisionLimit: 3,
+   806→   806→          revisionCount: 1,
+   807→   807→          status: "active" as const,
+   808→   808→        },
+   809→   809→        {
+   810→   810→          projectId: undefined,
+   811→   811→          proposalId: undefined,
+   812→   812→          title: "StartupHub Mobile App MVP Scope",
+   813→   813→          description: "Mobile app MVP for StartupHub — includes user authentication, dashboard, and notification system.",
+   814→   814→          deliverables: [
+   815→   815→            { id: "d4", name: "User auth (login/signup)", description: "Authentication with email and social login", estimatedHours: 15, status: "completed" as const },
+   816→   816→            { id: "d5", name: "Dashboard screen", description: "Main dashboard with project overview and notifications", estimatedHours: 20, status: "in_progress" as const },
+   817→   817→            { id: "d6", name: "Basic settings", description: "User profile and app settings screens", estimatedHours: 10, status: "pending" as const },
+   818→   818→          ],
+   819→   819→          totalEstimatedHours: 45,
+   820→   820→          revisionLimit: 2,
+   821→   821→          revisionCount: 0,
+   822→   822→          status: "active" as const,
+   823→   823→        },
+   824→   824→        {
+   825→   825→          projectId: undefined,
+   826→   826→          proposalId: undefined,
+   827→   827→          title: "FinServe Analytics Platform Scope",
+   828→   828→          description: "Financial analytics platform with real-time market data, portfolio tracking, and compliance reporting.",
+   829→   829→          deliverables: [
+   830→   830→            { id: "d7", name: "Real-time data dashboard", description: "Live market data visualization dashboard", estimatedHours: 30, status: "in_progress" as const },
+   831→   831→            { id: "d8", name: "Portfolio tracking module", description: "Investment portfolio tracking and analysis", estimatedHours: 25, status: "pending" as const },
+   832→   832→            { id: "d9", name: "Compliance report generator", description: "Automated compliance reporting with export", estimatedHours: 20, status: "pending" as const },
+   833→   833→          ],
+   834→   834→          totalEstimatedHours: 75,
+   835→   835→          revisionLimit: 3,
+   836→   836→          revisionCount: 2,
+   837→   837→          status: "active" as const,
+   838→   838→        },
+   839→   839→      ];
+   840→   840→
+   841→   841→      for (const scope of scopeItems) {
+   842→   842→        await ctx.db.insert("scopeDefinitions", {
+   843→   843→          userId,
+   844→   844→          ...scope,
+   845→   845→          createdAt: now - Math.floor(Math.random() * 30) * day,
+   846→   846→          updatedAt: now,
+   847→   847→        });
+   848→   848→      }
+   849→   849→      results.push("scope");
+   850→   850→    }
+   851→   851→
+   852→   852→    // ─── 14. Seed Work Sessions & Time Blocks ───────────────────────────────
+   853→   853→    // Schema: workSessions { userId, startTime, endTime?, totalMinutes?, complianceStatus, clientName, projectName, hourlyRate, platform?, notes?, isManualEntry?, status?, createdAt?, updatedAt? }
+   854→   854→    const existingSessions = await ctx.db
+   855→   855→      .query("workSessions")
+   856→   856→      .withIndex("by_user", (q) => q.eq("userId", userId))
+   857→   857→      .collect();
+   858→   858→
+   859→   859→    if (existingSessions.length === 0) {
+   860→   860→      const hourlyRate = user?.hourlyRate ?? 85;
+   861→   861→
+   862→   862→      // Active session
+   863→   863→      const activeSessionId = await ctx.db.insert("workSessions", {
+   864→   864→        userId,
+   865→   865→        startTime: now - 2 * 60 * 60 * 1000,
+   866→   866→        complianceStatus: "active",
+   867→   867→        clientName: "TechCorp Solutions",
+   868→   868→        projectName: "Website Revamp",
+   869→   869→        hourlyRate,
+   870→   870→      });
+   871→   871→
+   872→   872→      // Past sessions
+   873→   873→      const sessions = [
+   874→   874→        { clientName: "StartupHub Inc", projectName: "Mobile App MVP", hoursAgo: 6, duration: 90, status: "active" as const },
+   875→   875→        { clientName: "FinServe Analytics", projectName: "Analytics Platform", hoursAgo: 24, duration: 180, status: "active" as const },
+   876→   876→        { clientName: "Global Enterprises", projectName: "Data Dashboard", hoursAgo: 48, duration: 60, status: "rejected" as const },
+   877→   877→        { clientName: "Digital Marketing Co", projectName: "Brand Identity", hoursAgo: 72, duration: 120, status: "active" as const },
+   878→   878→        { clientName: "Creative Studios", projectName: "Motion Reel", hoursAgo: 96, duration: 150, status: "active" as const },
+   879→   879→        { clientName: "TechCorp Solutions", projectName: "API Integration", hoursAgo: 120, duration: 240, status: "active" as const },
+   880→   880→        { clientName: "StartupHub Inc", projectName: "Landing Pages", hoursAgo: 144, duration: 105, status: "active" as const },
+   881→   881→      ];
+   882→   882→
+   883→   883→      for (const session of sessions) {
+   884→   884→        const pastStart = now - session.hoursAgo * 60 * 60 * 1000;
+   885→   885→        const pastEnd = pastStart + session.duration * 60 * 1000;
+   886→   886→        await ctx.db.insert("workSessions", {
+   887→   887→          userId,
+   888→   888→          startTime: pastStart,
+   889→   889→          endTime: pastEnd,
+   890→   890→          totalMinutes: session.duration,
+   891→   891→          complianceStatus: session.status,
+   892→   892→          clientName: session.clientName,
+   893→   893→          projectName: session.projectName,
+   894→   894→          hourlyRate,
+   895→   895→        });
+   896→   896→      }
+   897→   897→
+   898→   898→      // Time blocks for active session
+   899→   899→      const activeBase = now - 35 * 60 * 60 * 1000;
+   900→   900→      const activeBlocks = [
+   901→   901→        { start: activeBase, status: "compliant" as const, activity: "Code Review", website: "github.com", screenshots: 3, mouse: true, keyboard: true, inactiveSec: 12 },
+   902→   902→        { start: activeBase + 5 * 60 * 1000, status: "at_risk" as const, activity: "Client Prospecting", website: "fiverr.com", screenshots: 2, mouse: true, keyboard: false, inactiveSec: 45 },
+   903→   903→        { start: activeBase + 10 * 60 * 1000, status: "compliant" as const, activity: "Implement UI", website: "vercel.com", screenshots: 3, mouse: true, keyboard: true, inactiveSec: 10 },
+   904→   904→        { start: activeBase + 15 * 60 * 1000, status: "rejected" as const, activity: "Break", website: "youtube.com", screenshots: 1, mouse: false, keyboard: false, inactiveSec: 420 },
+   905→   905→        { start: activeBase + 20 * 60 * 1000, status: "compliant" as const, activity: "Bug Fixes", website: "github.com", screenshots: 3, mouse: true, keyboard: true, inactiveSec: 8 },
+   906→   906→      ];
+   907→   907→
+   908→   908→      for (const block of activeBlocks) {
+   909→   909→        await ctx.db.insert("timeBlocks", {
+   910→   910→          sessionId: activeSessionId,
+   911→   911→          userId,
+   912→   912→          startTime: block.start,
+   913→   913→          endTime: block.start + 5 * 60 * 1000,
+   914→   914→          activity: block.activity,
+   915→   915→          website: block.website,
+   916→   916→          complianceStatus: block.status,
+   917→   917→          screenshotCount: block.screenshots,
+   918→   918→          mouseActivity: block.mouse,
+   919→   919→          keyboardActivity: block.keyboard,
+   920→   920→          inactiveDuration: block.inactiveSec,
+   921→   921→        });
+   922→   922→      }
+   923→   923→
+   924→   924→      // Compliance alert
+   925→   925→      // Schema: complianceAlerts { userId, sessionId?, alertType, message, triggeredAt, acknowledged, actionTaken? }
+   926→   926→      await ctx.db.insert("complianceAlerts", {
+   927→   927→        userId,
+   928→   928→        sessionId: activeSessionId,
+   929→   929→        alertType: "at_risk",
+   930→   930→        message: "Fiverr tab detected. Timer paused. Close tab within 5 minutes to avoid rejection.",
+   931→   931→        triggeredAt: now - 2 * 60 * 1000,
+   932→   932→        acknowledged: false,
+   933→   933→      });
+   934→   934→
+   935→   935→      // Dispute report
+   936→   936→      // Schema: disputeReports { userId, sessionId?, caseId, generatedAt, rejectedHours, lostIncome, reportContent?, status, ... }
+   937→   937→      await ctx.db.insert("disputeReports", {
+   938→   938→        userId,
+   939→   939→        sessionId: existingSessions.length > 0 ? undefined : undefined,
+   940→   940→        caseId: `case-${Date.now()}`,
+   941→   941→        generatedAt: now - 3 * 60 * 60 * 1000,
+   942→   942→        rejectedHours: 0.5,
+   943→   943→        lostIncome: Math.round((hourlyRate * 0.5) * 100) / 100,
+   944→   944→        reportContent: "# Dispute Report\n\nSession contained rejected time due to inactivity. Evidence attached (screenshots and activity logs).",
+   945→   945→        status: "generated",
+   946→   946→        clientName: "Global Enterprises",
+   947→   947→        projectName: "Data Dashboard",
+   948→   948→        hourlyRate,
+   949→   949→      });
+   950→   950→
+   951→   951→      results.push("work_sessions");
+   952→   952→    }
+   953→   953→
+   954→   954→    return { seeded: true, items: results };
+   955→   955→  },
+   956→   956→});
+   957→   957→

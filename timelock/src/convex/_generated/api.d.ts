@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as adminSeed from "../adminSeed.js";
 import type * as ai_disputePrediction from "../ai/disputePrediction.js";
 import type * as ai_disputePredictionNode from "../ai/disputePredictionNode.js";
 import type * as audit_storeConsentAudit from "../audit/storeConsentAudit.js";
@@ -41,6 +42,7 @@ import type * as debug from "../debug.js";
 import type * as disputeReports from "../disputeReports.js";
 import type * as evidence from "../evidence.js";
 import type * as evidence_analytics from "../evidence/analytics.js";
+import type * as evidence_extension from "../evidence/extension.js";
 import type * as evidence_library from "../evidence/library.js";
 import type * as extension from "../extension.js";
 import type * as extensionRotate from "../extensionRotate.js";
@@ -142,6 +144,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminSeed: typeof adminSeed;
   "ai/disputePrediction": typeof ai_disputePrediction;
   "ai/disputePredictionNode": typeof ai_disputePredictionNode;
   "audit/storeConsentAudit": typeof audit_storeConsentAudit;
@@ -175,6 +178,7 @@ declare const fullApi: ApiFromModules<{
   disputeReports: typeof disputeReports;
   evidence: typeof evidence;
   "evidence/analytics": typeof evidence_analytics;
+  "evidence/extension": typeof evidence_extension;
   "evidence/library": typeof evidence_library;
   extension: typeof extension;
   extensionRotate: typeof extensionRotate;

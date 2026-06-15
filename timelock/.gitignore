@@ -25,3 +25,11 @@ dist-ssr
 serve-dist.cjs
 serve-dist.py
 serve-supervisor.sh
+
+# Backups and tool results — stored in GitHub Releases instead
+backups/
+download/
+tool-results/
+agent-ctx/
+.zscripts/
+*.zip
