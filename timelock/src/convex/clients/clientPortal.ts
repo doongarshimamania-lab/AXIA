@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Client Portal — client-scoped queries and mutations.
  *

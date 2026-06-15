@@ -39,6 +39,9 @@ import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
+import ClientWorkspace from "./pages/ClientWorkspace.tsx";
+import ClientLogin from "./pages/ClientLogin.tsx";
+import ClientSignup from "./pages/ClientSignup.tsx";
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
 import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
@@ -224,6 +227,11 @@ root.render(
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
+
+                  {/* Client Portal (Public, No Auth) */}
+                  <Route path="/workspace/:token" element={<ClientWorkspace />} />
+                  <Route path="/client-login" element={<ClientLogin />} />
+                  <Route path="/client-signup" element={<ClientSignup />} />
 
                   {/* Dashboard Routes (With Sidebar + Auth Guard) */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

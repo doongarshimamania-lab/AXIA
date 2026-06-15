@@ -251,4 +251,20 @@ export const projectTables = {
     .index("by_client", ["clientId"])
     .index("by_timestamp", ["timestamp"])
     .index("by_workspace", ["workspaceId"]),
+
+  clientWorkspaceTokens: defineTable({
+    token: v.string(),
+    clientId: v.id("clients"),
+    clientName: v.string(),
+    contactEmail: v.optional(v.string()),
+    workspaceId: v.optional(v.id("workspaces")),
+    freelancerUserId: v.string(),
+    createdAt: v.number(),
+    lastAccessedAt: v.optional(v.number()),
+    accessCount: v.optional(v.number()),
+    revoked: v.optional(v.boolean()),
+  })
+    .index("by_token", ["token"])
+    .index("by_client", ["clientId"])
+    .index("by_freelancer", ["freelancerUserId"]),
 };
