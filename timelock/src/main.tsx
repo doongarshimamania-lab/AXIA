@@ -52,7 +52,11 @@ import { Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
-// Error Boundary to catch Convex errors and prevent app crash
+// Error Boundary to catch Convex errors and prevent app crash.
+// CRITICAL: When hasError is true, we render a fallback UI INSTEAD of children.
+// Previously we rendered children alongside the error banner, which caused the
+// same error to fire again → boundary catches again → infinite loop. Now we
+// stop the loop by showing a clean fallback until the user clicks "Try again".
 class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null };
   static getDerivedStateFromError(error: Error) {
@@ -63,13 +67,34 @@ class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { has
   }
   render() {
     if (this.state.hasError) {
-      // Show a subtle error banner instead of crashing the whole page
+      // Render a fallback INSTEAD of children — this breaks the error loop.
       return (
-        <div>
-          <div style={{ padding: '12px 16px', background: '#fef2f2', borderBottom: '1px solid #fecaca', color: '#991b1b', fontSize: '14px' }}>
-            Something went wrong on this page. <button onClick={() => this.setState({ hasError: false, error: null })} style={{ textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', color: '#991b1b', font: 'inherit' }}>Try again</button>
+        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-background">
+          <div className="max-w-md space-y-4">
+            <div className="h-14 w-14 mx-auto rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 text-red-500">
+                <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground">
+              {this.state.error?.message || "An unexpected error occurred while rendering this page."}
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => this.setState({ hasError: false, error: null })}
+                className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Try again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Reload page
+              </button>
+            </div>
           </div>
-          {this.props.children}
         </div>
       );
     }

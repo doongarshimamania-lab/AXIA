@@ -8,14 +8,54 @@ interface ClientPolicyProfileProps {
   tier: string;
 }
 
+/**
+ * Defensive coercion helpers.
+ *
+ * The backend `getClientPolicyProfile` query returns numeric metrics, but the
+ * `selectedClient` object (used when the client ID is a demo/"client_" sentinel)
+ * does NOT have these fields. Without coercion, `undefined * 20` is fine (NaN)
+ * but if any field ever ends up being an object (e.g. an array or a Convex Id
+ * object), `object * 20` throws "Cannot convert object to primitive value".
+ *
+ * We wrap every numeric access in `toNumber()` to guarantee a number, no matter
+ * what the data looks like at runtime. This eliminates the entire class of
+ * "Cannot convert object to primitive value" crashes in this component.
+ */
+function toNumber(v: any): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  if (typeof v === "boolean") return v ? 1 : 0;
+  return 0;
+}
+
+function toIdString(v: any): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v.toString === "function") {
+    try {
+      const s = v.toString();
+      if (typeof s === "string") return s;
+    } catch {
+      /* ignore */
+    }
+  }
+  return "";
+}
+
 export function ClientPolicyProfile({ selectedClient, tier }: ClientPolicyProfileProps) {
   const queryFn: any = api.clients.clientPolicyProfile.getClientPolicyProfile;
-  
-  const isRealClient = selectedClient?._id && !selectedClient._id.startsWith("client_");
-  
+
+  // Defensive: coerce _id to a string so .startsWith is always safe.
+  // (Previously, if selectedClient._id was an object, this threw
+  // "Cannot convert object to primitive value" and crashed the page.)
+  const idStr = toIdString(selectedClient?._id);
+  const isRealClient = !!idStr && !idStr.startsWith("client_");
+
   const profileData = useQuery(
     queryFn,
-    isRealClient ? { clientId: selectedClient._id } : "skip"
+    isRealClient ? { clientId: idStr as any } : "skip"
   );
 
   const displayData = isRealClient ? profileData : selectedClient;
@@ -37,31 +77,37 @@ export function ClientPolicyProfile({ selectedClient, tier }: ClientPolicyProfil
   return <ClientPolicyProfileFree clientData={displayData} />;
 }
 
-// Helper calculations
+// Helper calculations — all numeric access goes through toNumber() so we never
+// hit "Cannot convert object to primitive value" if the data shape is unexpected.
 const calculateEvidenceCollection = (data: any) => {
-  return Math.min(100, Math.round((data.evidenceCount || 0) * 20));
+  return Math.min(100, Math.round(toNumber(data?.evidenceCount) * 20));
 };
 
 const calculateContextRelevance = (data: any) => {
+  const evidenceWithClientKeywords = toNumber(data?.evidenceWithClientKeywords);
+  const clientKeywordsLen = Array.isArray(data?.clientKeywords)
+    ? data.clientKeywords.length
+    : toNumber(data?.clientKeywords?.length);
+  const workSpecificity = toNumber(data?.workSpecificity);
   return Math.min(100, Math.round(
-    ((data.evidenceWithClientKeywords || 0) / Math.max(1, (data.clientKeywords?.length || 1))) * 50 + 
-    ((data.workSpecificity || 0) * 50)
+    (evidenceWithClientKeywords / Math.max(1, clientKeywordsLen)) * 50 +
+    (workSpecificity * 50)
   ));
 };
 
 const calculatePlatformProtection = (data: any) => {
   let protectionScore = 0;
-  if (data.hasClientSpecificRequirements) protectionScore += 40;
-  protectionScore += Math.min(40, (data.activityDensity || 0) * 20);
-  protectionScore += (data.memoQuality || 0) * 20;
+  if (data?.hasClientSpecificRequirements) protectionScore += 40;
+  protectionScore += Math.min(40, toNumber(data?.activityDensity) * 20);
+  protectionScore += toNumber(data?.memoQuality) * 20;
   return Math.min(100, protectionScore);
 };
 
 const calculateBusinessProtection = (data: any) => {
   return Math.min(100, Math.round(
-    ((data.clientDiversity || 0) * 0.3) + 
-    ((data.platformCoverage || 0) * 0.35) + 
-    ((data.historicalSuccess || 0) * 0.35)
+    (toNumber(data?.clientDiversity) * 0.3) +
+    (toNumber(data?.platformCoverage) * 0.35) +
+    (toNumber(data?.historicalSuccess) * 0.35)
   ));
 };
 
@@ -202,7 +248,7 @@ const ClientPolicyProfilePro = ({ clientData }: { clientData: any }) => {
   const contextRelevance = calculateContextRelevance(clientData);
   const platformProtection = calculatePlatformProtection(clientData);
   const platformScore = Math.round((evidenceCollection + contextRelevance + platformProtection) / 3);
-  const dollarValue = Math.round((clientData.avgProjectValue || 1200) * 0.35);
+  const dollarValue = Math.round((toNumber(clientData.avgProjectValue) || 1200) * 0.35);
   const platformVulnerability = Math.max(0, 100 - platformProtection);
   
   return (
@@ -310,7 +356,7 @@ const ClientPolicyProfileExpert = ({ clientData }: { clientData: any }) => {
   const platformProtection = calculatePlatformProtection(clientData);
   const businessProtection = calculateBusinessProtection(clientData);
   const businessScore = Math.round((evidenceCollection + contextRelevance + platformProtection + businessProtection) / 4);
-  const dollarValue = Math.round(((clientData.weeklyIncome || 250) * 4.33) * 0.12);
+  const dollarValue = Math.round(((toNumber(clientData.weeklyIncome) || 250) * 4.33) * 0.12);
   const platformVulnerability = Math.max(0, 100 - platformProtection);
   
   return (
