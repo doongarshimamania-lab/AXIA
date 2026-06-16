@@ -329,21 +329,38 @@ export default function TeamManagement() {
     }
     setIsCreatingTeam(true);
     try {
-      await createTeamMutation({
+      const result = await createTeamMutation({
         workspaceId: activeWorkspaceId as any,
         name: teamName.trim(),
         color: teamColor,
         description: teamDescription.trim() || undefined,
         isCrossTeam: teamIsCrossTeam || undefined,
       });
+      // Defensive: safe-convex-react useMutation no-ops (returns undefined)
+      // when the mutation reference is null/undefined. If we got undefined
+      // back, the team was NOT actually created — surface that to the user
+      // instead of falsely claiming success.
+      if (result === undefined) {
+        toast.error(
+          "Team could not be created — the backend function is unavailable. Please refresh the page and try again."
+        );
+        return;
+      }
       toast.success(`Team "${teamName}" created!`);
+      // Switch to the Teams tab so the user immediately sees the new team
+      // (previously the user stayed on whatever tab they were on and the
+      // count appeared not to update, even though the team was created).
+      setActiveTab("teams");
       setShowCreateTeamDialog(false);
       setTeamName("");
       setTeamColor(TEAM_COLORS[0]);
       setTeamDescription("");
       setTeamIsCrossTeam(false);
     } catch (e: any) {
-      toast.error(e.message || "Failed to create team");
+      console.error("[TeamManagement] createTeam failed:", e);
+      toast.error(e?.message || "Failed to create team", {
+        description: e?.data?.message || undefined,
+      });
     } finally {
       setIsCreatingTeam(false);
     }
