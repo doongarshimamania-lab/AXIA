@@ -129,7 +129,127 @@ export const sendMessage = mutation({
     // Update channel's lastMessageAt
     await ctx.db.patch(args.channelId, { lastMessageAt: Date.now() });
 
+    // ─── @mention processing ────────────────────────────────────────────
+    // Parse @username patterns from the message and create mention records
+    // for each channel member whose name matches (excluding the sender).
+    // This is what powers real-time mention notifications for OTHER users.
+    const mentionRegex = /@([A-Za-z][A-Za-z0-9_\- ]{0,40}?)(?=[\s.,!?;:)]|$)/g;
+    const mentionedNames = new Set<string>();
+    let m: RegExpExecArray | null;
+    while ((m = mentionRegex.exec(args.content)) !== null) {
+      mentionedNames.add(m[1].trim());
+    }
+
+    if (mentionedNames.size > 0) {
+      // Fetch all channel members so we can match by name
+      const allMembers = await ctx.db
+        .query("channelMembers")
+        .withIndex("by_channel", (q: any) => q.eq("channelId", args.channelId))
+        .collect();
+
+      // Look up each member's user record to match by name
+      for (const cm of allMembers) {
+        // Skip the sender — they should NOT get a mention notification
+        if (cm.userId === userId) continue;
+
+        const user = await ctx.db.get(cm.userId);
+        if (!user) continue;
+
+        const userName = (user as any).name || (user as any).email || "";
+        if (!userName) continue;
+
+        // Match case-insensitively against any of the mentioned names
+        for (const mentioned of mentionedNames) {
+          if (userName.toLowerCase() === mentioned.toLowerCase() ||
+              userName.toLowerCase().includes(mentioned.toLowerCase())) {
+            // Avoid duplicate mention records for the same user+message
+            const existing = await ctx.db
+              .query("mentions")
+              .withIndex("by_message", (q: any) => q.eq("messageId", messageId))
+              .filter((q: any) => q.eq(q.field("userId"), cm.userId))
+              .first();
+            if (!existing) {
+              await ctx.db.insert("mentions", {
+                messageId,
+                userId: cm.userId,
+                channelId: args.channelId,
+                workspaceId: member.workspaceId,
+                isRead: false,
+              });
+            }
+            break; // one mention per user per message
+          }
+        }
+      }
+    }
+
     return messageId;
+  },
+});
+
+// Get unread mention count for the current user (for notifications)
+export const getUnreadMentions = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthenticatedUser(ctx);
+    const mentions = await ctx.db
+      .query("mentions")
+      .withIndex("by_user_unread", (q: any) =>
+        q.eq("userId", userId).eq("isRead", false)
+      )
+      .collect();
+
+    // Enrich with author + channel info for display
+    const enriched = [];
+    for (const mention of mentions) {
+      const message = await ctx.db.get(mention.messageId);
+      if (!message || message.isDeleted) continue;
+      const author = await ctx.db.get(message.authorId);
+      const channel = await ctx.db.get(mention.channelId);
+      enriched.push({
+        _id: mention._id,
+        messageId: mention.messageId,
+        channelId: mention.channelId,
+        channelName: (channel as any)?.name ?? "Unknown",
+        content: message.content,
+        authorName: (author as any)?.name ?? "Unknown",
+        createdAt: message._creationTime,
+      });
+    }
+    // Sort newest first
+    enriched.sort((a, b) => b.createdAt - a.createdAt);
+    return enriched;
+  },
+});
+
+// Mark a mention as read
+export const markMentionRead = mutation({
+  args: { mentionId: v.id("mentions") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthenticatedUser(ctx);
+    const mention = await ctx.db.get(args.mentionId);
+    if (!mention || mention.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+    await ctx.db.patch(args.mentionId, { isRead: true });
+  },
+});
+
+// Mark all mentions as read for the current user
+export const markAllMentionsRead = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthenticatedUser(ctx);
+    const unread = await ctx.db
+      .query("mentions")
+      .withIndex("by_user_unread", (q: any) =>
+        q.eq("userId", userId).eq("isRead", false)
+      )
+      .collect();
+    for (const m of unread) {
+      await ctx.db.patch(m._id, { isRead: true });
+    }
+    return unread.length;
   },
 });
 

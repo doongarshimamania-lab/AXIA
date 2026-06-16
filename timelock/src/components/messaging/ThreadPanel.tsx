@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { X, Send, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import type { Message } from "./MessageList";
+import { renderMarkdown } from "@/lib/markdown";
 
 export interface ThreadReply {
   id: string;
@@ -77,7 +78,7 @@ export function ThreadPanel({
                 </span>
               </div>
               <p className="text-sm leading-relaxed break-words">
-                {parentMessage.content}
+                {renderMarkdown(parentMessage.content)}
               </p>
             </div>
           </div>
@@ -111,7 +112,7 @@ export function ThreadPanel({
                     </span>
                   </div>
                   <p className="text-xs leading-relaxed break-words">
-                    {reply.content}
+                    {renderMarkdown(reply.content)}
                   </p>
                 </div>
               </div>

@@ -83,6 +83,7 @@ export default function Messages() {
 
   // ── Convex Mutations ──
   const markChannelReadMutation = useMutation(api.messaging.messages.markChannelRead);
+  const markAllMentionsReadMutation = useMutation(api.messaging.messages.markAllMentionsRead);
   const createChannelMutation = useMutation(api.messaging.channels.createChannel);
   const sendMessageMutation = useMutation(api.messaging.messages.sendMessage);
   const editMessageMutation = useMutation(api.messaging.messages.editMessage);
@@ -154,8 +155,14 @@ export default function Messages() {
       markChannelReadMutation({ channelId: channelId as Id<"channels"> }).catch((err: unknown) => {
         console.warn("Failed to mark channel as read:", err);
       });
+      // Also clear all unread mention notifications — the user is now viewing them.
+      // This prevents stale "X mentioned you" notifications from lingering after
+      // the user has clearly seen the messages.
+      markAllMentionsReadMutation({}).catch((err: unknown) => {
+        console.warn("Failed to clear mention notifications:", err);
+      });
     }
-  }, [markChannelReadMutation]);
+  }, [markChannelReadMutation, markAllMentionsReadMutation]);
 
   const handleCreateChannel = useCallback((name: string, isPrivate: boolean, memberIds?: string[]) => {
     if (!activeWorkspaceId) {
@@ -298,6 +305,7 @@ export default function Messages() {
               <MessageInput
                 onSend={handleSendMessage}
                 channelName={activeChannel.name}
+                members={activeMembers.map((m) => ({ id: m.id, name: m.name }))}
               />
             </div>
 

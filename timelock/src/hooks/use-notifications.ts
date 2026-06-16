@@ -113,6 +113,12 @@ export function useNotifications() {
   const invoices = useQuery(api.billing.crud.getInvoices, queryArgs);
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, queryArgs);
 
+  // ─── Real-time @mention notifications ────────────────────────────────
+  // Returns messages where someone @mentioned the current user.
+  // These are REACTION notifications (someone else mentioned ME) — never
+  // self-triggered because the backend excludes the sender from mention records.
+  const unreadMentions = useQuery(api.messaging.messages.getUnreadMentions, isConvexConnected ? {} : "skip");
+
   // Persisted "last seen" state — maps notification type key → last seen count
   const [lastSeenMap, setLastSeenMap] = useState<LastSeenMap>(() => getLastSeenMap());
 
@@ -288,12 +294,52 @@ export function useNotifications() {
       });
     }
 
+    // 9. @mentions in chat messages — REAL-TIME, fired when someone else @mentions the user.
+    // Backend explicitly excludes the sender from mention records, so the current
+    // user will never see a notification for a message they sent themselves.
+    if (unreadMentions && unreadMentions.length > 0) {
+      // Most recent mention (for the headline notification)
+      const latest = unreadMentions[0];
+      notifs.push({
+        id: "mention-latest",
+        dedupKey: "mention-unread",
+        currentValue: unreadMentions.length,
+        icon: MessageSquare,
+        iconColor: "text-primary bg-primary/10",
+        title: `${latest.authorName} mentioned you in #${latest.channelName}`,
+        description: latest.content.length > 80
+          ? latest.content.substring(0, 80) + "…"
+          : latest.content,
+        timestamp: latest.createdAt,
+        href: "/messages",
+        isReaction: true,
+        seen: false,
+      });
+
+      // If there are multiple unread mentions, show an aggregate count too
+      if (unreadMentions.length > 1) {
+        notifs.push({
+          id: "mention-aggregate",
+          dedupKey: "mention-aggregate-unread",
+          currentValue: unreadMentions.length,
+          icon: MessageSquare,
+          iconColor: "text-primary bg-primary/10",
+          title: `${unreadMentions.length} unread mentions`,
+          description: "Open Messages to view all",
+          timestamp: Date.now() - 60000,
+          href: "/messages",
+          isReaction: true,
+          seen: false,
+        });
+      }
+    }
+
     // Sort by timestamp (most recent first)
     notifs.sort((a, b) => b.timestamp - a.timestamp);
     return notifs;
   }, [
     invoiceStats, proposalStats, pipelineStats, clientsEnriched,
-    deals, proposals, invoices, scopeDefinitions,
+    deals, proposals, invoices, scopeDefinitions, unreadMentions,
   ]);
 
   // ─── Compute seen/unseen state ─────────────────────────────────────────

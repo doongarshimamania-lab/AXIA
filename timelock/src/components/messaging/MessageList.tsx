@@ -19,6 +19,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { format } from "date-fns";
+import { renderMarkdown } from "@/lib/markdown";
 
 export interface Message {
   id: string;
@@ -130,12 +131,15 @@ export function MessageList({
     );
   };
 
-  // Read receipt logic: show check marks only on YOUR messages
+  // Read receipt logic: ONLY show "seen" (blue ✓✓) when others have read.
+  // NEVER show a gray "sent" checkmark on the sender's own message — that
+  // was being perceived as a "pending" notification by the sender.
+  // Sender should see no indicator until someone else actually reads it.
   const getReadStatus = (msg: Message) => {
     if (msg.authorId !== currentUserId) return null;
     const readByOthers = (msg.readBy || []).filter((id) => id !== currentUserId);
-    if (readByOthers.length > 0) return "seen"; // ✓✓ blue
-    return "sent"; // ✓ gray
+    if (readByOthers.length > 0) return "seen"; // ✓✓ blue — others have read
+    return null; // No indicator until read — avoids "pending" feeling
   };
 
   return (
@@ -237,7 +241,12 @@ export function MessageList({
                     ) : (
                       <div className="flex items-end gap-1.5">
                         <div className="text-sm leading-relaxed break-words">
-                          {msg.content}
+                          {renderMarkdown(msg.content, {
+                            onMention: (name) => {
+                              // Could open a profile popup or DM here in the future
+                              console.log("Mention clicked:", name);
+                            },
+                          })}
                           {msg.isEdited && (
                             <span className="text-[10px] text-muted-foreground ml-1">
                               (edited)
