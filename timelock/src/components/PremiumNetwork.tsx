@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, MessageSquare, Search, Handshake, Plus, Check, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -242,9 +242,10 @@ export function PremiumNetwork({
 
       {/* Network Modal */}
       <Dialog open={showNetworkModal} onOpenChange={setShowNetworkModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Agency Partners</DialogTitle>
+            <DialogDescription>Connect with trusted partner agencies for collaboration and referrals.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {networkConnections?.map((connection: any) => (
@@ -289,9 +290,10 @@ export function PremiumNetwork({
 
       {/* Opportunities Modal */}
       <Dialog open={showOpportunitiesModal} onOpenChange={setShowOpportunitiesModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Referral Opportunities</DialogTitle>
+            <DialogDescription>View and respond to referral opportunities from your network.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {referralOpportunities?.map((opp: any) => (

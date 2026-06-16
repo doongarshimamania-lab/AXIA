@@ -3,7 +3,7 @@ import { ClientList } from "@/components/client-protection/ClientList";
 import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -357,6 +357,7 @@ export default function Clients() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>Fill in the details to add a new client to your workspace.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -371,7 +372,7 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Platform</Label>
                 <Select value={platform} onValueChange={(v: any) => setPlatform(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -396,7 +397,7 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Contract Type</Label>
                 <Select value={contractType} onValueChange={(v: any) => setContractType(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -408,7 +409,7 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Risk Level</Label>
                 <Select value={riskLevel} onValueChange={(v: any) => setRiskLevel(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -450,6 +451,7 @@ export default function Clients() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Delete Client</DialogTitle>
+              <DialogDescription>This action cannot be undone. All associated data will be permanently removed.</DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm text-muted-foreground">

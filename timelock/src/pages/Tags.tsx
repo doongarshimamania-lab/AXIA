@@ -256,7 +256,7 @@ export default function Tags() {
                 Create Tag
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Tag</DialogTitle>
                 <DialogDescription>
@@ -581,7 +581,7 @@ export default function Tags() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Tag</DialogTitle>
             <DialogDescription>Update the details of this tag.</DialogDescription>
@@ -671,7 +671,7 @@ export default function Tags() {
           if (!open) setDeletingTag(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Tag</DialogTitle>
             <DialogDescription>

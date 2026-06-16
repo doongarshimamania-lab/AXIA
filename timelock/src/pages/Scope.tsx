@@ -1220,7 +1220,7 @@ export default function Scope() {
               <div className="grid gap-2">
                 <Label>Change Type</Label>
                 <Select value={coChangeType} onValueChange={(v: any) => setCoChangeType(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="addition">Addition</SelectItem>
                     <SelectItem value="modification">Modification</SelectItem>

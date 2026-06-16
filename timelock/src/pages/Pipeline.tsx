@@ -1254,7 +1254,7 @@ export default function Pipeline() {
                   {/* ── View Mode ── */}
                   <DialogHeader>
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <DialogTitle className="text-xl">
                           {detailDeal.title}
                         </DialogTitle>
@@ -1717,7 +1717,7 @@ export default function Pipeline() {
                 value={selectedStageId ?? ""}
                 onValueChange={(val) => setSelectedStageId(val as Id<"pipelineStages">)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a pipeline stage" />
                 </SelectTrigger>
                 <SelectContent>

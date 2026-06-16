@@ -63,7 +63,7 @@ export function PricingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground tracking-tight font-[Space_Grotesk]">
             Your ${displaySavings.toFixed(0)} savings are ready

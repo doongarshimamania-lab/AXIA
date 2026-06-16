@@ -615,7 +615,7 @@ export function BulkImportDialog({
                             }))
                           }
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="w-full h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>

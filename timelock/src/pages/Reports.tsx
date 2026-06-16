@@ -912,7 +912,7 @@ export default function Reports() {
                 )}
               </Label>
               <Select disabled={!isProOrAbove}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={isProOrAbove ? "Select evidence source" : "Upgrade to Pro to customize"} />
                 </SelectTrigger>
                 <SelectContent>

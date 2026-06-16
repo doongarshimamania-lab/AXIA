@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TimelineSegment } from "@/types/projectProtection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,13 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-indigo-500" />
               Scope Defense Timeline - Detailed Analysis
             </DialogTitle>
+            <DialogDescription>Track project phases and identify scope creep risk levels.</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">

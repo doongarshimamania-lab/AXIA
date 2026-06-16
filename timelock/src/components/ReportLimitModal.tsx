@@ -26,14 +26,13 @@ export function ReportLimitModal({
 }: ReportLimitModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-3 mb-4">
+          <DialogTitle className="flex items-center gap-3 text-xl font-bold text-destructive font-[Space_Grotesk]">
             <AlertTriangle className="h-6 w-6 text-destructive" />
-            <DialogTitle className="text-xl font-bold text-destructive font-[Space_Grotesk]">
-              REPORT LIMIT REACHED
-            </DialogTitle>
-          </div>
+            REPORT LIMIT REACHED
+          </DialogTitle>
+          <DialogDescription>You have used your free dispute reports for this month.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -5,7 +5,7 @@ import { TimelineRiskData } from "@/types/projectProtection";
 import { motion } from "framer-motion";
 import { ShieldAlert, TrendingUp, Activity, Lock, AlertTriangle, Layers } from "lucide-react";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectRiskTimelineStarter } from "./ProjectRiskTimelineStarter";
 import { ProjectRiskTimelineFree } from "./ProjectRiskTimelineFree";
@@ -42,11 +42,12 @@ export function ProjectRiskTimelinePro({ data, onUpgrade }: ProjectRiskTimelineP
                 View Full Analysis
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl bg-[#0A192F] border-slate-700 text-white p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-5xl bg-[#0A192F] border-slate-700 text-white p-0 overflow-hidden">
               <DialogHeader className="p-6 border-b border-slate-700/50 bg-[#0f2545]">
                 <DialogTitle className="text-xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                   Comprehensive Risk Analysis
                 </DialogTitle>
+                <DialogDescription className="text-slate-400">Detailed vulnerability and risk assessment across your projects.</DialogDescription>
               </DialogHeader>
               <div className="p-6 bg-[#0A192F] max-h-[80vh] overflow-y-auto">
                 <Tabs defaultValue="starter" className="w-full">

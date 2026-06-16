@@ -1,0 +1,1114 @@
+     1→import { useState } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import {
+     5→  Target,
+     6→  Plus,
+     7→  Pencil,
+     8→  Trash2,
+     9→  CheckCircle2,
+    10→  Clock,
+    11→  Flame,
+    12→  TrendingUp,
+    13→  Calendar,
+    14→  Flag,
+    15→  BarChart3,
+    16→  Info,
+    17→  Loader2,
+    18→} from "lucide-react";
+    19→import { Card, CardContent } from "@/components/ui/card";
+    20→import { Button } from "@/components/ui/button";
+    21→import { Badge } from "@/components/ui/badge";
+    22→import { Input } from "@/components/ui/input";
+    23→import { Label } from "@/components/ui/label";
+    24→import { Textarea } from "@/components/ui/textarea";
+    25→import { Separator } from "@/components/ui/separator";
+    26→import { Progress } from "@/components/ui/progress";
+    27→import { Skeleton } from "@/components/ui/skeleton";
+    28→import {
+    29→  Select,
+    30→  SelectContent,
+    31→  SelectItem,
+    32→  SelectTrigger,
+    33→  SelectValue,
+    34→} from "@/components/ui/select";
+    35→import {
+    36→  Dialog,
+    37→  DialogContent,
+    38→  DialogDescription,
+    39→  DialogFooter,
+    40→  DialogHeader,
+    41→  DialogTitle,
+    42→  DialogTrigger,
+    43→} from "@/components/ui/dialog";
+    44→import { useAuth } from "@/hooks/use-auth";
+    45→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    46→import { api } from "@/convex/_generated/api";
+    47→
+    48→// ─── Helpers ─────────────────────────────────────────────────────────────────
+    49→
+    50→type GoalStatus = "not_started" | "in_progress" | "completed" | "abandoned";
+    51→
+    52→const STATUS_CONFIG: Record<
+    53→  GoalStatus,
+    54→  { label: string; color: string; bgColor: string; icon: React.ReactNode }
+    55→> = {
+    56→  not_started: {
+    57→    label: "Not Started",
+    58→    color: "text-gray-700 dark:text-gray-400",
+    59→    bgColor: "bg-gray-100 dark:bg-gray-900/30",
+    60→    icon: <Clock className="h-3 w-3" />,
+    61→  },
+    62→  in_progress: {
+    63→    label: "In Progress",
+    64→    color: "text-emerald-700 dark:text-emerald-400",
+    65→    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    66→    icon: <TrendingUp className="h-3 w-3" />,
+    67→  },
+    68→  completed: {
+    69→    label: "Completed",
+    70→    color: "text-primary",
+    71→    bgColor: "bg-primary/10",
+    72→    icon: <CheckCircle2 className="h-3 w-3" />,
+    73→  },
+    74→  abandoned: {
+    75→    label: "Abandoned",
+    76→    color: "text-red-700 dark:text-red-400",
+    77→    bgColor: "bg-red-100 dark:bg-red-900/30",
+    78→    icon: <Flag className="h-3 w-3" />,
+    79→  },
+    80→};
+    81→
+    82→const GOAL_TYPES = [
+    83→  { value: "revenue", label: "Revenue" },
+    84→  { value: "hours", label: "Hours" },
+    85→  { value: "clients", label: "Clients" },
+    86→  { value: "protection", label: "Protection" },
+    87→  { value: "custom", label: "Custom" },
+    88→];
+    89→
+    90→const UNIT_OPTIONS = [
+    91→  { value: "USD", label: "USD ($)" },
+    92→  { value: "hours", label: "Hours" },
+    93→  { value: "clients", label: "Clients" },
+    94→  { value: "score", label: "Score" },
+    95→  { value: "%", label: "Percentage (%)" },
+    96→];
+    97→
+    98→const formatDate = (timestamp: number) => {
+    99→  const date = new Date(timestamp);
+   100→  return date.toLocaleDateString("en-US", {
+   101→    month: "short",
+   102→    day: "numeric",
+   103→    year: "numeric",
+   104→  });
+   105→};
+   106→
+   107→const daysUntil = (timestamp: number) => {
+   108→  const now = new Date();
+   109→  now.setHours(0, 0, 0, 0);
+   110→  const target = new Date(timestamp);
+   111→  target.setHours(0, 0, 0, 0);
+   112→  const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+   113→  return diff;
+   114→};
+   115→
+   116→// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
+   117→
+   118→const MOCK_GOALS = [
+   119→  {
+   120→    _id: "goal_1" as any,
+   121→    title: "Reach $10K monthly revenue",
+   122→    description: "Scale agency income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
+   123→    type: "revenue",
+   124→    target: 10000,
+   125→    current: 7200,
+   126→    unit: "USD",
+   127→    deadline: new Date("2025-09-30").getTime(),
+   128→    status: "in_progress",
+   129→    milestones: [
+   130→      { id: "m1", title: "Reach $5K/mo", completed: true, completedAt: undefined as number | undefined },
+   131→      { id: "m2", title: "Reach $7.5K/mo", completed: true, completedAt: undefined as number | undefined },
+   132→      { id: "m3", title: "Reach $10K/mo", completed: false, completedAt: undefined as number | undefined },
+   133→    ],
+   134→    streak: 14,
+   135→    lastCheckIn: Date.now() - 86400000,
+   136→    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
+   137→    updatedAt: Date.now() - 86400000,
+   138→  },
+   139→  {
+   140→    _id: "goal_2" as any,
+   141→    title: "Achieve 95% on-time delivery",
+   142→    description: "Maintain a 95% on-time project delivery rate to strengthen client trust and improve dispute protection standing.",
+   143→    type: "protection",
+   144→    target: 100,
+   145→    current: 88,
+   146→    unit: "%",
+   147→    deadline: new Date("2025-08-15").getTime(),
+   148→    status: "in_progress",
+   149→    milestones: [
+   150→      { id: "m4", title: "Track first 10 projects", completed: true, completedAt: undefined as number | undefined },
+   151→      { id: "m5", title: "Hit 90% on-time", completed: true, completedAt: undefined as number | undefined },
+   152→      { id: "m6", title: "Hit 95% on-time", completed: false, completedAt: undefined as number | undefined },
+   153→    ],
+   154→    streak: 21,
+   155→    lastCheckIn: Date.now() - 172800000,
+   156→    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
+   157→    updatedAt: Date.now() - 172800000,
+   158→  },
+   159→  {
+   160→    _id: "goal_3" as any,
+   161→    title: "Complete 50 evidence-backed sessions",
+   162→    description: "Accumulate 50 fully evidence-backed work sessions with automated screenshots and activity logs for maximum protection.",
+   163→    type: "hours",
+   164→    target: 50,
+   165→    current: 28,
+   166→    unit: "hours",
+   167→    deadline: new Date("2025-12-31").getTime(),
+   168→    status: "in_progress",
+   169→    milestones: [
+   170→      { id: "m7", title: "Complete 10 sessions", completed: true, completedAt: undefined as number | undefined },
+   171→      { id: "m8", title: "Complete 25 sessions", completed: true, completedAt: undefined as number | undefined },
+   172→      { id: "m9", title: "Complete 50 sessions", completed: false, completedAt: undefined as number | undefined },
+   173→    ],
+   174→    streak: 7,
+   175→    lastCheckIn: Date.now() - 259200000,
+   176→    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
+   177→    updatedAt: Date.now() - 259200000,
+   178→  },
+   179→  {
+   180→    _id: "goal_4" as any,
+   181→    title: "Zero unpaid invoices this quarter",
+   182→    description: "Ensure all invoices are paid within the agreed terms by using automated follow-ups and milestone-based payment protection.",
+   183→    type: "revenue",
+   184→    target: 0,
+   185→    current: 0,
+   186→    unit: "USD",
+   187→    deadline: new Date("2025-06-30").getTime(),
+   188→    status: "completed",
+   189→    milestones: [
+   190→      { id: "m10", title: "Set up payment tracking", completed: true, completedAt: undefined as number | undefined },
+   191→      { id: "m11", title: "Automate reminders", completed: true, completedAt: undefined as number | undefined },
+   192→      { id: "m12", title: "Zero unpaid for 30 days", completed: true, completedAt: undefined as number | undefined },
+   193→    ],
+   194→    streak: 30,
+   195→    lastCheckIn: Date.now() - 432000000,
+   196→    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   197→    updatedAt: Date.now() - 432000000,
+   198→  },
+   199→  {
+   200→    _id: "goal_5" as any,
+   201→    title: "Launch 3 new client projects",
+   202→    description: "Onboard and launch 3 new client projects with full protection from day one, including scope definition and milestone contracts.",
+   203→    type: "clients",
+   204→    target: 3,
+   205→    current: 1,
+   206→    unit: "clients",
+   207→    deadline: new Date("2025-10-15").getTime(),
+   208→    status: "not_started",
+   209→    milestones: [
+   210→      { id: "m13", title: "Launch first project", completed: true, completedAt: undefined as number | undefined },
+   211→      { id: "m14", title: "Launch second project", completed: false, completedAt: undefined as number | undefined },
+   212→      { id: "m15", title: "Launch third project", completed: false, completedAt: undefined as number | undefined },
+   213→    ],
+   214→    streak: 0,
+   215→    lastCheckIn: undefined as number | undefined,
+   216→    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   217→    updatedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+   218→  },
+   219→  {
+   220→    _id: "goal_6" as any,
+   221→    title: "Maintain 4.9+ client satisfaction",
+   222→    description: "Keep average client satisfaction rating at 4.9 or above through proactive communication and quality deliverables.",
+   223→    type: "protection",
+   224→    target: 100,
+   225→    current: 45,
+   226→    unit: "score",
+   227→    deadline: new Date("2025-05-31").getTime(),
+   228→    status: "abandoned",
+   229→    milestones: [
+   230→      { id: "m16", title: "Collect 10 reviews", completed: true, completedAt: undefined as number | undefined },
+   231→      { id: "m17", title: "Hit 4.8 avg", completed: false, completedAt: undefined as number | undefined },
+   232→      { id: "m18", title: "Hit 4.9+ avg", completed: false, completedAt: undefined as number | undefined },
+   233→    ],
+   234→    streak: 0,
+   235→    lastCheckIn: undefined as number | undefined,
+   236→    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+   237→    updatedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
+   238→  },
+   239→];
+   240→
+   241→// ─── Component ───────────────────────────────────────────────────────────────
+   242→
+   243→export default function Goals() {
+   244→  const { isAuthenticated, isLoading: authLoading } = useAuth();
+   245→
+   246→  // ─── Convex queries & mutations ──────────────────────────────────────────
+   247→  const goalsData = useQuery(api.goals.crud.getGoals, {});
+   248→  const createGoalMutation = useMutation(api.goals.crud.createGoal);
+   249→  const updateGoalMutation = useMutation(api.goals.crud.updateGoal);
+   250→  const deleteGoalMutation = useMutation(api.goals.crud.deleteGoal);
+   251→  const markGoalCompleteMutation = useMutation(api.goals.crud.markGoalComplete);
+   252→  const updateMilestoneMutation = useMutation(api.goals.crud.updateMilestone);
+   253→
+   254→  // ─── Local state ────────────────────────────────────────────────────────
+   255→  const [statusFilter, setStatusFilter] = useState<string>("all");
+   256→  const [createOpen, setCreateOpen] = useState(false);
+   257→  const [editOpen, setEditOpen] = useState(false);
+   258→  const [editingGoal, setEditingGoal] = useState<any>(null);
+   259→  const [deleteOpen, setDeleteOpen] = useState(false);
+   260→  const [deletingGoal, setDeletingGoal] = useState<any>(null);
+   261→
+   262→  // Form state
+   263→  const [formTitle, setFormTitle] = useState("");
+   264→  const [formDescription, setFormDescription] = useState("");
+   265→  const [formType, setFormType] = useState("custom");
+   266→  const [formTarget, setFormTarget] = useState("");
+   267→  const [formCurrent, setFormCurrent] = useState("0");
+   268→  const [formUnit, setFormUnit] = useState("%");
+   269→  const [formDeadline, setFormDeadline] = useState("");
+   270→  const [formStatus, setFormStatus] = useState("not_started");
+   271→
+   272→  // Mutation loading state
+   273→  const [isCreating, setIsCreating] = useState(false);
+   274→  const [isUpdating, setIsUpdating] = useState(false);
+   275→  const [isDeleting, setIsDeleting] = useState(false);
+   276→  const [isCompleting, setIsCompleting] = useState<string | null>(null);
+   277→
+   278→  // ─── Loading timeout pattern ────────────────────────────────────────────
+   279→  const { isDisconnected } = useConvexConnectionState();
+   280→  const timedOut = useQueryTimeout(!authLoading && goalsData === undefined, 3000);
+   281→
+   282→  const isLoading = !authLoading && goalsData === undefined && !timedOut && !isDisconnected;
+   283→
+   284→  // ─── Demo mode ──────────────────────────────────────────────────────────
+   285→  const isDemoMode = !authLoading && !isAuthenticated;
+   286→
+   287→  // ─── Data resolution ────────────────────────────────────────────────────
+   288→  const goals = isDemoMode ? MOCK_GOALS : (goalsData ?? []);
+   289→
+   290→  // ── Computed Stats ──
+   291→  const activeGoals = goals.filter((g: any) => g.status === "in_progress").length;
+   292→  const completedGoals = goals.filter((g: any) => g.status === "completed").length;
+   293→  const completionRate =
+   294→    goals.length > 0 ? Math.round((completedGoals / goals.length) * 100) : 0;
+   295→  const longestStreak = goals.reduce((max: number, g: any) => Math.max(max, g.streak ?? 0), 0);
+   296→
+   297→  // ── Filtering ──
+   298→  const filteredGoals =
+   299→    statusFilter === "all"
+   300→      ? goals
+   301→      : goals.filter((g: any) => g.status === statusFilter);
+   302→
+   303→  // ── Helpers ──
+   304→  const resetForm = () => {
+   305→    setFormTitle("");
+   306→    setFormDescription("");
+   307→    setFormType("custom");
+   308→    setFormTarget("");
+   309→    setFormCurrent("0");
+   310→    setFormUnit("%");
+   311→    setFormDeadline("");
+   312→    setFormStatus("not_started");
+   313→  };
+   314→
+   315→  const getProgress = (goal: any) => {
+   316→    if (goal.target === 0) return goal.status === "completed" ? 100 : 0;
+   317→    return Math.min(Math.round((goal.current / goal.target) * 100), 100);
+   318→  };
+   319→
+   320→  // ── Create ──
+   321→  const handleCreate = async () => {
+   322→    if (!formTitle.trim()) {
+   323→      toast.error("Goal title is required");
+   324→      return;
+   325→    }
+   326→    if (!formTarget) {
+   327→      toast.error("Target value is required");
+   328→      return;
+   329→    }
+   330→
+   331→    const target = Number(formTarget);
+   332→    const current = Number(formCurrent) || 0;
+   333→    const deadline = formDeadline ? new Date(formDeadline).getTime() : undefined;
+   334→
+   335→    if (isDemoMode) {
+   336→      toast.success(`Goal "${formTitle.trim()}" created! (Demo mode)`);
+   337→      resetForm();
+   338→      setCreateOpen(false);
+   339→      return;
+   340→    }
+   341→
+   342→    setIsCreating(true);
+   343→    try {
+   344→      await createGoalMutation({
+   345→        title: formTitle.trim(),
+   346→        description: formDescription.trim() || undefined,
+   347→        type: formType,
+   348→        target,
+   349→        current,
+   350→        unit: formUnit,
+   351→        deadline,
+   352→        status: formStatus,
+   353→      });
+   354→      resetForm();
+   355→      setCreateOpen(false);
+   356→      toast.success(`Goal "${formTitle.trim()}" created`);
+   357→    } catch (err: any) {
+   358→      toast.error(err?.message || "Failed to create goal");
+   359→    } finally {
+   360→      setIsCreating(false);
+   361→    }
+   362→  };
+   363→
+   364→  // ── Edit ──
+   365→  const openEdit = (goal: any) => {
+   366→    setEditingGoal(goal);
+   367→    setFormTitle(goal.title);
+   368→    setFormDescription(goal.description ?? "");
+   369→    setFormType(goal.type);
+   370→    setFormTarget(String(goal.target));
+   371→    setFormCurrent(String(goal.current));
+   372→    setFormUnit(goal.unit);
+   373→    setFormDeadline(goal.deadline ? new Date(goal.deadline).toISOString().split("T")[0] : "");
+   374→    setFormStatus(goal.status);
+   375→    setEditOpen(true);
+   376→  };
+   377→
+   378→  const handleEdit = async () => {
+   379→    if (!editingGoal) return;
+   380→    if (!formTitle.trim()) {
+   381→      toast.error("Goal title is required");
+   382→      return;
+   383→    }
+   384→
+   385→    const target = Number(formTarget);
+   386→    const deadline = formDeadline ? new Date(formDeadline).getTime() : undefined;
+   387→
+   388→    if (isDemoMode) {
+   389→      toast.success(`Goal "${formTitle.trim()}" updated! (Demo mode)`);
+   390→      resetForm();
+   391→      setEditOpen(false);
+   392→      setEditingGoal(null);
+   393→      return;
+   394→    }
+   395→
+   396→    setIsUpdating(true);
+   397→    try {
+   398→      await updateGoalMutation({
+   399→        goalId: editingGoal._id,
+   400→        title: formTitle.trim(),
+   401→        description: formDescription.trim() || undefined,
+   402→        type: formType,
+   403→        target,
+   404→        current: Number(formCurrent) || 0,
+   405→        unit: formUnit,
+   406→        deadline,
+   407→        status: formStatus,
+   408→      });
+   409→      resetForm();
+   410→      setEditOpen(false);
+   411→      setEditingGoal(null);
+   412→      toast.success(`Goal "${formTitle.trim()}" updated`);
+   413→    } catch (err: any) {
+   414→      toast.error(err?.message || "Failed to update goal");
+   415→    } finally {
+   416→      setIsUpdating(false);
+   417→    }
+   418→  };
+   419→
+   420→  // ── Delete ──
+   421→  const openDelete = (goal: any) => {
+   422→    setDeletingGoal(goal);
+   423→    setDeleteOpen(true);
+   424→  };
+   425→
+   426→  const handleDelete = async () => {
+   427→    if (!deletingGoal) return;
+   428→
+   429→    if (isDemoMode) {
+   430→      toast.success(`Goal "${deletingGoal.title}" deleted! (Demo mode)`);
+   431→      setDeleteOpen(false);
+   432→      setDeletingGoal(null);
+   433→      return;
+   434→    }
+   435→
+   436→    setIsDeleting(true);
+   437→    try {
+   438→      await deleteGoalMutation({ goalId: deletingGoal._id });
+   439→      setDeleteOpen(false);
+   440→      setDeletingGoal(null);
+   441→      toast.success(`Goal "${deletingGoal.title}" deleted`);
+   442→    } catch (err: any) {
+   443→      toast.error(err?.message || "Failed to delete goal");
+   444→    } finally {
+   445→      setIsDeleting(false);
+   446→    }
+   447→  };
+   448→
+   449→  // ── Mark Complete ──
+   450→  const handleMarkComplete = async (goalId: any) => {
+   451→    const goal = goals.find((g: any) => g._id === goalId);
+   452→    if (!goal) return;
+   453→
+   454→    if (isDemoMode) {
+   455→      toast.success(`Goal "${goal.title}" marked as complete! (Demo mode)`);
+   456→      return;
+   457→    }
+   458→
+   459→    setIsCompleting(goalId);
+   460→    try {
+   461→      await markGoalCompleteMutation({ goalId });
+   462→      toast.success(`Goal "${goal.title}" marked as complete!`);
+   463→    } catch (err: any) {
+   464→      toast.error(err?.message || "Failed to mark goal complete");
+   465→    } finally {
+   466→      setIsCompleting(null);
+   467→    }
+   468→  };
+   469→
+   470→  // ── Toggle milestone ──
+   471→  const handleToggleMilestone = async (goalId: any, milestoneId: string, currentCompleted: boolean) => {
+   472→    if (isDemoMode) {
+   473→      toast.success(currentCompleted ? "Milestone unmarked! (Demo mode)" : "Milestone completed! (Demo mode)");
+   474→      return;
+   475→    }
+   476→
+   477→    try {
+   478→      await updateMilestoneMutation({
+   479→        goalId,
+   480→        milestoneId,
+   481→        completed: !currentCompleted,
+   482→      });
+   483→    } catch (err: any) {
+   484→      toast.error(err?.message || "Failed to update milestone");
+   485→    }
+   486→  };
+   487→
+   488→  // ── Map status filter labels ──
+   489→  const FILTER_OPTIONS = [
+   490→    { value: "all", label: "All" },
+   491→    { value: "in_progress", label: "In Progress" },
+   492→    { value: "not_started", label: "Not Started" },
+   493→    { value: "completed", label: "Completed" },
+   494→    { value: "abandoned", label: "Abandoned" },
+   495→  ];
+   496→
+   497→  // ── Render ──
+   498→  return (
+   499→    <motion.div
+   500→      initial={{ opacity: 0 }}
+   501→      animate={{ opacity: 1 }}
+   502→      className="w-full min-h-screen bg-background text-foreground"
+   503→    >
+   504→      <div className="container mx-auto px-4 py-6 space-y-6">
+   505→        {/* ── Header ── */}
+   506→        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+   507→          <div>
+   508→            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   509→              Goals
+   510→            </h1>
+   511→            <p className="text-[16px] text-muted-foreground">
+   512→              Set and track professional goals to protect your income and grow your agency
+   513→            </p>
+   514→          </div>
+   515→
+   516→          <Dialog
+   517→            open={createOpen}
+   518→            onOpenChange={(open) => {
+   519→              setCreateOpen(open);
+   520→              if (!open) resetForm();
+   521→            }}
+   522→          >
+   523→            <DialogTrigger asChild>
+   524→              <Button className="bg-primary hover:bg-primary/90 shrink-0">
+   525→                <Plus className="mr-2 h-4 w-4" />
+   526→                Create Goal
+   527→              </Button>
+   528→            </DialogTrigger>
+   529→            <DialogContent className="sm:max-w-lg">
+   530→              <DialogHeader>
+   531→                <DialogTitle>Create New Goal</DialogTitle>
+   532→                <DialogDescription>
+   533→                  Define a measurable goal with a deadline to keep your professional growth on track.
+   534→                </DialogDescription>
+   535→              </DialogHeader>
+   536→              <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+   537→                <div className="space-y-2">
+   538→                  <Label htmlFor="goal-title">Title</Label>
+   539→                  <Input
+   540→                    id="goal-title"
+   541→                    placeholder="e.g. Reach $10K monthly revenue"
+   542→                    value={formTitle}
+   543→                    onChange={(e) => setFormTitle(e.target.value)}
+   544→                  />
+   545→                </div>
+   546→                <div className="space-y-2">
+   547→                  <Label htmlFor="goal-description">Description</Label>
+   548→                  <Textarea
+   549→                    id="goal-description"
+   550→                    placeholder="What do you want to achieve and why?"
+   551→                    value={formDescription}
+   552→                    onChange={(e) => setFormDescription(e.target.value)}
+   553→                    rows={3}
+   554→                  />
+   555→                </div>
+   556→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   557→                  <div className="space-y-2">
+   558→                    <Label>Type</Label>
+   559→                    <Select value={formType} onValueChange={setFormType}>
+   560→                      <SelectTrigger>
+   561→                        <SelectValue />
+   562→                      </SelectTrigger>
+   563→                      <SelectContent>
+   564→                        {GOAL_TYPES.map((t) => (
+   565→                          <SelectItem key={t.value} value={t.value}>
+   566→                            {t.label}
+   567→                          </SelectItem>
+   568→                        ))}
+   569→                      </SelectContent>
+   570→                    </Select>
+   571→                  </div>
+   572→                  <div className="space-y-2">
+   573→                    <Label>Unit</Label>
+   574→                    <Select value={formUnit} onValueChange={setFormUnit}>
+   575→                      <SelectTrigger>
+   576→                        <SelectValue />
+   577→                      </SelectTrigger>
+   578→                      <SelectContent>
+   579→                        {UNIT_OPTIONS.map((u) => (
+   580→                          <SelectItem key={u.value} value={u.value}>
+   581→                            {u.label}
+   582→                          </SelectItem>
+   583→                        ))}
+   584→                      </SelectContent>
+   585→                    </Select>
+   586→                  </div>
+   587→                </div>
+   588→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   589→                  <div className="space-y-2">
+   590→                    <Label htmlFor="goal-target">Target</Label>
+   591→                    <Input
+   592→                      id="goal-target"
+   593→                      type="number"
+   594→                      placeholder="e.g. 10000"
+   595→                      value={formTarget}
+   596→                      onChange={(e) => setFormTarget(e.target.value)}
+   597→                    />
+   598→                  </div>
+   599→                  <div className="space-y-2">
+   600→                    <Label htmlFor="goal-current">Current</Label>
+   601→                    <Input
+   602→                      id="goal-current"
+   603→                      type="number"
+   604→                      placeholder="0"
+   605→                      value={formCurrent}
+   606→                      onChange={(e) => setFormCurrent(e.target.value)}
+   607→                    />
+   608→                  </div>
+   609→                </div>
+   610→                <div className="space-y-2">
+   611→                  <Label htmlFor="goal-date">Target Date</Label>
+   612→                  <Input
+   613→                    id="goal-date"
+   614→                    type="date"
+   615→                    value={formDeadline}
+   616→                    onChange={(e) => setFormDeadline(e.target.value)}
+   617→                  />
+   618→                </div>
+   619→              </div>
+   620→              <DialogFooter>
+   621→                <Button
+   622→                  variant="outline"
+   623→                  onClick={() => {
+   624→                    setCreateOpen(false);
+   625→                    resetForm();
+   626→                  }}
+   627→                  disabled={isCreating}
+   628→                >
+   629→                  Cancel
+   630→                </Button>
+   631→                <Button className="bg-primary hover:bg-primary/90" onClick={handleCreate} disabled={isCreating}>
+   632→                  {isCreating ? (
+   633→                    <>
+   634→                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   635→                      Creating...
+   636→                    </>
+   637→                  ) : (
+   638→                    "Create Goal"
+   639→                  )}
+   640→                </Button>
+   641→              </DialogFooter>
+   642→            </DialogContent>
+   643→          </Dialog>
+   644→        </div>
+   645→
+   646→        {/* ── Demo mode banner ── */}
+   647→        {isDemoMode && (
+   648→          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+   649→            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+   650→            <div className="text-sm text-amber-800 dark:text-amber-200">
+   651→              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+   652→              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+   653→                Sign in
+   654→              </a>{" "}
+   655→              to manage your real goals.
+   656→            </div>
+   657→          </div>
+   658→        )}
+   659→
+   660→        {/* ── Loading state ── */}
+   661→        {isLoading ? (
+   662→          <div className="space-y-4">
+   663→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   664→              <Skeleton className="h-[76px] rounded-xl" />
+   665→              <Skeleton className="h-[76px] rounded-xl" />
+   666→              <Skeleton className="h-[76px] rounded-xl" />
+   667→            </div>
+   668→            <Skeleton className="h-10 rounded-lg" />
+   669→            {[1, 2, 3].map((i) => (
+   670→              <Skeleton key={i} className="h-[200px] rounded-xl" />
+   671→            ))}
+   672→          </div>
+   673→        ) : (
+   674→          <>
+   675→            {/* ── Stats Cards ── */}
+   676→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   677→              <Card>
+   678→                <CardContent className="p-6">
+   679→                  <div className="flex items-center gap-3">
+   680→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
+   681→                      <Target className="h-5 w-5 text-emerald-500" />
+   682→                    </div>
+   683→                    <div>
+   684→                      <p className="text-sm text-muted-foreground">Active Goals</p>
+   685→                      <p className="text-2xl font-bold">{activeGoals}</p>
+   686→                    </div>
+   687→                  </div>
+   688→                </CardContent>
+   689→              </Card>
+   690→              <Card>
+   691→                <CardContent className="p-6">
+   692→                  <div className="flex items-center gap-3">
+   693→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+   694→                      <BarChart3 className="h-5 w-5 text-primary" />
+   695→                    </div>
+   696→                    <div>
+   697→                      <p className="text-sm text-muted-foreground">Completion Rate</p>
+   698→                      <p className="text-2xl font-bold">{completionRate}%</p>
+   699→                    </div>
+   700→                  </div>
+   701→                </CardContent>
+   702→              </Card>
+   703→              <Card>
+   704→                <CardContent className="p-6">
+   705→                  <div className="flex items-center gap-3">
+   706→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500/10">
+   707→                      <Flame className="h-5 w-5 text-orange-500" />
+   708→                    </div>
+   709→                    <div>
+   710→                      <p className="text-sm text-muted-foreground">Best Streak</p>
+   711→                      <p className="text-2xl font-bold">
+   712→                        {longestStreak} {longestStreak === 1 ? "day" : "days"}
+   713→                      </p>
+   714→                    </div>
+   715→                  </div>
+   716→                </CardContent>
+   717→              </Card>
+   718→            </div>
+   719→
+   720→            {/* ── Status Filter ── */}
+   721→            <div className="flex items-center gap-2 flex-wrap">
+   722→              <span className="text-sm text-muted-foreground shrink-0">Filter:</span>
+   723→              {FILTER_OPTIONS.map((filter) => (
+   724→                <Button
+   725→                  key={filter.value}
+   726→                  variant={statusFilter === filter.value ? "default" : "outline"}
+   727→                  size="sm"
+   728→                  onClick={() => setStatusFilter(filter.value)}
+   729→                >
+   730→                  {filter.label}
+   731→                </Button>
+   732→              ))}
+   733→            </div>
+   734→
+   735→            <Separator />
+   736→
+   737→            {/* ── Goals List ── */}
+   738→            {filteredGoals.length === 0 ? (
+   739→              <Card>
+   740→                <CardContent className="py-12">
+   741→                  <div className="text-center text-muted-foreground">
+   742→                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+   743→                    <p className="text-lg font-medium">No goals found</p>
+   744→                    <p className="text-sm">
+   745→                      {statusFilter !== "all"
+   746→                        ? "Try a different filter or create a new goal"
+   747→                        : "Create your first goal to start tracking your progress"}
+   748→                    </p>
+   749→                    {statusFilter === "all" && (
+   750→                      <Button
+   751→                        className="mt-4 bg-primary hover:bg-primary/90"
+   752→                        onClick={() => setCreateOpen(true)}
+   753→                      >
+   754→                        <Plus className="mr-2 h-4 w-4" />
+   755→                        Create Your First Goal
+   756→                      </Button>
+   757→                    )}
+   758→                  </div>
+   759→                </CardContent>
+   760→              </Card>
+   761→            ) : (
+   762→              <div className="space-y-4">
+   763→                {filteredGoals.map((goal: any, index: number) => {
+   764→                  const statusKey = (goal.status as GoalStatus) || "not_started";
+   765→                  const statusCfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.not_started;
+   766→                  const progress = getProgress(goal);
+   767→                  const days = goal.deadline ? daysUntil(goal.deadline) : null;
+   768→                  const completedMilestones = (goal.milestones ?? []).filter((m: any) => m.completed).length;
+   769→                  const totalMilestones = (goal.milestones ?? []).length;
+   770→
+   771→                  return (
+   772→                    <motion.div
+   773→                      key={goal._id}
+   774→                      initial={{ opacity: 0, y: 12 }}
+   775→                      animate={{ opacity: 1, y: 0 }}
+   776→                      transition={{ delay: index * 0.06, duration: 0.3 }}
+   777→                    >
+   778→                      <Card className="group hover:shadow-md transition-shadow">
+   779→                        <CardContent className="p-6">
+   780→                          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+   781→                            {/* Left: Main content */}
+   782→                            <div className="flex-1 min-w-0 space-y-3">
+   783→                              {/* Title row */}
+   784→                              <div className="flex items-start justify-between gap-3">
+   785→                                <div className="flex items-center gap-3 min-w-0">
+   786→                                  <div
+   787→                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium shrink-0 ${statusCfg.bgColor} ${statusCfg.color}`}
+   788→                                  >
+   789→                                    {statusCfg.icon}
+   790→                                    {statusCfg.label}
+   791→                                  </div>
+   792→                                  <h3 className="text-lg font-semibold truncate">
+   793→                                    {goal.title}
+   794→                                  </h3>
+   795→                                </div>
+   796→                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+   797→                                  {goal.status !== "completed" && (
+   798→                                    <Button
+   799→                                      variant="ghost"
+   800→                                      size="icon"
+   801→                                      className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
+   802→                                      onClick={() => handleMarkComplete(goal._id)}
+   803→                                      disabled={isCompleting === goal._id}
+   804→                                      title="Mark complete"
+   805→                                    >
+   806→                                      {isCompleting === goal._id ? (
+   807→                                        <Loader2 className="h-4 w-4 animate-spin" />
+   808→                                      ) : (
+   809→                                        <CheckCircle2 className="h-4 w-4" />
+   810→                                      )}
+   811→                                    </Button>
+   812→                                  )}
+   813→                                  <Button
+   814→                                    variant="ghost"
+   815→                                    size="icon"
+   816→                                    className="h-8 w-8"
+   817→                                    onClick={() => openEdit(goal)}
+   818→                                    title="Edit goal"
+   819→                                  >
+   820→                                    <Pencil className="h-4 w-4" />
+   821→                                  </Button>
+   822→                                  <Button
+   823→                                    variant="ghost"
+   824→                                    size="icon"
+   825→                                    className="h-8 w-8 text-destructive hover:text-destructive"
+   826→                                    onClick={() => openDelete(goal)}
+   827→                                    title="Delete goal"
+   828→                                  >
+   829→                                    <Trash2 className="h-4 w-4" />
+   830→                                  </Button>
+   831→                                </div>
+   832→                              </div>
+   833→
+   834→                              {/* Description */}
+   835→                              {goal.description && (
+   836→                                <p className="text-sm text-muted-foreground line-clamp-2">
+   837→                                  {goal.description}
+   838→                                </p>
+   839→                              )}
+   840→
+   841→                              {/* Progress bar */}
+   842→                              <div className="space-y-1.5">
+   843→                                <div className="flex items-center justify-between text-sm">
+   844→                                  <span className="text-muted-foreground">
+   845→                                    {goal.current ?? 0} / {goal.target ?? 0} {goal.unit}
+   846→                                  </span>
+   847→                                  <span className="font-semibold">{progress}%</span>
+   848→                                </div>
+   849→                                <Progress value={progress} className="h-2" />
+   850→                              </div>
+   851→
+   852→                              {/* Milestones */}
+   853→                              {totalMilestones > 0 && (
+   854→                                <div className="space-y-1.5">
+   855→                                  <p className="text-xs text-muted-foreground font-medium">
+   856→                                    Milestones ({completedMilestones}/{totalMilestones})
+   857→                                  </p>
+   858→                                  <div className="flex flex-wrap gap-2">
+   859→                                    {(goal.milestones ?? []).map((ms: any) => (
+   860→                                      <button
+   861→                                        key={ms.id}
+   862→                                        type="button"
+   863→                                        onClick={() => handleToggleMilestone(goal._id, ms.id, ms.completed)}
+   864→                                        className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors cursor-pointer ${
+   865→                                          ms.completed
+   866→                                            ? "bg-primary/10 text-primary hover:bg-primary/20"
+   867→                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+   868→                                        }`}
+   869→                                      >
+   870→                                        {ms.completed ? (
+   871→                                          <CheckCircle2 className="h-3 w-3" />
+   872→                                        ) : (
+   873→                                          <Clock className="h-3 w-3" />
+   874→                                        )}
+   875→                                        {ms.title}
+   876→                                      </button>
+   877→                                    ))}
+   878→                                  </div>
+   879→                                </div>
+   880→                              )}
+   881→
+   882→                              {/* Bottom meta row */}
+   883→                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+   884→                                {goal.deadline && (
+   885→                                  <span className="inline-flex items-center gap-1">
+   886→                                    <Calendar className="h-3.5 w-3.5" />
+   887→                                    {goal.status === "completed"
+   888→                                      ? `Completed`
+   889→                                      : days !== null && days < 0
+   890→                                        ? `${Math.abs(days)} days overdue`
+   891→                                        : days === 0
+   892→                                          ? "Due today"
+   893→                                          : `${days} days left`}
+   894→                                  </span>
+   895→                                )}
+   896→                                {(goal.streak ?? 0) > 0 && (
+   897→                                  <span className="inline-flex items-center gap-1 text-orange-500">
+   898→                                    <Flame className="h-3.5 w-3.5" />
+   899→                                    {goal.streak} day streak
+   900→                                  </span>
+   901→                                )}
+   902→                                <span className="inline-flex items-center gap-1 capitalize">
+   903→                                  {goal.type} goal
+   904→                                </span>
+   905→                              </div>
+   906→                            </div>
+   907→
+   908→                            {/* Right: Type + deadline */}
+   909→                            <div className="flex flex-row lg:flex-col items-start gap-2 shrink-0 lg:border-l lg:pl-4 lg:border-border">
+   910→                              <Badge variant="secondary" className="text-xs capitalize">
+   911→                                {goal.type}
+   912→                              </Badge>
+   913→                              {goal.deadline && (
+   914→                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+   915→                                  <span className="font-medium">Due:</span>{" "}
+   916→                                  {formatDate(goal.deadline)}
+   917→                                </div>
+   918→                              )}
+   919→                            </div>
+   920→                          </div>
+   921→                        </CardContent>
+   922→                      </Card>
+   923→                    </motion.div>
+   924→                  );
+   925→                })}
+   926→              </div>
+   927→            )}
+   928→          </>
+   929→        )}
+   930→      </div>
+   931→
+   932→      {/* ── Edit Goal Dialog ── */}
+   933→      <Dialog
+   934→        open={editOpen}
+   935→        onOpenChange={(open) => {
+   936→          setEditOpen(open);
+   937→          if (!open) {
+   938→            resetForm();
+   939→            setEditingGoal(null);
+   940→          }
+   941→        }}
+   942→      >
+   943→        <DialogContent className="sm:max-w-lg">
+   944→          <DialogHeader>
+   945→            <DialogTitle>Edit Goal</DialogTitle>
+   946→            <DialogDescription>Update your goal details.</DialogDescription>
+   947→          </DialogHeader>
+   948→          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
+   949→            <div className="space-y-2">
+   950→              <Label htmlFor="edit-goal-title">Title</Label>
+   951→              <Input
+   952→                id="edit-goal-title"
+   953→                value={formTitle}
+   954→                onChange={(e) => setFormTitle(e.target.value)}
+   955→              />
+   956→            </div>
+   957→            <div className="space-y-2">
+   958→              <Label htmlFor="edit-goal-description">Description</Label>
+   959→              <Textarea
+   960→                id="edit-goal-description"
+   961→                value={formDescription}
+   962→                onChange={(e) => setFormDescription(e.target.value)}
+   963→                rows={3}
+   964→              />
+   965→            </div>
+   966→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   967→              <div className="space-y-2">
+   968→                <Label>Type</Label>
+   969→                <Select value={formType} onValueChange={setFormType}>
+   970→                  <SelectTrigger>
+   971→                    <SelectValue />
+   972→                  </SelectTrigger>
+   973→                  <SelectContent>
+   974→                    {GOAL_TYPES.map((t) => (
+   975→                      <SelectItem key={t.value} value={t.value}>
+   976→                        {t.label}
+   977→                      </SelectItem>
+   978→                    ))}
+   979→                  </SelectContent>
+   980→                </Select>
+   981→              </div>
+   982→              <div className="space-y-2">
+   983→                <Label>Unit</Label>
+   984→                <Select value={formUnit} onValueChange={setFormUnit}>
+   985→                  <SelectTrigger>
+   986→                    <SelectValue />
+   987→                  </SelectTrigger>
+   988→                  <SelectContent>
+   989→                    {UNIT_OPTIONS.map((u) => (
+   990→                      <SelectItem key={u.value} value={u.value}>
+   991→                        {u.label}
+   992→                      </SelectItem>
+   993→                    ))}
+   994→                  </SelectContent>
+   995→                </Select>
+   996→              </div>
+   997→            </div>
+   998→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   999→              <div className="space-y-2">
+  1000→                <Label htmlFor="edit-goal-target">Target</Label>
+  1001→                <Input
+  1002→                  id="edit-goal-target"
+  1003→                  type="number"
+  1004→                  value={formTarget}
+  1005→                  onChange={(e) => setFormTarget(e.target.value)}
+  1006→                />
+  1007→              </div>
+  1008→              <div className="space-y-2">
+  1009→                <Label htmlFor="edit-goal-current">Current</Label>
+  1010→                <Input
+  1011→                  id="edit-goal-current"
+  1012→                  type="number"
+  1013→                  value={formCurrent}
+  1014→                  onChange={(e) => setFormCurrent(e.target.value)}
+  1015→                />
+  1016→              </div>
+  1017→            </div>
+  1018→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1019→              <div className="space-y-2">
+  1020→                <Label htmlFor="edit-goal-date">Target Date</Label>
+  1021→                <Input
+  1022→                  id="edit-goal-date"
+  1023→                  type="date"
+  1024→                  value={formDeadline}
+  1025→                  onChange={(e) => setFormDeadline(e.target.value)}
+  1026→                />
+  1027→              </div>
+  1028→              <div className="space-y-2">
+  1029→                <Label>Status</Label>
+  1030→                <Select value={formStatus} onValueChange={setFormStatus}>
+  1031→                  <SelectTrigger>
+  1032→                    <SelectValue />
+  1033→                  </SelectTrigger>
+  1034→                  <SelectContent>
+  1035→                    <SelectItem value="not_started">Not Started</SelectItem>
+  1036→                    <SelectItem value="in_progress">In Progress</SelectItem>
+  1037→                    <SelectItem value="completed">Completed</SelectItem>
+  1038→                    <SelectItem value="abandoned">Abandoned</SelectItem>
+  1039→                  </SelectContent>
+  1040→                </Select>
+  1041→              </div>
+  1042→            </div>
+  1043→          </div>
+  1044→          <DialogFooter>
+  1045→            <Button
+  1046→              variant="outline"
+  1047→              onClick={() => {
+  1048→                setEditOpen(false);
+  1049→                resetForm();
+  1050→                setEditingGoal(null);
+  1051→              }}
+  1052→              disabled={isUpdating}
+  1053→            >
+  1054→              Cancel
+  1055→            </Button>
+  1056→            <Button className="bg-primary hover:bg-primary/90" onClick={handleEdit} disabled={isUpdating}>
+  1057→              {isUpdating ? (
+  1058→                <>
+  1059→                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+  1060→                  Saving...
+  1061→                </>
+  1062→              ) : (
+  1063→                "Save Changes"
+  1064→              )}
+  1065→            </Button>
+  1066→          </DialogFooter>
+  1067→        </DialogContent>
+  1068→      </Dialog>
+  1069→
+  1070→      {/* ── Delete Goal Dialog ── */}
+  1071→      <Dialog
+  1072→        open={deleteOpen}
+  1073→        onOpenChange={(open) => {
+  1074→          setDeleteOpen(open);
+  1075→          if (!open) setDeletingGoal(null);
+  1076→        }}
+  1077→      >
+  1078→        <DialogContent>
+  1079→          <DialogHeader>
+  1080→            <DialogTitle>Delete Goal</DialogTitle>
+  1081→            <DialogDescription>
+  1082→              Are you sure you want to delete the goal{" "}
+  1083→              <span className="font-semibold text-foreground">{deletingGoal?.title}</span>? This
+  1084→              action cannot be undone and all progress will be lost.
+  1085→            </DialogDescription>
+  1086→          </DialogHeader>
+  1087→          <DialogFooter>
+  1088→            <Button
+  1089→              variant="outline"
+  1090→              onClick={() => {
+  1091→                setDeleteOpen(false);
+  1092→                setDeletingGoal(null);
+  1093→              }}
+  1094→              disabled={isDeleting}
+  1095→            >
+  1096→              Cancel
+  1097→            </Button>
+  1098→            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+  1099→              {isDeleting ? (
+  1100→                <>
+  1101→                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+  1102→                  Deleting...
+  1103→                </>
+  1104→              ) : (
+  1105→                "Delete Goal"
+  1106→              )}
+  1107→            </Button>
+  1108→          </DialogFooter>
+  1109→        </DialogContent>
+  1110→      </Dialog>
+  1111→    </motion.div>
+  1112→  );
+  1113→}
+  1114→

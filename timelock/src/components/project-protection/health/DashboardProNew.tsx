@@ -5,7 +5,7 @@ import { Shield, Terminal, Zap } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { VulnerabilityScanner } from "./VulnerabilityScanner";
 import { WorkRhythmVisualizer } from "./WorkRhythmVisualizer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowUpRight } from "lucide-react";
 
 interface DashboardProNewProps {
@@ -93,6 +93,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
                       <Zap className="w-4 h-4" />
                       WORK_RHYTHM_ANALYSIS
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">Review your work rhythm and productivity trends.</DialogDescription>
                   </DialogHeader>
                   <div className="bg-slate-950/50 rounded-lg border border-indigo-900/30 p-4 h-[200px]">
                     <WorkRhythmVisualizer 

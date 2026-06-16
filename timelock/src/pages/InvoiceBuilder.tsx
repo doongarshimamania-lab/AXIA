@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -1263,6 +1264,7 @@ export default function InvoiceBuilder() {
               <Link2 className="h-5 w-5 text-[#8B5CF6]" />
               Link Work Proof
             </DialogTitle>
+            <DialogDescription>Attach a work proof to support this invoice line item.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -1275,7 +1277,7 @@ export default function InvoiceBuilder() {
                   setProofForm((p) => ({ ...p, proofType: v as ProofType }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

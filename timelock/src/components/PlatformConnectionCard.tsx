@@ -195,7 +195,7 @@ export function PlatformConnectionCard() {
 
       {/* Connect Modal */}
       <Dialog open={showConnectModal} onOpenChange={setShowConnectModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               Connect {selectedPlatform && platformLabels[selectedPlatform]}

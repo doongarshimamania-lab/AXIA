@@ -637,7 +637,7 @@ export default function Proposals() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Proposal</DialogTitle>
             <DialogDescription>

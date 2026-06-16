@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RequirementMapping } from "@/types/projectProtection";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
@@ -15,12 +15,13 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-teal-500" />
             Client Requirements Mapping - Full Analysis
           </DialogTitle>
+          <DialogDescription>Review how your evidence matches client requirements.</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 mt-4">

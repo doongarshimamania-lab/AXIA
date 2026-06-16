@@ -5,7 +5,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Info } from "lucide-react";
 import { VulnerabilityScanner } from "./VulnerabilityScanner";
 import { WorkRhythmVisualizer } from "./WorkRhythmVisualizer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -317,6 +317,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                       <Shield className="w-4 h-4" />
                       SECURITY_OPERATIONS_CENTER
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">View and manage detected security threats.</DialogDescription>
                   </DialogHeader>
                   <VulnerabilityScanner vulnerabilities={proData.vulnerabilities} className="bg-transparent" />
                 </DialogContent>
@@ -353,6 +354,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                       <Zap className="w-4 h-4" />
                       Productivity Engine Analysis
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">Analyze your work rhythm and productivity patterns.</DialogDescription>
                   </DialogHeader>
                   <div className="bg-white/5 rounded-xl p-4 h-[200px] mb-4">
                     <WorkRhythmVisualizer 

@@ -432,7 +432,7 @@ export default function Goals() {
                   <div className="space-y-2">
                     <Label>Type</Label>
                     <Select value={formType} onValueChange={setFormType}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -447,7 +447,7 @@ export default function Goals() {
                   <div className="space-y-2">
                     <Label>Unit</Label>
                     <Select value={formUnit} onValueChange={setFormUnit}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -848,7 +848,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -863,7 +863,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Unit</Label>
                 <Select value={formUnit} onValueChange={setFormUnit}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -909,7 +909,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -956,7 +956,7 @@ export default function Goals() {
           if (!open) setDeletingGoal(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Goal</DialogTitle>
             <DialogDescription>

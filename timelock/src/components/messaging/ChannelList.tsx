@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -245,6 +246,7 @@ export function ChannelList({
               <Hash className="h-5 w-5" />
               Create Channel
             </DialogTitle>
+            <DialogDescription>Create a new channel for team communication.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {/* Channel Name */}

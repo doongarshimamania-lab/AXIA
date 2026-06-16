@@ -470,6 +470,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Message High-Value Users (est. +$72 MRR)</DialogTitle>
+            <DialogDescription>Send a targeted message to users with the highest rejection rates to offer Pro upgrades.</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">

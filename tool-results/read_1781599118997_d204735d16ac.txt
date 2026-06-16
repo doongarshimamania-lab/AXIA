@@ -1,0 +1,789 @@
+     1→import { useState, useEffect } from "react";
+     2→import { motion } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import {
+     5→  Tag,
+     6→  Plus,
+     7→  Search,
+     8→  Pencil,
+     9→  Trash2,
+    10→  Hash,
+    11→  X,
+    12→  Palette,
+    13→  Info,
+    14→  Loader2,
+    15→} from "lucide-react";
+    16→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    17→import { Button } from "@/components/ui/button";
+    18→import { Badge } from "@/components/ui/badge";
+    19→import { Input } from "@/components/ui/input";
+    20→import { Label } from "@/components/ui/label";
+    21→import { Textarea } from "@/components/ui/textarea";
+    22→import { Separator } from "@/components/ui/separator";
+    23→import { Skeleton } from "@/components/ui/skeleton";
+    24→import {
+    25→  Dialog,
+    26→  DialogContent,
+    27→  DialogDescription,
+    28→  DialogFooter,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→  DialogTrigger,
+    32→} from "@/components/ui/dialog";
+    33→import { useAuth } from "@/hooks/use-auth";
+    34→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    35→import { api } from "@/convex/_generated/api";
+    36→
+    37→// ─── Constants ───────────────────────────────────────────────────────────────
+    38→
+    39→const PRESET_COLORS = [
+    40→  "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e",
+    41→  "#14b8a6", "#06b6d4", "#6366f1", "#a855f7", "#ec4899",
+    42→  "#f43f5e", "#0ea5e9",
+    43→];
+    44→
+    45→// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
+    46→
+    47→const MOCK_TAGS = [
+    48→  {
+    49→    _id: "tag_1" as any,
+    50→    name: "Urgent",
+    51→    color: "#ef4444",
+    52→    category: "general" as string | null,
+    53→    usageCount: 23,
+    54→    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
+    55→  },
+    56→  {
+    57→    _id: "tag_2" as any,
+    58→    name: "Design",
+    59→    color: "#a855f7",
+    60→    category: "project" as string | null,
+    61→    usageCount: 18,
+    62→    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
+    63→  },
+    64→  {
+    65→    _id: "tag_3" as any,
+    66→    name: "Development",
+    67→    color: "#22c55e",
+    68→    category: "project" as string | null,
+    69→    usageCount: 42,
+    70→    createdAt: Date.now() - 145 * 24 * 60 * 60 * 1000,
+    71→  },
+    72→  {
+    73→    _id: "tag_4" as any,
+    74→    name: "Client Communication",
+    75→    color: "#06b6d4",
+    76→    category: "client" as string | null,
+    77→    usageCount: 31,
+    78→    createdAt: Date.now() - 140 * 24 * 60 * 60 * 1000,
+    79→  },
+    80→  {
+    81→    _id: "tag_5" as any,
+    82→    name: "Bug Fix",
+    83→    color: "#f97316",
+    84→    category: "general" as string | null,
+    85→    usageCount: 14,
+    86→    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
+    87→  },
+    88→  {
+    89→    _id: "tag_6" as any,
+    90→    name: "Documentation",
+    91→    color: "#14b8a6",
+    92→    category: "project" as string | null,
+    93→    usageCount: 9,
+    94→    createdAt: Date.now() - 115 * 24 * 60 * 60 * 1000,
+    95→  },
+    96→  {
+    97→    _id: "tag_7" as any,
+    98→    name: "Revision",
+    99→    color: "#f59e0b",
+   100→    category: "general" as string | null,
+   101→    usageCount: 19,
+   102→    createdAt: Date.now() - 110 * 24 * 60 * 60 * 1000,
+   103→  },
+   104→  {
+   105→    _id: "tag_8" as any,
+   106→    name: "Research",
+   107→    color: "#6366f1",
+   108→    category: "general" as string | null,
+   109→    usageCount: 7,
+   110→    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+   111→  },
+   112→  {
+   113→    _id: "tag_9" as any,
+   114→    name: "Testing",
+   115→    color: "#ec4899",
+   116→    category: "evidence" as string | null,
+   117→    usageCount: 11,
+   118→    createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
+   119→  },
+   120→  {
+   121→    _id: "tag_10" as any,
+   122→    name: "Payment",
+   123→    color: "#84cc16",
+   124→    category: "client" as string | null,
+   125→    usageCount: 5,
+   126→    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+   127→  },
+   128→];
+   129→
+   130→// ─── Component ───────────────────────────────────────────────────────────────
+   131→
+   132→export default function Tags() {
+   133→  const { isAuthenticated, isLoading: authLoading } = useAuth();
+   134→
+   135→  // ─── Convex queries & mutations ──────────────────────────────────────────
+   136→  const tagsData = useQuery(api.tags.crud.getTags, {});
+   137→  const createTagMutation = useMutation(api.tags.crud.createTag);
+   138→  const updateTagMutation = useMutation(api.tags.crud.updateTag);
+   139→  const deleteTagMutation = useMutation(api.tags.crud.deleteTag);
+   140→
+   141→  // ─── Local state ────────────────────────────────────────────────────────
+   142→  const [searchQuery, setSearchQuery] = useState("");
+   143→  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+   144→  const [createOpen, setCreateOpen] = useState(false);
+   145→  const [editOpen, setEditOpen] = useState(false);
+   146→  const [editingTag, setEditingTag] = useState<any>(null);
+   147→  const [deleteOpen, setDeleteOpen] = useState(false);
+   148→  const [deletingTag, setDeletingTag] = useState<any>(null);
+   149→
+   150→  // Form state
+   151→  const [formName, setFormName] = useState("");
+   152→  const [formColor, setFormColor] = useState(PRESET_COLORS[0]);
+   153→  const [formCategory, setFormCategory] = useState<string>("general");
+   154→
+   155→  // Mutation loading state
+   156→  const [isCreating, setIsCreating] = useState(false);
+   157→  const [isUpdating, setIsUpdating] = useState(false);
+   158→  const [isDeleting, setIsDeleting] = useState(false);
+   159→
+   160→  // ─── Loading timeout pattern ────────────────────────────────────────────
+   161→  const { isDisconnected } = useConvexConnectionState();
+   162→  const timedOut = useQueryTimeout(!authLoading && tagsData === undefined, 3000);
+   163→
+   164→  const isLoading = !authLoading && tagsData === undefined && !timedOut && !isDisconnected;
+   165→
+   166→  // ─── Demo mode ──────────────────────────────────────────────────────────
+   167→  const isDemoMode = !authLoading && !isAuthenticated;
+   168→
+   169→  // ─── Data resolution ────────────────────────────────────────────────────
+   170→  const realTags = (tagsData ?? []).map((t: any) => ({
+   171→    _id: t._id,
+   172→    name: t.name,
+   173→    color: t.color,
+   174→    category: t.category ?? null,
+   175→    usageCount: t.usageCount ?? 0,
+   176→    createdAt: t.createdAt,
+   177→  }));
+   178→
+   179→  const tags = isDemoMode ? MOCK_TAGS : realTags;
+   180→
+   181→  // ── Computed Stats ──
+   182→  const totalTags = tags.length;
+   183→  const mostUsedTag =
+   184→    tags.length > 0
+   185→      ? tags.reduce((prev: any, curr: any) => (curr.usageCount > prev.usageCount ? curr : prev))
+   186→      : null;
+   187→
+   188→  // ── Filtering ──
+   189→  const filteredTags = tags.filter((tag: any) => {
+   190→    const matchesSearch =
+   191→      tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   192→      (tag.category ?? "").toLowerCase().includes(searchQuery.toLowerCase());
+   193→    const matchesFilter = activeFilter ? tag._id === activeFilter : true;
+   194→    return matchesSearch && matchesFilter;
+   195→  });
+   196→
+   197→  // ── Helpers ──
+   198→  const resetForm = () => {
+   199→    setFormName("");
+   200→    setFormColor(PRESET_COLORS[0]);
+   201→    setFormCategory("general");
+   202→  };
+   203→
+   204→  const formatDate = (timestamp: number) => {
+   205→    const date = new Date(timestamp);
+   206→    return date.toLocaleDateString("en-US", {
+   207→      month: "short",
+   208→      day: "numeric",
+   209→      year: "numeric",
+   210→    });
+   211→  };
+   212→
+   213→  // ── Create ──
+   214→  const handleCreate = async () => {
+   215→    if (!formName.trim()) {
+   216→      toast.error("Tag name is required");
+   217→      return;
+   218→    }
+   219→
+   220→    if (isDemoMode) {
+   221→      toast.success(`Tag "${formName.trim()}" created successfully! (Demo mode)`);
+   222→      resetForm();
+   223→      setCreateOpen(false);
+   224→      return;
+   225→    }
+   226→
+   227→    setIsCreating(true);
+   228→    try {
+   229→      await createTagMutation({
+   230→        name: formName.trim(),
+   231→        color: formColor,
+   232→        category: formCategory,
+   233→      });
+   234→      resetForm();
+   235→      setCreateOpen(false);
+   236→      toast.success(`Tag "${formName.trim()}" created successfully`);
+   237→    } catch (err: any) {
+   238→      toast.error(err?.message || "Failed to create tag");
+   239→    } finally {
+   240→      setIsCreating(false);
+   241→    }
+   242→  };
+   243→
+   244→  // ── Edit ──
+   245→  const openEdit = (tag: any) => {
+   246→    setEditingTag(tag);
+   247→    setFormName(tag.name);
+   248→    setFormColor(tag.color);
+   249→    setFormCategory(tag.category ?? "general");
+   250→    setEditOpen(true);
+   251→  };
+   252→
+   253→  const handleEdit = async () => {
+   254→    if (!editingTag) return;
+   255→    if (!formName.trim()) {
+   256→      toast.error("Tag name is required");
+   257→      return;
+   258→    }
+   259→
+   260→    if (isDemoMode) {
+   261→      toast.success(`Tag "${formName.trim()}" updated! (Demo mode)`);
+   262→      resetForm();
+   263→      setEditOpen(false);
+   264→      setEditingTag(null);
+   265→      return;
+   266→    }
+   267→
+   268→    setIsUpdating(true);
+   269→    try {
+   270→      await updateTagMutation({
+   271→        tagId: editingTag._id,
+   272→        name: formName.trim(),
+   273→        color: formColor,
+   274→        category: formCategory,
+   275→      });
+   276→      resetForm();
+   277→      setEditOpen(false);
+   278→      setEditingTag(null);
+   279→      toast.success(`Tag "${formName.trim()}" updated`);
+   280→    } catch (err: any) {
+   281→      toast.error(err?.message || "Failed to update tag");
+   282→    } finally {
+   283→      setIsUpdating(false);
+   284→    }
+   285→  };
+   286→
+   287→  // ── Delete ──
+   288→  const openDelete = (tag: any) => {
+   289→    setDeletingTag(tag);
+   290→    setDeleteOpen(true);
+   291→  };
+   292→
+   293→  const handleDelete = async () => {
+   294→    if (!deletingTag) return;
+   295→
+   296→    if (isDemoMode) {
+   297→      toast.success(`Tag "${deletingTag.name}" deleted! (Demo mode)`);
+   298→      if (activeFilter === deletingTag._id) setActiveFilter(null);
+   299→      setDeleteOpen(false);
+   300→      setDeletingTag(null);
+   301→      return;
+   302→    }
+   303→
+   304→    setIsDeleting(true);
+   305→    try {
+   306→      await deleteTagMutation({ tagId: deletingTag._id });
+   307→      if (activeFilter === deletingTag._id) setActiveFilter(null);
+   308→      setDeleteOpen(false);
+   309→      setDeletingTag(null);
+   310→      toast.success(`Tag "${deletingTag.name}" deleted`);
+   311→    } catch (err: any) {
+   312→      toast.error(err?.message || "Failed to delete tag");
+   313→    } finally {
+   314→      setIsDeleting(false);
+   315→    }
+   316→  };
+   317→
+   318→  // ── Render ──
+   319→  return (
+   320→    <motion.div
+   321→      initial={{ opacity: 0 }}
+   322→      animate={{ opacity: 1 }}
+   323→      className="w-full min-h-screen bg-background text-foreground"
+   324→    >
+   325→      <div className="container mx-auto px-4 py-6 space-y-6">
+   326→        {/* ── Header ── */}
+   327→        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+   328→          <div>
+   329→            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   330→              Tags
+   331→            </h1>
+   332→            <p className="text-[16px] text-muted-foreground">
+   333→              Organize your work with custom tags for quick filtering and categorization
+   334→            </p>
+   335→          </div>
+   336→
+   337→          <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm(); }}>
+   338→            <DialogTrigger asChild>
+   339→              <Button className="bg-primary hover:bg-primary/90 shrink-0">
+   340→                <Plus className="mr-2 h-4 w-4" />
+   341→                Create Tag
+   342→              </Button>
+   343→            </DialogTrigger>
+   344→            <DialogContent>
+   345→              <DialogHeader>
+   346→                <DialogTitle>Create New Tag</DialogTitle>
+   347→                <DialogDescription>
+   348→                  Add a tag to categorize and filter your time entries, projects, and evidence.
+   349→                </DialogDescription>
+   350→              </DialogHeader>
+   351→              <div className="space-y-4 py-2">
+   352→                <div className="space-y-2">
+   353→                  <Label htmlFor="tag-name">Name</Label>
+   354→                  <Input
+   355→                    id="tag-name"
+   356→                    placeholder="e.g. Urgent, Design, Revision"
+   357→                    value={formName}
+   358→                    onChange={(e) => setFormName(e.target.value)}
+   359→                  />
+   360→                </div>
+   361→                <div className="space-y-2">
+   362→                  <Label>Color</Label>
+   363→                  <div className="flex items-center gap-2 flex-wrap">
+   364→                    {PRESET_COLORS.map((color) => (
+   365→                      <button
+   366→                        key={color}
+   367→                        type="button"
+   368→                        className="w-8 h-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+   369→                        style={{
+   370→                          backgroundColor: color,
+   371→                          borderColor: formColor === color ? "var(--foreground)" : "transparent",
+   372→                          boxShadow: formColor === color ? `0 0 0 2px ${color}40` : "none",
+   373→                        }}
+   374→                        onClick={() => setFormColor(color)}
+   375→                      />
+   376→                    ))}
+   377→                    <div className="flex items-center gap-1 ml-1">
+   378→                      <Palette className="h-4 w-4 text-muted-foreground" />
+   379→                      <input
+   380→                        type="color"
+   381→                        value={formColor}
+   382→                        onChange={(e) => setFormColor(e.target.value)}
+   383→                        className="w-8 h-8 rounded cursor-pointer border border-border"
+   384→                      />
+   385→                    </div>
+   386→                  </div>
+   387→                </div>
+   388→                <div className="space-y-2">
+   389→                  <Label>Category</Label>
+   390→                  <div className="flex flex-wrap gap-2">
+   391→                    {["general", "client", "project", "evidence"].map((cat) => (
+   392→                      <button key={cat} type="button" onClick={() => setFormCategory(cat)}>
+   393→                        <Badge
+   394→                          variant={formCategory === cat ? "default" : "outline"}
+   395→                          className="cursor-pointer transition-colors capitalize"
+   396→                        >
+   397→                          {cat}
+   398→                        </Badge>
+   399→                      </button>
+   400→                    ))}
+   401→                  </div>
+   402→                </div>
+   403→              </div>
+   404→              <DialogFooter>
+   405→                <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm(); }} disabled={isCreating}>
+   406→                  Cancel
+   407→                </Button>
+   408→                <Button className="bg-primary hover:bg-primary/90" onClick={handleCreate} disabled={isCreating}>
+   409→                  {isCreating ? (
+   410→                    <>
+   411→                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   412→                      Creating...
+   413→                    </>
+   414→                  ) : (
+   415→                    "Create Tag"
+   416→                  )}
+   417→                </Button>
+   418→              </DialogFooter>
+   419→            </DialogContent>
+   420→          </Dialog>
+   421→        </div>
+   422→
+   423→        {/* ── Demo mode banner ── */}
+   424→        {isDemoMode && (
+   425→          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+   426→            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+   427→            <div className="text-sm text-amber-800 dark:text-amber-200">
+   428→              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
+   429→              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+   430→                Sign in
+   431→              </a>{" "}
+   432→              to manage your real tags.
+   433→            </div>
+   434→          </div>
+   435→        )}
+   436→
+   437→        {/* ── Loading state ── */}
+   438→        {isLoading ? (
+   439→          <div className="space-y-4">
+   440→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   441→              <Skeleton className="h-[76px] rounded-xl" />
+   442→              <Skeleton className="h-[76px] rounded-xl" />
+   443→              <Skeleton className="h-[76px] rounded-xl" />
+   444→            </div>
+   445→            <Skeleton className="h-10 rounded-lg" />
+   446→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   447→              {[1, 2, 3, 4, 5, 6].map((i) => (
+   448→                <Skeleton key={i} className="h-[160px] rounded-xl" />
+   449→              ))}
+   450→            </div>
+   451→          </div>
+   452→        ) : (
+   453→          <>
+   454→            {/* ── Stats Cards ── */}
+   455→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   456→              <Card>
+   457→                <CardContent className="p-6">
+   458→                  <div className="flex items-center gap-3">
+   459→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+   460→                      <Hash className="h-5 w-5 text-primary" />
+   461→                    </div>
+   462→                    <div>
+   463→                      <p className="text-sm text-muted-foreground">Total Tags</p>
+   464→                      <p className="text-2xl font-bold">{totalTags}</p>
+   465→                    </div>
+   466→                  </div>
+   467→                </CardContent>
+   468→              </Card>
+   469→              <Card>
+   470→                <CardContent className="p-6">
+   471→                  <div className="flex items-center gap-3">
+   472→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500/10">
+   473→                      <Tag className="h-5 w-5 text-orange-500" />
+   474→                    </div>
+   475→                    <div>
+   476→                      <p className="text-sm text-muted-foreground">Most Used</p>
+   477→                      <p className="text-2xl font-bold">
+   478→                        {mostUsedTag ? mostUsedTag.name : "—"}
+   479→                      </p>
+   480→                      {mostUsedTag && (
+   481→                        <p className="text-xs text-muted-foreground">
+   482→                          {mostUsedTag.usageCount} {mostUsedTag.usageCount === 1 ? "entry" : "entries"}
+   483→                        </p>
+   484→                      )}
+   485→                    </div>
+   486→                  </div>
+   487→                </CardContent>
+   488→              </Card>
+   489→              <Card>
+   490→                <CardContent className="p-6">
+   491→                  <div className="flex items-center gap-3">
+   492→                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
+   493→                      <Hash className="h-5 w-5 text-emerald-500" />
+   494→                    </div>
+   495→                    <div>
+   496→                      <p className="text-sm text-muted-foreground">Categories</p>
+   497→                      <p className="text-2xl font-bold">
+   498→                        {new Set(tags.map((t: any) => t.category ?? "uncategorized")).size}
+   499→                      </p>
+   500→                    </div>
+   501→                  </div>
+   502→                </CardContent>
+   503→              </Card>
+   504→            </div>
+   505→
+   506→            {/* ── Quick Filters + Search ── */}
+   507→            <div className="space-y-3">
+   508→              <div className="flex items-center gap-2">
+   509→                <div className="relative flex-1">
+   510→                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   511→                  <Input
+   512→                    placeholder="Search tags..."
+   513→                    value={searchQuery}
+   514→                    onChange={(e) => setSearchQuery(e.target.value)}
+   515→                    className="pl-9"
+   516→                  />
+   517→                </div>
+   518→                {activeFilter && (
+   519→                  <Button
+   520→                    variant="outline"
+   521→                    size="sm"
+   522→                    onClick={() => setActiveFilter(null)}
+   523→                    className="shrink-0"
+   524→                  >
+   525→                    <X className="mr-1 h-3 w-3" />
+   526→                    Clear filter
+   527→                  </Button>
+   528→                )}
+   529→              </div>
+   530→              <div className="flex items-center gap-2 flex-wrap">
+   531→                <span className="text-sm text-muted-foreground shrink-0">Quick filter:</span>
+   532→                {tags.slice(0, 5).map((tag: any) => (
+   533→                  <button
+   534→                    key={tag._id}
+   535→                    type="button"
+   536→                    onClick={() => setActiveFilter(activeFilter === tag._id ? null : tag._id)}
+   537→                    className="focus:outline-none"
+   538→                  >
+   539→                    <Badge
+   540→                      variant={activeFilter === tag._id ? "default" : "outline"}
+   541→                      className="cursor-pointer transition-colors"
+   542→                      style={
+   543→                        activeFilter === tag._id
+   544→                          ? { backgroundColor: tag.color, borderColor: tag.color }
+   545→                          : { borderColor: tag.color, color: tag.color }
+   546→                      }
+   547→                    >
+   548→                      <span
+   549→                        className="inline-block w-2 h-2 rounded-full mr-1"
+   550→                        style={{ backgroundColor: tag.color }}
+   551→                      />
+   552→                      {tag.name}
+   553→                    </Badge>
+   554→                  </button>
+   555→                ))}
+   556→              </div>
+   557→            </div>
+   558→
+   559→            <Separator />
+   560→
+   561→            {/* ── Tags Grid ── */}
+   562→            {filteredTags.length === 0 ? (
+   563→              <Card>
+   564→                <CardContent className="py-12">
+   565→                  <div className="text-center text-muted-foreground">
+   566→                    <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+   567→                    <p className="text-lg font-medium">No tags found</p>
+   568→                    <p className="text-sm">
+   569→                      {searchQuery
+   570→                        ? "Try adjusting your search query"
+   571→                        : "Create your first tag to start organizing your work"}
+   572→                    </p>
+   573→                    {!searchQuery && (
+   574→                      <Button
+   575→                        className="mt-4 bg-primary hover:bg-primary/90"
+   576→                        onClick={() => setCreateOpen(true)}
+   577→                      >
+   578→                        <Plus className="mr-2 h-4 w-4" />
+   579→                        Create Your First Tag
+   580→                      </Button>
+   581→                    )}
+   582→                  </div>
+   583→                </CardContent>
+   584→              </Card>
+   585→            ) : (
+   586→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   587→                {filteredTags.map((tag: any, index: number) => (
+   588→                  <motion.div
+   589→                    key={tag._id}
+   590→                    initial={{ opacity: 0, y: 12 }}
+   591→                    animate={{ opacity: 1, y: 0 }}
+   592→                    transition={{ delay: index * 0.04, duration: 0.3 }}
+   593→                  >
+   594→                    <Card className="group hover:shadow-md transition-shadow">
+   595→                      <CardHeader className="pb-3">
+   596→                        <div className="flex items-start justify-between">
+   597→                          <div className="flex items-center gap-3">
+   598→                            <span
+   599→                              className="w-5 h-5 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-background"
+   600→                              style={{ backgroundColor: tag.color, outlineColor: tag.color }}
+   601→                            />
+   602→                            <CardTitle className="text-base">{tag.name}</CardTitle>
+   603→                          </div>
+   604→                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+   605→                            <Button
+   606→                              variant="ghost"
+   607→                              size="icon"
+   608→                              className="h-8 w-8"
+   609→                              onClick={() => openEdit(tag)}
+   610→                            >
+   611→                              <Pencil className="h-3.5 w-3.5" />
+   612→                            </Button>
+   613→                            <Button
+   614→                              variant="ghost"
+   615→                              size="icon"
+   616→                              className="h-8 w-8 text-destructive hover:text-destructive"
+   617→                              onClick={() => openDelete(tag)}
+   618→                            >
+   619→                              <Trash2 className="h-3.5 w-3.5" />
+   620→                            </Button>
+   621→                          </div>
+   622→                        </div>
+   623→                      </CardHeader>
+   624→                      <CardContent className="pt-0 space-y-3">
+   625→                        {tag.category && (
+   626→                          <Badge variant="secondary" className="text-xs capitalize">
+   627→                            {tag.category}
+   628→                          </Badge>
+   629→                        )}
+   630→                        <Separator />
+   631→                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+   632→                          <span>
+   633→                            <span className="font-semibold text-foreground">{tag.usageCount}</span>{" "}
+   634→                            {tag.usageCount === 1 ? "entry" : "entries"} tagged
+   635→                          </span>
+   636→                          <span>
+   637→                            {tag.usageCount === 0
+   638→                              ? "Never used"
+   639→                              : `Created ${formatDate(tag.createdAt)}`}
+   640→                          </span>
+   641→                        </div>
+   642→                      </CardContent>
+   643→                    </Card>
+   644→                  </motion.div>
+   645→                ))}
+   646→              </div>
+   647→            )}
+   648→          </>
+   649→        )}
+   650→      </div>
+   651→
+   652→      {/* ── Edit Tag Dialog ── */}
+   653→      <Dialog
+   654→        open={editOpen}
+   655→        onOpenChange={(open) => {
+   656→          setEditOpen(open);
+   657→          if (!open) {
+   658→            resetForm();
+   659→            setEditingTag(null);
+   660→          }
+   661→        }}
+   662→      >
+   663→        <DialogContent>
+   664→          <DialogHeader>
+   665→            <DialogTitle>Edit Tag</DialogTitle>
+   666→            <DialogDescription>Update the details of this tag.</DialogDescription>
+   667→          </DialogHeader>
+   668→          <div className="space-y-4 py-2">
+   669→            <div className="space-y-2">
+   670→              <Label htmlFor="edit-tag-name">Name</Label>
+   671→              <Input
+   672→                id="edit-tag-name"
+   673→                value={formName}
+   674→                onChange={(e) => setFormName(e.target.value)}
+   675→              />
+   676→            </div>
+   677→            <div className="space-y-2">
+   678→              <Label>Color</Label>
+   679→              <div className="flex items-center gap-2 flex-wrap">
+   680→                {PRESET_COLORS.map((color) => (
+   681→                  <button
+   682→                    key={color}
+   683→                    type="button"
+   684→                    className="w-8 h-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+   685→                    style={{
+   686→                      backgroundColor: color,
+   687→                      borderColor: formColor === color ? "var(--foreground)" : "transparent",
+   688→                    }}
+   689→                    onClick={() => setFormColor(color)}
+   690→                  />
+   691→                ))}
+   692→                <div className="flex items-center gap-1 ml-1">
+   693→                  <Palette className="h-4 w-4 text-muted-foreground" />
+   694→                  <input
+   695→                    type="color"
+   696→                    value={formColor}
+   697→                    onChange={(e) => setFormColor(e.target.value)}
+   698→                    className="w-8 h-8 rounded cursor-pointer border border-border"
+   699→                  />
+   700→                </div>
+   701→              </div>
+   702→            </div>
+   703→            <div className="space-y-2">
+   704→              <Label>Category</Label>
+   705→              <div className="flex flex-wrap gap-2">
+   706→                {["general", "client", "project", "evidence"].map((cat) => (
+   707→                  <button key={cat} type="button" onClick={() => setFormCategory(cat)}>
+   708→                    <Badge
+   709→                      variant={formCategory === cat ? "default" : "outline"}
+   710→                      className="cursor-pointer transition-colors capitalize"
+   711→                    >
+   712→                      {cat}
+   713→                    </Badge>
+   714→                  </button>
+   715→                ))}
+   716→              </div>
+   717→            </div>
+   718→          </div>
+   719→          <DialogFooter>
+   720→            <Button
+   721→              variant="outline"
+   722→              onClick={() => {
+   723→                setEditOpen(false);
+   724→                resetForm();
+   725→                setEditingTag(null);
+   726→              }}
+   727→              disabled={isUpdating}
+   728→            >
+   729→              Cancel
+   730→            </Button>
+   731→            <Button className="bg-primary hover:bg-primary/90" onClick={handleEdit} disabled={isUpdating}>
+   732→              {isUpdating ? (
+   733→                <>
+   734→                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   735→                  Saving...
+   736→                </>
+   737→              ) : (
+   738→                "Save Changes"
+   739→              )}
+   740→            </Button>
+   741→          </DialogFooter>
+   742→        </DialogContent>
+   743→      </Dialog>
+   744→
+   745→      {/* ── Delete Tag Dialog ── */}
+   746→      <Dialog
+   747→        open={deleteOpen}
+   748→        onOpenChange={(open) => {
+   749→          setDeleteOpen(open);
+   750→          if (!open) setDeletingTag(null);
+   751→        }}
+   752→      >
+   753→        <DialogContent>
+   754→          <DialogHeader>
+   755→            <DialogTitle>Delete Tag</DialogTitle>
+   756→            <DialogDescription>
+   757→              Are you sure you want to delete the tag{" "}
+   758→              <span className="font-semibold text-foreground">{deletingTag?.name}</span>? This will
+   759→              remove the tag from all associated entries. This action cannot be undone.
+   760→            </DialogDescription>
+   761→          </DialogHeader>
+   762→          <DialogFooter>
+   763→            <Button
+   764→              variant="outline"
+   765→              onClick={() => {
+   766→                setDeleteOpen(false);
+   767→                setDeletingTag(null);
+   768→              }}
+   769→              disabled={isDeleting}
+   770→            >
+   771→              Cancel
+   772→            </Button>
+   773→            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+   774→              {isDeleting ? (
+   775→                <>
+   776→                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   777→                  Deleting...
+   778→                </>
+   779→              ) : (
+   780→                "Delete Tag"
+   781→              )}
+   782→            </Button>
+   783→          </DialogFooter>
+   784→        </DialogContent>
+   785→      </Dialog>
+   786→    </motion.div>
+   787→  );
+   788→}
+   789→

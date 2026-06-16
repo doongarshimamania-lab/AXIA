@@ -354,7 +354,7 @@ export function CustomFieldManager({ workspaceId, tableName }: CustomFieldManage
                   value={fieldType}
                   onValueChange={(v) => setFieldType(v as FieldType)}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="w-full h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

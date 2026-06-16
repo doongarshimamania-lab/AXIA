@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -542,7 +542,7 @@ export default function TimeTracking() {
                       <div className="space-y-2">
                         <Label>Project</Label>
                         <Select value={selectedProject} onValueChange={setSelectedProject}>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select project" />
                           </SelectTrigger>
                           <SelectContent>
@@ -561,7 +561,7 @@ export default function TimeTracking() {
                       <div className="space-y-2">
                         <Label>Platform</Label>
                         <Select value={selectedPlatform} onValueChange={(v) => setSelectedPlatform(v as any)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -722,6 +722,7 @@ export default function TimeTracking() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Add Manual Time Entry</DialogTitle>
+              <DialogDescription>Add a manual time entry for work you've completed outside of the timer.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
