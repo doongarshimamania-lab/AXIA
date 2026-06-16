@@ -1,0 +1,950 @@
+     1→import { useState, useMemo, useEffect } from "react";
+     2→import { motion, AnimatePresence } from "framer-motion";
+     3→import { toast } from "sonner";
+     4→import {
+     5→  FileText,
+     6→  Plus,
+     7→  Clock,
+     8→  TrendingUp,
+     9→  Shield,
+    10→  ChevronDown,
+    11→  ChevronUp,
+    12→  AlertTriangle,
+    13→  CheckCircle2,
+    14→  Send,
+    15→  Gavel,
+    16→  Search,
+    17→  Lock,
+    18→  Zap,
+    19→  Loader2,
+    20→} from "lucide-react";
+    21→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    22→import { Button } from "@/components/ui/button";
+    23→import { Badge } from "@/components/ui/badge";
+    24→import { Input } from "@/components/ui/input";
+    25→import { Label } from "@/components/ui/label";
+    26→import { Textarea } from "@/components/ui/textarea";
+    27→import { Separator } from "@/components/ui/separator";
+    28→import { Skeleton } from "@/components/ui/skeleton";
+    29→import {
+    30→  Dialog,
+    31→  DialogContent,
+    32→  DialogHeader,
+    33→  DialogTitle,
+    34→  DialogFooter,
+    35→  DialogDescription,
+    36→} from "@/components/ui/dialog";
+    37→import {
+    38→  Select,
+    39→  SelectContent,
+    40→  SelectItem,
+    41→  SelectTrigger,
+    42→  SelectValue,
+    43→} from "@/components/ui/select";
+    44→import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    45→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    46→import { useAuth } from "@/hooks/use-auth";
+    47→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    48→import { api } from "@/convex/_generated/api";
+    49→import { PageLayout } from "@/components/design-system/PageLayout";
+    50→
+    51→// ─── Types ───────────────────────────────────────────────────────────────────
+    52→
+    53→type ReportStatus = "generated" | "sent" | "viewed" | "resolved" | "appealed";
+    54→
+    55→interface DisputeReport {
+    56→  _id: string;
+    57→  caseId: string;
+    58→  clientName?: string;
+    59→  projectName?: string;
+    60→  rejectedHours: number;
+    61→  lostIncome: number;
+    62→  status: ReportStatus;
+    63→  generatedAt: number;
+    64→  description?: string;
+    65→  evidenceSummary?: string;
+    66→  evidenceCount?: number;
+    67→  reportContent?: string;
+    68→  hourlyRate?: number;
+    69→  sentAt?: number;
+    70→  viewedAt?: number;
+    71→  resolvedAt?: number;
+    72→  title?: string;
+    73→  type?: string;
+    74→}
+    75→
+    76→// ─── Helpers ─────────────────────────────────────────────────────────────────
+    77→
+    78→const STATUS_CONFIG: Record<
+    79→  ReportStatus,
+    80→  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof FileText; color: string }
+    81→> = {
+    82→  generated: {
+    83→    label: "Generated",
+    84→    variant: "secondary",
+    85→    icon: FileText,
+    86→    color: "text-slate-500",
+    87→  },
+    88→  sent: {
+    89→    label: "Sent",
+    90→    variant: "default",
+    91→    icon: Send,
+    92→    color: "text-blue-500",
+    93→  },
+    94→  viewed: {
+    95→    label: "Viewed",
+    96→    variant: "outline",
+    97→    icon: CheckCircle2,
+    98→    color: "text-cyan-500",
+    99→  },
+   100→  resolved: {
+   101→    label: "Resolved",
+   102→    variant: "outline",
+   103→    icon: CheckCircle2,
+   104→    color: "text-emerald-500",
+   105→  },
+   106→  appealed: {
+   107→    label: "Appealed",
+   108→    variant: "destructive",
+   109→    icon: Gavel,
+   110→    color: "text-amber-500",
+   111→  },
+   112→};
+   113→
+   114→const TAB_FILTERS = [
+   115→  { key: "all", label: "All" },
+   116→  { key: "active", label: "Active" },
+   117→  { key: "resolved", label: "Resolved" },
+   118→  { key: "appealed", label: "Appealed" },
+   119→] as const;
+   120→
+   121→type TabFilter = (typeof TAB_FILTERS)[number]["key"];
+   122→
+   123→function filterReports(reports: DisputeReport[], tab: TabFilter): DisputeReport[] {
+   124→  switch (tab) {
+   125→    case "all":
+   126→      return reports;
+   127→    case "active":
+   128→      return reports.filter((r) => r.status === "generated" || r.status === "sent" || r.status === "viewed");
+   129→    case "resolved":
+   130→      return reports.filter((r) => r.status === "resolved");
+   131→    case "appealed":
+   132→      return reports.filter((r) => r.status === "appealed");
+   133→    default:
+   134→      return reports;
+   135→  }
+   136→}
+   137→
+   138→function formatDate(ts: number): string {
+   139→  return new Date(ts).toLocaleDateString("en-US", {
+   140→    month: "short",
+   141→    day: "numeric",
+   142→    year: "numeric",
+   143→  });
+   144→}
+   145→
+   146→function formatCurrency(amount: number): string {
+   147→  return new Intl.NumberFormat("en-US", {
+   148→    style: "currency",
+   149→    currency: "USD",
+   150→    minimumFractionDigits: 0,
+   151→    maximumFractionDigits: 2,
+   152→  }).format(amount);
+   153→}
+   154→
+   155→// ─── Component ───────────────────────────────────────────────────────────────
+   156→
+   157→export default function Reports() {
+   158→  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
+   159→  const { isAuthenticated, isLoading: authLoading } = useAuth();
+   160→
+   161→  // ─── Convex queries ──────────────────────────────────────────────────────
+   162→  const reportsData = useQuery(api.disputeReports.getUserDisputeReports, {});
+   163→
+   164→  // ─── Convex mutations ────────────────────────────────────────────────────
+   165→  const createReportMutation = useMutation(api.disputeReports.createDisputeReport);
+   166→  const updateStatusMutation = useMutation(api.disputeReports.updateReportStatus);
+   167→
+   168→  // ─── Local state ─────────────────────────────────────────────────────────
+   169→  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+   170→  const [expandedId, setExpandedId] = useState<string | null>(null);
+   171→  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+   172→  const [searchQuery, setSearchQuery] = useState("");
+   173→  const [isCreating, setIsCreating] = useState(false);
+   174→  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+   175→
+   176→  // Form state
+   177→  const [formClient, setFormClient] = useState("");
+   178→  const [formProject, setFormProject] = useState("");
+   179→  const [formDisputedHours, setFormDisputedHours] = useState("");
+   180→  const [formDescription, setFormDescription] = useState("");
+   181→  const [formHourlyRate, setFormHourlyRate] = useState("");
+   182→
+   183→  // ─── Demo mode ───────────────────────────────────────────────────────────
+   184→  const isDemoMode = !authLoading && !isAuthenticated;
+   185→
+   186→  // ─── Loading timeout ────────────────────────────────────────────────────
+   187→  const { isDisconnected } = useConvexConnectionState();
+   188→  const timedOut = useQueryTimeout(!authLoading && reportsData === undefined && !isDemoMode, 3000);
+   189→
+   190→  const isLoading = !authLoading && reportsData === undefined && !timedOut && !isDemoMode && !isDisconnected;
+   191→
+   192→  // ─── Map Convex data ────────────────────────────────────────────────────
+   193→  const reports: DisputeReport[] = (reportsData ?? []) as any;
+   194→
+   195→  // Tier-gating logic
+   196→  const isProOrAbove = subscriptionTier === "pro" || subscriptionTier === "expert";
+   197→  const reportsThisMonth = reports.filter(
+   198→    (r) => r.generatedAt > Date.now() - 30 * 24 * 60 * 60 * 1000
+   199→  ).length;
+   200→  const freeReportLimit = 1;
+   201→  const hasReachedFreeLimit = !isProOrAbove && reportsThisMonth >= freeReportLimit;
+   202→
+   203→  // Computed values
+   204→  const filteredReports = useMemo(() => {
+   205→    let result = filterReports(reports, activeTab);
+   206→    if (searchQuery.trim()) {
+   207→      const q = searchQuery.toLowerCase();
+   208→      result = result.filter(
+   209→        (r) =>
+   210→          r.caseId.toLowerCase().includes(q) ||
+   211→          (r.clientName || "").toLowerCase().includes(q) ||
+   212→          (r.projectName || "").toLowerCase().includes(q)
+   213→      );
+   214→    }
+   215→    return result;
+   216→  }, [reports, activeTab, searchQuery]);
+   217→
+   218→  const stats = useMemo(() => {
+   219→    const total = reports.length;
+   220→    const resolved = reports.filter((r) => r.status === "resolved").length;
+   221→    const successRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+   222→
+   223→    const resolvedReports = reports.filter((r) => r.status === "resolved");
+   224→    // Estimate resolution time (7-14 days for demo)
+   225→    const avgResolutionDays =
+   226→      resolvedReports.length > 0
+   227→        ? resolvedReports.reduce((sum, r) => {
+   228→            const resolvedAt = r.resolvedAt || r.generatedAt + 7 * 24 * 60 * 60 * 1000;
+   229→            const days = (resolvedAt - r.generatedAt) / (24 * 60 * 60 * 1000);
+   230→            return sum + Math.max(1, Math.min(days, 30));
+   231→          }, 0) / resolvedReports.length
+   232→        : 0;
+   233→
+   234→    const protectedAmount = reports
+   235→      .filter((r) => r.status === "resolved")
+   236→      .reduce((sum, r) => sum + r.lostIncome, 0);
+   237→
+   238→    return { total, successRate, avgResolutionDays: Math.round(avgResolutionDays * 10) / 10, protectedAmount };
+   239→  }, [reports]);
+   240→
+   241→  // ─── Handlers ────────────────────────────────────────────────────────────
+   242→  const handleGenerateReport = async () => {
+   243→    if (hasReachedFreeLimit) {
+   244→      toast.error("Monthly report limit reached", {
+   245→        description: `Free tier is limited to ${freeReportLimit} report/month. Upgrade to Pro for unlimited reports.`,
+   246→        action: {
+   247→          label: "Upgrade",
+   248→          onClick: () => {
+   249→            setSubscriptionTier("pro");
+   250→            toast.success("Upgraded to Pro!", { description: "You now have unlimited report generation." });
+   251→          },
+   252→        },
+   253→      });
+   254→      return;
+   255→    }
+   256→
+   257→    if (!formClient.trim() || !formProject.trim() || !formDisputedHours.trim()) {
+   258→      toast.error("Please fill in all required fields");
+   259→      return;
+   260→    }
+   261→
+   262→    const hours = parseFloat(formDisputedHours);
+   263→    if (Number.isNaN(hours) || hours <= 0) {
+   264→      toast.error("Please enter valid disputed hours");
+   265→      return;
+   266→    }
+   267→
+   268→    const rate = parseFloat(formHourlyRate) || 75;
+   269→
+   270→    if (isDemoMode) {
+   271→      toast.info("Sign in to generate reports", {
+   272→        description: "Connect your account to generate dispute reports with evidence-backed protection.",
+   273→      });
+   274→      return;
+   275→    }
+   276→
+   277→    setIsCreating(true);
+   278→    try {
+   279→      const result = await createReportMutation({
+   280→        clientName: formClient.trim(),
+   281→        projectName: formProject.trim(),
+   282→        disputedHours: hours,
+   283→        hourlyRate: rate,
+   284→        description: formDescription.trim() || undefined,
+   285→      });
+   286→
+   287→      if (result && result.limited) {
+   288→        toast.error("Monthly report limit reached", {
+   289→          description: `Free tier is limited to ${freeReportLimit} report/month. Upgrade to Pro for unlimited reports.`,
+   290→          action: {
+   291→            label: "Upgrade",
+   292→            onClick: () => {
+   293→              setSubscriptionTier("pro");
+   294→              toast.success("Upgraded to Pro!", { description: "You now have unlimited report generation." });
+   295→            },
+   296→          },
+   297→        });
+   298→      } else {
+   299→        toast.success("Dispute report generated!", {
+   300→          description: `Case ID: ${result?.caseId}`,
+   301→        });
+   302→        setShowGenerateDialog(false);
+   303→        resetForm();
+   304→      }
+   305→    } catch (err: any) {
+   306→      toast.error(err?.message || "Failed to generate report");
+   307→    } finally {
+   308→      setIsCreating(false);
+   309→    }
+   310→  };
+   311→
+   312→  const resetForm = () => {
+   313→    setFormClient("");
+   314→    setFormProject("");
+   315→    setFormDisputedHours("");
+   316→    setFormDescription("");
+   317→    setFormHourlyRate("");
+   318→  };
+   319→
+   320→  const handleStatusChange = async (reportId: any, newStatus: ReportStatus) => {
+   321→    if (isDemoMode) {
+   322→      toast.info("Sign in to update report status");
+   323→      return;
+   324→    }
+   325→
+   326→    setUpdatingStatus(reportId as string);
+   327→    try {
+   328→      await updateStatusMutation({
+   329→        reportId,
+   330→        status: newStatus,
+   331→      });
+   332→
+   333→      const statusMessages: Record<string, { title: string; desc: string }> = {
+   334→        sent: { title: "Report sent!", desc: "Report has been submitted to the client." },
+   335→        viewed: { title: "Report viewed!", desc: "Report marked as viewed." },
+   336→        resolved: { title: "Report resolved!", desc: "Report has been resolved in your favor." },
+   337→        appealed: { title: "Appeal filed!", desc: "Report has been moved to appeal status." },
+   338→      };
+   339→
+   340→      const msg = statusMessages[newStatus];
+   341→      if (msg) {
+   342→        toast.success(msg.title, { description: msg.desc });
+   343→      }
+   344→    } catch (err: any) {
+   345→      toast.error(err?.message || "Failed to update status");
+   346→    } finally {
+   347→      setUpdatingStatus(null);
+   348→    }
+   349→  };
+   350→
+   351→  const toggleExpand = (id: string) => {
+   352→    setExpandedId((prev) => (prev === id ? null : id));
+   353→  };
+   354→
+   355→  // ─── Render ──────────────────────────────────────────────────────────────
+   356→
+   357→  return (
+   358→    <motion.div
+   359→      className="w-full min-h-screen bg-background text-foreground"
+   360→      initial={{ opacity: 0 }}
+   361→      animate={{ opacity: 1 }}
+   362→      transition={{ duration: 0.5 }}
+   363→    >
+   364→      <PageLayout>
+   365→        {/* Header */}
+   366→        <div className="mb-6">
+   367→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Reports</h1>
+   368→          <p className="text-[16px] text-muted-foreground">
+   369→            Generate, manage, and track your dispute reports with evidence-backed protection
+   370→          </p>
+   371→        </div>
+   372→
+   373→        {/* Demo mode empty state */}
+   374→        {isDemoMode && (
+   375→          <Card className="p-8 bg-card rounded-xl border border-border">
+   376→            <div className="text-center space-y-4">
+   377→              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+   378→                <Shield className="h-8 w-8 text-primary" />
+   379→              </div>
+   380→              <div>
+   381→                <h3 className="text-lg font-semibold text-foreground">Sign in to see your reports</h3>
+   382→                <p className="text-sm text-muted-foreground mt-1">
+   383→                  Connect your account to generate and track dispute reports.
+   384→                </p>
+   385→              </div>
+   386→              <Button asChild>
+   387→                <a href="/auth">Sign In</a>
+   388→              </Button>
+   389→            </div>
+   390→          </Card>
+   391→        )}
+   392→
+   393→        {/* Loading state */}
+   394→        {isLoading ? (
+   395→          <div className="space-y-6">
+   396→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   397→              {[1, 2, 3, 4].map((i) => (
+   398→                <Card key={i}>
+   399→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   400→                    <Skeleton className="h-4 w-24" />
+   401→                    <Skeleton className="h-4 w-4" />
+   402→                  </CardHeader>
+   403→                  <CardContent>
+   404→                    <Skeleton className="h-8 w-16 mb-1" />
+   405→                    <Skeleton className="h-3 w-20" />
+   406→                  </CardContent>
+   407→                </Card>
+   408→              ))}
+   409→            </div>
+   410→            <Skeleton className="h-[200px] w-full rounded-xl" />
+   411→            {[1, 2, 3].map((i) => (
+   412→              <Skeleton key={i} className="h-[100px] w-full rounded-xl" />
+   413→            ))}
+   414→          </div>
+   415→        ) : (
+   416→          <>
+   417→            {/* Stats Cards */}
+   418→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+   419→              <Card>
+   420→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   421→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Total Reports</CardTitle>
+   422→                  <FileText className="h-4 w-4 text-muted-foreground" />
+   423→                </CardHeader>
+   424→                <CardContent>
+   425→                  <div className="text-[24px] font-bold text-foreground">{stats.total}</div>
+   426→                  <p className="text-[12px] text-muted-foreground">All time</p>
+   427→                </CardContent>
+   428→              </Card>
+   429→
+   430→              <Card>
+   431→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   432→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Success Rate</CardTitle>
+   433→                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+   434→                </CardHeader>
+   435→                <CardContent>
+   436→                  <div className="text-[24px] font-bold text-emerald-500">{stats.successRate}%</div>
+   437→                  <p className="text-[12px] text-muted-foreground">Resolved in your favor</p>
+   438→                </CardContent>
+   439→              </Card>
+   440→
+   441→              <Card>
+   442→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   443→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Resolution Time</CardTitle>
+   444→                  <Clock className="h-4 w-4 text-muted-foreground" />
+   445→                </CardHeader>
+   446→                <CardContent>
+   447→                  <div className="text-[24px] font-bold text-foreground">{stats.avgResolutionDays} days</div>
+   448→                  <p className="text-[12px] text-muted-foreground">Average time to resolve</p>
+   449→                </CardContent>
+   450→              </Card>
+   451→
+   452→              <Card>
+   453→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   454→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Protected Amount</CardTitle>
+   455→                  <Shield className="h-4 w-4 text-muted-foreground" />
+   456→                </CardHeader>
+   457→                <CardContent>
+   458→                  <div className="text-[24px] font-bold text-foreground">{formatCurrency(stats.protectedAmount)}</div>
+   459→                  <p className="text-[12px] text-muted-foreground">Recovered through disputes</p>
+   460→                </CardContent>
+   461→              </Card>
+   462→            </div>
+   463→
+   464→            {/* Tier limit notice */}
+   465→            {!isProOrAbove && (
+   466→              <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
+   467→                <CardContent className="flex items-center gap-3 py-4">
+   468→                  <Lock className="h-5 w-5 text-amber-500 shrink-0" />
+   469→                  <div className="flex-1">
+   470→                    <p className="text-sm font-medium text-foreground">
+   471→                      Free tier: {reportsThisMonth}/{freeReportLimit} reports this month
+   472→                    </p>
+   473→                    <p className="text-xs text-muted-foreground">
+   474→                      Upgrade to Pro for unlimited report generation and advanced evidence analysis.
+   475→                    </p>
+   476→                  </div>
+   477→                  <Button
+   478→                    size="sm"
+   479→                    className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+   480→                    onClick={() => {
+   481→                      setSubscriptionTier("pro");
+   482→                      toast.success("Upgraded to Pro!", {
+   483→                        description: "You now have unlimited report generation.",
+   484→                      });
+   485→                    }}
+   486→                  >
+   487→                    <Zap className="mr-1 h-3 w-3" />
+   488→                    Upgrade
+   489→                  </Button>
+   490→                </CardContent>
+   491→              </Card>
+   492→            )}
+   493→
+   494→            {/* Actions Bar: Search + Generate */}
+   495→            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+   496→              <div className="relative flex-1 w-full sm:max-w-sm">
+   497→                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   498→                <Input
+   499→                  placeholder="Search by case ID, client, or project..."
+   500→                  value={searchQuery}
+   501→                  onChange={(e) => setSearchQuery(e.target.value)}
+   502→                  className="pl-9"
+   503→                />
+   504→              </div>
+   505→              <Button
+   506→                className="bg-primary hover:bg-primary/90 shrink-0"
+   507→                onClick={() => {
+   508→                  if (hasReachedFreeLimit) {
+   509→                    toast.error("Monthly report limit reached", {
+   510→                      description: `Free tier is limited to ${freeReportLimit} report/month. Upgrade to Pro for unlimited reports.`,
+   511→                      action: {
+   512→                        label: "Upgrade",
+   513→                        onClick: () => {
+   514→                          setSubscriptionTier("pro");
+   515→                          toast.success("Upgraded to Pro!", {
+   516→                            description: "You now have unlimited report generation.",
+   517→                          });
+   518→                        },
+   519→                      },
+   520→                    });
+   521→                    return;
+   522→                  }
+   523→                  setShowGenerateDialog(true);
+   524→                }}
+   525→              >
+   526→                <Plus className="mr-2 h-4 w-4" />
+   527→                Generate Report
+   528→              </Button>
+   529→            </div>
+   530→
+   531→            {/* Tabs */}
+   532→            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabFilter)} className="mb-4">
+   533→              <TabsList>
+   534→                {TAB_FILTERS.map((tab) => (
+   535→                  <TabsTrigger key={tab.key} value={tab.key} className="gap-1.5">
+   536→                    {tab.label}
+   537→                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+   538→                      {filterReports(reports, tab.key).length}
+   539→                    </span>
+   540→                  </TabsTrigger>
+   541→                ))}
+   542→              </TabsList>
+   543→            </Tabs>
+   544→
+   545→            {/* Report List */}
+   546→            <div className="space-y-3">
+   547→              {filteredReports.length === 0 ? (
+   548→                <Card>
+   549→                  <CardContent className="py-12 text-center">
+   550→                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+   551→                    <p className="text-muted-foreground">
+   552→                      {searchQuery ? "No reports match your search." : "No reports found in this category."}
+   553→                    </p>
+   554→                  </CardContent>
+   555→                </Card>
+   556→              ) : (
+   557→                filteredReports.map((report) => {
+   558→                  const statusCfg = STATUS_CONFIG[report.status];
+   559→                  const StatusIcon = statusCfg.icon;
+   560→                  const isExpanded = expandedId === report._id;
+   561→                  const isUpdating = updatingStatus === report._id;
+   562→
+   563→                  return (
+   564→                    <motion.div
+   565→                      key={report._id}
+   566→                      layout
+   567→                      initial={false}
+   568→                      animate={{ opacity: 1 }}
+   569→                      transition={{ duration: 0.2 }}
+   570→                    >
+   571→                      <Card className="overflow-hidden">
+   572→                        {/* Report Row */}
+   573→                        <div
+   574→                          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+   575→                          onClick={() => toggleExpand(report._id)}
+   576→                        >
+   577→                          {/* Status icon + Case ID */}
+   578→                          <div className="flex items-center gap-3 min-w-0 flex-1">
+   579→                            <div className={`shrink-0 ${statusCfg.color}`}>
+   580→                              <StatusIcon className="h-5 w-5" />
+   581→                            </div>
+   582→                            <div className="min-w-0">
+   583→                              <div className="flex items-center gap-2 flex-wrap">
+   584→                                <span className="text-sm font-semibold text-foreground font-mono">{report.caseId}</span>
+   585→                                <Badge variant={statusCfg.variant} className="text-[11px]">
+   586→                                  {statusCfg.label}
+   587→                                </Badge>
+   588→                              </div>
+   589→                              <div className="text-xs text-muted-foreground mt-0.5 truncate">
+   590→                                {report.clientName || "Unknown Client"} · {report.projectName || "Unknown Project"}
+   591→                              </div>
+   592→                            </div>
+   593→                          </div>
+   594→
+   595→                          {/* Amount */}
+   596→                          <div className="flex items-center gap-6 sm:gap-8">
+   597→                            <div className="text-right">
+   598→                              <div className="text-sm font-bold text-foreground">
+   599→                                {formatCurrency(report.lostIncome)}
+   600→                              </div>
+   601→                              <div className="text-[11px] text-muted-foreground">
+   602→                                {report.rejectedHours}h @ ${report.hourlyRate || 75}/hr
+   603→                              </div>
+   604→                            </div>
+   605→                            <div className="text-right min-w-[80px]">
+   606→                              <div className="text-xs text-muted-foreground">{formatDate(report.generatedAt)}</div>
+   607→                            </div>
+   608→                            <div className="shrink-0 text-muted-foreground">
+   609→                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+   610→                            </div>
+   611→                          </div>
+   612→                        </div>
+   613→
+   614→                        {/* Expanded Detail */}
+   615→                        <AnimatePresence>
+   616→                          {isExpanded && (
+   617→                            <motion.div
+   618→                              initial={{ height: 0, opacity: 0 }}
+   619→                              animate={{ height: "auto", opacity: 1 }}
+   620→                              exit={{ height: 0, opacity: 0 }}
+   621→                              transition={{ duration: 0.25 }}
+   622→                              className="overflow-hidden"
+   623→                            >
+   624→                              <div className="px-4 pb-4">
+   625→                                <Separator className="mb-4" />
+   626→
+   627→                                {/* Description */}
+   628→                                <div className="mb-4">
+   629→                                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+   630→                                    Description
+   631→                                  </h4>
+   632→                                  <p className="text-sm text-foreground leading-relaxed">{report.description || report.reportContent || "No description available."}</p>
+   633→                                </div>
+   634→
+   635→                                {/* Evidence Summary */}
+   636→                                {(report.evidenceSummary || report.evidenceCount) && (
+   637→                                  <div className="mb-4">
+   638→                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+   639→                                      Evidence Summary
+   640→                                    </h4>
+   641→                                    <div className="bg-muted/50 border border-border rounded-lg p-3">
+   642→                                      <p className="text-sm text-foreground leading-relaxed">
+   643→                                        {report.evidenceSummary || `${report.evidenceCount || 0} evidence items collected during the disputed period.`}
+   644→                                      </p>
+   645→                                    </div>
+   646→                                  </div>
+   647→                                )}
+   648→
+   649→                                {/* Recommendations */}
+   650→                                <div className="mb-4">
+   651→                                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+   652→                                    Recommendations
+   653→                                  </h4>
+   654→                                  <ul className="space-y-2">
+   655→                                    <li className="flex items-start gap-2 text-sm text-foreground">
+   656→                                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+   657→                                      <span>Review all evidence attachments for accuracy before sending</span>
+   658→                                    </li>
+   659→                                    <li className="flex items-start gap-2 text-sm text-foreground">
+   660→                                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+   661→                                      <span>Include any client communication that confirms work acceptance</span>
+   662→                                    </li>
+   663→                                    <li className="flex items-start gap-2 text-sm text-foreground">
+   664→                                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+   665→                                      <span>Highlight compliance score during disputed hours</span>
+   666→                                    </li>
+   667→                                  </ul>
+   668→                                </div>
+   669→
+   670→                                {/* Tier-gated advanced analysis */}
+   671→                                {!isProOrAbove && (
+   672→                                  <div className="border border-dashed border-amber-500/40 rounded-lg p-4 bg-amber-500/5">
+   673→                                    <div className="flex items-center gap-2 mb-2">
+   674→                                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+   675→                                      <span className="text-sm font-semibold text-foreground">Pro Feature</span>
+   676→                                    </div>
+   677→                                    <p className="text-xs text-muted-foreground mb-3">
+   678→                                      Unlock AI-powered dispute analysis, Pattern #7 vulnerability detection, and
+   679→                                      WCVM-verified evidence signatures with a Pro subscription.
+   680→                                    </p>
+   681→                                    <Button
+   682→                                      size="sm"
+   683→                                      className="bg-amber-600 hover:bg-amber-700 text-white"
+   684→                                      onClick={(e) => {
+   685→                                        e.stopPropagation();
+   686→                                        setSubscriptionTier("pro");
+   687→                                        toast.success("Upgraded to Pro!", {
+   688→                                          description: "Advanced analysis features are now unlocked.",
+   689→                                        });
+   690→                                      }}
+   691→                                    >
+   692→                                      <Zap className="mr-1 h-3 w-3" />
+   693→                                      Upgrade to Unlock
+   694→                                    </Button>
+   695→                                  </div>
+   696→                                )}
+   697→
+   698→                                {isProOrAbove && (
+   699→                                  <div className="border border-emerald-500/30 rounded-lg p-4 bg-emerald-500/5">
+   700→                                    <div className="flex items-center gap-2 mb-2">
+   701→                                      <Shield className="h-4 w-4 text-emerald-500" />
+   702→                                      <span className="text-sm font-semibold text-foreground">
+   703→                                        Advanced Analysis (Pro)
+   704→                                      </span>
+   705→                                    </div>
+   706→                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+   707→                                      <div className="text-center p-2 bg-background rounded-md border border-border">
+   708→                                        <div className="text-lg font-bold text-emerald-500">92%</div>
+   709→                                        <div className="text-[11px] text-muted-foreground">Evidence Strength</div>
+   710→                                      </div>
+   711→                                      <div className="text-center p-2 bg-background rounded-md border border-border">
+   712→                                        <div className="text-lg font-bold text-foreground">Low</div>
+   713→                                        <div className="text-[11px] text-muted-foreground">Dispute Risk</div>
+   714→                                      </div>
+   715→                                      <div className="text-center p-2 bg-background rounded-md border border-border">
+   716→                                        <div className="text-lg font-bold text-blue-500">87%</div>
+   717→                                        <div className="text-[11px] text-muted-foreground">WCVM Score</div>
+   718→                                      </div>
+   719→                                    </div>
+   720→                                  </div>
+   721→                                )}
+   722→
+   723→                                {/* Action buttons */}
+   724→                                <div className="flex items-center gap-2 mt-4">
+   725→                                  {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+   726→                                  {report.status === "generated" && (
+   727→                                    <Button
+   728→                                      size="sm"
+   729→                                      className="bg-primary hover:bg-primary/90"
+   730→                                      disabled={isUpdating}
+   731→                                      onClick={(e) => {
+   732→                                        e.stopPropagation();
+   733→                                        handleStatusChange(report._id, "sent");
+   734→                                      }}
+   735→                                    >
+   736→                                      <Send className="mr-1.5 h-3.5 w-3.5" />
+   737→                                      Send Report
+   738→                                    </Button>
+   739→                                  )}
+   740→                                  {report.status === "sent" && (
+   741→                                    <Button
+   742→                                      size="sm"
+   743→                                      variant="outline"
+   744→                                      disabled={isUpdating}
+   745→                                      onClick={(e) => {
+   746→                                        e.stopPropagation();
+   747→                                        handleStatusChange(report._id, "resolved");
+   748→                                      }}
+   749→                                    >
+   750→                                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+   751→                                      Mark Resolved
+   752→                                    </Button>
+   753→                                  )}
+   754→                                  {(report.status === "sent" || report.status === "viewed") && (
+   755→                                    <Button
+   756→                                      size="sm"
+   757→                                      variant="outline"
+   758→                                      disabled={isUpdating}
+   759→                                      onClick={(e) => {
+   760→                                        e.stopPropagation();
+   761→                                        handleStatusChange(report._id, "appealed");
+   762→                                      }}
+   763→                                    >
+   764→                                      <Gavel className="mr-1.5 h-3.5 w-3.5" />
+   765→                                      File Appeal
+   766→                                    </Button>
+   767→                                  )}
+   768→                                  {report.status === "resolved" && (
+   769→                                    <Button
+   770→                                      size="sm"
+   771→                                      variant="outline"
+   772→                                      disabled={isUpdating}
+   773→                                      onClick={(e) => {
+   774→                                        e.stopPropagation();
+   775→                                        handleStatusChange(report._id, "appealed");
+   776→                                      }}
+   777→                                    >
+   778→                                      <Gavel className="mr-1.5 h-3.5 w-3.5" />
+   779→                                      File Appeal
+   780→                                    </Button>
+   781→                                  )}
+   782→                                  {report.status === "appealed" && (
+   783→                                    <Button
+   784→                                      size="sm"
+   785→                                      variant="outline"
+   786→                                      disabled={isUpdating}
+   787→                                      onClick={(e) => {
+   788→                                        e.stopPropagation();
+   789→                                        handleStatusChange(report._id, "resolved");
+   790→                                      }}
+   791→                                    >
+   792→                                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+   793→                                      Resolve Appeal
+   794→                                    </Button>
+   795→                                  )}
+   796→                                </div>
+   797→                              </div>
+   798→                            </motion.div>
+   799→                          )}
+   800→                        </AnimatePresence>
+   801→                      </Card>
+   802→                    </motion.div>
+   803→                  );
+   804→                })
+   805→              )}
+   806→            </div>
+   807→          </>
+   808→        )}
+   809→      </PageLayout>
+   810→
+   811→      {/* Generate Report Dialog */}
+   812→      <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
+   813→        <DialogContent className="sm:max-w-[520px]">
+   814→          <DialogHeader>
+   815→            <DialogTitle className="flex items-center gap-2">
+   816→              <FileText className="h-5 w-5 text-primary" />
+   817→              Generate Dispute Report
+   818→            </DialogTitle>
+   819→            <DialogDescription>
+   820→              Create a new dispute report with evidence-backed documentation to protect your earnings.
+   821→            </DialogDescription>
+   822→          </DialogHeader>
+   823→
+   824→          <div className="space-y-4 py-2">
+   825→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   826→              <div className="space-y-2">
+   827→                <Label htmlFor="report-client">
+   828→                  Client <span className="text-destructive">*</span>
+   829→                </Label>
+   830→                <Input
+   831→                  id="report-client"
+   832→                  placeholder="e.g. TechCorp Solutions"
+   833→                  value={formClient}
+   834→                  onChange={(e) => setFormClient(e.target.value)}
+   835→                />
+   836→              </div>
+   837→              <div className="space-y-2">
+   838→                <Label htmlFor="report-project">
+   839→                  Project <span className="text-destructive">*</span>
+   840→                </Label>
+   841→                <Input
+   842→                  id="report-project"
+   843→                  placeholder="e.g. Website Redesign"
+   844→                  value={formProject}
+   845→                  onChange={(e) => setFormProject(e.target.value)}
+   846→                />
+   847→              </div>
+   848→            </div>
+   849→
+   850→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   851→              <div className="space-y-2">
+   852→                <Label htmlFor="report-hours">
+   853→                  Disputed Hours <span className="text-destructive">*</span>
+   854→                </Label>
+   855→                <Input
+   856→                  id="report-hours"
+   857→                  type="number"
+   858→                  min="0.5"
+   859→                  step="0.5"
+   860→                  placeholder="e.g. 25"
+   861→                  value={formDisputedHours}
+   862→                  onChange={(e) => setFormDisputedHours(e.target.value)}
+   863→                />
+   864→              </div>
+   865→              <div className="space-y-2">
+   866→                <Label htmlFor="report-rate">Hourly Rate ($)</Label>
+   867→                <Input
+   868→                  id="report-rate"
+   869→                  type="number"
+   870→                  min="1"
+   871→                  step="5"
+   872→                  placeholder="75"
+   873→                  value={formHourlyRate}
+   874→                  onChange={(e) => setFormHourlyRate(e.target.value)}
+   875→                />
+   876→              </div>
+   877→            </div>
+   878→
+   879→            {formDisputedHours && formHourlyRate && (
+   880→              <div className="bg-muted/50 border border-border rounded-lg p-3">
+   881→                <div className="flex items-center justify-between">
+   882→                  <span className="text-sm text-muted-foreground">Estimated disputed amount</span>
+   883→                  <span className="text-lg font-bold text-foreground">
+   884→                    {formatCurrency(
+   885→                      (parseFloat(formDisputedHours) || 0) * (parseFloat(formHourlyRate) || 75)
+   886→                    )}
+   887→                  </span>
+   888→                </div>
+   889→              </div>
+   890→            )}
+   891→
+   892→            <div className="space-y-2">
+   893→              <Label htmlFor="report-description">Description</Label>
+   894→              <Textarea
+   895→                id="report-description"
+   896→                placeholder="Describe the dispute and why the client rejected the hours..."
+   897→                value={formDescription}
+   898→                onChange={(e) => setFormDescription(e.target.value)}
+   899→                rows={4}
+   900→              />
+   901→            </div>
+   902→
+   903→            {/* Evidence source selector - Pro feature */}
+   904→            <div className="space-y-2">
+   905→              <Label className="flex items-center gap-2">
+   906→                Evidence Source
+   907→                {!isProOrAbove && (
+   908→                  <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">
+   909→                    <Lock className="h-2.5 w-2.5 mr-0.5" />
+   910→                    Pro
+   911→                  </Badge>
+   912→                )}
+   913→              </Label>
+   914→              <Select disabled={!isProOrAbove}>
+   915→                <SelectTrigger className="w-full">
+   916→                  <SelectValue placeholder={isProOrAbove ? "Select evidence source" : "Upgrade to Pro to customize"} />
+   917→                </SelectTrigger>
+   918→                <SelectContent>
+   919→                  <SelectItem value="auto">Auto-collected evidence</SelectItem>
+   920→                  <SelectItem value="work-diary">Work diary screenshots</SelectItem>
+   921→                  <SelectItem value="activity-log">Activity log + screenshots</SelectItem>
+   922→                  <SelectItem value="wcvm">WCVM-verified context scan</SelectItem>
+   923→                </SelectContent>
+   924→              </Select>
+   925→            </div>
+   926→          </div>
+   927→
+   928→          <DialogFooter>
+   929→            <Button variant="outline" onClick={() => setShowGenerateDialog(false)} disabled={isCreating}>
+   930→              Cancel
+   931→            </Button>
+   932→            <Button
+   933→              className="bg-primary hover:bg-primary/90"
+   934→              onClick={handleGenerateReport}
+   935→              disabled={isCreating}
+   936→            >
+   937→              {isCreating ? (
+   938→                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+   939→              ) : (
+   940→                <FileText className="mr-1.5 h-4 w-4" />
+   941→              )}
+   942→              Generate Report
+   943→            </Button>
+   944→          </DialogFooter>
+   945→        </DialogContent>
+   946→      </Dialog>
+   947→    </motion.div>
+   948→  );
+   949→}
+   950→

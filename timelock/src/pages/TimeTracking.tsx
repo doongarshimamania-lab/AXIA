@@ -719,7 +719,7 @@ export default function TimeTracking() {
 
         {/* Manual Entry Dialog */}
         <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] overflow-hidden">
             <DialogHeader>
               <DialogTitle>Add Manual Time Entry</DialogTitle>
               <DialogDescription>Add a manual time entry for work you've completed outside of the timer.</DialogDescription>
@@ -754,7 +754,7 @@ export default function TimeTracking() {
                 <Input placeholder="What did you work on?" value={manualMemo} onChange={(e) => setManualMemo(e.target.value)} />
               </div>
               {tier === "free" && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 break-words">
                   Free plan: Manual entries are not compliance-verified. Upgrade to Pro for verified time tracking.
                 </div>
               )}

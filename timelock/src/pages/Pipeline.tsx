@@ -1067,7 +1067,7 @@ export default function Pipeline() {
 
       {/* ── Create Deal Dialog ── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-[#8B5CF6]" />
@@ -1246,7 +1246,7 @@ export default function Pipeline() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           {detailDeal && (
             <>
               {!editMode ? (
@@ -1384,7 +1384,7 @@ export default function Pipeline() {
                           <p className="text-xs text-muted-foreground font-medium">
                             Notes
                           </p>
-                          <p className="text-sm whitespace-pre-wrap">
+                          <p className="text-sm whitespace-pre-wrap break-words">
                             {detailDeal.notes}
                           </p>
                         </div>
@@ -1667,7 +1667,7 @@ export default function Pipeline() {
 
       {/* ── CSV Import Dialog ── */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Import Deals</DialogTitle>
             <DialogDescription>
@@ -1700,7 +1700,7 @@ export default function Pipeline() {
                 {importResult.errors.length > 0 && (
                   <div className="mt-2 text-xs text-red-600 space-y-1 max-h-32 overflow-y-auto">
                     {importResult.errors.map((err, i) => (
-                      <div key={i} className="flex items-start gap-1">
+                      <div key={i} className="flex items-start gap-1 min-w-0 break-words">
                         <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
                         {err}
                       </div>
@@ -1809,7 +1809,7 @@ export default function Pipeline() {
                             setColumnMappings((prev) => ({ ...prev, [header]: val }))
                           }
                         >
-                          <SelectTrigger className="w-[180px]">
+                          <SelectTrigger className="w-full sm:w-[180px] shrink-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -2095,7 +2095,7 @@ function DetailRow({
       <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-        <div className="text-sm">{value}</div>
+        <div className="text-sm break-words">{value}</div>
       </div>
     </div>
   );

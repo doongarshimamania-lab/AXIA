@@ -63,7 +63,7 @@ export function PricingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground tracking-tight font-[Space_Grotesk]">
             Your ${displaySavings.toFixed(0)} savings are ready
@@ -73,7 +73,7 @@ export function PricingModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-5 gap-2 mt-4 max-h-[calc(90vh-200px)]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4 max-h-[calc(90vh-200px)] overflow-y-auto">
           {/* Free Tier */}
           <motion.div
             className="border border-border rounded-lg p-3 flex flex-col"

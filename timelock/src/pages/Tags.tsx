@@ -676,7 +676,7 @@ export default function Tags() {
             <DialogTitle>Delete Tag</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the tag{" "}
-              <span className="font-semibold text-foreground">{deletingTag?.name}</span>? This will
+              <span className="font-semibold text-foreground break-words">{deletingTag?.name}</span>? This will
               remove the tag from all associated entries. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

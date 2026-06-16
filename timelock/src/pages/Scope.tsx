@@ -1136,9 +1136,9 @@ export default function Scope() {
       <Dialog open={showCreateScope} onOpenChange={setShowCreateScope}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              Create Scope Definition
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <Shield className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Create Scope Definition</span>
             </DialogTitle>
             <DialogDescription>
               Define the scope of work for a project. This creates a baseline for tracking scope changes and protecting against scope creep.
@@ -1148,7 +1148,7 @@ export default function Scope() {
           <div className="space-y-4 py-4">
             <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-start gap-2">
               <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5" />
-              <div className="text-xs text-indigo-800 dark:text-indigo-200">
+              <div className="text-xs text-indigo-800 dark:text-indigo-200 min-w-0 break-words">
                 <p className="font-bold mb-1">Why define scope?</p>
                 <p>Scope definitions create a documented baseline. When clients request changes beyond this baseline, they're formally tracked as change orders with time, cost, and deadline impacts — protecting your income from scope creep.</p>
               </div>
@@ -1196,9 +1196,9 @@ export default function Scope() {
       <Dialog open={showCreateChangeOrder} onOpenChange={setShowCreateChangeOrder}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-primary" />
-              Record Scope Change
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <GitBranch className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Record Scope Change</span>
             </DialogTitle>
             <DialogDescription>
               Document a scope change to track its impact and ensure proper client approval. This creates a formal record for dispute protection.
@@ -1242,7 +1242,7 @@ export default function Scope() {
                 <DollarSign className="w-4 h-4" />
                 Impact Assessment
               </h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="coHoursAdded">Hours Added <span className="text-red-500">*</span></Label>
                   <Input id="coHoursAdded" type="number" placeholder="16" value={coHoursAdded} onChange={(e) => setCoHoursAdded(e.target.value)} />
@@ -1273,9 +1273,9 @@ export default function Scope() {
       <Dialog open={showFormalizeDialog} onOpenChange={setShowFormalizeDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Formalize Scope Change
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <FileText className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Formalize Scope Change</span>
             </DialogTitle>
             <DialogDescription>
               Document scope changes to protect your work and maintain clear client expectations. This creates a formal record that can be referenced in case of disputes.
@@ -1285,7 +1285,7 @@ export default function Scope() {
           <div className="space-y-4 py-4">
             <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="text-xs text-amber-800 dark:text-amber-200">
+              <div className="text-xs text-amber-800 dark:text-amber-200 min-w-0 break-words">
                 <p className="font-bold mb-1">Why formalize scope changes?</p>
                 <p>Unformalized scope creep is the #1 cause of payment disputes. Documenting changes protects your income and maintains professional boundaries.</p>
               </div>

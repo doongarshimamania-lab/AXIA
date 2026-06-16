@@ -67,7 +67,7 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
                 <div key={segment.id} className="p-4 rounded-lg border bg-card">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h4 className="font-bold text-lg">{segment.label}</h4>
+                      <h4 className="font-bold text-lg break-words">{segment.label}</h4>
                       <p className="text-sm text-muted-foreground">
                         Project Progress: {segment.start}% - {segment.end}%
                       </p>
@@ -96,7 +96,7 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
                     </div>
                   </div>
 
-                  <div className="mt-3 p-3 bg-muted/50 rounded text-xs">
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg text-xs">
                     <p className="font-medium mb-1">Risk Assessment:</p>
                     {segment.riskLevel === 'high' && (
                       <p>High scope creep risk detected. Ensure all changes are documented and formalized with client approval.</p>

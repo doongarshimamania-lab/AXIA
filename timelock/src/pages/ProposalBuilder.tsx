@@ -843,7 +843,7 @@ export default function ProposalBuilder() {
                       </Badge>
                     )}
                     {template.description && (
-                      <p className="text-[12px] text-muted-foreground mt-1.5">
+                      <p className="text-[12px] text-muted-foreground mt-1.5 break-words">
                         {template.description}
                       </p>
                     )}

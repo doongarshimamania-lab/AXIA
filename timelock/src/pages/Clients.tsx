@@ -354,7 +354,7 @@ export default function Clients() {
 
         {/* Add Client Dialog */}
         <Dialog open={showAddClient} onOpenChange={setShowAddClient}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle>Add New Client</DialogTitle>
               <DialogDescription>Fill in the details to add a new client to your workspace.</DialogDescription>
@@ -454,7 +454,7 @@ export default function Clients() {
               <DialogDescription>This action cannot be undone. All associated data will be permanently removed.</DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground break-words">
                 Are you sure you want to delete{" "}
                 <span className="font-semibold text-foreground">
                   {selectedClient?.clientName ?? "this client"}

@@ -194,7 +194,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                       Your referral link
                     </label>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 min-w-0">
                       <input
                         type="text"
                         value={referralLink}
@@ -295,7 +295,7 @@ export function WaitlistSuccessModal({ isOpen, onClose, referralCode }: Waitlist
                 {/* Footer */}
                 <div className="text-center">
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                    We'll notify <span className="font-medium text-slate-700 dark:text-slate-300">{entry?.email}</span> when it's your turn
+                    We'll notify <span className="font-medium text-slate-700 dark:text-slate-300 break-all">{entry?.email}</span> when it's your turn
                   </p>
 
                   <Button

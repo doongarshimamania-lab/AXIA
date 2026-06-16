@@ -1267,7 +1267,7 @@ export default function InvoiceBuilder() {
             <DialogDescription>Attach a work proof to support this invoice line item.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             {/* Proof Type */}
             <div className="space-y-1.5">
               <Label className="text-sm">Proof Type</Label>

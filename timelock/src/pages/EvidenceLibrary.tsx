@@ -838,7 +838,7 @@ export default function EvidenceLibrary() {
                             <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
                               <div className="rounded-lg border p-4 space-y-3">
                                 <h4 className="text-sm font-semibold">Package Details</h4>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="grid grid-cols-2 gap-2 text-sm overflow-hidden">
                                   <span className="text-muted-foreground">Format:</span>
                                   <span className="font-medium">{FORMAT_CONFIG[selectedFormat].label}</span>
                                   <span className="text-muted-foreground">Total Items:</span>

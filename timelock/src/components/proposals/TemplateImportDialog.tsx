@@ -519,7 +519,7 @@ function SectionPreviewItem({
             transition={{ duration: 0.15 }}
             className="px-3 py-2 text-[12px] text-muted-foreground border-t border-border bg-background"
           >
-            <p className="whitespace-pre-wrap max-h-32 overflow-y-auto">
+            <p className="whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
               {section.content || "(empty)"}
             </p>
             {section.metadata?.placeholders && (

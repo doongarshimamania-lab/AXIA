@@ -547,7 +547,7 @@ function HourDetailModal({ isOpen, onClose, block }: { isOpen: boolean; onClose:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
@@ -566,8 +566,8 @@ function HourDetailModal({ isOpen, onClose, block }: { isOpen: boolean; onClose:
 
           {/* Activity */}
           <div>
-            <div className="font-medium text-foreground">{block.activity}</div>
-            <div className="text-sm text-muted-foreground">{block.website}</div>
+            <div className="font-medium text-foreground break-words">{block.activity}</div>
+            <div className="text-sm text-muted-foreground break-all">{block.website}</div>
             {block.platform && <div className="text-xs text-muted-foreground mt-0.5">Platform: {block.platform}</div>}
           </div>
 

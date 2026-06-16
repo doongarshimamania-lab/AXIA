@@ -97,7 +97,7 @@ export function ReportViewerModal({ isOpen, onClose, caseId, reportContent }: Pr
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => (!v ? onClose() : null)}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Universal Dispute Report</span>
@@ -108,7 +108,7 @@ export function ReportViewerModal({ isOpen, onClose, caseId, reportContent }: Pr
 
         <div className="border border-border rounded-md">
           <ScrollArea className="h-[60vh] p-4">
-            <pre className="text-sm whitespace-pre-wrap text-foreground">{reportContent || "No content"}</pre>
+            <pre className="text-sm whitespace-pre-wrap break-words text-foreground">{reportContent || "No content"}</pre>
           </ScrollArea>
         </div>
 

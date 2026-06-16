@@ -382,7 +382,7 @@ export default function PlatformIntegrations() {
 
       {/* Connect Modal */}
       <Dialog open={showConnectModal} onOpenChange={setShowConnectModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               Connect {selectedPlatform && platformLabels[selectedPlatform]}
@@ -418,14 +418,14 @@ export default function PlatformIntegrations() {
             </div>
 
             <div className="bg-muted p-3 rounded-lg border">
-              <p className="text-xs text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground italic break-words">
                 <strong className="text-foreground">Why we need this:</strong> Axia analyzes your work patterns to ensure
                 they meet platform requirements, preventing payment rejections before they happen.
               </p>
             </div>
 
             <div className="bg-muted p-3 rounded-lg border-l-4 border-primary">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-words">
                 <strong className="text-foreground">Your data is secure:</strong> We only store the minimum required information,
                 encrypt sensitive data, and you can disconnect anytime.
               </p>
@@ -464,7 +464,7 @@ export default function PlatformIntegrations() {
 
       {/* Disconnect Confirmation */}
       <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Disconnect {selectedPlatform && platformLabels[selectedPlatform]}?

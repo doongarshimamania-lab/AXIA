@@ -364,7 +364,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-foreground">Priority Actions</DialogTitle>
             <DialogDescription>
@@ -374,7 +374,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
           
           <div className="space-y-4">
             {/* Priority 1 - Critical */}
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 bg-red-50 rounded-lg">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -401,7 +401,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
             </Card>
 
             {/* Priority 2 - Important */}
-            <Card className="border-orange-200 bg-orange-50">
+            <Card className="border-orange-200 bg-orange-50 rounded-lg">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -432,7 +432,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
             </Card>
 
             {/* Priority 3 - Growth */}
-            <Card className="border-emerald-200 bg-emerald-50">
+            <Card className="border-emerald-200 bg-emerald-50 rounded-lg">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -467,7 +467,7 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
 
       {/* Message Users Modal */}
       <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Message High-Value Users (est. +$72 MRR)</DialogTitle>
             <DialogDescription>Send a targeted message to users with the highest rejection rates to offer Pro upgrades.</DialogDescription>

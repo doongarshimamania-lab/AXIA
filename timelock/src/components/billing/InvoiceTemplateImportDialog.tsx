@@ -549,7 +549,7 @@ function InvoiceSectionPreviewItem({
             transition={{ duration: 0.15 }}
             className="px-3 py-2 text-[12px] text-muted-foreground border-t border-border bg-background"
           >
-            <p className="whitespace-pre-wrap max-h-32 overflow-y-auto">
+            <p className="whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
               {section.content || "(empty)"}
             </p>
 
@@ -558,8 +558,8 @@ function InvoiceSectionPreviewItem({
               <div className="mt-2 space-y-1">
                 <p className="text-[10px] font-medium text-foreground">Detected Line Items:</p>
                 {section.metadata.items.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-[11px] bg-muted/30 rounded px-2 py-1">
-                    <span>{item.description}</span>
+                  <div key={i} className="flex items-center justify-between text-[11px] bg-muted/30 rounded-lg px-2 py-1">
+                    <span className="break-words">{item.description}</span>
                     <span className="font-medium">${item.amount?.toFixed(2) || item.rate?.toFixed(2) || "0.00"}</span>
                   </div>
                 ))}

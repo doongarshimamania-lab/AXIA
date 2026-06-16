@@ -929,9 +929,9 @@ export default function TeamManagement() {
         <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
           <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                Invite Team Member
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Invite Team Member</span>
               </DialogTitle>
               <DialogDescription className="break-words">
                 Send an invitation to join your workspace.
@@ -1054,9 +1054,9 @@ export default function TeamManagement() {
         <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
           <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Create Team
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <Plus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Create Team</span>
               </DialogTitle>
               <DialogDescription className="break-words">
                 Create a team to organize members and control access to records.
@@ -1132,9 +1132,9 @@ export default function TeamManagement() {
         <Dialog open={!!editingTeam} onOpenChange={() => setEditingTeam(null)}>
           <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Pencil className="w-5 h-5" />
-                Edit Team
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <Pencil className="w-5 h-5 shrink-0" />
+                <span className="truncate">Edit Team</span>
               </DialogTitle>
               <DialogDescription className="break-words">
                 Update team details for "{editingTeam?.name}"
@@ -1214,9 +1214,9 @@ export default function TeamManagement() {
         <Dialog open={!!teamToAddMember} onOpenChange={() => setTeamToAddMember(null)}>
           <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                Add Member to {teamToAddMember?.name}
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Add Member to {teamToAddMember?.name}</span>
               </DialogTitle>
               <DialogDescription className="break-words">
                 Select a workspace member to add to this team.

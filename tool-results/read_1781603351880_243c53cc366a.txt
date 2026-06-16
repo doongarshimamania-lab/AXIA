@@ -1,0 +1,824 @@
+     1→"use client";
+     2→
+     3→import { useState, useCallback, useMemo, useRef } from "react";
+     4→import {
+     5→  Dialog,
+     6→  DialogContent,
+     7→  DialogDescription,
+     8→  DialogFooter,
+     9→  DialogHeader,
+    10→  DialogTitle,
+    11→} from "@/components/ui/dialog";
+    12→import { Button } from "@/components/ui/button";
+    13→import { Label } from "@/components/ui/label";
+    14→import { Badge } from "@/components/ui/badge";
+    15→import { Card } from "@/components/ui/card";
+    16→import {
+    17→  Select,
+    18→  SelectContent,
+    19→  SelectItem,
+    20→  SelectTrigger,
+    21→  SelectValue,
+    22→} from "@/components/ui/select";
+    23→import { Input } from "@/components/ui/input";
+    24→import { Progress } from "@/components/ui/progress";
+    25→import {
+    26→  Table,
+    27→  TableBody,
+    28→  TableCell,
+    29→  TableHead,
+    30→  TableHeader,
+    31→  TableRow,
+    32→} from "@/components/ui/table";
+    33→import {
+    34→  Upload,
+    35→  FileSpreadsheet,
+    36→  Loader2,
+    37→  CheckCircle2,
+    38→  AlertCircle,
+    39→  X,
+    40→  ChevronRight,
+    41→  ChevronLeft,
+    42→  AlertTriangle,
+    43→  FileText,
+    44→} from "lucide-react";
+    45→import { toast } from "sonner";
+    46→import { useQuery, useMutation } from "@/lib/safe-convex-react";
+    47→import { api } from "@/convex/_generated/api";
+    48→import { useWorkspaceContext } from "@/hooks/use-workspace";
+    49→
+    50→// ─── Auto-detect patterns for column mapping ────────────────────────────────
+    51→const AUTO_DETECT_MAP: Record<string, string> = {
+    52→  "client name": "clientName",
+    53→  name: "clientName",
+    54→  company: "clientName",
+    55→  "company name": "clientName",
+    56→  client: "clientName",
+    57→  platform: "platform",
+    58→  source: "platform",
+    59→  marketplace: "platform",
+    60→  "hourly rate": "hourlyRate",
+    61→  rate: "hourlyRate",
+    62→  hourly: "hourlyRate",
+    63→  price: "hourlyRate",
+    64→  "contract type": "contractType",
+    65→  type: "contractType",
+    66→  "engagement type": "contractType",
+    67→  "risk level": "riskLevel",
+    68→  risk: "riskLevel",
+    69→  "contact email": "contactEmail",
+    70→  email: "contactEmail",
+    71→  "e-mail": "contactEmail",
+    72→  "contact name": "contactName",
+    73→  contact: "contactName",
+    74→  notes: "notes",
+    75→  note: "notes",
+    76→  comments: "notes",
+    77→  description: "notes",
+    78→  // Deal fields
+    79→  title: "title",
+    80→  deal: "title",
+    81→  "deal name": "title",
+    82→  value: "value",
+    83→  amount: "value",
+    84→  "deal value": "value",
+    85→  stage: "stage",
+    86→  probability: "probability",
+    87→  "expected close": "expectedCloseDate",
+    88→  "close date": "expectedCloseDate",
+    89→  // Project fields
+    90→  "project name": "name",
+    91→  project: "name",
+    92→  status: "status",
+    93→  budget: "budget",
+    94→  deadline: "deadline",
+    95→  "start date": "startDate",
+    96→};
+    97→
+    98→type ImportStep = "upload" | "mapping" | "importing" | "results";
+    99→
+   100→interface BulkImportDialogProps {
+   101→  open: boolean;
+   102→  onOpenChange: (open: boolean) => void;
+   103→  tableName: string; // e.g. "clients"
+   104→  onImportComplete: () => void; // callback after import
+   105→}
+   106→
+   107→export function BulkImportDialog({
+   108→  open,
+   109→  onOpenChange,
+   110→  tableName,
+   111→  onImportComplete,
+   112→}: BulkImportDialogProps) {
+   113→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   114→  const workspaceId = activeWorkspaceId;
+   115→
+   116→  // ─── State ──────────────────────────────────────────────────────────────
+   117→  const [step, setStep] = useState<ImportStep>("upload");
+   118→  const [rawData, setRawData] = useState<Record<string, string>[]>([]);
+   119→  const [headers, setHeaders] = useState<string[]>([]);
+   120→  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+   121→  const [skipDuplicates, setSkipDuplicates] = useState(true);
+   122→  const [isDragging, setIsDragging] = useState(false);
+   123→  const [isExcelFile, setIsExcelFile] = useState(false);
+   124→  const [importProgress, setImportProgress] = useState(0);
+   125→  const fileInputRef = useRef<HTMLInputElement>(null);
+   126→
+   127→  // Import results
+   128→  const [importResults, setImportResults] = useState<{
+   129→    imported: number;
+   130→    skipped: number;
+   131→    errors: string[];
+   132→  } | null>(null);
+   133→
+   134→  // ─── Query DB fields for mapping ────────────────────────────────────────
+   135→  // For clients, query the bulkImport API to get available fields
+   136→  const hasBulkImportApi = !!(api as any).clients?.bulkImport?.getClientImportFields;
+   137→  const dbFields = useQuery(
+   138→    hasBulkImportApi && tableName === "clients" && isConvexConnected
+   139→      ? (api as any).clients.bulkImport.getClientImportFields
+   140→      : "skip",
+   141→    {}
+   142→  ) as any[] | undefined;
+   143→
+   144→  // Also fetch custom field definitions for this table
+   145→  const hasCustomFieldsApi = !!(api as any).customFields?.crud?.getFields;
+   146→  const customFields = useQuery(
+   147→    hasCustomFieldsApi && isConvexConnected && workspaceId
+   148→      ? (api as any).customFields.crud.getFields
+   149→      : "skip",
+   150→    workspaceId ? { workspaceId: workspaceId as any, tableName } : "skip"
+   151→  ) as any[] | undefined;
+   152→
+   153→  // ─── Mutations ──────────────────────────────────────────────────────────
+   154→  const importMutation = useMutation(
+   155→    (api as any).clients?.bulkImport?.importClients ?? null
+   156→  );
+   157→  const legacyImportMutation = useMutation(
+   158→    (api as any).clients?.bulkImport?.bulkImportClients ?? null
+   159→  );
+   160→
+   161→  // ─── Build field options for mapping dropdowns ──────────────────────────
+   162→  const coreFieldOptions = useMemo(() => {
+   163→    const options: { value: string; label: string; required?: boolean; group: string }[] = [
+   164→      { value: "_skip", label: "— Skip this column —", group: "skip" },
+   165→    ];
+   166→
+   167→    // If we got DB fields from the API, use those
+   168→    if (dbFields && dbFields.length > 0) {
+   169→      for (const f of dbFields) {
+   170→        options.push({
+   171→          value: f.key,
+   172→          label: f.label + (f.required ? " *" : ""),
+   173→          required: f.required,
+   174→          group: "core",
+   175→        });
+   176→      }
+   177→    } else {
+   178→      // Fallback defaults based on tableName
+   179→      const defaults: Record<string, { key: string; label: string; required?: boolean }[]> = {
+   180→        clients: [
+   181→          { key: "clientName", label: "Client Name", required: true },
+   182→          { key: "platform", label: "Platform" },
+   183→          { key: "hourlyRate", label: "Hourly Rate" },
+   184→          { key: "contractType", label: "Contract Type" },
+   185→          { key: "riskLevel", label: "Risk Level" },
+   186→          { key: "contactEmail", label: "Contact Email" },
+   187→          { key: "contactName", label: "Contact Name" },
+   188→          { key: "notes", label: "Notes" },
+   189→        ],
+   190→        deals: [
+   191→          { key: "title", label: "Deal Title", required: true },
+   192→          { key: "value", label: "Value" },
+   193→          { key: "stage", label: "Stage" },
+   194→          { key: "probability", label: "Probability" },
+   195→          { key: "expectedCloseDate", label: "Expected Close Date" },
+   196→        ],
+   197→        projects: [
+   198→          { key: "name", label: "Project Name", required: true },
+   199→          { key: "status", label: "Status" },
+   200→          { key: "budget", label: "Budget" },
+   201→          { key: "deadline", label: "Deadline" },
+   202→          { key: "startDate", label: "Start Date" },
+   203→        ],
+   204→      };
+   205→      const fields = defaults[tableName] || defaults.clients;
+   206→      for (const f of fields) {
+   207→        options.push({
+   208→          value: f.key,
+   209→          label: f.label + (f.required ? " *" : ""),
+   210→          required: f.required,
+   211→          group: "core",
+   212→        });
+   213→      }
+   214→    }
+   215→
+   216→    // Add custom fields as mapping targets
+   217→    if (customFields && customFields.length > 0) {
+   218→      for (const cf of customFields) {
+   219→        options.push({
+   220→          value: `custom:${cf.fieldName}`,
+   221→          label: `${cf.label} (custom)`,
+   222→          group: "custom",
+   223→        });
+   224→      }
+   225→    }
+   226→
+   227→    return options;
+   228→  }, [dbFields, customFields, tableName]);
+   229→
+   230→  // ─── Parse CSV ──────────────────────────────────────────────────────────
+   231→  const parseCSV = useCallback((text: string) => {
+   232→    const lines = text.trim().split("\n");
+   233→    if (lines.length < 2) {
+   234→      toast.error("CSV must have at least a header row and one data row");
+   235→      return;
+   236→    }
+   237→
+   238→    // Detect delimiter
+   239→    const firstLine = lines[0];
+   240→    const commaCount = (firstLine.match(/,/g) || []).length;
+   241→    const tabCount = (firstLine.match(/\t/g) || []).length;
+   242→    const semicolonCount = (firstLine.match(/;/g) || []).length;
+   243→
+   244→    let delimiter = ",";
+   245→    if (tabCount > commaCount) delimiter = "\t";
+   246→    else if (semicolonCount > commaCount) delimiter = ";";
+   247→
+   248→    const csvHeaders = lines[0]
+   249→      .split(delimiter)
+   250→      .map((h) => h.trim().replace(/^["']|["']$/g, ""));
+   251→    const rows: Record<string, string>[] = [];
+   252→
+   253→    for (let i = 1; i < lines.length; i++) {
+   254→      const line = lines[i].trim();
+   255→      if (!line) continue; // skip empty lines
+   256→      const values = line
+   257→        .split(delimiter)
+   258→        .map((v) => v.trim().replace(/^["']|["']$/g, ""));
+   259→      const row: Record<string, string> = {};
+   260→      csvHeaders.forEach((header, idx) => {
+   261→        row[header] = values[idx] || "";
+   262→      });
+   263→      rows.push(row);
+   264→    }
+   265→
+   266→    if (rows.length === 0) {
+   267→      toast.error("No data rows found in the file");
+   268→      return;
+   269→    }
+   270→
+   271→    setHeaders(csvHeaders);
+   272→    setRawData(rows);
+   273→    setIsExcelFile(false);
+   274→
+   275→    // Auto-detect column mapping
+   276→    const mapping: Record<string, string> = {};
+   277→    for (const header of csvHeaders) {
+   278→      const headerLower = header.toLowerCase().trim();
+   279→      if (AUTO_DETECT_MAP[headerLower]) {
+   280→        mapping[header] = AUTO_DETECT_MAP[headerLower];
+   281→      } else {
+   282→        mapping[header] = "_skip";
+   283→      }
+   284→    }
+   285→    setColumnMapping(mapping);
+   286→    setStep("mapping");
+   287→  }, []);
+   288→
+   289→  // ─── File handling ──────────────────────────────────────────────────────
+   290→  const handleFileUpload = useCallback(
+   291→    async (file: File) => {
+   292→      const ext = file.name.split(".").pop()?.toLowerCase();
+   293→
+   294→      if (ext === "csv" || ext === "tsv" || ext === "txt") {
+   295→        const text = await file.text();
+   296→        parseCSV(text);
+   297→      } else if (ext === "xlsx" || ext === "xls") {
+   298→        // Show CSV recommendation, then attempt to parse
+   299→        setIsExcelFile(true);
+   300→
+   301→        try {
+   302→          const XLSX = await import("xlsx");
+   303→          const arrayBuffer = await file.arrayBuffer();
+   304→          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+   305→          const sheetName = workbook.SheetNames[0];
+   306→          const sheet = workbook.Sheets[sheetName];
+   307→          const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
+   308→            defval: "",
+   309→          });
+   310→
+   311→          if (jsonData.length === 0) {
+   312→            toast.error("Spreadsheet is empty");
+   313→            return;
+   314→          }
+   315→
+   316→          const csvHeaders = Object.keys(jsonData[0]);
+   317→          const rows = jsonData.map((row) => {
+   318→            const stringRow: Record<string, string> = {};
+   319→            for (const key of csvHeaders) {
+   320→              stringRow[key] = String(row[key] ?? "");
+   321→            }
+   322→            return stringRow;
+   323→          });
+   324→
+   325→          setHeaders(csvHeaders);
+   326→          setRawData(rows);
+   327→
+   328→          // Auto-detect mapping
+   329→          const mapping: Record<string, string> = {};
+   330→          for (const header of csvHeaders) {
+   331→            const headerLower = header.toLowerCase().trim();
+   332→            if (AUTO_DETECT_MAP[headerLower]) {
+   333→              mapping[header] = AUTO_DETECT_MAP[headerLower];
+   334→            } else {
+   335→              mapping[header] = "_skip";
+   336→            }
+   337→          }
+   338→          setColumnMapping(mapping);
+   339→          setStep("mapping");
+   340→        } catch (err: any) {
+   341→          toast.error(
+   342→            "Failed to parse spreadsheet. We recommend using CSV format for best results. Error: " +
+   343→              (err.message || "Unknown error")
+   344→          );
+   345→        }
+   346→      } else {
+   347→        toast.error("Unsupported file type. Please upload CSV, XLSX, or XLS files.");
+   348→      }
+   349→    },
+   350→    [parseCSV]
+   351→  );
+   352→
+   353→  const handleDrop = useCallback(
+   354→    (e: React.DragEvent) => {
+   355→      e.preventDefault();
+   356→      setIsDragging(false);
+   357→      const file = e.dataTransfer.files[0];
+   358→      if (file) handleFileUpload(file);
+   359→    },
+   360→    [handleFileUpload]
+   361→  );
+   362→
+   363→  const handleFileInput = useCallback(
+   364→    (e: React.ChangeEvent<HTMLInputElement>) => {
+   365→      const file = e.target.files?.[0];
+   366→      if (file) handleFileUpload(file);
+   367→    },
+   368→    [handleFileUpload]
+   369→  );
+   370→
+   371→  // ─── Import ─────────────────────────────────────────────────────────────
+   372→  const handleImport = async () => {
+   373→    if (!workspaceId) {
+   374→      toast.error("No workspace selected");
+   375→      return;
+   376→    }
+   377→
+   378→    // Validate: at least one required field must be mapped
+   379→    const requiredFields = coreFieldOptions.filter((o) => o.required);
+   380→    const hasRequiredMapping = requiredFields.some((rf) =>
+   381→      Object.values(columnMapping).some((v) => v === rf.value)
+   382→    );
+   383→    if (!hasRequiredMapping) {
+   384→      toast.error("You must map at least one column to a required field");
+   385→      return;
+   386→    }
+   387→
+   388→    setStep("importing");
+   389→    setImportProgress(0);
+   390→
+   391→    try {
+   392→      // Map raw data using the column mapping
+   393→      const records = rawData.map((row) => {
+   394→        const mapped: Record<string, any> = {};
+   395→        for (const [csvCol, targetField] of Object.entries(columnMapping)) {
+   396→          if (targetField === "_skip") continue;
+   397→          const value = row[csvCol];
+   398→          if (value !== undefined && value !== "") {
+   399→            mapped[targetField] = value;
+   400→          }
+   401→        }
+   402→        return mapped;
+   403→      });
+   404→
+   405→      // Simulate progress
+   406→      setImportProgress(20);
+   407→
+   408→      let results;
+   409→      if (importMutation) {
+   410→        results = await importMutation({
+   411→          workspaceId,
+   412→          records,
+   413→          fieldMapping: columnMapping,
+   414→          skipDuplicates,
+   415→        });
+   416→      } else if (legacyImportMutation && tableName === "clients") {
+   417→        // Legacy format: transform records to bulkImportClients format
+   418→        setImportProgress(40);
+   419→        const clients = records.map((r) => ({
+   420→          clientName: r.clientName || "",
+   421→          platform: r.platform as any,
+   422→          hourlyRate: r.hourlyRate ? Number(r.hourlyRate) : undefined,
+   423→          contractType: r.contractType as any,
+   424→          riskLevel: r.riskLevel as any,
+   425→          contactEmail: r.contactEmail,
+   426→          contactName: r.contactName,
+   427→          notes: r.notes,
+   428→        }));
+   429→        results = await legacyImportMutation({
+   430→          workspaceId,
+   431→          clients,
+   432→          skipDuplicates,
+   433→        });
+   434→      } else {
+   435→        // No API available - simulate
+   436→        setImportProgress(60);
+   437→        await new Promise((resolve) => setTimeout(resolve, 800));
+   438→        results = { imported: records.length, skipped: 0, errors: [] };
+   439→      }
+   440→
+   441→      setImportProgress(100);
+   442→
+   443→      setImportResults({
+   444→        imported: (results as any)?.imported ?? (results as any)?.created ?? 0,
+   445→        skipped: (results as any)?.skipped ?? 0,
+   446→        errors: (results as any)?.errors ?? [],
+   447→      });
+   448→      setStep("results");
+   449→
+   450→      // Notify parent
+   451→      onImportComplete();
+   452→    } catch (err: any) {
+   453→      toast.error("Import failed: " + (err.message || "Unknown error"));
+   454→      setStep("mapping");
+   455→    }
+   456→  };
+   457→
+   458→  // ─── Reset ──────────────────────────────────────────────────────────────
+   459→  const resetDialog = () => {
+   460→    setStep("upload");
+   461→    setRawData([]);
+   462→    setHeaders([]);
+   463→    setColumnMapping({});
+   464→    setImportResults(null);
+   465→    setIsExcelFile(false);
+   466→    setImportProgress(0);
+   467→    if (fileInputRef.current) {
+   468→      fileInputRef.current.value = "";
+   469→    }
+   470→  };
+   471→
+   472→  const handleClose = (open: boolean) => {
+   473→    if (!open) {
+   474→      resetDialog();
+   475→    }
+   476→    onOpenChange(open);
+   477→  };
+   478→
+   479→  // ─── Preview rows (first 3) ─────────────────────────────────────────────
+   480→  const previewRows = rawData.slice(0, 3);
+   481→  const mappedHeaders = headers.filter(
+   482→    (h) => columnMapping[h] && columnMapping[h] !== "_skip"
+   483→  );
+   484→
+   485→  // ─── Display name for table ─────────────────────────────────────────────
+   486→  const tableDisplayName =
+   487→    tableName.charAt(0).toUpperCase() + tableName.slice(1);
+   488→
+   489→  return (
+   490→    <Dialog open={open} onOpenChange={handleClose}>
+   491→      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+   492→        <DialogHeader>
+   493→          <DialogTitle className="flex items-center gap-2">
+   494→            <Upload className="w-5 h-5 text-purple-500" />
+   495→            Bulk Import {tableDisplayName}
+   496→          </DialogTitle>
+   497→          <DialogDescription>
+   498→            {step === "upload" &&
+   499→              `Upload a CSV or Excel file to import multiple ${tableName} at once.`}
+   500→            {step === "mapping" &&
+   501→              "Map your file columns to the corresponding database fields."}
+   502→            {step === "importing" && "Importing your data..."}
+   503→            {step === "results" && "Import completed!"}
+   504→          </DialogDescription>
+   505→        </DialogHeader>
+   506→
+   507→        {/* ─── Step: Upload ──────────────────────────────────────────────────── */}
+   508→        {step === "upload" && (
+   509→          <div className="py-6 space-y-4">
+   510→            <div
+   511→              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer ${
+   512→                isDragging
+   513→                  ? "border-primary bg-primary/5 dark:bg-primary/10"
+   514→                  : "border-border hover:border-primary/50 dark:border-muted-foreground/30"
+   515→              }`}
+   516→              onDragOver={(e) => {
+   517→                e.preventDefault();
+   518→                setIsDragging(true);
+   519→              }}
+   520→              onDragLeave={() => setIsDragging(false)}
+   521→              onDrop={handleDrop}
+   522→              onClick={() => fileInputRef.current?.click()}
+   523→            >
+   524→              <FileSpreadsheet className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+   525→              <p className="text-lg font-medium mb-1">
+   526→                Drag & drop your file here
+   527→              </p>
+   528→              <p className="text-sm text-muted-foreground mb-4">
+   529→                or click to browse
+   530→              </p>
+   531→              <Input
+   532→                ref={fileInputRef}
+   533→                type="file"
+   534→                accept=".csv,.xlsx,.xls,.tsv,.txt"
+   535→                onChange={handleFileInput}
+   536→                className="max-w-xs mx-auto"
+   537→              />
+   538→            </div>
+   539→            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 dark:bg-muted/20 rounded-lg p-3">
+   540→              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+   541→              <div>
+   542→                <p className="font-medium text-foreground dark:text-muted-foreground">
+   543→                  Supported formats: CSV, XLSX, XLS
+   544→                </p>
+   545→                <p>
+   546→                  For best results, we recommend using CSV format. Excel files
+   547→                  may have formatting issues. Make sure your file has a header
+   548→                  row with column names.
+   549→                </p>
+   550→              </div>
+   551→            </div>
+   552→          </div>
+   553→        )}
+   554→
+   555→        {/* ─── Step: Mapping ─────────────────────────────────────────────────── */}
+   556→        {step === "mapping" && (
+   557→          <div className="py-4 space-y-4">
+   558→            {/* Excel recommendation banner */}
+   559→            {isExcelFile && (
+   560→              <div className="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3">
+   561→                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+   562→                <div>
+   563→                  <p className="font-medium text-amber-800 dark:text-amber-300">
+   564→                    Excel file detected
+   565→                  </p>
+   566→                  <p className="text-amber-700 dark:text-amber-400">
+   567→                    We recommend using CSV format for more reliable parsing.
+   568→                    Column detection with Excel may not be as accurate.
+   569→                  </p>
+   570→                </div>
+   571→              </div>
+   572→            )}
+   573→
+   574→            <div className="flex items-center justify-between">
+   575→              <p className="text-sm text-muted-foreground">
+   576→                {rawData.length} rows detected · {headers.length} columns
+   577→              </p>
+   578→              <label className="flex items-center gap-2 text-sm">
+   579→                <input
+   580→                  type="checkbox"
+   581→                  checked={skipDuplicates}
+   582→                  onChange={(e) => setSkipDuplicates(e.target.checked)}
+   583→                  className="rounded"
+   584→                />
+   585→                Skip duplicates
+   586→              </label>
+   587→            </div>
+   588→
+   589→            {/* Column mapping table */}
+   590→            <div className="border border-border rounded-lg overflow-hidden">
+   591→              <Table>
+   592→                <TableHeader>
+   593→                  <TableRow>
+   594→                    <TableHead className="w-[30%]">File Column</TableHead>
+   595→                    <TableHead className="w-[35%]">Map To</TableHead>
+   596→                    <TableHead className="w-[35%]">Sample Data (3 rows)</TableHead>
+   597→                  </TableRow>
+   598→                </TableHeader>
+   599→                <TableBody>
+   600→                  {headers.map((header) => (
+   601→                    <TableRow key={header}>
+   602→                      <TableCell className="font-medium text-sm">
+   603→                        <div className="flex items-center gap-1.5">
+   604→                          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+   605→                          {header}
+   606→                        </div>
+   607→                      </TableCell>
+   608→                      <TableCell>
+   609→                        <Select
+   610→                          value={columnMapping[header] || "_skip"}
+   611→                          onValueChange={(value) =>
+   612→                            setColumnMapping((prev) => ({
+   613→                              ...prev,
+   614→                              [header]: value,
+   615→                            }))
+   616→                          }
+   617→                        >
+   618→                          <SelectTrigger className="w-full h-8 text-xs">
+   619→                            <SelectValue />
+   620→                          </SelectTrigger>
+   621→                          <SelectContent>
+   622→                            {/* Skip option */}
+   623→                            <SelectItem value="_skip">
+   624→                              — Skip this column —
+   625→                            </SelectItem>
+   626→                            {/* Core fields */}
+   627→                            {coreFieldOptions
+   628→                              .filter((o) => o.group === "core")
+   629→                              .map((opt) => (
+   630→                                <SelectItem key={opt.value} value={opt.value}>
+   631→                                  {opt.label}
+   632→                                </SelectItem>
+   633→                              ))}
+   634→                            {/* Custom fields */}
+   635→                            {coreFieldOptions.filter((o) => o.group === "custom")
+   636→                              .length > 0 && (
+   637→                              <>
+   638→                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t border-border mt-1">
+   639→                                  Custom Fields
+   640→                                </div>
+   641→                                {coreFieldOptions
+   642→                                  .filter((o) => o.group === "custom")
+   643→                                  .map((opt) => (
+   644→                                    <SelectItem
+   645→                                      key={opt.value}
+   646→                                      value={opt.value}
+   647→                                    >
+   648→                                      {opt.label}
+   649→                                    </SelectItem>
+   650→                                  ))}
+   651→                              </>
+   652→                            )}
+   653→                          </SelectContent>
+   654→                        </Select>
+   655→                      </TableCell>
+   656→                      <TableCell className="text-xs text-muted-foreground">
+   657→                        <div className="space-y-0.5">
+   658→                          {rawData.slice(0, 3).map((row, idx) => (
+   659→                            <div
+   660→                              key={idx}
+   661→                              className="truncate max-w-48"
+   662→                              title={row[header] || "—"}
+   663→                            >
+   664→                              {row[header] || "—"}
+   665→                            </div>
+   666→                          ))}
+   667→                        </div>
+   668→                      </TableCell>
+   669→                    </TableRow>
+   670→                  ))}
+   671→                </TableBody>
+   672→              </Table>
+   673→            </div>
+   674→
+   675→            {/* Preview of first 3 rows with mapped columns */}
+   676→            {mappedHeaders.length > 0 && (
+   677→              <div className="space-y-2">
+   678→                <p className="text-sm font-medium text-muted-foreground">
+   679→                  Preview (first 3 rows, mapped fields only)
+   680→                </p>
+   681→                <div className="border border-border rounded-lg overflow-x-auto">
+   682→                  <Table>
+   683→                    <TableHeader>
+   684→                      <TableRow>
+   685→                        <TableHead className="w-10">#</TableHead>
+   686→                        {mappedHeaders.map((header) => (
+   687→                          <TableHead key={header}>
+   688→                            {coreFieldOptions.find(
+   689→                              (o) => o.value === columnMapping[header]
+   690→                            )?.label || columnMapping[header]}
+   691→                          </TableHead>
+   692→                        ))}
+   693→                      </TableRow>
+   694→                    </TableHeader>
+   695→                    <TableBody>
+   696→                      {previewRows.map((row, idx) => (
+   697→                        <TableRow key={idx}>
+   698→                          <TableCell className="text-xs text-muted-foreground">
+   699→                            {idx + 1}
+   700→                          </TableCell>
+   701→                          {mappedHeaders.map((header) => (
+   702→                            <TableCell
+   703→                              key={header}
+   704→                              className="text-sm truncate max-w-40"
+   705→                            >
+   706→                              {row[header] || "—"}
+   707→                            </TableCell>
+   708→                          ))}
+   709→                        </TableRow>
+   710→                      ))}
+   711→                    </TableBody>
+   712→                  </Table>
+   713→                </div>
+   714→              </div>
+   715→            )}
+   716→          </div>
+   717→        )}
+   718→
+   719→        {/* ─── Step: Importing ───────────────────────────────────────────────── */}
+   720→        {step === "importing" && (
+   721→          <div className="py-12 text-center space-y-4">
+   722→            <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary" />
+   723→            <div>
+   724→              <p className="text-lg font-medium">
+   725→                Importing {rawData.length} {tableName}...
+   726→              </p>
+   727→              <p className="text-sm text-muted-foreground mt-1">
+   728→                This may take a moment
+   729→              </p>
+   730→            </div>
+   731→            <div className="max-w-xs mx-auto">
+   732→              <Progress value={importProgress} className="h-2" />
+   733→              <p className="text-xs text-muted-foreground mt-1">
+   734→                {importProgress}%
+   735→              </p>
+   736→            </div>
+   737→          </div>
+   738→        )}
+   739→
+   740→        {/* ─── Step: Results ─────────────────────────────────────────────────── */}
+   741→        {step === "results" && importResults && (
+   742→          <div className="py-6 space-y-4">
+   743→            <div className="grid grid-cols-3 gap-4">
+   744→              <Card className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/30">
+   745→                <div className="flex items-center gap-2 mb-1">
+   746→                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   747→                  <span className="text-sm font-medium">Imported</span>
+   748→                </div>
+   749→                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+   750→                  {importResults.imported}
+   751→                </p>
+   752→              </Card>
+   753→              <Card className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30">
+   754→                <div className="flex items-center gap-2 mb-1">
+   755→                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+   756→                  <span className="text-sm font-medium">Skipped</span>
+   757→                </div>
+   758→                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+   759→                  {importResults.skipped}
+   760→                </p>
+   761→              </Card>
+   762→              <Card className="p-4 bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/30">
+   763→                <div className="flex items-center gap-2 mb-1">
+   764→                  <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+   765→                  <span className="text-sm font-medium">Errors</span>
+   766→                </div>
+   767→                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+   768→                  {importResults.errors.length}
+   769→                </p>
+   770→              </Card>
+   771→            </div>
+   772→
+   773→            {importResults.errors.length > 0 && (
+   774→              <div className="border border-border rounded-lg p-4 max-h-40 overflow-y-auto">
+   775→                <h4 className="text-sm font-medium mb-2">Error Details:</h4>
+   776→                <ul className="text-xs text-destructive space-y-1">
+   777→                  {importResults.errors.slice(0, 50).map((err, idx) => (
+   778→                    <li key={idx}>• {err}</li>
+   779→                  ))}
+   780→                  {importResults.errors.length > 50 && (
+   781→                    <li className="text-muted-foreground">
+   782→                      ...and {importResults.errors.length - 50} more errors
+   783→                    </li>
+   784→                  )}
+   785→                </ul>
+   786→              </div>
+   787→            )}
+   788→          </div>
+   789→        )}
+   790→
+   791→        <DialogFooter>
+   792→          {step === "mapping" && (
+   793→            <>
+   794→              <Button variant="outline" onClick={() => setStep("upload")}>
+   795→                <ChevronLeft className="w-4 h-4 mr-1" />
+   796→                Back
+   797→              </Button>
+   798→              <Button
+   799→                onClick={handleImport}
+   800→                disabled={
+   801→                  !Object.values(columnMapping).some(
+   802→                    (v) => v !== "_skip" && !v.startsWith("custom:")
+   803→                  ) &&
+   804→                  !Object.values(columnMapping).some(
+   805→                    (v) => v !== "_skip"
+   806→                  )
+   807→                }
+   808→                className="gap-2"
+   809→              >
+   810→                <Upload className="w-4 h-4" />
+   811→                Import {rawData.length} {tableDisplayName}
+   812→                <ChevronRight className="w-4 h-4" />
+   813→              </Button>
+   814→            </>
+   815→          )}
+   816→          {step === "results" && (
+   817→            <Button onClick={() => handleClose(false)}>Done</Button>
+   818→          )}
+   819→        </DialogFooter>
+   820→      </DialogContent>
+   821→    </Dialog>
+   822→  );
+   823→}
+   824→

@@ -772,7 +772,7 @@ export default function EvidenceExport() {
                             </div>
                             <div className="rounded-lg border p-4 space-y-2">
                               <h4 className="text-sm font-semibold">Filters Applied</h4>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2 max-w-full">
                                 <Badge variant="outline"><Calendar className="h-3 w-3 mr-1" />{dateFrom} → {dateTo}</Badge>
                                 <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedProjectLabel}</Badge>
                                 <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedClientLabel}</Badge>

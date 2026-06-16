@@ -600,9 +600,9 @@ export function BulkImportDialog({
                   {headers.map((header) => (
                     <TableRow key={header}>
                       <TableCell className="font-medium text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                          {header}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{header}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -658,7 +658,7 @@ export function BulkImportDialog({
                           {rawData.slice(0, 3).map((row, idx) => (
                             <div
                               key={idx}
-                              className="truncate max-w-48"
+                              className="truncate max-w-48 min-w-0"
                               title={row[header] || "—"}
                             >
                               {row[header] || "—"}

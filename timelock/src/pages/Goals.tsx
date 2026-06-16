@@ -961,7 +961,7 @@ export default function Goals() {
             <DialogTitle>Delete Goal</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the goal{" "}
-              <span className="font-semibold text-foreground">{deletingGoal?.title}</span>? This
+              <span className="font-semibold text-foreground break-words">{deletingGoal?.title}</span>? This
               action cannot be undone and all progress will be lost.
             </DialogDescription>
           </DialogHeader>
