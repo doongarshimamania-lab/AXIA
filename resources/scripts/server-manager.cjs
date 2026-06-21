@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const SERVER_SCRIPT = path.join(__dirname, 'timelock/serve-combined.cjs');
+const SERVER_SCRIPT = path.join(__dirname, '..', '..', 'resources', 'timelock', 'serve-combined.cjs');
 const LOG = '/tmp/server-manager.log';
 const PORT = 3000;
 
@@ -16,7 +16,7 @@ function log(msg) {
 // Instead, let's just create an inline server that also proxies to Convex
 const http = require('http');
 
-const DIST = '/home/z/my-project/timelock/dist';
+const DIST = '/home/z/my-project/axia/dist';
 const CONVEX_BACKEND = 'http://127.0.0.1:3210';
 
 const MIME = {

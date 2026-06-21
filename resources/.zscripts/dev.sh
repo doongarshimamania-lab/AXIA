@@ -1,6 +1,6 @@
 #!/bin/bash
 # Axia preview server - zero-delay restart loop
-DIST="/home/z/my-project/timelock/dist"
+DIST="/home/z/my-project/axia/dist"
 PORT=3000
 
 while true; do

@@ -1,17 +1,27 @@
-# Dependencies
-node_modules
+# ─────────────────────────────────────────────────────────────
+# AXIA — Top-level .gitignore
+# Repo is organized into two top-level folders:
+#   axia/        → production code (has its own .gitignore too)
+#   resources/   → archive, backups, research, screenshots, etc.
+# ─────────────────────────────────────────────────────────────
 
-# Build output
-dist
-dist-ssr
+# Dependencies (anywhere in the repo)
+node_modules/
 
-# Environment
+# Build output (anywhere in the repo)
+dist/
+dist-ssr/
+.next/
+*.tsbuildinfo
+
+# Environment secrets (anywhere)
 .env
 .env.local
 .env.*.local
+# NOTE: .env.example IS tracked (it's a template, no secrets)
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -20,7 +30,7 @@ pnpm-debug.log*
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -30,22 +40,31 @@ pnpm-debug.log*
 
 # Convex local backend
 convex_local_backend.sqlite3
-
-# Server scripts (not part of app)
-serve-*
-daemon-*
-supervisor*
-watchdog*
-keep-alive*
-proxy-server*
-evergreen*
-robust*
-
-# Database files
 *.db
 *.sqlite3
-skills/
-upload/
-backups/*.tar.gz
-backups/timelock-fullcode-*
-src_backup_phase1_*/
+
+# ── resources/-specific ignores ──
+# IM gateway upload mount (system mount, can't be moved, gitignored)
+/upload/
+
+# Z.ai skill library (large, not app code)
+/resources/skills/
+
+# Big binary backups — store in GitHub Releases instead
+/resources/backups/*.tar.gz
+/resources/backups/*.zip
+/resources/backups/timelock-fullcode-*
+
+# Old src backups (archive-only, not for editing)
+/resources/src_backup_*/
+
+# Tool results (transient agent artifacts)
+/resources/tool-results/
+
+# Disk mirror of dist (build artifact)
+/resources/disk/
+
+# Uploads via IM gateway (runtime, not source)
+/resources/upload/
+
+# Screenshots are tracked (small, useful for docs)
