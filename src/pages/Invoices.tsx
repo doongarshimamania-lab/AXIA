@@ -61,6 +61,8 @@ import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
+import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -707,6 +709,18 @@ export default function Invoices() {
   const [showRecurringSection, setShowRecurringSection] = useState(false);
   const [showSetupRecurring, setShowSetupRecurring] = useState(false);
   const [recurringClientId, setRecurringClientId] = useState<string>("");
+  // Manual send dialog state (for "Mark as sent manually" / "Log another send")
+  const [manualSendOpen, setManualSendOpen] = useState(false);
+  const [manualSendInvoice, setManualSendInvoice] = useState<{ id: string; number: string; clientEmail?: string } | null>(null);
+
+  const openManualSendForInvoice = (invoice: any) => {
+    setManualSendInvoice({
+      id: invoice._id,
+      number: invoice.invoiceNumber || "Invoice",
+      clientEmail: invoice.clientEmail,
+    });
+    setManualSendOpen(true);
+  };
   const [recurringTemplateInvoiceId, setRecurringTemplateInvoiceId] = useState<string>("");
   const [recurringFrequency, setRecurringFrequency] = useState<"weekly"|"monthly"|"quarterly">("monthly");
   const [settingUpRecurring, setSettingUpRecurring] = useState(false);
@@ -1690,34 +1704,55 @@ export default function Invoices() {
                                 )}
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   {invoice.status === "draft" && (
                                     <Button
                                       size="sm"
                                       className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleSendInvoice(invoice._id);
+                                        openManualSendForInvoice(invoice);
                                       }}
                                     >
                                       <Send className="h-3.5 w-3.5" />
-                                      Send Invoice
+                                      Mark as sent
                                     </Button>
                                   )}
                                   {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMarkPaid(invoice._id);
-                                      }}
-                                    >
-                                      <DollarSign className="h-3.5 w-3.5" />
-                                      Mark as Paid
-                                    </Button>
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openManualSendForInvoice(invoice);
+                                        }}
+                                      >
+                                        <Send className="h-3.5 w-3.5" />
+                                        Log another send
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMarkPaid(invoice._id);
+                                        }}
+                                      >
+                                        <DollarSign className="h-3.5 w-3.5" />
+                                        Mark as Paid
+                                      </Button>
+                                    </>
                                   )}
+                                  <DownloadPDFButton
+                                    document={invoice as any}
+                                    type="invoice"
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5"
+                                  />
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -1825,6 +1860,16 @@ export default function Invoices() {
         onImportComplete={() => {
           toast.success("Import complete");
         }}
+      />
+
+      {/* Manual Send Dialog — for "Mark as sent manually" / "Log another send" */}
+      <ManualSendDialog
+        open={manualSendOpen}
+        onOpenChange={setManualSendOpen}
+        entityType="invoice"
+        entityId={manualSendInvoice?.id ?? ""}
+        entityTitle={manualSendInvoice?.number ?? "Invoice"}
+        defaultRecipient={manualSendInvoice?.clientEmail ?? ""}
       />
 
       {/* ── Reminder Manager Dialog ──────────────────────────────────── */}

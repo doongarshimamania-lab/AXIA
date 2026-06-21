@@ -4,8 +4,10 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Process due proposal follow-ups every hour
-// This finds follow-ups scheduled for Day 3/7/14 that are now due and marks them as "sent"
+// Every hour: find proposal follow-ups whose scheduledAt has passed.
+// Flips them from "scheduled" → "due" and creates an in-app notification
+// prompting the user to actually deliver the follow-up manually.
+// (This used to fake-flip the status to "sent" — that was a bug.)
 crons.interval(
   "process due proposal follow-ups",
   { hours: 1 },
@@ -13,12 +15,21 @@ crons.interval(
   {}
 );
 
-// Process due payment reminders every hour
-// This finds reminders scheduled for Day 3/7/14 after invoice sent that are now due
+// Every hour: same pattern for payment reminders on invoices.
 crons.interval(
   "process due payment reminders",
   { hours: 1 },
   internal.invoices.processDueReminders,
+  {}
+);
+
+// Daily at 9am UTC: scan for proposal/invoice drafts older than 7 days
+// that haven't been sent yet. Creates a "send_reminder" notification
+// prompting the user to actually deliver them.
+crons.cron(
+  "remindAboutStaleDrafts",
+  "0 9 * * *",
+  internal.notifications.remindAboutStaleDrafts,
   {}
 );
 

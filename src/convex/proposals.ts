@@ -1108,29 +1108,10 @@ export const scheduleFollowUps = mutation({
 export const processDueFollowUps = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-
-    // Find all scheduled follow-ups that are due
-    const allFollowUps = await ctx.db
-      .query("proposalFollowUps")
-      .filter((q) => q.eq(q.field("status"), "scheduled"))
-      .collect();
-
-    const dueFollowUps = allFollowUps.filter(
-      (fu) => fu.scheduledFor <= now
-    );
-
-    let processedCount = 0;
-    for (const fu of dueFollowUps) {
-      // Mark as sent (in a real system, this would also send an email)
-      await ctx.db.patch(fu._id, {
-        status: "sent",
-        sentAt: now,
-      });
-      processedCount++;
-    }
-
-    return { processedCount, totalDue: dueFollowUps.length };
+    // NOTE: The cron job in crons.ts calls `internal.proposals.crud.processDueFollowUps`,
+    // not this function. This copy is kept for reference / manual testing only.
+    // The real implementation lives in convex/proposals/crud.ts.
+    return { processedCount: 0, note: "use proposals/crud.ts" };
   },
 });
 

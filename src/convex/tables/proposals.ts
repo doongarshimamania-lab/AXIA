@@ -92,11 +92,13 @@ export const proposalTables = {
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
     status: v.union(
       v.literal("scheduled"),
+      v.literal("due"),
       v.literal("sent"),
       v.literal("skipped"),
       v.literal("cancelled")
     ),
     scheduledAt: v.number(),
+    dueAt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     createdAt: v.number(),
   })

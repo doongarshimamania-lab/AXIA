@@ -60,6 +60,8 @@ import {
 import { ShareDialog } from "@/components/ShareDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
+import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -744,6 +746,7 @@ function ProposalCard({
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
   const createFromProposal = useMutation(api.invoices.createInvoiceFromProposal);
+  const [manualSendOpen, setManualSendOpen] = useState(false);
 
   // Fetch follow-ups for this proposal — skip when using mock data
   // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
@@ -936,21 +939,41 @@ function ProposalCard({
             </div>
           )}
 
-          {/* Quick Actions for Draft */}
+          {/* Quick Actions for Draft — Mark as sent (manual) / Share link / Download PDF */}
           {proposal.status === "draft" && (
-            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
-                onClick={() => onSend(proposal._id)}
+                onClick={() => setManualSendOpen(true)}
+                disabled={isMock}
+                title={isMock ? "Sign in to use manual send" : "Record that you sent this manually (email, WhatsApp, etc.)"}
               >
                 <Send className="h-3 w-3" />
-                Send
+                Mark as sent
               </Button>
-              <Button
+              {canShare && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 h-8 text-[12px]"
+                  onClick={() => onShare?.(proposal._id)}
+                >
+                  <Share2 className="h-3 w-3" />
+                  Share link
+                </Button>
+              )}
+              <DownloadPDFButton
+                document={proposal as any}
+                type="proposal"
                 size="sm"
                 variant="outline"
-                className="gap-1.5 h-8 text-[12px]"
+                className="h-8 text-[12px]"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 h-8 text-[12px] ml-auto"
                 onClick={onView}
               >
                 <FilePenLine className="h-3 w-3" />
@@ -959,9 +982,42 @@ function ProposalCard({
             </div>
           )}
 
-          {/* Quick Actions for Signed — Convert to Project */}
+          {/* Quick Actions for Sent / Viewed — Log another send + Download PDF */}
+          {(proposal.status === "sent" || proposal.status === "viewed") && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-[12px]"
+                onClick={() => setManualSendOpen(true)}
+                disabled={isMock}
+              >
+                <Send className="h-3 w-3" />
+                Log another send
+              </Button>
+              <DownloadPDFButton
+                document={proposal as any}
+                type="proposal"
+                size="sm"
+                variant="outline"
+                className="h-8 text-[12px]"
+              />
+            </div>
+          )}
+
+          {/* Manual Send Dialog */}
+          <ManualSendDialog
+            open={manualSendOpen}
+            onOpenChange={setManualSendOpen}
+            entityType="proposal"
+            entityId={proposal._id}
+            entityTitle={proposal.title || "Untitled proposal"}
+            defaultRecipient={proposal.clientEmail || ""}
+          />
+
+          {/* Quick Actions for Signed — Convert to Project + Define Scope + Download PDF */}
           {proposal.status === "signed" && (
-            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
@@ -985,6 +1041,13 @@ function ProposalCard({
                 <ShieldCheck className="h-3 w-3" />
                 Define Scope
               </Button>
+              <DownloadPDFButton
+                document={proposal as any}
+                type="proposal"
+                size="sm"
+                variant="outline"
+                className="h-8 text-[12px]"
+              />
             </div>
           )}
         </CardContent>

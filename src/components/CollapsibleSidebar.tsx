@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Code2 } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
@@ -469,8 +470,12 @@ export function CollapsibleSidebar() {
           </AnimatePresence>
         </div>
 
-        {/* Bottom Section - Theme Toggle + Work Timeline */}
+        {/* Bottom Section - Notifications + Theme Toggle + Work Timeline */}
         <div className="border-t border-sidebar-border py-2">
+          {/* Notifications bell — always visible (handles collapsed/expanded itself) */}
+          <div className="px-2 pb-1">
+            <NotificationBell isExpanded={isExpanded} />
+          </div>
           <AnimatePresence>
             {isExpanded && (
               <motion.div

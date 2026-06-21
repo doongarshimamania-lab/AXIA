@@ -1019,10 +1019,40 @@ export const processDueReminders = internalMutation({
     let processedCount = 0;
 
     for (const reminder of scheduledReminders) {
+      // Flip the reminder row's status to "due" (NOT "sent" — nothing was actually sent).
+      // The invoice's own status is left untouched. The user must manually deliver
+      // the reminder and can log it via manualSends.logInvoiceManualSend.
       await ctx.db.patch(reminder._id, {
-        status: "sent",
-        sentAt: now,
+        status: "due",
+        dueAt: now,
       });
+
+      // Create an in-app notification prompting the user to actually send this reminder.
+      // Avoid duplicates: skip if we already notified about this reminder row.
+      const existing = await ctx.db
+        .query("notifications")
+        .withIndex("by_entity", (q) =>
+          q.eq("entityType", "reminder").eq("entityId", reminder._id)
+        )
+        .first();
+      if (!existing && reminder.userId) {
+        const invoice = await ctx.db.get(reminder.invoiceId as any);
+        const invoiceNumber = invoice?.invoiceNumber ?? "your invoice";
+        await ctx.db.insert("notifications", {
+          userId: reminder.userId,
+          workspaceId: invoice?.workspaceId,
+          type: "payment_reminder",
+          title: `Payment reminder due: ${invoiceNumber}`,
+          body: `Day-${reminder.dayNumber ?? reminder.sequenceDay ?? "?"} payment reminder for ${invoiceNumber} is due now. Send it manually via your preferred channel, then mark it as sent.`,
+          link: "/invoices",
+          entityType: "reminder",
+          entityId: reminder._id,
+          severity: (reminder.dayNumber ?? 0) >= 14 ? "danger" : "warning",
+          read: false,
+          dismissed: false,
+          createdAt: now,
+        });
+      }
       processedCount++;
     }
 

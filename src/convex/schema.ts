@@ -16,6 +16,8 @@ import { goalTables } from "./tables/goals";
 import { workspaceTables } from "./tables/workspaces";
 import { teamTables } from "./tables/teams";
 import { customFieldTables } from "./tables/customFields";
+import { notificationTables } from "./tables/notifications";
+import { manualSendTables } from "./tables/manualSends";
 
 export default defineSchema({
   ...authTables,
@@ -35,4 +37,6 @@ export default defineSchema({
   ...tagTables,
   ...goalTables,
   ...customFieldTables,
+  ...notificationTables,
+  ...manualSendTables,
 });

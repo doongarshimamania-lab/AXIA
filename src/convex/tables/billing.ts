@@ -6,7 +6,7 @@ export const billingTables = {
   invoices: defineTable({
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
-    clientId: v.id("clients"),
+    clientId: v.optional(v.id("clients")),
     projectId: v.optional(v.id("projects")),
     proposalId: v.optional(v.id("proposals")),
     invoiceNumber: v.string(), // INV-001 format
@@ -120,11 +120,13 @@ export const billingTables = {
     body: v.string(),
     status: v.union(
       v.literal("scheduled"),
+      v.literal("due"),
       v.literal("sent"),
       v.literal("skipped"),
       v.literal("cancelled")
     ),
     scheduledAt: v.number(),
+    dueAt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     createdAt: v.number(),
   })

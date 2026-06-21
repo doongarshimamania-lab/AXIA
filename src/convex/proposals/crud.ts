@@ -793,10 +793,39 @@ export const processDueFollowUps = internalMutation({
 
     let processedCount = 0;
     for (const fu of dueFollowUps) {
+      // Flip the follow-up row's status to "due" (NOT "sent" — nothing was actually sent).
+      // The proposal's own status is left untouched. The user must manually deliver
+      // the follow-up and can log it via manualSends.logProposalManualSend.
       await ctx.db.patch(fu._id, {
-        status: "sent",
-        sentAt: Date.now(),
+        status: "due",
+        dueAt: now,
       });
+
+      // Create an in-app notification prompting the user to actually send this follow-up.
+      // Avoid duplicates: skip if we already notified about this follow-up row.
+      const existing = await ctx.db
+        .query("notifications")
+        .withIndex("by_entity", (q) =>
+          q.eq("entityType", "follow_up").eq("entityId", fu._id)
+        )
+        .first();
+      if (!existing && fu.userId) {
+        const proposal = await ctx.db.get(fu.proposalId);
+        await ctx.db.insert("notifications", {
+          userId: fu.userId,
+          workspaceId: proposal?.workspaceId ?? fu.workspaceId,
+          type: "follow_up_due",
+          title: `Day-${fu.dayNumber} follow-up due: ${proposal?.title ?? "your proposal"}`,
+          body: `Day-${fu.dayNumber} follow-up for "${proposal?.title ?? "your proposal"}" is due now. Send it manually via your preferred channel, then mark it as sent.`,
+          link: "/proposals",
+          entityType: "follow_up",
+          entityId: fu._id,
+          severity: fu.dayNumber >= 14 ? "warning" : "info",
+          read: false,
+          dismissed: false,
+          createdAt: now,
+        });
+      }
       processedCount++;
     }
 
