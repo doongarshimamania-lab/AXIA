@@ -67,4 +67,9 @@ convex_local_backend.sqlite3
 # Uploads via IM gateway (runtime, not source)
 /resources/upload/
 
+# Large backup ZIPs — too big for git (>100MB GitHub limit).
+# These live in GitHub Releases instead (per rules file backup policy).
+/resources/download/AXIA-COMPLETE-BACKUP-*.zip
+/resources/backups/*.zip
+
 # Screenshots are tracked (small, useful for docs)
