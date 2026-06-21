@@ -72,10 +72,10 @@ export function FormalizeScopeChangeDialog({ open, onOpenChange, projectId, proj
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-axia-teal-600" />
+            <FileText className="w-5 h-5 text-indigo-500" />
             Formalize Scope Change - {projectName}
           </DialogTitle>
           <DialogDescription>
@@ -209,7 +209,7 @@ export function FormalizeScopeChangeDialog({ open, onOpenChange, projectId, proj
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex-1 bg-axia-teal-600 hover:bg-axia-teal-700"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700"
             >
               <CheckCircle2 className="w-4 h-4 mr-2" />
               {isSubmitting ? "Formalizing..." : "Formalize Change"}

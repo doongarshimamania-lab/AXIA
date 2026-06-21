@@ -17,12 +17,12 @@ export function UpgradePrompt({ upgrade, onUpgrade }: UpgradePromptProps) {
       
       <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h4 className="font-bold text-foreground dark:text-white flex items-center gap-2">
+          <h4 className="font-bold text-[#0A192F] dark:text-white flex items-center gap-2">
             <Lock className="w-4 h-4 text-slate-400" />
             Unlock {upgrade.targetTier} Protection
           </h4>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            You're missing out on <span className="font-bold text-foreground dark:text-white">${upgrade.valueGap}</span> in potential protection value.
+            You're missing out on <span className="font-bold text-[#0A192F] dark:text-white">${upgrade.valueGap}</span> in potential protection value.
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
             {upgrade.benefits.map((benefit: string, i: number) => (
@@ -35,7 +35,7 @@ export function UpgradePrompt({ upgrade, onUpgrade }: UpgradePromptProps) {
         
         <Button 
           onClick={onUpgrade}
-          className="bg-slate-900 hover:bg-slate-800 text-white min-w-[160px]"
+          className="bg-[#0A192F] hover:bg-[#1e293b] text-white min-w-[160px]"
         >
           {upgrade.cta} <ArrowRight className="w-4 h-4 ml-2" />
         </Button>

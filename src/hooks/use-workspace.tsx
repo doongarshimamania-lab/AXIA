@@ -243,16 +243,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [hasCreateApi, createWorkspaceMutation]);
 
+  // ── Convex mutation for converting to team workspace ──
+  const convertToTeamMutation = useMutation(
+    (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
+  );
+
   const upgradeToTeam = useCallback(() => {
     // Use the Convex mutation to convert
-    const convertApi = (api as any).workspaces?.crud?.convertToTeamWorkspace;
-    if (convertApi && activeWorkspace?._id) {
-      useMutation(convertApi)({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
+    if (convertToTeamMutation && activeWorkspace?._id) {
+      convertToTeamMutation({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
         .catch(() => {});
     }
     setAccountModeState("team");
     saveToStorage(STORAGE_KEY_MODE, "team");
-  }, [activeWorkspace]);
+  }, [activeWorkspace, convertToTeamMutation]);
 
   const refreshWorkspaces = useCallback(() => {
     // Convex queries auto-refresh, but we can force a re-render by toggling
@@ -289,148 +293,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Rich Mock Data for Team Workspace ────────────────────────
-// These hooks return realistic mock data so the Team Management
-// page looks fully populated when Convex returns no data.
+// ─── Workspace Member & Stats Hooks ────────────────────────
+// These hooks return real Convex data with proper empty states.
 
-const MOCK_MEMBERS = [
-  {
-    _id: "mem_001",
-    userId: "user_owner",
-    name: "Alex Rivera",
-    displayName: "Alex Rivera",
-    email: "alex.rivera@axiaagency.com",
-    image: "",
-    role: "owner" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 5 * 60 * 1000,
-    projectsAssigned: 8,
-    hoursThisWeek: 34.5,
-  },
-  {
-    _id: "mem_002",
-    userId: "user_manager_1",
-    name: "Priya Sharma",
-    displayName: "Priya Sharma",
-    email: "priya.sharma@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 15 * 60 * 1000,
-    projectsAssigned: 5,
-    hoursThisWeek: 28.0,
-  },
-  {
-    _id: "mem_003",
-    userId: "user_manager_2",
-    name: "Jordan Kim",
-    displayName: "Jordan Kim",
-    email: "jordan.kim@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 2 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 22.5,
-  },
-  {
-    _id: "mem_004",
-    userId: "user_member_1",
-    name: "Sam Chen",
-    displayName: "Sam Chen",
-    email: "sam.chen@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 1 * 60 * 60 * 1000,
-    projectsAssigned: 4,
-    hoursThisWeek: 40.0,
-  },
-  {
-    _id: "mem_005",
-    userId: "user_member_2",
-    name: "Elena Volkov",
-    displayName: "Elena Volkov",
-    email: "elena.volkov@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 21 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 30 * 60 * 1000,
-    projectsAssigned: 2,
-    hoursThisWeek: 35.0,
-  },
-  {
-    _id: "mem_006",
-    userId: "user_member_3",
-    name: "Marcus Thompson",
-    displayName: "Marcus Thompson",
-    email: "marcus.t@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 4 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 18.0,
-  },
-  {
-    _id: "mem_007",
-    userId: "user_member_4",
-    name: "Aisha Patel",
-    displayName: "Aisha Patel",
-    email: "aisha.patel@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-  {
-    _id: "mem_008",
-    userId: "user_member_5",
-    name: "Lucas Weber",
-    displayName: "Lucas Weber",
-    email: "lucas.w@freelance.dev",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 6 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-];
-
-const MOCK_STATS = {
-  memberCount: 8,
-  clientCount: 12,
-  activeProjectCount: 6,
-  pendingInvoiceCount: 4,
-  totalRevenue: 47850,
-  totalHoursThisWeek: 178,
-  protectionScore: 94,
+// Default empty stats when no data is available
+const EMPTY_STATS = {
+  memberCount: 0,
+  clientCount: 0,
+  activeProjectCount: 0,
+  pendingInvoiceCount: 0,
+  totalRevenue: 0,
+  totalHoursThisWeek: 0,
+  protectionScore: 0,
 };
 
 export function useWorkspaceMembers(workspaceId: string | null) {
-  const workspacesApi = (api as any).workspaces;
-  const hasMembersApi = !!(workspacesApi?.members?.getMembers);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexMembers = useQuery(
-    hasMembersApi && validId ? workspacesApi.members.getMembers : "skip",
+    validId ? api.workspaces.members.getMembers : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any[] | undefined;
 
-  // If Convex returns data, map it. Otherwise fall back to mock.
+  // If Convex returns data, map it. Otherwise return empty array.
   if (convexMembers && convexMembers.length > 0) {
     return convexMembers.map((m: any) => ({
       _id: m._id,
@@ -448,17 +333,15 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     }));
   }
 
-  // Fallback to mock data
-  return MOCK_MEMBERS;
+  // Return empty array when no data
+  return [];
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
-  const workspacesApi = (api as any).workspaces;
-  const hasStatsApi = !!(workspacesApi?.crud?.getWorkspaceStats);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexStats = useQuery(
-    hasStatsApi && validId ? workspacesApi.crud.getWorkspaceStats : "skip",
+    validId ? api.workspaces.crud.getWorkspaceStats : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any | undefined;
 
@@ -474,18 +357,14 @@ export function useWorkspaceStats(workspaceId: string | null) {
     };
   }
 
-  return MOCK_STATS;
+  return EMPTY_STATS;
 }
 
 export function useInviteMember() {
-  const workspacesApi = (api as any).workspaces;
-  const hasInviteApi = !!(workspacesApi?.invitations?.createInvitation);
-  const inviteMutation = useMutation(
-    hasInviteApi ? workspacesApi.invitations.createInvitation : null
-  );
+  const inviteMutation = useMutation(api.workspaces.invitations.createInvitation);
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
-    if (!hasInviteApi || !inviteMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: true, invitationId: `inv_${Date.now()}` };
+    if (!inviteMutation || !isValidConvexId(args.workspaceId)) {
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
     }
     try {
       await inviteMutation({
@@ -507,8 +386,9 @@ export function useRemoveMember() {
     hasRemoveApi ? workspacesApi.members.removeMember : null
   );
   return async (args: { workspaceId: string; memberId: string }) => {
+    // SECURITY: Fail closed
     if (!hasRemoveApi || !removeMutation || !isValidConvexId(args.memberId)) {
-      return { success: true };
+      return { success: false, error: "Member management service unavailable. Please try again later." };
     }
     try {
       await removeMutation({
@@ -528,8 +408,9 @@ export function useUpdateMemberRole() {
     hasUpdateRoleApi ? workspacesApi.members.updateMemberRole : null
   );
   return async (args: { workspaceId: string; memberId: string; role: WorkspaceRole }) => {
+    // SECURITY: Fail closed
     if (!hasUpdateRoleApi || !updateRoleMutation || !isValidConvexId(args.memberId)) {
-      return { success: true };
+      return { success: false, error: "Role management service unavailable. Please try again later." };
     }
     try {
       await updateRoleMutation({
@@ -550,8 +431,9 @@ export function useCancelInvitation() {
     hasCancelApi ? workspacesApi.invitations.cancelInvitation : null
   );
   return async (args: { invitationId: string }) => {
+    // SECURITY: Fail closed
     if (!hasCancelApi || !cancelMutation || !isValidConvexId(args.invitationId)) {
-      return { success: true };
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
     }
     try {
       await cancelMutation({
@@ -569,8 +451,9 @@ export function useConvertToTeamWorkspace() {
     (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
   );
   return async (args: { workspaceId: string; name: string }) => {
+    // SECURITY: Fail closed
     if (!convertMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: true };
+      return { success: false, error: "Workspace conversion service unavailable. Please try again later." };
     }
     try {
       await convertMutation({ workspaceId: args.workspaceId as any, name: args.name });
@@ -581,15 +464,36 @@ export function useConvertToTeamWorkspace() {
   };
 }
 
+// SECURITY: All workspace operations that lack a backend API now fail closed
+// instead of returning fake success. This prevents silent data loss.
+
 export function useCreatePersonalWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
+  return async (args: any) => {
+    if (!createMutation) {
+      return { success: false, error: "Workspace creation unavailable. Please try again later." };
+    }
+    try {
+      await createMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useCreateTeamWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
+  return async (args: any) => {
+    if (!createMutation) {
+      return { success: false, error: "Workspace creation unavailable. Please try again later." };
+    }
+    try {
+      await createMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
@@ -600,32 +504,68 @@ export function useSwitchWorkspace() {
 }
 
 export function useUpdateWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const updateMutation = useMutation((api as any).workspaces?.crud?.update ?? null);
+  return async (args: any) => {
+    if (!updateMutation) {
+      return { success: false, error: "Workspace update unavailable. Please try again later." };
+    }
+    try {
+      await updateMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useAcceptInvitation() {
-  return async (_args: any) => {
-    return { success: true };
+  const acceptMutation = useMutation((api as any).workspaces?.invitations?.acceptInvitation ?? null);
+  return async (args: any) => {
+    if (!acceptMutation) {
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
+    }
+    try {
+      await acceptMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useDeclineInvitation() {
-  return async (_args: any) => {
-    return { success: true };
+  const declineMutation = useMutation((api as any).workspaces?.invitations?.cancelInvitation ?? null);
+  return async (args: any) => {
+    if (!declineMutation) {
+      return { success: false, error: "Invitation service unavailable. Please try again later." };
+    }
+    try {
+      await declineMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
 export function useTransferOwnership() {
   return async (_args: any) => {
-    return { success: true };
+    return { success: false, error: "Ownership transfer is not yet available. Contact support." };
   };
 }
 
 export function useDeleteWorkspace() {
-  return async (_args: any) => {
-    return { success: true };
+  const deleteMutation = useMutation((api as any).workspaces?.crud?.deleteWorkspace ?? null);
+  return async (args: any) => {
+    if (!deleteMutation) {
+      return { success: false, error: "Workspace deletion unavailable. Please try again later." };
+    }
+    try {
+      await deleteMutation(args);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 

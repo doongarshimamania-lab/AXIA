@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
@@ -46,20 +46,10 @@ import {
   Briefcase,
   ShieldCheck,
   Share2,
-  Bell,
-  BellRing,
-  CalendarClock,
-  PlusCircle,
-  X,
-  SkipForward,
-  Play,
-  Square,
-  Settings2,
-  Receipt,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageLayout } from "@/components/design-system/PageLayout";
 import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
 import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
 
@@ -145,42 +135,7 @@ const filterTabs: { key: "all" | ProposalStatus; label: string }[] = [
   { key: "declined", label: "Declined" },
 ];
 
-// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
-
-const mockNow = Date.now();
-const mockDay = 86400000;
-
-const MOCK_PROPOSALS: Proposal[] = [
-  // Signed
-  { _id: "prop_1", userId: "", title: "TechCorp Phase 2 — CMS & Marketing Automation", status: "signed", clientName: "David Chen", clientEmail: "david.chen@techcorp.io", totalValue: 15000, sections: [{ id: "1", type: "heading", content: "TechCorp Phase 2" }, { id: "2", type: "text", content: "CMS integration, marketing automation workflows, and analytics dashboard." }, { id: "3", type: "pricing", content: "Phase 2 Package", metadata: { items: [{ name: "CMS Integration", price: 5000 }, { name: "Marketing Automation", price: 4000 }, { name: "Analytics Dashboard", price: 3500 }, { name: "QA & Deployment", price: 2500 }] } }, { id: "4", type: "terms", content: "30% upfront, 40% at CMS milestone, 30% on delivery." }], sentAt: mockNow - 20 * mockDay, viewedAt: mockNow - 18 * mockDay, signedAt: mockNow - 10 * mockDay, createdAt: mockNow - 25 * mockDay, updatedAt: mockNow },
-  { _id: "prop_6", userId: "", title: "E-Commerce Platform Redesign", status: "signed", clientName: "Acme Corp", clientEmail: "sarah@acmecorp.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "E-Commerce Redesign" }, { id: "2", type: "text", content: "Complete redesign with modern UX, mobile-first approach, and optimized checkout." }], sentAt: mockNow - 25 * mockDay, viewedAt: mockNow - 22 * mockDay, signedAt: mockNow - 12 * mockDay, createdAt: mockNow - 30 * mockDay, updatedAt: mockNow },
-  { _id: "prop_10", userId: "", title: "DigiMark Brand Identity Package", status: "signed", clientName: "Lisa Park", clientEmail: "lisa@digitalmarketingco.com", totalValue: 3200, sections: [{ id: "1", type: "heading", content: "Brand Identity" }, { id: "2", type: "text", content: "Complete brand identity refresh including logo, color palette, and guidelines." }], sentAt: mockNow - 15 * mockDay, viewedAt: mockNow - 14 * mockDay, signedAt: mockNow - 8 * mockDay, createdAt: mockNow - 18 * mockDay, updatedAt: mockNow },
-  // Sent
-  { _id: "prop_2", userId: "", title: "Mobile Banking App — Full Development", status: "sent", clientName: "Michael Torres", clientEmail: "cto@finserve.io", totalValue: 25000, sections: [{ id: "1", type: "heading", content: "FinServe Mobile Banking" }, { id: "2", type: "text", content: "Secure mobile banking app with biometric auth and real-time transactions." }, { id: "3", type: "pricing", content: "Enterprise Package", metadata: { items: [{ name: "React Native App", price: 12000 }, { name: "Backend API & Security", price: 8000 }, { name: "Admin Dashboard", price: 3000 }, { name: "Penetration Testing", price: 2000 }] } }], sentAt: mockNow - 5 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  { _id: "prop_9", userId: "", title: "Insurance Claims Processing Platform", status: "sent", clientName: "Vikram Mehta", clientEmail: "vikram@insureflow.com", totalValue: 28000, sections: [{ id: "1", type: "heading", content: "InsureFlow Claims Platform" }, { id: "2", type: "text", content: "Claims processing with document OCR, automated workflows, and compliance engine." }], sentAt: mockNow - 3 * mockDay, viewedAt: mockNow - 1 * mockDay, createdAt: mockNow - 8 * mockDay, updatedAt: mockNow },
-  { _id: "prop_16", userId: "", title: "Nonprofit Donation Platform Proposal", status: "sent", clientName: "Dr. Sarah Okonkwo", clientEmail: "sarah@givehope.org", totalValue: 8000, sections: [{ id: "1", type: "heading", content: "Donation Platform" }, { id: "2", type: "text", content: "Donation and volunteer management platform with recurring donations and impact reporting." }], sentAt: mockNow - 2 * mockDay, createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
-  // Viewed
-  { _id: "prop_4", userId: "", title: "Creative Studios Motion Design Package", status: "viewed", clientName: "Tom Bradley", clientEmail: "tom@creativestudios.art", totalValue: 7500, sections: [{ id: "1", type: "heading", content: "Motion Design Package" }, { id: "2", type: "text", content: "Motion graphics reel and social media content for brand launch campaign." }], sentAt: mockNow - 8 * mockDay, viewedAt: mockNow - 6 * mockDay, createdAt: mockNow - 12 * mockDay, updatedAt: mockNow },
-  { _id: "prop_11", userId: "", title: "Brand Identity for HealthTech Startup", status: "viewed", clientName: "MediTech Inc", clientEmail: "marketing@meditech.org", totalValue: 12000, sections: [{ id: "1", type: "heading", content: "HealthTech Branding" }, { id: "2", type: "text", content: "Complete brand identity for healthcare technology startup with accessible design." }], sentAt: mockNow - 7 * mockDay, viewedAt: mockNow - 5 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  { _id: "prop_18", userId: "", title: "Manufacturing Quality Control System Proposal", status: "viewed", clientName: "Ingrid Svensson", clientEmail: "ingrid@precisemfg.se", totalValue: 38000, sections: [{ id: "1", type: "heading", content: "Quality Control System" }, { id: "2", type: "text", content: "IoT-connected quality control system with real-time defect detection." }], sentAt: mockNow - 6 * mockDay, viewedAt: mockNow - 3 * mockDay, createdAt: mockNow - 10 * mockDay, updatedAt: mockNow },
-  // Draft
-  { _id: "prop_3", userId: "", title: "Healthcare Patient Portal", status: "draft", clientName: "Dr. Robert Singh", clientEmail: "robert@medportal.health", totalValue: 18000, sections: [{ id: "1", type: "heading", content: "Patient Portal" }, { id: "2", type: "text", content: "HIPAA-compliant patient portal with appointment scheduling and secure messaging." }], createdAt: mockNow - 2 * mockDay, updatedAt: mockNow },
-  { _id: "prop_12", userId: "", title: "Supply Chain Management System", status: "draft", clientName: "Robert Chang", clientEmail: "rchang@logisync.com", totalValue: 32000, sections: [{ id: "1", type: "heading", content: "Supply Chain Platform" }, { id: "2", type: "text", content: "End-to-end supply chain management with inventory tracking and predictive analytics." }], createdAt: mockNow - 5 * mockDay, updatedAt: mockNow },
-  { _id: "prop_13", userId: "", title: "Restaurant POS & Ordering System", status: "draft", clientName: "Maria Santos", clientEmail: "maria@freshbites.co", totalValue: 14000, sections: [{ id: "1", type: "heading", content: "Restaurant POS" }, { id: "2", type: "text", content: "Point-of-sale and online ordering system for a 12-location restaurant chain." }], createdAt: mockNow - 3 * mockDay, updatedAt: mockNow },
-  // Declined
-  { _id: "prop_5", userId: "", title: "Social Platform MVP", status: "declined", clientName: "SocialNext", clientEmail: "founders@socialnext.com", totalValue: 35000, sections: [{ id: "1", type: "heading", content: "SocialNext MVP" }, { id: "2", type: "text", content: "Complete social networking MVP with user profiles, feed algorithm, and messaging." }], sentAt: mockNow - 30 * mockDay, viewedAt: mockNow - 28 * mockDay, createdAt: mockNow - 35 * mockDay, updatedAt: mockNow },
-  // Expired
-  { _id: "prop_14exp", userId: "", title: "EdTech Course Platform Proposal", status: "expired", clientName: "Prof. Anika Desai", clientEmail: "anika@learnvista.edu", totalValue: 9500, sections: [{ id: "1", type: "heading", content: "EdTech Platform" }, { id: "2", type: "text", content: "Online course platform with video hosting, quizzes, and certificate generation." }], sentAt: mockNow - 45 * mockDay, viewedAt: mockNow - 43 * mockDay, validUntil: mockNow - 15 * mockDay, createdAt: mockNow - 50 * mockDay, updatedAt: mockNow },
-];
-
-const MOCK_STATS = {
-  total: MOCK_PROPOSALS.length,
-  sent: MOCK_PROPOSALS.filter(p => p.status === "sent").length,
-  signed: MOCK_PROPOSALS.filter(p => p.status === "signed").length,
-  draft: MOCK_PROPOSALS.filter(p => p.status === "draft").length,
-  signatureRate: MOCK_PROPOSALS.length > 0 ? Math.round((MOCK_PROPOSALS.filter(p => p.status === "signed").length / (MOCK_PROPOSALS.filter(p => p.status === "signed").length + MOCK_PROPOSALS.filter(p => p.status === "declined").length + MOCK_PROPOSALS.filter(p => p.status === "expired").length || 1)) * 100) : 0,
-  totalValue: MOCK_PROPOSALS.reduce((s, p) => s + p.totalValue, 0),
-};
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Proposals() {
   const navigate = useNavigate();
@@ -199,15 +154,23 @@ export default function Proposals() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareProposalId, setShareProposalId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
-  const [followUpDialogProposalId, setFollowUpDialogProposalId] = useState<string | null>(null);
+
+  // ── Phase 1: Manual send dialog state ──
+  // When the user clicks "Mark as sent" or "Log another send", we open the
+  // ManualSendDialog with the target proposal's context.
+  const [manualSendProposal, setManualSendProposal] = useState<{
+    id: string;
+    title: string;
+    defaultRecipient?: string;
+  } | null>(null);
 
   // ── Convex mutations for sharing ──
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
 
   // Convex queries
-  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : (activeFilter === "all" ? {} : { status: activeFilter })) as Proposal[] | undefined;
-  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : {}) as {
+  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : "skip") as Proposal[] | undefined;
+  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : "skip") as {
     total: number;
     sent: number;
     signed: number;
@@ -222,47 +185,37 @@ export default function Proposals() {
   const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
 
-  // Follow-up mutations
-  const startFollowUps = useMutation(api.proposals.crud.startFollowUps);
-  const stopFollowUps = useMutation(api.proposals.crud.stopFollowUps);
-  const skipFollowUp = useMutation(api.proposals.crud.skipFollowUp);
+  // Mutations for Convert-to-Project flow
+  const createClientMutation = useMutation(api.clients.crud.createClient);
+  const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
+  const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
+  const updateProposalMutation = useMutation(api.proposals.crud.updateProposal);
+
+  // Fetch pipeline stages (to find "Won" stage for deal conversion)
+  const pipelineStages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as { _id: string; name: string }[] | undefined;
+
+  // Fetch existing clients (to check if client already exists)
+  const existingClients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as { _id: string; clientName: string; contactEmail?: string }[] | undefined;
 
   // Filter counts (from all proposals for the tab badges)
-  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : {}) as Proposal[] | undefined;
+  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
 
-  // Track whether we're using mock data (mock IDs are not valid Convex IDs)
-  const isUsingMockData = !convexProposals || convexProposals.length === 0;
+  const { isDisconnected } = useConvexConnectionState();
+  const isLoading = convexProposals === undefined || convexStats === undefined;
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
-  // Use Convex data when available, fall back to mock data
-  // Merge: if Convex has proposals, use those but also include mock data
-  // so that mock proposals don't disappear when real ones are created
+  // Use Convex data only
   const proposals = useMemo(() => {
-    const hasConvexData = convexProposals && convexProposals.length > 0;
-    const mockFiltered = activeFilter === "all" ? MOCK_PROPOSALS : MOCK_PROPOSALS.filter(p => p.status === activeFilter);
-
-    if (hasConvexData) {
-      // Merge Convex proposals with mock data (avoiding duplicates by ID)
-      const convexIds = new Set(convexProposals.map(p => p._id));
-      const merged = [...convexProposals, ...mockFiltered.filter(p => !convexIds.has(p._id))];
-      if (activeFilter === "all") return merged;
-      return merged.filter(p => p.status === activeFilter);
-    }
-    return mockFiltered;
-  }, [convexProposals, activeFilter]);
+    return convexProposals ?? [];
+  }, [convexProposals]);
 
   const stats = useMemo(() => {
-    if (convexStats && convexStats.total > 0) return convexStats;
-    return MOCK_STATS;
+    return convexStats ?? { total: 0, sent: 0, signed: 0, draft: 0, signatureRate: 0, totalValue: 0 };
   }, [convexStats]);
 
   const allProposals = useMemo(() => {
-    const hasConvexData = convexAllProposals && convexAllProposals.length > 0;
-    if (hasConvexData) {
-      // Merge Convex proposals with mock data
-      const convexIds = new Set(convexAllProposals.map(p => p._id));
-      return [...convexAllProposals, ...MOCK_PROPOSALS.filter(p => !convexIds.has(p._id))];
-    }
-    return MOCK_PROPOSALS;
+    return convexAllProposals ?? [];
   }, [convexAllProposals]);
 
   const filterCounts = useMemo(() => {
@@ -327,6 +280,19 @@ export default function Proposals() {
     }
   };
 
+  // Phase 1: open the ManualSendDialog when the user clicks "Mark as sent"
+  // or "Log another send". The dialog collects channel + recipient + notes
+  // and calls the logProposalManualSend mutation which atomically flips the
+  // status, inserts an audit log row, schedules follow-ups, and dismisses
+  // any triggering notification.
+  const handleOpenManualSend = (proposal: Proposal) => {
+    setManualSendProposal({
+      id: proposal._id,
+      title: proposal.title,
+      defaultRecipient: proposal.clientEmail || proposal.clientName || "",
+    });
+  };
+
   const handleDuplicate = async (proposalId: string) => {
     try {
       const newId = await duplicateProposal({ proposalId: proposalId as any });
@@ -348,37 +314,75 @@ export default function Proposals() {
     }
   };
 
-  const handleStartFollowUps = async (proposalId: string, intervals?: number[]) => {
+  const handleConvertToProject = async (proposal: Proposal) => {
     try {
-      const result = await startFollowUps({ proposalId: proposalId as any, intervals });
-      toast.success("Follow-ups started!", {
-        description: `${intervals?.length || 3} follow-up(s) scheduled.`,
+      // Step 1: Find or create the client
+      const clientName = proposal.clientName || "Unknown Client";
+      const clientEmail = proposal.clientEmail;
+      let clientId: string | undefined;
+
+      // Check if a client with this name already exists
+      const existingClient = existingClients?.find(
+        (c) => c.clientName.toLowerCase() === clientName.toLowerCase()
+      );
+
+      if (existingClient) {
+        clientId = existingClient._id;
+      } else {
+        // Create a new client
+        const newClientId = await createClientMutation({
+          clientName,
+          platform: "direct" as const,
+          hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+          contractType: "hourly" as const,
+          contactEmail: clientEmail,
+          contactName: clientName,
+          workspaceId,
+          notes: `Created from proposal: ${proposal.title}`,
+        });
+        clientId = newClientId as unknown as string;
+      }
+
+      if (!clientId) {
+        throw new Error("Failed to resolve client ID");
+      }
+
+      // Step 2: Create the project
+      await addProjectMutation({
+        projectName: proposal.title,
+        clientId: clientId as any,
+        hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+        projectType: "ongoing" as const,
+        protectionLevel: "enhanced" as const,
+        workspaceId,
+      });
+
+      // Step 3: If proposal has a dealId, move the deal to "Won" stage
+      const dealId = (proposal as any).dealId;
+      if (dealId && pipelineStages) {
+        const wonStage = pipelineStages.find(
+          (s) => s.name.toLowerCase() === "won"
+        );
+        if (wonStage) {
+          await moveDealMutation({
+            dealId: dealId as any,
+            stageId: wonStage._id as any,
+          });
+        }
+      }
+
+      // Step 4: Update proposal notes to indicate conversion
+      const existingNotes = proposal.notes || "";
+      await updateProposalMutation({
+        proposalId: proposal._id as any,
+        notes: `${existingNotes ? existingNotes + "\n" : ""}[Converted to project — ${new Date().toLocaleDateString()}]`,
+      });
+
+      toast.success("Project created!", {
+        description: `"${proposal.title}" has been converted to a project.`,
       });
     } catch (err: any) {
-      toast.error("Failed to start follow-ups", { description: err.message });
-      throw err;
-    }
-  };
-
-  const handleStopFollowUps = async (proposalId: string) => {
-    try {
-      await stopFollowUps({ proposalId: proposalId as any });
-      toast.success("Follow-ups stopped", {
-        description: "All scheduled follow-ups have been cancelled.",
-      });
-    } catch (err: any) {
-      toast.error("Failed to stop follow-ups", { description: err.message });
-      throw err;
-    }
-  };
-
-  const handleSkipFollowUp = async (followUpId: string) => {
-    try {
-      await skipFollowUp({ followUpId: followUpId as any });
-      toast.success("Follow-up skipped");
-    } catch (err: any) {
-      toast.error("Failed to skip follow-up", { description: err.message });
-      throw err;
+      toast.error("Failed to convert to project", { description: err.message });
     }
   };
 
@@ -389,11 +393,11 @@ export default function Proposals() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <PageLayout wide>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-1">
+            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
               Proposals
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -416,7 +420,7 @@ export default function Proposals() {
               Seed Data
             </Button>
             <Button
-              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
               onClick={() => navigate("/proposals/new")}
             >
               <Plus className="h-4 w-4" />
@@ -425,6 +429,31 @@ export default function Proposals() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {showLoading ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <Skeleton className="h-6 w-12 mb-1" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <Skeleton className="h-10 rounded-lg" />
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-[100px] rounded-xl" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {[
@@ -432,8 +461,8 @@ export default function Proposals() {
               title: "Total",
               value: stats?.total ?? 0,
               icon: FileText,
-              color: "text-primary",
-              bgColor: "bg-primary/10",
+              color: "text-[#8B5CF6]",
+              bgColor: "bg-[#8B5CF6]/10",
               format: (v: number) => String(v),
             },
             {
@@ -510,7 +539,7 @@ export default function Proposals() {
               placeholder="Search by title or client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9"
             />
           </div>
         </div>
@@ -525,7 +554,7 @@ export default function Proposals() {
                 onClick={() => setActiveFilter(tab.key)}
                 className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
                   isActive
-                    ? "font-semibold text-foreground bg-primary/10 ring-1 ring-primary/30"
+                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
@@ -533,7 +562,7 @@ export default function Proposals() {
                 <span
                   className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-primary/20 text-primary"
+                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -541,7 +570,7 @@ export default function Proposals() {
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    isActive ? "bg-primary" : "bg-transparent"
+                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -581,7 +610,7 @@ export default function Proposals() {
                             Seed Sample Data
                           </Button>
                           <Button
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
                             onClick={() => navigate("/proposals/new")}
                           >
                             <Plus className="h-4 w-4" />
@@ -599,42 +628,41 @@ export default function Proposals() {
                   key={proposal._id}
                   proposal={proposal}
                   idx={idx}
-                  isMock={isUsingMockData}
+                  isMock={false}
                   formatCurrency={formatCurrency}
                   formatDate={formatDate}
                   onSend={handleSend}
+                  onMarkAsSent={() => handleOpenManualSend(proposal)}
                   onDuplicate={handleDuplicate}
                   onDelete={canDeleteRecords ? setDeleteDialogId : () => {}}
                   onView={() => navigate(`/proposals/new?edit=${proposal._id}`)}
                   onShare={canShareRecords ? (id: string) => {
-                    const proposal = proposals.find((p: any) => p._id === id);
-                    const perms = usePermissions(proposal as any);
-                    if (canShareRecords || perms.canShare) {
+                    const p = proposals.find((p: any) => p._id === id);
+                    if (canShareRecords) {
                       setSharingRecord({
                         id,
                         type: "proposal",
-                        sharing: (proposal as any)?.sharing || [],
+                        sharing: (p as any)?.sharing || [],
                       });
                       setShareProposalId(id);
                       setShowShareDialog(true);
                     }
                   } : () => {}}
-                  onManageFollowUps={setFollowUpDialogProposalId}
                   canDelete={canDeleteRecords}
-                  canShare={canShareRecords || (() => {
-                    // Check per-proposal permission lazily
-                    return true; // Fallback to workspace-level permission
-                  })()}
+                  canShare={canShareRecords}
+                  onConvertToProject={handleConvertToProject}
                 />
               ))
             )}
           </AnimatePresence>
         </div>
-      </div>
+        </>
+        )}
+      </PageLayout>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Proposal</DialogTitle>
             <DialogDescription>
@@ -654,22 +682,6 @@ export default function Proposals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Follow-up Manager Dialog */}
-      {followUpDialogProposalId && (
-        <FollowUpManager
-          proposalId={followUpDialogProposalId}
-          isMock={isUsingMockData}
-          open={!!followUpDialogProposalId}
-          onOpenChange={(open) => {
-            if (!open) setFollowUpDialogProposalId(null);
-          }}
-          onStartFollowUps={handleStartFollowUps}
-          onStopFollowUps={handleStopFollowUps}
-          onSkipFollowUp={handleSkipFollowUp}
-          formatDate={formatDate}
-        />
-      )}
 
       {/* Share Dialog */}
       <ShareDialog
@@ -707,6 +719,23 @@ export default function Proposals() {
           }
         }}
       />
+
+      {/* Phase 1: Manual Send Dialog — opens when user clicks "Mark as sent" or "Log another send" */}
+      <ManualSendDialog
+        open={!!manualSendProposal}
+        onOpenChange={(open) => {
+          if (!open) setManualSendProposal(null);
+        }}
+        entityType="proposal"
+        entityId={manualSendProposal?.id ?? ""}
+        entityTitle={manualSendProposal?.title ?? ""}
+        defaultRecipient={manualSendProposal?.defaultRecipient}
+        onSuccess={() => {
+          toast.success("Send logged", {
+            description: "Status updated, follow-ups scheduled, audit trail recorded.",
+          });
+        }}
+      />
     </motion.div>
   );
 }
@@ -720,11 +749,12 @@ function ProposalCard({
   formatCurrency,
   formatDate,
   onSend,
+  onMarkAsSent,
   onDuplicate,
   onDelete,
   onView,
   onShare,
-  onManageFollowUps,
+  onConvertToProject,
   canDelete,
   canShare,
 }: {
@@ -734,19 +764,18 @@ function ProposalCard({
   formatCurrency: (a: number) => string;
   formatDate: (t: number) => string;
   onSend: (id: string) => void;
+  onMarkAsSent?: () => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onView: () => void;
   onShare?: (id: string) => void;
-  onManageFollowUps?: (id: string) => void;
+  onConvertToProject?: (proposal: Proposal) => void;
   canDelete?: boolean;
   canShare?: boolean;
 }) {
   const navigate = useNavigate();
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
-  const createFromProposal = useMutation(api.invoices.createInvoiceFromProposal);
-  const [manualSendOpen, setManualSendOpen] = useState(false);
 
   // Fetch follow-ups for this proposal — skip when using mock data
   // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
@@ -769,8 +798,8 @@ function ProposalCard({
       transition={{ duration: 0.3, delay: idx * 0.04 }}
       layout
     >
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-primary/30 overflow-hidden">
-        <CardContent className="p-5">
+      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden h-full flex flex-col">
+        <CardContent className="p-5 flex flex-col flex-1">
           {/* Top Row: Status + Actions */}
           <div className="flex items-start justify-between mb-3">
             <Badge
@@ -820,26 +849,6 @@ function ProposalCard({
                     Share
                   </DropdownMenuItem>
                 )}
-                {proposal.status === "signed" && (
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      try {
-                        const newId = await createFromProposal({
-                          proposalId: proposal._id as any,
-                          dueDate: Date.now() + 30 * 86400000,
-                        });
-                        toast.success("Invoice created from proposal!");
-                        navigate(`/invoices/new?edit=${newId}`);
-                      } catch (err: any) {
-                        toast.error(err.message || "Failed to create invoice");
-                      }
-                    }}
-                    className="gap-2 cursor-pointer"
-                  >
-                    <Receipt className="h-3.5 w-3.5" />
-                    Convert to Invoice
-                  </DropdownMenuItem>
-                )}
                 {canDelete && (
                   <DropdownMenuItem
                     onClick={() => onDelete(proposal._id)}
@@ -855,8 +864,8 @@ function ProposalCard({
 
           {/* Title */}
           <h3
-            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
-           
+            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#8B5CF6] transition-colors"
+            style={{ fontFamily: "Space Grotesk, sans-serif" }}
             onClick={onView}
           >
             {proposal.title}
@@ -902,83 +911,49 @@ function ProposalCard({
             )}
           </div>
 
-          {/* Follow-up Badge & Manage Button */}
-          {(proposal.status === "sent" || proposal.status === "viewed") && (
-            <div className="flex items-center gap-2 mt-0">
-              {scheduledFollowUps.length > 0 ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 rounded-md px-2 py-1">
-                  <BellRing className="h-3 w-3" />
-                  <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-muted/50 rounded-md px-2 py-1">
-                  <Bell className="h-3 w-3" />
-                  <span>No follow-ups</span>
-                </div>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 hover:bg-primary/10 gap-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onManageFollowUps?.(proposal._id);
-                }}
-              >
-                <Settings2 className="h-3 w-3" />
-                Manage
-              </Button>
-            </div>
-          )}
-
-          {/* Follow-up badge for non-sent/viewed statuses */}
-          {(proposal.status !== "sent" && proposal.status !== "viewed") && scheduledFollowUps.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 rounded-md px-2 py-1 w-fit">
+          {/* Follow-up Badge */}
+          {scheduledFollowUps.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
               <Clock className="h-3 w-3" />
               <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
             </div>
           )}
 
-          {/* Quick Actions for Draft — Mark as sent (manual) / Share link / Download PDF */}
+          {/* Quick Actions for Draft — Phase 1 manual-send workflow */}
           {proposal.status === "draft" && (
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
-                onClick={() => setManualSendOpen(true)}
-                disabled={isMock}
-                title={isMock ? "Sign in to use manual send" : "Record that you sent this manually (email, WhatsApp, etc.)"}
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkAsSent?.();
+                }}
               >
                 <Send className="h-3 w-3" />
                 Mark as sent
               </Button>
-              {canShare && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 h-8 text-[12px]"
-                  onClick={() => onShare?.(proposal._id)}
-                >
-                  <Share2 className="h-3 w-3" />
-                  Share link
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-[12px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSend(proposal._id);
+                }}
+                title="Generate a shareable public link"
+              >
+                <Share2 className="h-3 w-3" />
+                Share link
+              </Button>
               <DownloadPDFButton
                 document={proposal as any}
                 type="proposal"
-                size="sm"
                 variant="outline"
-                className="h-8 text-[12px]"
-              />
-              <Button
                 size="sm"
-                variant="ghost"
-                className="gap-1.5 h-8 text-[12px] ml-auto"
-                onClick={onView}
-              >
-                <FilePenLine className="h-3 w-3" />
-                Edit
-              </Button>
+                className="h-8 text-[12px] gap-1.5"
+                label="Download PDF"
+              />
             </div>
           )}
 
@@ -989,8 +964,10 @@ function ProposalCard({
                 size="sm"
                 variant="outline"
                 className="gap-1.5 h-8 text-[12px]"
-                onClick={() => setManualSendOpen(true)}
-                disabled={isMock}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkAsSent?.();
+                }}
               >
                 <Send className="h-3 w-3" />
                 Log another send
@@ -998,32 +975,23 @@ function ProposalCard({
               <DownloadPDFButton
                 document={proposal as any}
                 type="proposal"
-                size="sm"
                 variant="outline"
-                className="h-8 text-[12px]"
+                size="sm"
+                className="h-8 text-[12px] gap-1.5"
+                label="Download PDF"
               />
             </div>
           )}
-
-          {/* Manual Send Dialog */}
-          <ManualSendDialog
-            open={manualSendOpen}
-            onOpenChange={setManualSendOpen}
-            entityType="proposal"
-            entityId={proposal._id}
-            entityTitle={proposal.title || "Untitled proposal"}
-            defaultRecipient={proposal.clientEmail || ""}
-          />
 
           {/* Quick Actions for Signed — Convert to Project + Define Scope + Download PDF */}
           {proposal.status === "signed" && (
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 text-[12px]"
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/projects?createFromProposal=${proposal._id}`);
+                  onConvertToProject?.(proposal);
                 }}
               >
                 <Briefcase className="h-3 w-3" />
@@ -1035,7 +1003,7 @@ function ProposalCard({
                 className="gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/scope?proposal=${proposal._id}`);
+                  navigate(`/scope?proposalId=${proposal._id}`);
                 }}
               >
                 <ShieldCheck className="h-3 w-3" />
@@ -1044,361 +1012,15 @@ function ProposalCard({
               <DownloadPDFButton
                 document={proposal as any}
                 type="proposal"
-                size="sm"
                 variant="outline"
-                className="h-8 text-[12px]"
+                size="sm"
+                className="h-8 text-[12px] gap-1.5"
+                label="Download PDF"
               />
             </div>
           )}
         </CardContent>
       </Card>
     </motion.div>
-  );
-}
-
-// ─── Follow-Up Manager Dialog ──────────────────────────────────────────────────
-
-function getIntervalLabel(days: number): string {
-  if (days <= 3) return "Friendly nudge";
-  if (days <= 7) return "Check-in";
-  if (days <= 14) return "Follow-up";
-  return "Final reminder";
-}
-
-function getIntervalLabelColor(days: number): string {
-  if (days <= 3) return "text-emerald-600 bg-emerald-500/10";
-  if (days <= 7) return "text-blue-600 bg-blue-500/10";
-  if (days <= 14) return "text-amber-600 bg-amber-500/10";
-  return "text-red-600 bg-red-500/10";
-}
-
-function FollowUpManager({
-  proposalId,
-  isMock,
-  open,
-  onOpenChange,
-  onStartFollowUps,
-  onStopFollowUps,
-  onSkipFollowUp,
-  formatDate,
-}: {
-  proposalId: string;
-  isMock: boolean;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onStartFollowUps: (proposalId: string, intervals?: number[]) => Promise<void>;
-  onStopFollowUps: (proposalId: string) => Promise<void>;
-  onSkipFollowUp: (followUpId: string) => Promise<void>;
-  formatDate: (t: number) => string;
-}) {
-  // Fetch proposal details
-  const proposal = useQuery(
-    api.proposals.crud.getProposal,
-    isMock ? "skip" : { proposalId: proposalId as any }
-  ) as Proposal | undefined;
-
-  // Fetch follow-ups for this proposal
-  const followUps = useQuery(
-    api.proposals.crud.getFollowUps,
-    isMock ? "skip" : { proposalId: proposalId as any }
-  ) as FollowUp[] | undefined;
-
-  // Mock follow-ups for demo
-  const mockFollowUps: FollowUp[] = useMemo(() => [
-    { _id: "fu_1", dayNumber: 3, subject: "Following up", status: "sent", scheduledAt: mockNow - 2 * mockDay },
-    { _id: "fu_2", dayNumber: 7, subject: "Checking in", status: "scheduled", scheduledAt: mockNow + 2 * mockDay },
-    { _id: "fu_3", dayNumber: 14, subject: "Final reminder", status: "scheduled", scheduledAt: mockNow + 9 * mockDay },
-  ], []);
-
-  const effectiveFollowUps = isMock ? mockFollowUps : (followUps || []);
-
-  const scheduledCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "scheduled").length, [effectiveFollowUps]);
-  const sentCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "sent").length, [effectiveFollowUps]);
-  const skippedCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "skipped").length, [effectiveFollowUps]);
-  const cancelledCount = useMemo(() => effectiveFollowUps.filter(f => f.status === "cancelled").length, [effectiveFollowUps]);
-
-  const hasScheduled = scheduledCount > 0;
-  const followUpActive = hasScheduled;
-
-  // Interval configuration state
-  const [intervals, setIntervals] = useState<number[]>([3, 7, 14]);
-  const [isStarting, setIsStarting] = useState(false);
-  const [isStopping, setIsStopping] = useState(false);
-  const [skippingId, setSkippingId] = useState<string | null>(null);
-
-  const addInterval = () => {
-    const maxDay = intervals.length > 0 ? Math.max(...intervals) : 0;
-    const nextDay = Math.min(maxDay + 7, 60);
-    setIntervals(prev => [...prev, nextDay].sort((a, b) => a - b));
-  };
-
-  const removeInterval = (index: number) => {
-    setIntervals(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateInterval = (index: number, value: number) => {
-    setIntervals(prev => {
-      const next = [...prev];
-      next[index] = Math.max(1, Math.min(90, value));
-      return next;
-    });
-  };
-
-  const handleStart = async () => {
-    setIsStarting(true);
-    try {
-      await onStartFollowUps(proposalId, intervals);
-    } finally {
-      setIsStarting(false);
-    }
-  };
-
-  const handleStop = async () => {
-    setIsStopping(true);
-    try {
-      await onStopFollowUps(proposalId);
-    } finally {
-      setIsStopping(false);
-    }
-  };
-
-  const handleSkip = async (followUpId: string) => {
-    setSkippingId(followUpId);
-    try {
-      await onSkipFollowUp(followUpId);
-    } finally {
-      setSkippingId(null);
-    }
-  };
-
-  const proposalTitle = proposal?.title || "Proposal";
-
-  const statusBadgeConfig: Record<string, { className: string; label: string }> = {
-    scheduled: { className: "bg-primary/15 text-primary border-primary/25", label: "Scheduled" },
-    sent: { className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25", label: "Sent" },
-    skipped: { className: "bg-slate-500/15 text-slate-500 border-slate-500/25", label: "Skipped" },
-    cancelled: { className: "bg-muted text-muted-foreground border-muted", label: "Cancelled" },
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 gap-0">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <BellRing className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-base truncate">{proposalTitle}</DialogTitle>
-                <DialogDescription className="text-xs mt-0.5">
-                  Manage automated follow-ups for this proposal
-                </DialogDescription>
-              </div>
-              <Badge
-                variant="outline"
-                className={`text-[11px] px-2.5 py-0.5 h-6 font-medium ${
-                  followUpActive
-                    ? "bg-primary/15 text-primary border-primary/25"
-                    : "bg-muted text-muted-foreground border-muted"
-                }`}
-              >
-                {followUpActive ? "Active" : "Inactive"}
-              </Badge>
-            </div>
-          </DialogHeader>
-        </div>
-
-        <Separator />
-
-        <ScrollArea className="flex-1 max-h-[60vh]">
-          <div className="px-6 py-4 space-y-5">
-            {/* Control Buttons */}
-            <div className="flex items-center gap-2">
-              <Button
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-9 text-[13px]"
-                disabled={hasScheduled || isStarting || isMock}
-                onClick={handleStart}
-              >
-                {isStarting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Play className="h-3.5 w-3.5" />
-                )}
-                Start Follow-ups
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-1.5 h-9 text-[13px] border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-                disabled={!hasScheduled || isStopping || isMock}
-                onClick={handleStop}
-              >
-                {isStopping ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Square className="h-3.5 w-3.5" />
-                )}
-                Stop Follow-ups
-              </Button>
-            </div>
-
-            {/* Interval Configuration */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[13px] font-semibold text-foreground">Follow-up Schedule</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-[11px] text-primary hover:text-primary/80 gap-1"
-                  onClick={addInterval}
-                  disabled={hasScheduled || intervals.length >= 8}
-                >
-                  <PlusCircle className="h-3 w-3" />
-                  Add Follow-up
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {intervals.map((day, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: idx * 0.05 }}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="text-[12px] text-muted-foreground w-10 shrink-0">Day</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={90}
-                        value={day}
-                        onChange={(e) => updateInterval(idx, parseInt(e.target.value) || 1)}
-                        disabled={hasScheduled}
-                        className="h-8 w-20 text-[13px] text-center"
-                      />
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getIntervalLabelColor(day)}`}>
-                        {getIntervalLabel(day)}
-                      </span>
-                    </div>
-                    {!hasScheduled && intervals.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
-                        onClick={() => removeInterval(idx)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-              {hasScheduled && (
-                <p className="text-[11px] text-muted-foreground italic">
-                  Stop current follow-ups to modify the schedule.
-                </p>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Follow-up Timeline */}
-            <div className="space-y-3">
-              <h4 className="text-[13px] font-semibold text-foreground">Follow-up Timeline</h4>
-              {effectiveFollowUps.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <CalendarClock className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-[13px] font-medium">No follow-ups yet</p>
-                  <p className="text-[11px]">Start follow-ups to create a schedule</p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {effectiveFollowUps
-                    .sort((a, b) => a.dayNumber - b.dayNumber)
-                    .map((fu, idx) => {
-                      const statusConfig = statusBadgeConfig[fu.status] || statusBadgeConfig.scheduled;
-                      return (
-                        <motion.div
-                          key={fu._id}
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2, delay: idx * 0.05 }}
-                          className="flex items-center gap-3 p-2.5 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/30 transition-colors"
-                        >
-                          {/* Day indicator */}
-                          <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-[11px] font-bold text-primary shrink-0">
-                            D{fu.dayNumber}
-                          </div>
-
-                          {/* Subject & date */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-medium text-foreground truncate">{fu.subject}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              Scheduled: {formatDate(fu.scheduledAt)}
-                            </p>
-                          </div>
-
-                          {/* Status badge */}
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] px-2 py-0 h-5 font-medium shrink-0 ${statusConfig.className}`}
-                          >
-                            {statusConfig.label}
-                          </Badge>
-
-                          {/* Skip button */}
-                          {fu.status === "scheduled" && !isMock && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 text-[10px] text-muted-foreground hover:text-amber-600 gap-1 shrink-0"
-                              disabled={skippingId === fu._id}
-                              onClick={() => handleSkip(fu._id)}
-                            >
-                              {skippingId === fu._id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <SkipForward className="h-3 w-3" />
-                              )}
-                              Skip
-                            </Button>
-                          )}
-                        </motion.div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: "Scheduled", value: scheduledCount, color: "text-primary", bg: "bg-primary/10" },
-                { label: "Sent", value: sentCount, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-                { label: "Skipped", value: skippedCount, color: "text-slate-500", bg: "bg-slate-500/10" },
-                { label: "Cancelled", value: cancelledCount, color: "text-muted-foreground", bg: "bg-muted" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center p-2 rounded-lg border border-border/50 bg-muted/10">
-                  <div className={`text-[18px] font-bold ${stat.color}`}>{stat.value}</div>
-                  <div className="text-[10px] text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </ScrollArea>
-
-        {/* Footer */}
-        <Separator />
-        <div className="px-6 py-3 flex justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-[13px]">
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -123,6 +123,7 @@ export const createChannel = mutation({
     type: v.union(v.literal("channel"), v.literal("dm")),
     isPrivate: v.boolean(),
     description: v.optional(v.string()),
+    memberIds: v.optional(v.array(v.id("users"))),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUser(ctx);
@@ -146,6 +147,30 @@ export const createChannel = mutation({
       isMuted: false,
       joinedAt: Date.now(),
     });
+
+    // Add additional members
+    if (args.memberIds && args.memberIds.length > 0) {
+      for (const memberId of args.memberIds) {
+        if (memberId === userId) continue; // skip creator, already added
+        // Check if user is a workspace member before adding
+        const wsMembership = await ctx.db
+          .query("workspaceMembers")
+          .withIndex("by_workspace_and_user", (q: any) =>
+            q.eq("workspaceId", args.workspaceId).eq("userId", memberId)
+          )
+          .unique();
+        if (wsMembership) {
+          await ctx.db.insert("channelMembers", {
+            channelId,
+            userId: memberId,
+            workspaceId: args.workspaceId,
+            role: "member",
+            isMuted: false,
+            joinedAt: Date.now(),
+          });
+        }
+      }
+    }
 
     return channelId;
   },

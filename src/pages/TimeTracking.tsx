@@ -1,97 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
-  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Info, Loader2,
+  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
-
-// ─── Mock data for demo mode ─────────────────────────────────────────────────
-
-const MOCK_ENTRIES = [
-  {
-    _id: "1" as any,
-    projectName: "Website Redesign",
-    clientName: "Acme Corp",
-    platform: "upwork" as const,
-    startTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 7 * 24 * 60 * 60 * 1000 + 4.5 * 60 * 60 * 1000,
-    totalMinutes: 270,
-    complianceStatus: "active" as const,
-    hourlyRate: 85,
-    notes: "Implemented responsive navigation and hero section",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "2" as any,
-    projectName: "Mobile App MVP",
-    clientName: "TechStart Inc",
-    platform: "fiverr" as const,
-    startTime: Date.now() - 6 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 6 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000,
-    totalMinutes: 180,
-    complianceStatus: "active" as const,
-    hourlyRate: 65,
-    notes: "API integration and data fetching layer",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "3" as any,
-    projectName: "Brand Identity",
-    clientName: "Creative Studio",
-    platform: "upwork" as const,
-    startTime: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 5 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000,
-    totalMinutes: 150,
-    complianceStatus: "at_risk" as const,
-    hourlyRate: 95,
-    notes: "Logo variations and color palette exploration",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "4" as any,
-    projectName: "Dashboard Analytics",
-    clientName: "DataViz Co",
-    platform: "toptal" as const,
-    startTime: Date.now() - 4 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 4 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000,
-    totalMinutes: 360,
-    complianceStatus: "active" as const,
-    hourlyRate: 120,
-    notes: "Chart components and real-time data streaming",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-  {
-    _id: "5" as any,
-    projectName: "E-commerce Platform",
-    clientName: "ShopEasy",
-    platform: "upwork" as const,
-    startTime: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    endTime: Date.now() - 3 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000,
-    totalMinutes: 90,
-    complianceStatus: "rejected" as const,
-    hourlyRate: 75,
-    notes: "Low activity period - minimal keyboard/mouse events",
-    isManualEntry: false,
-    status: "completed" as const,
-  },
-];
+import type { Id } from "@/convex/_generated/dataModel";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -122,10 +50,20 @@ function formatDate(ts: number) {
 export default function TimeTracking() {
   const { tier } = useSubscriptionTier();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
 
   // ─── Convex queries ──────────────────────────────────────────────────────
-  const currentSession = useQuery(api.tracking.crud.getCurrentSession, {});
-  const sessionsData = useQuery(api.tracking.crud.getSessions, {});
+  const currentSession = useQuery(api.tracking.crud.getCurrentSession,
+    workspaceId ? { workspaceId } : {}
+  );
+  const sessionsData = useQuery(api.tracking.crud.getSessions,
+    workspaceId ? { workspaceId } : {}
+  );
+  const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
+  const clients = useQuery(api.clients.crud.getClients,
+    workspaceId ? { workspaceId } : {}
+  );
 
   // ─── Convex mutations ────────────────────────────────────────────────────
   const startSessionMutation = useMutation(api.tracking.crud.startSession);
@@ -141,7 +79,7 @@ export default function TimeTracking() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState<"upwork" | "fiverr" | "toptal" | "manual">("upwork");
+  const [selectedPlatform, setSelectedPlatform] = useState<"upwork" | "fiverr" | "toptal" | "manual">("manual");
   const [entryMemo, setEntryMemo] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -173,9 +111,48 @@ export default function TimeTracking() {
 
   const isLoading = !authLoading && sessionsData === undefined && !queryTimeout && !isDemoMode;
 
+  // ─── Derived data from projects & clients ──────────────────────────────
+  // Build a lookup map for projects by _id so we can resolve the selected project
+  const projectMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (projects) {
+      for (const p of projects) {
+        map.set(p._id, p);
+      }
+    }
+    return map;
+  }, [projects]);
+
+  // Build a lookup map for clients by _id
+  const clientMap = useMemo(() => {
+    const map = new Map<string, any>();
+    if (clients) {
+      for (const c of clients) {
+        map.set(c._id, c);
+      }
+    }
+    return map;
+  }, [clients]);
+
+  // Resolve the selected project's client info
+  const selectedProjectData = selectedProject ? projectMap.get(selectedProject) : null;
+  const selectedClientData = selectedProjectData?.clientId
+    ? clientMap.get(selectedProjectData.clientId)
+    : null;
+
   // ─── Map Convex data ────────────────────────────────────────────────────
-  const realSessions = (sessionsData ?? []).filter((s: any) => s.endTime !== undefined);
-  const timeEntries = isDemoMode ? MOCK_ENTRIES : realSessions;
+  // Compute totalMinutes from startTime/endTime when totalMinutes is missing
+  const realSessions = (sessionsData ?? [])
+    .filter((s: any) => s.endTime !== undefined)
+    .map((s: any) => ({
+      ...s,
+      totalMinutes:
+        s.totalMinutes ??
+        (s.endTime && s.startTime
+          ? Math.floor((s.endTime - s.startTime) / (1000 * 60))
+          : 0),
+    }));
+  const timeEntries = realSessions;
 
   const activeSession = isDemoMode ? null : currentSession;
   const isTimerRunning = !!activeSession && activeSession.endTime === undefined;
@@ -224,20 +201,26 @@ export default function TimeTracking() {
     }
 
     if (isDemoMode) {
-      toast.success("Timer started! (Demo mode)", { description: `Tracking time for ${selectedProject}` });
+      toast.success("Timer started! (Demo mode)", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
       return;
     }
 
     setIsStarting(true);
     try {
+      // Resolve the project name from the selected project ID
+      const projectName = selectedProjectData?.projectName ?? selectedProject;
+      const clientName = selectedClientData?.clientName ?? "Unknown Client";
+      const hourlyRate = selectedProjectData?.hourlyRate ?? selectedClientData?.hourlyRate ?? 75;
+
       await startSessionMutation({
-        projectName: selectedProject,
-        clientName: "Current Client",
-        hourlyRate: 75,
+        projectName,
+        clientName,
+        hourlyRate,
         platform: selectedPlatform,
         notes: entryMemo || undefined,
+        workspaceId,
       });
-      toast.success("Timer started!", { description: `Tracking time for ${selectedProject}` });
+      toast.success("Timer started!", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
       setEntryMemo("");
     } catch (err: any) {
       toast.error(err?.message || "Failed to start timer");
@@ -323,6 +306,7 @@ export default function TimeTracking() {
         notes: manualMemo || undefined,
         startTime: startDate.getTime(),
         endTime: endDate.getTime(),
+        workspaceId,
       });
       toast.success("Manual entry added!", {
         description: `${formatDuration(Math.floor(duration / 60000))} for ${manualProject || "Unassigned"}`,
@@ -395,7 +379,7 @@ export default function TimeTracking() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <PageLayout spaced>
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -406,18 +390,24 @@ export default function TimeTracking() {
           </p>
         </div>
 
-        {/* Demo mode banner */}
+        {/* Demo mode empty state */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to track your real work sessions.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Clock className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to track your time</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to track work hours across all platforms with compliance monitoring.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Loading state */}
@@ -552,22 +542,26 @@ export default function TimeTracking() {
                       <div className="space-y-2">
                         <Label>Project</Label>
                         <Select value={selectedProject} onValueChange={setSelectedProject}>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select project" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Website Redesign">Website Redesign</SelectItem>
-                            <SelectItem value="Mobile App MVP">Mobile App MVP</SelectItem>
-                            <SelectItem value="Brand Identity">Brand Identity</SelectItem>
-                            <SelectItem value="Dashboard Analytics">Dashboard Analytics</SelectItem>
-                            <SelectItem value="E-commerce Platform">E-commerce Platform</SelectItem>
+                            {projects && projects.length > 0 ? (
+                              projects.map((project: any) => (
+                                <SelectItem key={project._id} value={project._id}>
+                                  {project.projectName}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="_none" disabled>No projects found</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Platform</Label>
                         <Select value={selectedPlatform} onValueChange={(v) => setSelectedPlatform(v as any)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -725,9 +719,10 @@ export default function TimeTracking() {
 
         {/* Manual Entry Dialog */}
         <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] overflow-hidden">
             <DialogHeader>
               <DialogTitle>Add Manual Time Entry</DialogTitle>
+              <DialogDescription>Add a manual time entry for work you've completed outside of the timer.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -759,7 +754,7 @@ export default function TimeTracking() {
                 <Input placeholder="What did you work on?" value={manualMemo} onChange={(e) => setManualMemo(e.target.value)} />
               </div>
               {tier === "free" && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 break-words">
                   Free plan: Manual entries are not compliance-verified. Upgrade to Pro for verified time tracking.
                 </div>
               )}
@@ -777,7 +772,7 @@ export default function TimeTracking() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

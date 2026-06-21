@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -49,9 +49,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportEvidence } from "@/lib/exportUtils";
+import { PageLoader } from "@/components/QueryState";
+import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // --- Types ---
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
@@ -81,7 +84,7 @@ const FORMAT_CONFIG: Record<ExportFormat, { label: string; icon: React.ReactNode
   pdf: { label: "PDF", icon: <FileText className="h-5 w-5" />, color: "text-red-500", tierRequired: "pro" },
   csv: { label: "CSV", icon: <FileSpreadsheet className="h-5 w-5" />, color: "text-green-500", tierRequired: "free" },
   json: { label: "JSON", icon: <FileJson className="h-5 w-5" />, color: "text-amber-500", tierRequired: "starter" },
-  legal: { label: "Legal Package", icon: <Package className="h-5 w-5" />, color: "text-platinum-400", tierRequired: "pro" },
+  legal: { label: "Legal Package", icon: <Package className="h-5 w-5" />, color: "text-purple-500", tierRequired: "pro" },
 };
 
 const STATUS_CONFIG: Record<ExportStatus, { label: string; icon: React.ReactNode; badgeVariant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -241,16 +244,22 @@ export default function EvidenceExport() {
   const { isAuthenticated } = useConvexAuth();
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
-  const evidenceData = useQuery(api.evidence.library.getEvidenceLibraryData, {
-    view: "date" as const,
-    startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
-    endDate: Date.now(),
-  }) as any | undefined;
+  const evidenceData = useQuery(
+    api.evidence.library.getEvidenceLibraryData,
+    {
+      view: "date" as const,
+      startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
+      endDate: Date.now(),
+    }
+  ) as any | undefined;
 
   const clients = useQuery(api.clients.crud.getClients, {}) as any[] | undefined;
   const scopeDefinitions = useQuery(api.scope.crud.getScopeDefinitions, {}) as any[] | undefined;
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = evidenceData === undefined || clients === undefined;
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   // ─── Derived Data ──────────────────────────────────────────────────────────
 
@@ -332,7 +341,7 @@ export default function EvidenceExport() {
   const [recentExports, setRecentExports] = useState<RecentExport[]>([]);
 
   // Auto-select all evidence types when they load
-  useMemo(() => {
+  useEffect(() => {
     if (evidenceTypes.length > 0 && selectedEvidenceTypes.length === 0) {
       setSelectedEvidenceTypes(evidenceTypes.map((t) => t.id));
     }
@@ -439,7 +448,7 @@ export default function EvidenceExport() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background"
     >
-      <div className="p-6 md:p-8 space-y-8">
+      <PageLayout spaced>
         {/* Header */}
         <div>
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">Evidence Export</h1>
@@ -451,8 +460,8 @@ export default function EvidenceExport() {
         {/* Demo Mode Banner */}
         {!isAuthenticated && <DemoModeBanner />}
 
-        {/* Loading State */}
-        {isLoading ? (
+        {/* Loading / Timeout State */}
+        {showLoading ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[0, 1, 2, 3].map((i) => <SummarySkeleton key={i} />)}
@@ -763,7 +772,7 @@ export default function EvidenceExport() {
                             </div>
                             <div className="rounded-lg border p-4 space-y-2">
                               <h4 className="text-sm font-semibold">Filters Applied</h4>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2 max-w-full">
                                 <Badge variant="outline"><Calendar className="h-3 w-3 mr-1" />{dateFrom} → {dateTo}</Badge>
                                 <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedProjectLabel}</Badge>
                                 <Badge variant="outline"><Briefcase className="h-3 w-3 mr-1" />{selectedClientLabel}</Badge>
@@ -889,7 +898,7 @@ export default function EvidenceExport() {
             </Card>
           </>
         )}
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

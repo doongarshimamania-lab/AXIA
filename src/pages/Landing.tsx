@@ -55,7 +55,7 @@ export default function Landing() {
               whileHover={{ scale: 1.05 }}
             >
               <img src="/logo.svg" alt="Axia" width={32} height={32} />
-              <span className="text-2xl font-bold tracking-tight">Axia</span>
+              <span className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Space Grotesk" }}>Axia</span>
             </motion.div>
             
             <div className="flex items-center gap-6">
@@ -73,7 +73,7 @@ export default function Landing() {
               </button>
               <Button 
                 onClick={scrollToWaitlist}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
+                className="bg-[#00246B] hover:bg-[#00246B]/90 text-white rounded-full px-6"
                 disabled={isLoading}
               >
                 Get Started

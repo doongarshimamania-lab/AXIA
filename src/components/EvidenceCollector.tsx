@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { trackConversion } from "@/instrumentation";
+import { useQuery } from "@/lib/safe-convex-react";
+import { api } from "@/convex/_generated/api";
 
 interface EvidenceCollectorProps {
   sessionId: Id<"workSessions"> | null;
@@ -17,14 +19,23 @@ export function useEvidenceCollector({ sessionId, platform, isActive }: Evidence
   const eventBuffer = useRef<any[]>([]);
   const lastFlush = useRef(Date.now());
   const flushInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // SECURITY: Get the real extension token from the database instead of using
+  // a hardcoded "dev-token" that allows any unauthenticated user to forge evidence.
+  const extensionToken = useQuery(api.extension.getActiveToken, {});
+  const activeToken = (extensionToken as any)?.token ?? null;
   
   // Start session via HTTP
   const startEvidenceSessionHttp = async (params: { sessionId: Id<"workSessions">; platform: EvidenceCollectorProps["platform"] }) => {
+    // SECURITY: Require real auth token — no more hardcoded "dev-token"
+    if (!activeToken) {
+      throw new Error("No extension token available. Please generate one in API Settings.");
+    }
     const res = await fetch("/api/extension/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: "dev-token",
+        token: activeToken,
         sessionId: params.sessionId,
         platform: params.platform,
       }),
@@ -40,11 +51,15 @@ export function useEvidenceCollector({ sessionId, platform, isActive }: Evidence
   // Record events via HTTP
   const recordEventsHttp = async (evidenceSessionId: string, events: any[]) => {
     if (!events.length) return;
+    // SECURITY: Require real auth token
+    if (!activeToken) {
+      throw new Error("No extension token available.");
+    }
     const res = await fetch("/api/extension/record", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: "dev-token",
+        token: activeToken,
         evidenceSessionId,
         events,
       }),
@@ -58,11 +73,15 @@ export function useEvidenceCollector({ sessionId, platform, isActive }: Evidence
 
   // Finalize session via HTTP
   const finalizeEvidenceSessionHttp = async (evidenceSessionId: string) => {
+    // SECURITY: Require real auth token
+    if (!activeToken) {
+      throw new Error("No extension token available.");
+    }
     const res = await fetch("/api/extension/finalize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: "dev-token",
+        token: activeToken,
         evidenceSessionId,
       }),
     });

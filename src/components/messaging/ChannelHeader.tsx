@@ -46,7 +46,7 @@ export function ChannelHeader({
             <Hash className="h-4 w-4 text-muted-foreground" />
           )
         ) : (
-          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 flex items-center justify-center text-[9px] text-white font-bold">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">
             {channelName.charAt(0).toUpperCase()}
           </div>
         )}

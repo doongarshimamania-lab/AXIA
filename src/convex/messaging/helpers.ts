@@ -9,6 +9,9 @@ export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   return userId;
 }
 
+// auth is an alias for getAuthenticatedUser — used by channelMutations and messageMutations
+export const auth = getAuthenticatedUser;
+
 export async function getChannelMember(
   ctx: QueryCtx | MutationCtx,
   channelId: string,

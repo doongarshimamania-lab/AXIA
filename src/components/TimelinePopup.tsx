@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useMemo } from "react";
 import { X, ChevronLeft, ChevronRight, Clock, Monitor, MousePointer, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 type TimeView = "day" | "week" | "month" | "year";
 type ComplianceStatus = "compliant" | "at_risk" | "rejected";
@@ -547,12 +547,13 @@ function HourDetailModal({ isOpen, onClose, block }: { isOpen: boolean; onClose:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[480px]">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
             Time Block Details
           </DialogTitle>
+          <DialogDescription>View details and compliance status for this time block.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -565,8 +566,8 @@ function HourDetailModal({ isOpen, onClose, block }: { isOpen: boolean; onClose:
 
           {/* Activity */}
           <div>
-            <div className="font-medium text-foreground">{block.activity}</div>
-            <div className="text-sm text-muted-foreground">{block.website}</div>
+            <div className="font-medium text-foreground break-words">{block.activity}</div>
+            <div className="text-sm text-muted-foreground break-all">{block.website}</div>
             {block.platform && <div className="text-xs text-muted-foreground mt-0.5">Platform: {block.platform}</div>}
           </div>
 

@@ -37,7 +37,7 @@ export function InteractiveTimeline({
 
   const intensityColors = {
     low: "from-blue-400 to-blue-500",
-    medium: "from-primary/40 to-primary/60",
+    medium: "from-teal-400 to-teal-600",
     high: "from-emerald-500 to-emerald-700",
   };
 
@@ -59,7 +59,7 @@ export function InteractiveTimeline({
               <button
                 onClick={() => setViewMode("timeline")}
                 className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                  viewMode === "timeline" ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-600"
+                  viewMode === "timeline" ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 Timeline
@@ -67,7 +67,7 @@ export function InteractiveTimeline({
               <button
                 onClick={() => setViewMode("heatmap")}
                 className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                  viewMode === "heatmap" ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-600"
+                  viewMode === "heatmap" ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 Heatmap
@@ -131,7 +131,7 @@ export function InteractiveTimeline({
                         <p className="font-semibold">{block.clientName}</p>
                         <p>{new Date(block.timestamp).toLocaleDateString()}</p>
                         <p>{Math.round(block.duration / 60)}h {block.duration % 60}m</p>
-                        <p className="text-primary font-medium">${block.value}</p>
+                        <p className="text-teal-600 font-medium">${block.value}</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -169,7 +169,7 @@ export function InteractiveTimeline({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <Card className="p-4 bg-gradient-to-br from-muted/50 to-blue-50 border-border">
+            <Card className="p-4 bg-gradient-to-br from-teal-50 to-blue-50 border-teal-200">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <h4 className="font-semibold text-slate-900">{selectedBlock.clientName}</h4>
@@ -178,7 +178,7 @@ export function InteractiveTimeline({
                       <Clock className="w-4 h-4" />
                       <span>{Math.round(selectedBlock.duration / 60)}h {selectedBlock.duration % 60}m</span>
                     </div>
-                    <div className="font-medium text-primary">${selectedBlock.value}</div>
+                    <div className="font-medium text-teal-600">${selectedBlock.value}</div>
                   </div>
                   <p className="text-xs text-slate-500">
                     {new Date(selectedBlock.timestamp).toLocaleString()}

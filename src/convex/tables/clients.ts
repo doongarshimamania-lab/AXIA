@@ -51,6 +51,10 @@ export const clients = defineTable({
   hourlyRate: v.number(),
   contractType: v.union(v.literal("hourly"), v.literal("fixed")),
   riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  contactEmail: v.optional(v.string()),
+  contactName: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  assignedMemberIds: v.optional(v.array(v.id("users"))),
   customFields: v.optional(v.any()), // { [key: string]: string | number | boolean }
   addedAt: v.number(),
   lastActivityAt: v.number(),
@@ -58,7 +62,8 @@ export const clients = defineTable({
   .index("by_user", ["userId"])
   .index("by_user_and_name", ["userId", "clientName"])
   .index("by_workspace", ["workspaceId"])
-  .index("by_team", ["teamId"]);
+  .index("by_team", ["teamId"])
+  .index("by_contact_email", ["contactEmail"]);
 
 export const clientCompanies = defineTable({
   workspaceId: v.optional(v.id("workspaces")),

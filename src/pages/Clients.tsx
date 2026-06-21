@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ClientList } from "@/components/client-protection/ClientList";
 import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,88 +13,16 @@ import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Info, Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2 } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
+import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
-
-// ─── Mock data for demo mode (unauthenticated) ──────────────────────────
-const MOCK_CLIENTS = [
-  {
-    _id: "client_1" as any,
-    clientName: "TechCorp Solutions",
-    platform: "upwork" as const,
-    hourlyRate: 85,
-    contractType: "hourly" as const,
-    riskLevel: "low" as const,
-    protectionScore: 94,
-    totalHours: 127.5,
-    totalValue: 10837.5,
-    activeSession: false,
-    addedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 2 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_2" as any,
-    clientName: "StartupHub Inc",
-    platform: "fiverr" as const,
-    hourlyRate: 65,
-    contractType: "fixed" as const,
-    riskLevel: "medium" as const,
-    protectionScore: 78,
-    totalHours: 89.0,
-    totalValue: 5785.0,
-    activeSession: true,
-    addedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 15 * 60 * 1000,
-  },
-  {
-    _id: "client_3" as any,
-    clientName: "Global Enterprises",
-    platform: "toptal" as const,
-    hourlyRate: 120,
-    contractType: "hourly" as const,
-    riskLevel: "high" as const,
-    protectionScore: 65,
-    totalHours: 156.0,
-    totalValue: 18720.0,
-    activeSession: false,
-    addedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_4" as any,
-    clientName: "Digital Marketing Co",
-    platform: "freelancer" as const,
-    hourlyRate: 45,
-    contractType: "hourly" as const,
-    riskLevel: "low" as const,
-    protectionScore: 88,
-    totalHours: 67.0,
-    totalValue: 3015.0,
-    activeSession: false,
-    addedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 48 * 60 * 60 * 1000,
-  },
-  {
-    _id: "client_5" as any,
-    clientName: "Creative Studios",
-    platform: "direct" as const,
-    hourlyRate: 95,
-    contractType: "fixed" as const,
-    riskLevel: "medium" as const,
-    protectionScore: 72,
-    totalHours: 103.5,
-    totalValue: 9832.5,
-    activeSession: false,
-    addedAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
-    lastActivityAt: Date.now() - 72 * 60 * 60 * 1000,
-  },
-];
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 export default function Clients() {
   const { tier: subscriptionTier } = useSubscriptionTier();
@@ -108,11 +36,11 @@ export default function Clients() {
   const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
 
   // ─── Convex mutations for sharing ───────────────────────────────────────
-  const shareRecordMutation = useMutation((api as any).permissions?.shareRecord ?? null);
-  const unshareRecordMutation = useMutation((api as any).permissions?.unshareRecord ?? null);
+  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
 
   // ─── Convex queries ────────────────────────────────────────────────────
-  const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : {});
+  const clientsData = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip");
 
   // ─── Convex mutations ──────────────────────────────────────────────────
   const createClientMutation = useMutation(api.clients.crud.createClient);
@@ -134,20 +62,13 @@ export default function Clients() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
-
-  useEffect(() => {
-    if (clientsData === undefined) {
-      const timer = setTimeout(() => setQueryTimeout(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [clientsData]);
-
-  const isLoading = !authLoading && clientsData === undefined && !queryTimeout;
+  const { isDisconnected } = useConvexConnectionState();
+  const isLoading = !authLoading && clientsData === undefined;
+  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
 
   // ─── Determine demo mode ───────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -168,18 +89,25 @@ export default function Clients() {
     lastActivityAt: c.lastActivityAt,
   }));
 
-  // Use mock data in demo mode, real data otherwise
-  const clients = isDemoMode ? MOCK_CLIENTS : realClients;
+  // Use real clients only (empty array when demo/disconnected)
+  const clients = realClients;
 
   // ─── Auto-select first client ──────────────────────────────────────────
+  const hasAutoSelected = useRef(false);
   useEffect(() => {
-    if (!selectedClientId && clients.length > 0) {
+    if (!hasAutoSelected.current && !selectedClientId && clients.length > 0) {
+      hasAutoSelected.current = true;
       setSelectedClientId(clients[0]._id);
     }
-  }, [clients, selectedClientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit selectedClientId to avoid infinite re-renders
+  }, [clients]);
 
   // ─── Get selected client object ────────────────────────────────────────
+  // IMPORTANT: Must be computed BEFORE usePermissions() call below
   const selectedClient = clients.find((c: any) => c._id === selectedClientId) ?? null;
+
+  // ─── Permissions for selected client (hook MUST be at top level) ──────
+  const perms = usePermissions(selectedClient as any);
 
   // ─── Handlers ──────────────────────────────────────────────────────────
   const handleAddClient = async () => {
@@ -249,10 +177,10 @@ export default function Clients() {
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="flex-1 transition-all duration-300 p-8 space-y-6">
+      <PageLayout spaced>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
               Clients
             </h1>
             <p className="text-[16px] text-muted-foreground">
@@ -295,20 +223,26 @@ export default function Clients() {
 
         {/* Demo mode banner */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real clients.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your clients</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to manage client policy profiles and protection settings.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Loading state */}
-        {isLoading ? (
+        {showLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-[280px] w-full rounded-xl" />
             <Skeleton className="h-[300px] w-full rounded-xl" />
@@ -358,43 +292,47 @@ export default function Clients() {
                 <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
                 {selectedClientId && (
                   <div className="flex items-center gap-2">
-                    {(() => {
-                      const perms = usePermissions(selectedClient as any);
-                      return (
-                        <>
-                          {(canShareRecords || perms.canShare) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                              onClick={() => {
-                                setSharingRecord({
-                                  id: selectedClientId!,
-                                  type: "client",
-                                  sharing: (selectedClient as any)?.sharing || [],
-                                });
-                                setShowShareDialog(true);
-                              }}
-                            >
-                              <Share2 className="h-4 w-4" />
-                              Share
-                            </Button>
-                          )}
-                          {(canDeleteRecords || perms.canDelete) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                              onClick={() => setShowDeleteConfirm(true)}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Client
-                            </Button>
-                          )}
-                        </>
-                      );
-                    })()}
+                    {(canShareRecords || perms.canShare) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          setSharingRecord({
+                            id: selectedClientId!,
+                            type: "client",
+                            sharing: (selectedClient as any)?.sharing || [],
+                          });
+                          setShowShareDialog(true);
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </Button>
+                    )}
+                    {perms.isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        onClick={() => setShowTransferDialog(true)}
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Transfer Ownership
+                      </Button>
+                    )}
+                    {(canDeleteRecords || perms.canDelete) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Client
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -416,9 +354,10 @@ export default function Clients() {
 
         {/* Add Client Dialog */}
         <Dialog open={showAddClient} onOpenChange={setShowAddClient}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>Fill in the details to add a new client to your workspace.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -433,14 +372,14 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Platform</Label>
                 <Select value={platform} onValueChange={(v: any) => setPlatform(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="upwork">Upwork</SelectItem>
                     <SelectItem value="fiverr">Fiverr</SelectItem>
                     <SelectItem value="toptal">Toptal</SelectItem>
-                    <SelectItem value="freelancer">Freelancer</SelectItem>
+                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
                     <SelectItem value="direct">Direct Client</SelectItem>
                   </SelectContent>
                 </Select>
@@ -458,7 +397,7 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Contract Type</Label>
                 <Select value={contractType} onValueChange={(v: any) => setContractType(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -470,7 +409,7 @@ export default function Clients() {
               <div className="space-y-2">
                 <Label>Risk Level</Label>
                 <Select value={riskLevel} onValueChange={(v: any) => setRiskLevel(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -512,9 +451,10 @@ export default function Clients() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Delete Client</DialogTitle>
+              <DialogDescription>This action cannot be undone. All associated data will be permanently removed.</DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground break-words">
                 Are you sure you want to delete{" "}
                 <span className="font-semibold text-foreground">
                   {selectedClient?.clientName ?? "this client"}
@@ -584,6 +524,17 @@ export default function Clients() {
           }}
         />
 
+        {/* Transfer Ownership Dialog */}
+        <TransferOwnershipDialog
+          open={showTransferDialog}
+          onOpenChange={setShowTransferDialog}
+          recordId={selectedClientId || ""}
+          recordType="client"
+          recordName={(selectedClient as any)?.clientName || (selectedClient as any)?.name || "Unknown Client"}
+          currentOwnerId={(selectedClient as any)?.userId}
+          onTransferComplete={() => setShowTransferDialog(false)}
+        />
+
         {/* Bulk Import Dialog */}
         <BulkImportDialog
           open={showBulkImport}
@@ -593,7 +544,7 @@ export default function Clients() {
             toast.success("Import complete");
           }}
         />
-      </div>
+      </PageLayout>
     </div>
   );
 }

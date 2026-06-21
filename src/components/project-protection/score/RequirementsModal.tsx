@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RequirementMapping } from "@/types/projectProtection";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
@@ -15,12 +15,13 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
+            <FileText className="w-5 h-5 text-teal-500" />
             Client Requirements Mapping - Full Analysis
           </DialogTitle>
+          <DialogDescription>Review how your evidence matches client requirements.</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 mt-4">
@@ -31,7 +32,7 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
             </div>
             <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all" 
+                className="h-full bg-teal-500 transition-all" 
                 style={{ width: `${matchRate}%` }}
               />
             </div>
@@ -45,7 +46,7 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
               <div key={req.id} className="p-4 rounded-lg border bg-card">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h4 className="font-bold text-base mb-1">{req.requirement}</h4>
+                    <h4 className="font-bold text-base mb-1 break-words">{req.requirement}</h4>
                     <div className="flex items-center gap-2">
                       {req.status === 'matched' ? (
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -73,7 +74,7 @@ export function RequirementsModal({ open, onOpenChange, requirements }: Props) {
                 </div>
 
                 {req.status !== 'matched' && (
-                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded text-xs flex items-start gap-2">
+                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium text-red-800 dark:text-red-300">Action Required</p>

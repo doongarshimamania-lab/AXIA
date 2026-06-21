@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { useTheme } from "@/components/ThemeProvider";
 import { Sun, Moon } from "lucide-react";
 import {
@@ -24,11 +24,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Code2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
+
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -48,9 +49,23 @@ const platformColors: Record<Platform, string> = {
 
 export function CollapsibleSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+
+  // Current path for active indicator
+  const currentPath = location.pathname;
+
+  // Analytics: wrap toggleTheme to track theme changes
+  const handleToggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    toggleTheme();
+    import("@/lib/monitoring").then(({ trackEvent, AnalyticsEvents }) => {
+      trackEvent(AnalyticsEvents.THEME_TOGGLE, { from: theme, to: newTheme });
+    });
+  };
   
   const [isExpanded, setIsExpanded] = useState(() => {
     if (typeof localStorage !== "undefined") {
@@ -150,7 +165,7 @@ export function CollapsibleSidebar() {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("axia_sidebar_state", isExpanded ? "expanded" : "collapsed");
       // Sync CSS variable immediately when state changes
-      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
     }
   }, [isExpanded]);
 
@@ -180,9 +195,9 @@ export function CollapsibleSidebar() {
   return (
     <>
       <motion.div
-        className="fixed left-0 top-0 h-screen bg-sidebar gradient-teal-veil border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto"
+        className="fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col flex-shrink-0 overflow-hidden pointer-events-auto hidden md:flex"
         initial={false}
-        animate={{ width: isExpanded ? 320 : 80 }}
+        animate={{ width: isExpanded ? 280 : 64 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         style={{ 
           cursor: isExpanded ? 'default' : 'pointer',
@@ -193,16 +208,18 @@ export function CollapsibleSidebar() {
             setIsExpanded(true);
           }
         }}
-        onAnimationStart={() => {
-          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+        onUpdate={(latest) => {
+          // Smoothly sync CSS variable as animation progresses — no gap during transition
+          const w = typeof latest.width === 'number' ? latest.width : (isExpanded ? 280 : 64);
+          document.documentElement.style.setProperty('--sidebar-width', `${w}px`);
         }}
         onAnimationComplete={() => {
-          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
+          document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
         }}
       >
         {/* Logo Section */}
         <div
-          className="h-16 border-b border-sidebar-border flex items-center justify-between px-5 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
+          className="h-14 border-b border-sidebar-border flex items-center justify-between px-4 relative hover:bg-sidebar-accent transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             if (isExpanded) {
@@ -215,7 +232,7 @@ export function CollapsibleSidebar() {
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="hsl(var(--primary))"/>
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
                 <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
@@ -226,7 +243,7 @@ export function CollapsibleSidebar() {
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="font-sans font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
+                  className="font-[Space_Grotesk] font-semibold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
                 >
                   Axia
                 </motion.span>
@@ -276,8 +293,6 @@ export function CollapsibleSidebar() {
             div::-webkit-scrollbar-track { background: transparent; }
             div::-webkit-scrollbar-thumb { background: oklch(0.4 0.02 240); border-radius: 2px; }
             div::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0.02 240); }
-            :root:not(.dark) div::-webkit-scrollbar-thumb { background: oklch(0.75 0.02 240); }
-            :root:not(.dark) div::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.02 240); }
           `}</style>
           <AnimatePresence>
             {isExpanded ? (
@@ -298,61 +313,61 @@ export function CollapsibleSidebar() {
                     onClick={() => navigate("/dashboard")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Home} label="Dashboard" isExpanded={true} />
+                    <NavItem icon={Home} label="Dashboard" isExpanded={true} isActive={currentPath === "/dashboard"} />
                   </button>
                   <button 
                     onClick={() => navigate("/projects")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Briefcase} label="Projects" isExpanded={true} />
+                    <NavItem icon={Briefcase} label="Projects" isExpanded={true} isActive={currentPath === "/projects"} />
                   </button>
                   <button 
                     onClick={() => navigate("/clients")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Users} label="Clients" isExpanded={true} />
+                    <NavItem icon={Users} label="Clients" isExpanded={true} isActive={currentPath === "/clients"} />
                   </button>
                   <button 
                     onClick={() => navigate("/teams")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Building2} label="Team" isExpanded={true} />
+                    <NavItem icon={Building2} label="Team" isExpanded={true} isActive={currentPath === "/teams"} />
                   </button>
                   <button 
                     onClick={() => navigate("/messages")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} />
+                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} isActive={currentPath === "/messages"} />
                   </button>
                   <button 
                     onClick={() => navigate("/scope")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Shield} label="Scope" isExpanded={true} />
+                    <NavItem icon={Shield} label="Scope" isExpanded={true} isActive={currentPath === "/scope"} />
                   </button>
                   <button 
                     onClick={() => navigate("/evidence-library")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Database} label="Evidence Library" isExpanded={true} />
+                    <NavItem icon={Database} label="Evidence Library" isExpanded={true} isActive={currentPath === "/evidence-library"} />
                   </button>
                   <button 
                     onClick={() => navigate("/time-tracking")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Clock} label="Time Tracking" isExpanded={true} />
+                    <NavItem icon={Clock} label="Time Tracking" isExpanded={true} isActive={currentPath === "/time-tracking"} />
                   </button>
                   <button 
                     onClick={() => navigate("/tags")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={Settings} label="Tags" isExpanded={true} />
+                    <NavItem icon={Tag} label="Tags" isExpanded={true} isActive={currentPath === "/tags"} />
                   </button>
                   <button 
                     onClick={() => navigate("/goals")} 
                     className="w-full text-left"
                   >
-                    <NavItem icon={TrendingUp} label="Goals" isExpanded={true} />
+                    <NavItem icon={TrendingUp} label="Goals" isExpanded={true} isActive={currentPath === "/goals"} />
                   </button>
                 </div>
 
@@ -362,10 +377,10 @@ export function CollapsibleSidebar() {
                     CRM
                   </div>
                   <button onClick={() => navigate("/pipeline")} className="w-full text-left" type="button">
-                    <NavItem icon={Kanban} label="Pipeline" isExpanded={true} />
+                    <NavItem icon={Kanban} label="Pipeline" isExpanded={true} isActive={currentPath === "/pipeline"} />
                   </button>
                   <button onClick={() => navigate("/proposals")} className="w-full text-left" type="button">
-                    <NavItem icon={FileSignature} label="Proposals" isExpanded={true} />
+                    <NavItem icon={FileSignature} label="Proposals" isExpanded={true} isActive={currentPath === "/proposals" || currentPath === "/proposals/new"} />
                   </button>
                 </div>
 
@@ -375,49 +390,25 @@ export function CollapsibleSidebar() {
                     BILLING
                   </div>
                   <button onClick={() => navigate("/invoices")} className="w-full text-left" type="button">
-                    <NavItem icon={FileText} label="Invoices" isExpanded={true} />
+                    <NavItem icon={FileText} label="Invoices" isExpanded={true} isActive={currentPath === "/invoices" || currentPath === "/invoices/new"} />
                   </button>
                   <button onClick={() => navigate("/payment-patterns")} className="w-full text-left" type="button">
-                    <NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} />
+                    <NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} />
                   </button>
                   <button onClick={() => navigate("/reports")} className="w-full text-left" type="button">
-                    <NavItem icon={Activity} label="Reports" isExpanded={true} />
+                    <NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} />
                   </button>
                 </div>
 
-                {/* INTEGRATIONS Section */}
-                <div className="px-2 space-y-0.5 mt-4">
-                  <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
-                    INTEGRATIONS
-                  </div>
-                  <button onClick={() => navigate("/platform-integrations")} className="w-full text-left" type="button">
-                    <NavItem icon={LinkIcon} label="Platform Connections" isExpanded={true} />
-                  </button>
-                  <button onClick={() => navigate("/evidence-export")} className="w-full text-left" type="button">
-                    <NavItem icon={FileText} label="Evidence Export" isExpanded={true} />
-                  </button>
+                {/* INTEGRATIONS section removed — Platform Connections moved to Account Settings > Connections tab; Evidence Export merged into Evidence Library page */}
 
-                </div>
-
-                {/* ADMIN Section */}
+                {/* ADMIN Section — Subscription, Help & Sign Out moved to Account Settings page */}
                 <div className="px-2 space-y-0.5 mt-4">
                   <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
                     ADMIN
                   </div>
-                  <button onClick={() => navigate("/subscription")} className="w-full text-left" type="button">
-                    <NavItem icon={Zap} label="Subscription" isExpanded={true} />
-                  </button>
-                  <button onClick={() => navigate("/api-settings")} className="w-full text-left" type="button">
-                    <NavItem icon={Code2} label="API Settings" isExpanded={true} />
-                  </button>
-                  <button onClick={() => {
-                    const event = new CustomEvent('openProfileModal');
-                    window.dispatchEvent(event);
-                  }} className="w-full text-left" type="button">
-                    <NavItem icon={Settings} label="Account Settings" isExpanded={true} />
-                  </button>
-                  <button onClick={() => navigate("/help-center")} className="w-full text-left" type="button">
-                    <NavItem icon={HelpCircle} label="Help Center" isExpanded={true} />
+                  <button onClick={() => navigate("/account-settings")} className="w-full text-left" type="button">
+                    <NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} />
                   </button>
                 </div>
               </motion.div>
@@ -427,55 +418,73 @@ export function CollapsibleSidebar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="py-6 flex flex-col items-center gap-6"
+                className="py-3 flex flex-col items-center gap-1"
               >
-                <button onClick={() => navigate("/dashboard")} title="Dashboard" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Home className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                {/* WORK */}
+                <button onClick={() => navigate("/dashboard")} title="Dashboard" className={`p-1.5 rounded-md transition-colors ${currentPath === "/dashboard" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Home className={`w-4 h-4 ${currentPath === "/dashboard" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/projects")} title="Projects" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Briefcase className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/projects")} title="Projects" className={`p-1.5 rounded-md transition-colors ${currentPath === "/projects" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Briefcase className={`w-4 h-4 ${currentPath === "/projects" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/clients")} title="Clients" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Users className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/clients")} title="Clients" className={`p-1.5 rounded-md transition-colors ${currentPath === "/clients" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Users className={`w-4 h-4 ${currentPath === "/clients" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Database className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/teams")} title="Team" className={`p-1.5 rounded-md transition-colors ${currentPath === "/teams" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Building2 className={`w-4 h-4 ${currentPath === "/teams" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/messages")} title="Messages" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <MessageSquare className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/messages")} title="Messages" className={`p-1.5 rounded-md transition-colors ${currentPath === "/messages" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <MessageSquare className={`w-4 h-4 ${currentPath === "/messages" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/scope")} title="Scope" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Shield className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/scope")} title="Scope" className={`p-1.5 rounded-md transition-colors ${currentPath === "/scope" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Shield className={`w-4 h-4 ${currentPath === "/scope" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/reports")} title="Reports" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Activity className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/evidence-library")} title="Evidence Library" className={`p-1.5 rounded-md transition-colors ${currentPath === "/evidence-library" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Database className={`w-4 h-4 ${currentPath === "/evidence-library" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/pipeline")} title="Pipeline" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Kanban className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/time-tracking")} title="Time Tracking" className={`p-1.5 rounded-md transition-colors ${currentPath === "/time-tracking" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Clock className={`w-4 h-4 ${currentPath === "/time-tracking" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/proposals")} title="Proposals" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <FileSignature className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/goals")} title="Goals" className={`p-1.5 rounded-md transition-colors ${currentPath === "/goals" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <TrendingUp className={`w-4 h-4 ${currentPath === "/goals" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/platform-integrations")} title="Platform Connections" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <LinkIcon className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+
+                {/* Divider: CRM */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/pipeline")} title="Pipeline" className={`p-1.5 rounded-md transition-colors ${currentPath === "/pipeline" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Kanban className={`w-4 h-4 ${currentPath === "/pipeline" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/subscription")} title="Subscription" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Zap className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                <button onClick={() => navigate("/proposals")} title="Proposals" className={`p-1.5 rounded-md transition-colors ${currentPath === "/proposals" || currentPath === "/proposals/new" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <FileSignature className={`w-4 h-4 ${currentPath === "/proposals" || currentPath === "/proposals/new" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => navigate("/api-settings")} title="API Settings" className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors">
-                  <Code2 className="w-6 h-6 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+
+                {/* Divider: BILLING */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/invoices")} title="Invoices" className={`p-1.5 rounded-md transition-colors ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <FileText className={`w-4 h-4 ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                </button>
+                <button onClick={() => navigate("/payment-patterns")} title="Payment Patterns" className={`p-1.5 rounded-md transition-colors ${currentPath === "/payment-patterns" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <TrendingUp className={`w-4 h-4 ${currentPath === "/payment-patterns" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                </button>
+                <button onClick={() => navigate("/reports")} title="Reports" className={`p-1.5 rounded-md transition-colors ${currentPath === "/reports" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Activity className={`w-4 h-4 ${currentPath === "/reports" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                </button>
+
+                {/* Divider: ADMIN */}
+                <div className="w-6 h-px bg-sidebar-border my-1.5" />
+
+                <button onClick={() => navigate("/account-settings")} title="Account Settings" className={`p-1.5 rounded-md transition-colors ${currentPath === "/account-settings" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                  <Settings className={`w-4 h-4 ${currentPath === "/account-settings" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Bottom Section - Notifications + Theme Toggle + Work Timeline */}
+        {/* Bottom Section - Theme Toggle + Work Timeline */}
         <div className="border-t border-sidebar-border py-2">
-          {/* Notifications bell — always visible (handles collapsed/expanded itself) */}
-          <div className="px-2 pb-1">
-            <NotificationBell isExpanded={isExpanded} />
-          </div>
           <AnimatePresence>
             {isExpanded && (
               <motion.div
@@ -489,7 +498,7 @@ export function CollapsibleSidebar() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleTheme();
+                    handleToggleTheme();
                   }}
                   className="w-full text-left"
                 >
@@ -511,42 +520,89 @@ export function CollapsibleSidebar() {
                 }} className="w-full text-left">
                   <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
                 </button>
-                {/* Sign Out */}
-                <button onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    await signOut();
-                    navigate("/auth");
-                  } catch {
-                    toast.error("Failed to sign out");
-                  }
-                }} className="w-full text-left">
-                  <NavItem icon={LogOut} label="Sign Out" isExpanded={true} />
-                </button>
+                {/* Sign Out moved to Account Settings > Security */}
               </motion.div>
             )}
           </AnimatePresence>
           {/* Collapsed theme toggle icon */}
           {!isExpanded && (
-            <div className="flex flex-col items-center gap-4 py-2">
+            <div className="flex flex-col items-center gap-2 py-1">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleTheme();
+                  handleToggleTheme();
                 }}
                 title={theme === "dark" ? "Light Mode" : "Dark Mode"}
-                className="p-2 hover:bg-sidebar-accent rounded-lg transition-colors"
+                className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors"
               >
                 {theme === "dark" ? (
-                  <Sun className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                  <Sun className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 ) : (
-                  <Moon className="w-5 h-5 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
+                  <Moon className="w-4 h-4 text-sidebar-foreground/60 hover:text-sidebar-foreground" />
                 )}
               </button>
             </div>
           )}
         </div>
       </motion.div>
+
+      {/* Mobile sidebar: always expanded, shown inside Sheet from main.tsx */}
+      {isMobile && (
+        <div className="h-full bg-sidebar flex flex-col overflow-y-auto">
+          {/* Logo */}
+          <div className="h-14 border-b border-sidebar-border flex items-center px-4">
+            <div className="flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+                <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span className="font-[Space_Grotesk] font-semibold text-base text-sidebar-foreground">Axia</span>
+            </div>
+          </div>
+          {/* Nav items — always expanded on mobile */}
+          <div className="flex-1 py-2 space-y-2 overflow-y-auto">
+            <div className="px-2 space-y-0.5">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">WORK</div>
+              <button onClick={() => navigate("/dashboard")} className="w-full text-left"><NavItem icon={Home} label="Dashboard" isExpanded={true} isActive={currentPath === "/dashboard"} /></button>
+              <button onClick={() => navigate("/projects")} className="w-full text-left"><NavItem icon={Briefcase} label="Projects" isExpanded={true} isActive={currentPath === "/projects"} /></button>
+              <button onClick={() => navigate("/clients")} className="w-full text-left"><NavItem icon={Users} label="Clients" isExpanded={true} isActive={currentPath === "/clients"} /></button>
+              <button onClick={() => navigate("/teams")} className="w-full text-left"><NavItem icon={Building2} label="Team" isExpanded={true} isActive={currentPath === "/teams"} /></button>
+              <button onClick={() => navigate("/messages")} className="w-full text-left"><NavItem icon={MessageSquare} label="Messages" isExpanded={true} isActive={currentPath === "/messages"} /></button>
+              <button onClick={() => navigate("/scope")} className="w-full text-left"><NavItem icon={Shield} label="Scope" isExpanded={true} isActive={currentPath === "/scope"} /></button>
+              <button onClick={() => navigate("/evidence-library")} className="w-full text-left"><NavItem icon={Database} label="Evidence Library" isExpanded={true} isActive={currentPath === "/evidence-library"} /></button>
+              <button onClick={() => navigate("/time-tracking")} className="w-full text-left"><NavItem icon={Clock} label="Time Tracking" isExpanded={true} isActive={currentPath === "/time-tracking"} /></button>
+              <button onClick={() => navigate("/goals")} className="w-full text-left"><NavItem icon={TrendingUp} label="Goals" isExpanded={true} isActive={currentPath === "/goals"} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">CRM</div>
+              <button onClick={() => navigate("/pipeline")} className="w-full text-left"><NavItem icon={Kanban} label="Pipeline" isExpanded={true} isActive={currentPath === "/pipeline"} /></button>
+              <button onClick={() => navigate("/proposals")} className="w-full text-left"><NavItem icon={FileSignature} label="Proposals" isExpanded={true} isActive={currentPath === "/proposals" || currentPath === "/proposals/new"} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">BILLING</div>
+              <button onClick={() => navigate("/invoices")} className="w-full text-left"><NavItem icon={FileText} label="Invoices" isExpanded={true} isActive={currentPath === "/invoices" || currentPath === "/invoices/new"} /></button>
+              <button onClick={() => navigate("/payment-patterns")} className="w-full text-left"><NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} /></button>
+              <button onClick={() => navigate("/reports")} className="w-full text-left"><NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} /></button>
+            </div>
+            <div className="px-2 space-y-0.5 mt-4">
+              <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">ADMIN</div>
+              <button onClick={() => navigate("/account-settings")} className="w-full text-left"><NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} /></button>
+            </div>
+          </div>
+          {/* Bottom: Theme + Work Timeline */}
+          <div className="border-t border-sidebar-border py-2 px-2 space-y-0.5 text-xs">
+            <button onClick={handleToggleTheme} className="w-full text-left">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent">
+                {theme === "dark" ? <Sun className="w-4 h-4 flex-shrink-0" /> : <Moon className="w-4 h-4 flex-shrink-0" />}
+                <span className="font-medium text-[13px]">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </div>
+            </button>
+            <button onClick={() => { const event = new CustomEvent('openTimelinePopup'); window.dispatchEvent(event); }} className="w-full text-left">
+              <NavItem icon={Activity} label="Work Timeline" isExpanded={true} />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -561,13 +617,13 @@ interface NavItemProps {
 function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm relative ${
         isActive
-          ? "accent-tint text-axia-teal-600 dark:text-axia-teal-400"
-          : "text-platinum-600 dark:text-platinum-400 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          ? "bg-primary/15 text-primary font-semibold border-l-2 border-l-primary -ml-0.5 pl-[10px]"
+          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-axia-teal-600 dark:text-axia-teal-400" : "text-platinum-500 dark:text-platinum-400"}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
       {isExpanded && (
         <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
           {label}

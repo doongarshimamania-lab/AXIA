@@ -72,19 +72,19 @@ const sectionTypeConfig: Record<
   InvoiceSectionType,
   { label: string; icon: React.ElementType; color: string }
 > = {
-  heading: { label: "Heading", icon: Heading, color: "hsl(var(--primary))" },
+  heading: { label: "Heading", icon: Heading, color: "#8B5CF6" },
   text: { label: "Text", icon: Type, color: "#6366f1" },
-  line_items: { label: "Line Items", icon: Receipt, color: "var(--success)" },
-  subtotal: { label: "Subtotal", icon: DollarSign, color: "var(--warning)" },
-  tax: { label: "Tax", icon: Percent, color: "var(--danger)" },
+  line_items: { label: "Line Items", icon: Receipt, color: "#22c55e" },
+  subtotal: { label: "Subtotal", icon: DollarSign, color: "#f59e0b" },
+  tax: { label: "Tax", icon: Percent, color: "#ef4444" },
   discount: { label: "Discount", icon: Tag, color: "#8b5cf6" },
-  terms: { label: "Terms", icon: FileCheck, color: "var(--warning)" },
-  bank_details: { label: "Bank Details", icon: Landmark, color: "var(--primary)" },
+  terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
+  bank_details: { label: "Bank Details", icon: Landmark, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
   client_info: { label: "Client Info", icon: User, color: "#ec4899" },
-  sender_info: { label: "Company Info", icon: Building2, color: "#64748B" },
-  invoice_meta: { label: "Invoice Meta", icon: FileText, color: "#475569" },
-  total: { label: "Total", icon: DollarSign, color: "var(--success)" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
+  invoice_meta: { label: "Invoice Meta", icon: FileText, color: "#06b6d4" },
+  total: { label: "Total", icon: DollarSign, color: "#22c55e" },
   notes: { label: "Notes", icon: StickyNote, color: "#a855f7" },
 };
 
@@ -231,10 +231,10 @@ export function InvoiceTemplateImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-primary" />
+            <Upload className="h-5 w-5 text-[#8B5CF6]" />
             Import Invoice Template
           </DialogTitle>
           <DialogDescription>
@@ -258,8 +258,8 @@ export function InvoiceTemplateImportDialog({
                   transition-all duration-200
                   ${
                     isDragOver
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/30"
+                      ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
+                      : "border-border hover:border-[#8B5CF6]/50 hover:bg-muted/30"
                   }
                 `}
                 onDrop={handleDrop}
@@ -320,7 +320,7 @@ export function InvoiceTemplateImportDialog({
             >
               {/* File info */}
               <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                <Receipt className="h-4 w-4 text-primary" />
+                <Receipt className="h-4 w-4 text-[#8B5CF6]" />
                 <span className="text-[13px] font-medium">{fileName}</span>
                 <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
                   {parsedSections.length} sections
@@ -329,7 +329,7 @@ export function InvoiceTemplateImportDialog({
 
               {isParsing ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
+                  <Loader2 className="h-8 w-8 text-[#8B5CF6] animate-spin mb-3" />
                   <p className="text-[14px] text-muted-foreground">Parsing invoice structure...</p>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Detecting line items, tax, bank details, and terms
@@ -427,7 +427,7 @@ export function InvoiceTemplateImportDialog({
               <Button
                 onClick={handleApply}
                 disabled={parsedSections.length === 0}
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
               >
                 <Check className="h-3.5 w-3.5" />
                 Apply to Invoice
@@ -446,7 +446,7 @@ export function InvoiceTemplateImportDialog({
               </Button>
               <Button
                 onClick={handleSaveAsTemplate}
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Template
@@ -549,7 +549,7 @@ function InvoiceSectionPreviewItem({
             transition={{ duration: 0.15 }}
             className="px-3 py-2 text-[12px] text-muted-foreground border-t border-border bg-background"
           >
-            <p className="whitespace-pre-wrap max-h-32 overflow-y-auto">
+            <p className="whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
               {section.content || "(empty)"}
             </p>
 
@@ -558,8 +558,8 @@ function InvoiceSectionPreviewItem({
               <div className="mt-2 space-y-1">
                 <p className="text-[10px] font-medium text-foreground">Detected Line Items:</p>
                 {section.metadata.items.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-[11px] bg-muted/30 rounded px-2 py-1">
-                    <span>{item.description}</span>
+                  <div key={i} className="flex items-center justify-between text-[11px] bg-muted/30 rounded-lg px-2 py-1">
+                    <span className="break-words">{item.description}</span>
                     <span className="font-medium">${item.amount?.toFixed(2) || item.rate?.toFixed(2) || "0.00"}</span>
                   </div>
                 ))}

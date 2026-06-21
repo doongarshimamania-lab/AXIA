@@ -49,11 +49,11 @@ const featureIconMap: Record<string, React.ElementType> = {
 
 const featureColorMap: Record<string, string> = {
   proposal: "text-blue-500 bg-blue-500/10",
-  project: "text-platinum-400 bg-platinum-500/10",
+  project: "text-purple-500 bg-purple-500/10",
   time: "text-emerald-500 bg-emerald-500/10",
-  evidence: "text-axia-teal-600 bg-axia-teal-500/10",
+  evidence: "text-indigo-500 bg-indigo-500/10",
   invoice: "text-amber-500 bg-amber-500/10",
-  scope: "text-primary bg-primary/10",
+  scope: "text-cyan-500 bg-cyan-500/10",
   payment: "text-green-500 bg-green-500/10",
   reminder: "text-red-500 bg-red-500/10",
 };
@@ -69,7 +69,7 @@ const statusBadgeMap: Record<string, { label: string; className: string }> = {
   },
   create_new: {
     label: "Create New",
-    className: "bg-platinum-500/15 text-platinum-400 border-platinum-500/25",
+    className: "bg-purple-500/15 text-purple-600 border-purple-500/25",
   },
 };
 
@@ -112,7 +112,7 @@ export function FeatureConnector({
                 </span>
               )}
               {createNewCount > 0 && (
-                <span className="text-[11px] text-platinum-400 font-medium">
+                <span className="text-[11px] text-purple-600 font-medium">
                   {createNewCount} to create
                 </span>
               )}

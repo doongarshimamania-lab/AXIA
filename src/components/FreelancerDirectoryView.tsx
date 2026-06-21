@@ -11,7 +11,7 @@ export function FreelancerDirectoryView() {
   const freelancers = useQuery("clients/freelancerDirectory:getVerifiedFreelancers" as any, {});
 
   if (!freelancers) {
-    return <div className="text-muted-foreground">Loading freelancer directory...</div>;
+    return <div className="text-muted-foreground">Loading professional directory...</div>;
   }
 
   const filteredFreelancers = freelancers.filter((f: any) =>
@@ -29,7 +29,7 @@ export function FreelancerDirectoryView() {
             placeholder="Search by name, title, or skills..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9"
           />
         </div>
       </div>
@@ -38,7 +38,7 @@ export function FreelancerDirectoryView() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground text-center">
-              {searchQuery ? "No freelancers match your search." : "No verified freelancers available yet."}
+              {searchQuery ? "No professionals match your search." : "No verified professionals available yet."}
             </p>
           </CardContent>
         </Card>

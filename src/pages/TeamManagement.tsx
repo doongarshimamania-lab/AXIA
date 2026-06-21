@@ -47,11 +47,12 @@ import {
   Plus, Pencil, Palette, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import {
   useWorkspaceContext,
 } from "@/hooks/use-workspace";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Demo Mode Banner ────────────────────────────────────────
 function DemoModeBanner() {
@@ -110,8 +111,8 @@ function MembersSkeleton() {
 
 // ─── Team Color Options ──────────────────────────────────────
 const TEAM_COLORS = [
-  "hsl(var(--primary))", "#0D9488", "#10B981", "#F59E0B", "#EF4444",
-  "#475993", "#14B8A6", "#94A3B8", "#7DD3FC", "#475569",
+  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+  "#EC4899", "#6366F1", "#14B8A6", "#F97316", "#06B6D4",
 ];
 
 export default function TeamManagement() {
@@ -136,16 +137,10 @@ export default function TeamManagement() {
   ) as any[] | undefined;
 
   // ─── Teams queries ─────────────────────────────────────────────────────────
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamsApi = !!teamsApi?.getTeams;
-
   const convexTeams = useQuery(
-    hasTeamsApi && hasRealWorkspaceId ? teamsApi.getTeams : "skip",
+    hasRealWorkspaceId ? api.teams.crud.getTeams : "skip",
     hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
   ) as any[] | undefined;
-
-  // ─── Team Members per team ──────────────────────────────────────────────────
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
 
   // ─── Mutations ─────────────────────────────────────────────────────────────
   const inviteMemberMutation = useMutation(api.workspaces.invitations.createInvitation);
@@ -154,11 +149,11 @@ export default function TeamManagement() {
   const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
 
   // Team mutations
-  const createTeamMutation = useMutation(hasTeamsApi ? teamsApi.createTeam : null);
-  const updateTeamMutation = useMutation(hasTeamsApi ? teamsApi.updateTeam : null);
-  const deleteTeamMutation = useMutation(hasTeamsApi ? teamsApi.deleteTeam : null);
-  const addTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.addTeamMember : null);
-  const removeTeamMemberMutation = useMutation(hasTeamsApi ? teamsApi.removeTeamMember : null);
+  const createTeamMutation = useMutation(api.teams.crud.createTeam);
+  const updateTeamMutation = useMutation(api.teams.crud.updateTeam);
+  const deleteTeamMutation = useMutation(api.teams.crud.deleteTeam);
+  const addTeamMemberMutation = useMutation(api.teams.crud.addTeamMember);
+  const removeTeamMemberMutation = useMutation(api.teams.crud.removeTeamMember);
 
   // ─── State ─────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<string>("members");
@@ -262,8 +257,11 @@ export default function TeamManagement() {
     return [];
   }, [convexInvitations]);
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = hasRealWorkspaceId && (convexMembers === undefined);
   const isDemoMode = !hasRealWorkspaceId;
+  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
   const handleInvite = async () => {
@@ -321,26 +319,48 @@ export default function TeamManagement() {
 
   // ─── Team CRUD Handlers ────────────────────────────────────────────────────
   const handleCreateTeam = async () => {
-    if (!teamName.trim() || !activeWorkspaceId) return;
+    if (!teamName.trim()) {
+      toast.error("Team name is required");
+      return;
+    }
+    if (!activeWorkspaceId || !hasRealWorkspaceId) {
+      toast.error("No workspace selected. Please select a workspace first.");
+      return;
+    }
     setIsCreatingTeam(true);
     try {
-      if (createTeamMutation && hasRealWorkspaceId) {
-        await createTeamMutation({
-          workspaceId: activeWorkspaceId as any,
-          name: teamName.trim(),
-          color: teamColor,
-          description: teamDescription.trim() || undefined,
-          isCrossTeam: teamIsCrossTeam || undefined,
-        });
+      const result = await createTeamMutation({
+        workspaceId: activeWorkspaceId as any,
+        name: teamName.trim(),
+        color: teamColor,
+        description: teamDescription.trim() || undefined,
+        isCrossTeam: teamIsCrossTeam || undefined,
+      });
+      // Defensive: safe-convex-react useMutation no-ops (returns undefined)
+      // when the mutation reference is null/undefined. If we got undefined
+      // back, the team was NOT actually created — surface that to the user
+      // instead of falsely claiming success.
+      if (result === undefined) {
+        toast.error(
+          "Team could not be created — the backend function is unavailable. Please refresh the page and try again."
+        );
+        return;
       }
       toast.success(`Team "${teamName}" created!`);
+      // Switch to the Teams tab so the user immediately sees the new team
+      // (previously the user stayed on whatever tab they were on and the
+      // count appeared not to update, even though the team was created).
+      setActiveTab("teams");
       setShowCreateTeamDialog(false);
       setTeamName("");
       setTeamColor(TEAM_COLORS[0]);
       setTeamDescription("");
       setTeamIsCrossTeam(false);
     } catch (e: any) {
-      toast.error(e.message || "Failed to create team");
+      console.error("[TeamManagement] createTeam failed:", e);
+      toast.error(e?.message || "Failed to create team", {
+        description: e?.data?.message || undefined,
+      });
     } finally {
       setIsCreatingTeam(false);
     }
@@ -481,13 +501,13 @@ export default function TeamManagement() {
   };
 
   return (
-    <div className="p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <PageLayout>
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-platinum-400" />
+              <Building2 className="w-8 h-8 text-purple-500" />
               {activeWorkspace?.name || "Team Workspace"}
             </h1>
             <p className="text-muted-foreground">
@@ -507,14 +527,14 @@ export default function TeamManagement() {
         {/* Demo Mode Banner */}
         {isDemoMode && <DemoModeBanner />}
 
-        {/* Stats Cards */}
-        {isLoading ? (
+        {/* Loading / Error State */}
+        {showLoading ? (
           <StatsSkeleton />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-platinum-500/10 rounded-lg"><Users className="w-5 h-5 text-platinum-400" /></div>
+                <div className="p-2.5 bg-purple-500/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Members</p>
                   <p className="text-2xl font-bold">{stats?.memberCount ?? activeMembers.length}</p>
@@ -559,7 +579,7 @@ export default function TeamManagement() {
             </Card>
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-axia-teal-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-axia-teal-700" /></div>
+                <div className="p-2.5 bg-violet-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-violet-500" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
                   <p className="text-2xl font-bold">${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k</p>
@@ -574,10 +594,10 @@ export default function TeamManagement() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-platinum-400" />
+                <Shield className="w-5 h-5 text-purple-500" />
                 <h2 className="text-lg font-bold">Team Protection Score</h2>
               </div>
-              <span className="text-2xl font-bold text-platinum-400">{stats?.protectionScore ?? 0}%</span>
+              <span className="text-2xl font-bold text-purple-600">{stats?.protectionScore ?? 0}%</span>
             </div>
             <Progress value={stats?.protectionScore ?? 0} className="h-3" />
             <p className="text-sm text-muted-foreground mt-2">
@@ -629,13 +649,13 @@ export default function TeamManagement() {
 
           {/* ─── Members Tab ──────────────────────────────────────────────────── */}
           <TabsContent value="members" className="space-y-6 mt-4">
-            {isLoading ? (
+            {showLoading ? (
               <MembersSkeleton />
             ) : (
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Users className="w-5 h-5 text-platinum-400" />
+                    <Users className="w-5 h-5 text-purple-500" />
                     Active Members
                   </h2>
                   <Badge variant="outline" className="text-xs">{activeMembers.length} seats</Badge>
@@ -723,7 +743,7 @@ export default function TeamManagement() {
                                 title="Change role"
                                 onClick={() => {
                                   setMemberToChangeRole(member);
-                                  setNewRole(member.role === "manager" ? "member" : "manager");
+                                  setNewRole(member.role);
                                 }}
                               >
                                 <Shield className="w-4 h-4" />
@@ -924,13 +944,13 @@ export default function TeamManagement() {
 
         {/* ─── Invite Dialog ──────────────────────────────────────────────────── */}
         <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                Invite Team Member
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Invite Team Member</span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Send an invitation to join your workspace.
               </DialogDescription>
             </DialogHeader>
@@ -950,7 +970,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={inviteRole} onValueChange={(v: any) => setInviteRole(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -988,7 +1008,7 @@ export default function TeamManagement() {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
               <Button onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
                 {isInviting ? (
@@ -1022,16 +1042,16 @@ export default function TeamManagement() {
 
         {/* ─── Change Role Dialog ─────────────────────────────────────────────── */}
         <Dialog open={!!memberToChangeRole} onOpenChange={() => setMemberToChangeRole(null)}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
               <DialogTitle>Change Role</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Change {memberToChangeRole?.name}'s role in this workspace.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <div className="space-y-4 py-4">
               <Select value={newRole} onValueChange={(v: any) => setNewRole(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1040,7 +1060,7 @@ export default function TeamManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>Cancel</Button>
               <Button onClick={handleChangeRole}>Update Role</Button>
             </DialogFooter>
@@ -1049,13 +1069,13 @@ export default function TeamManagement() {
 
         {/* ─── Create Team Dialog ─────────────────────────────────────────────── */}
         <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Create Team
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <Plus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Create Team</span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Create a team to organize members and control access to records.
               </DialogDescription>
             </DialogHeader>
@@ -1112,7 +1132,7 @@ export default function TeamManagement() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowCreateTeamDialog(false)}>Cancel</Button>
               <Button onClick={handleCreateTeam} disabled={isCreatingTeam || !teamName.trim()}>
                 {isCreatingTeam ? (
@@ -1127,13 +1147,13 @@ export default function TeamManagement() {
 
         {/* ─── Edit Team Dialog ───────────────────────────────────────────────── */}
         <Dialog open={!!editingTeam} onOpenChange={() => setEditingTeam(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Pencil className="w-5 h-5" />
-                Edit Team
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <Pencil className="w-5 h-5 shrink-0" />
+                <span className="truncate">Edit Team</span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Update team details for "{editingTeam?.name}"
               </DialogDescription>
             </DialogHeader>
@@ -1171,7 +1191,7 @@ export default function TeamManagement() {
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingTeam(null)}>Cancel</Button>
               <Button onClick={handleUpdateTeam} disabled={isUpdatingTeam}>
                 {isUpdatingTeam ? (
@@ -1209,13 +1229,13 @@ export default function TeamManagement() {
 
         {/* ─── Add Member to Team Dialog ──────────────────────────────────────── */}
         <Dialog open={!!teamToAddMember} onOpenChange={() => setTeamToAddMember(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                Add Member to {teamToAddMember?.name}
+              <DialogTitle className="flex items-center gap-2 min-w-0">
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span className="truncate">Add Member to {teamToAddMember?.name}</span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="break-words">
                 Select a workspace member to add to this team.
               </DialogDescription>
             </DialogHeader>
@@ -1223,7 +1243,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Select Member</Label>
                 <Select value={addMemberUserId} onValueChange={setAddMemberUserId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a member..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -1245,7 +1265,7 @@ export default function TeamManagement() {
               <div className="space-y-2">
                 <Label>Team Role</Label>
                 <Select value={addMemberRole} onValueChange={(v: any) => setAddMemberRole(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1265,7 +1285,7 @@ export default function TeamManagement() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setTeamToAddMember(null)}>Cancel</Button>
               <Button onClick={handleAddTeamMember} disabled={isAddingTeamMember || !addMemberUserId}>
                 {isAddingTeamMember ? (
@@ -1297,7 +1317,7 @@ export default function TeamManagement() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
@@ -1322,10 +1342,8 @@ function TeamCard({
   const [expanded, setExpanded] = useState(false);
 
   // Fetch team members
-  const teamsApi = (api as any).teams?.crud;
-  const hasTeamMembersApi = !!teamsApi?.getTeamMembers;
   const teamMembers = useQuery(
-    hasTeamMembersApi ? teamsApi.getTeamMembers : "skip",
+    api.teams.crud.getTeamMembers,
     { teamId: team._id }
   ) as any[] | undefined;
 
@@ -1343,7 +1361,7 @@ function TeamCard({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ backgroundColor: team.color || "hsl(var(--primary))" }}
+            style={{ backgroundColor: team.color || "#8B5CF6" }}
           >
             {team.name.charAt(0).toUpperCase()}
           </div>
@@ -1351,7 +1369,7 @@ function TeamCard({
             <div className="font-semibold flex items-center gap-2">
               {team.name}
               {team.isCrossTeam && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-platinum-500/10 text-platinum-400 border-platinum-500/20">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-500/10 text-purple-600 border-purple-500/20">
                   Cross-team
                 </Badge>
               )}
@@ -1486,8 +1504,8 @@ function SoloModePrompt() {
   };
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl mx-auto">
+    <PageLayout>
+      <div className="max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Teams Workspace</h1>
           <p className="text-muted-foreground">
@@ -1495,10 +1513,10 @@ function SoloModePrompt() {
           </p>
         </div>
 
-        <Card className="p-8 bg-gradient-to-br from-platinum-50 to-axia-teal-50 dark:from-platinum-950/30 dark:to-axia-teal-950/30 border-platinum-200 dark:border-platinum-800">
+        <Card className="p-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800">
           <div className="text-center max-w-md mx-auto">
-            <div className="w-16 h-16 bg-platinum-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8 text-platinum-400" />
+            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-8 h-8 text-purple-500" />
             </div>
             <h2 className="text-2xl font-bold mb-3">Upgrade to Team Workspace</h2>
             <p className="text-muted-foreground mb-6">
@@ -1508,7 +1526,7 @@ function SoloModePrompt() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-left">
               <div className="p-3 bg-white/50 dark:bg-white/5 rounded-lg">
-                <Users className="w-5 h-5 text-platinum-400 mb-2" />
+                <Users className="w-5 h-5 text-purple-500 mb-2" />
                 <div className="text-sm font-medium">Multi-User</div>
                 <div className="text-xs text-muted-foreground">Add team members with role-based access</div>
               </div>
@@ -1544,6 +1562,6 @@ function SoloModePrompt() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

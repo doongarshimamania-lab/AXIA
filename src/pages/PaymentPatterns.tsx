@@ -20,6 +20,7 @@ import {
   Timer,
   Info,
   Plus,
+  Search,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportPaymentReport } from "@/lib/exportUtils";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Platform Meta ────────────────────────────────────────────────────────────
 
@@ -47,8 +49,8 @@ const platformMeta: Record<string, { label: string; color: string; bg: string }>
   upwork: { label: "Upwork", color: "text-emerald-600", bg: "bg-emerald-500" },
   fiverr: { label: "Fiverr", color: "text-green-600", bg: "bg-green-500" },
   toptal: { label: "Toptal", color: "text-red-600", bg: "bg-red-500" },
-  freelancer: { label: "Freelancer", color: "text-blue-600", bg: "bg-blue-500" },
-  direct: { label: "Direct", color: "text-axia-teal-700", bg: "bg-axia-teal-500" },
+  freelancer: { label: "Freelancer.com", color: "text-blue-600", bg: "bg-blue-500" },
+  direct: { label: "Direct", color: "text-violet-600", bg: "bg-violet-500" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -164,11 +166,14 @@ export default function PaymentPatterns() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
-  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : {}) as any[] | undefined;
-  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : {}) as any | undefined;
-  const enrichedClients = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : {}) as any[] | undefined;
+  const invoices = useQuery(api.billing.crud.getInvoices, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
+  const invoiceStats = useQuery(api.billing.crud.getInvoiceStats, wsId ? { workspaceId: wsId } : "skip") as any | undefined;
+  const enrichedClients = useQuery(api.clients.crud.getClientsEnriched, wsId ? { workspaceId: wsId } : "skip") as any[] | undefined;
 
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = invoices === undefined || invoiceStats === undefined || enrichedClients === undefined;
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   // ─── Derived Data ──────────────────────────────────────────────────────────
 
@@ -398,14 +403,14 @@ export default function PaymentPatterns() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <PageLayout wide>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
             Payment Patterns
           </h1>
           <p className="text-[16px] text-muted-foreground">
-            Analyze your payment history, detect late-payment risks, and protect your freelance income across platforms
+            Analyze your payment history, detect late-payment risks, and protect your professional income across platforms
           </p>
         </div>
 
@@ -413,7 +418,7 @@ export default function PaymentPatterns() {
         {!isAuthenticated && <DemoModeBanner />}
 
         {/* Loading State */}
-        {isLoading ? (
+        {showLoading ? (
           <>
             <StatsSkeleton />
             <ChartSkeleton />
@@ -700,7 +705,7 @@ export default function PaymentPatterns() {
                         <div className="flex-1">
                           <h3 className="font-semibold text-foreground mb-1">Unlock Advanced Payment Analytics</h3>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Get AI-powered predictions, cash flow forecasting, risk alerts, and personalized recommendations to protect your freelance income.
+                            Get AI-powered predictions, cash flow forecasting, risk alerts, and personalized recommendations to protect your professional income.
                           </p>
                           <div className="flex flex-wrap gap-2 mb-4">
                             {["Next-month earnings prediction", "Cash flow forecast", "Smart risk recommendations", "Seasonality analysis"].map((feature) => (
@@ -734,12 +739,15 @@ export default function PaymentPatterns() {
                         <CardDescription>Track all incoming payments with dates, amounts, and status</CardDescription>
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Input
-                          placeholder="Search client or project..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="h-9 text-sm"
-                        />
+                        <div className="relative flex-1 sm:w-60">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search client or project..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
                         <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
                           <SelectTrigger className="w-[140px] h-9">
                             <SelectValue placeholder="Platform" />
@@ -1039,7 +1047,7 @@ export default function PaymentPatterns() {
             </Tabs>
           </>
         )}
-      </div>
+      </PageLayout>
     </motion.div>
   );
 }

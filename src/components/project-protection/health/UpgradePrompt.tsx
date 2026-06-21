@@ -19,19 +19,20 @@ export function UpgradePrompt({ message, valueGap, targetTier, description, onUp
 
   return (
     <motion.div
-      className="p-6 border-t border-border"
+      className="p-6 border-t border-slate-200"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
       <div className="space-y-3">
-        <h4 className="font-semibold text-foreground">
+        <h4 className="font-semibold text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
           {message}
         </h4>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm text-slate-600">{description}</p>
         <Button
           onClick={onUpgrade}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+          className="w-full text-white shadow-md"
+          style={{ background: "linear-gradient(to right, #00C9B7, #0087A6)" }}
         >
           Upgrade to {targetTier.charAt(0).toUpperCase() + targetTier.slice(1)} → {tierPricing[targetTier]}
           <ArrowRight className="ml-2 h-4 w-4" />

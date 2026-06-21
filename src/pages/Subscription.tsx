@@ -47,11 +47,11 @@ import {
   HelpCircle,
   Sparkles,
   Lock,
-  AlertCircle,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
-import { useQuery, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Tier Definitions ────────────────────────────────────────────────────────
 
@@ -672,7 +672,11 @@ export default function Subscription() {
   };
 
   // ── Loading state ────────────────────────────────────────────────────────
-  if (isTierLoading) {
+  const { isDisconnected } = useConvexConnectionState();
+  const tierTimedOut = useQueryTimeout(isTierLoading, 3000);
+  const showTierLoading = isTierLoading && !tierTimedOut && !isDisconnected;
+
+  if (showTierLoading) {
     return (
       <div className="w-full min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -682,6 +686,8 @@ export default function Subscription() {
 
   // ── Determine if Convex data is still loading ────────────────────────────
   const isInvoicesLoading = isAuthenticated && rawInvoices === undefined;
+  const invoicesTimedOut = useQueryTimeout(isInvoicesLoading, 3000);
+  const showInvoicesLoading = isInvoicesLoading && !invoicesTimedOut && !isDisconnected;
 
   return (
     <motion.div
@@ -690,7 +696,7 @@ export default function Subscription() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <PageLayout maxWidth="max-w-6xl">
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="mb-8">
           <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
@@ -1102,7 +1108,7 @@ export default function Subscription() {
                   <p className="text-sm">Sign in to view your billing history</p>
                   <p className="text-xs mt-1">Your invoices will appear here once you're logged in</p>
                 </div>
-              ) : isInvoicesLoading ? (
+              ) : showInvoicesLoading ? (
                 /* Loading skeleton for billing table */
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -1251,7 +1257,7 @@ export default function Subscription() {
             </Card>
           </motion.div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Change Plan Dialog ────────────────────────────────── */}
       <ChangePlanDialog

@@ -126,7 +126,6 @@ export const billingTables = {
       v.literal("cancelled")
     ),
     scheduledAt: v.number(),
-    dueAt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     createdAt: v.number(),
   })

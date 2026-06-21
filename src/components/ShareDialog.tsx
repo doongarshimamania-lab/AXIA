@@ -229,10 +229,10 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-platinum-400 dark:text-platinum-400" />
+            <Share2 className="w-5 h-5 text-purple-500 dark:text-purple-400" />
             Share {recordTypeLabel}
           </DialogTitle>
           <DialogDescription>
@@ -353,7 +353,7 @@ export function ShareDialog({
                             <div
                               className="w-3 h-3 rounded-full shrink-0"
                               style={{
-                                backgroundColor: team.color || "hsl(var(--primary))",
+                                backgroundColor: team.color || "#8B5CF6",
                               }}
                             />
                             <span>{team.name}</span>

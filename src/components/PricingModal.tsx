@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -51,26 +52,28 @@ export function PricingModal({
   const handleUpgradeClick = (tier: string) => {
     const pricing = TIER_PRICING[tier as keyof typeof TIER_PRICING];
     if (pricing > 0) {
-      // Redirect to Stripe checkout
-      const stripeCheckoutUrl = `https://checkout.stripe.com/pay/cs_live_${tier}_${pricing}`;
-      window.location.href = stripeCheckoutUrl;
+      // SECURITY: Don't redirect to fake Stripe URLs. Instead, show a toast
+      // indicating payment integration is coming soon. Fake payment redirects
+      // could trick users into thinking they've paid when they haven't.
+      toast.info(`${tier.charAt(0).toUpperCase() + tier.slice(1)} plan — payment integration coming soon!`);
+      return;
     }
     onUpgrade(tier);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-foreground tracking-tight font-[Space_Grotesk]">
             Your ${displaySavings.toFixed(0)} savings are ready
           </DialogTitle>
           <DialogDescription className="text-base text-muted-foreground">
-            Choose the plan that protects your freelance income
+            Choose the plan that protects your professional income
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-5 gap-2 mt-4 max-h-[calc(90vh-200px)]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4 max-h-[calc(90vh-200px)] overflow-y-auto">
           {/* Free Tier */}
           <motion.div
             className="border border-border rounded-lg p-3 flex flex-col"

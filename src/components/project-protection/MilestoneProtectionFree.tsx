@@ -78,7 +78,7 @@ export function MilestoneProtectionFree({ onUpgrade }: MilestoneProtectionFreePr
       <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
         <Button
           onClick={onUpgrade}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg"
+          className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold shadow-lg"
         >
           Upgrade to Starter → $4/mo
         </Button>

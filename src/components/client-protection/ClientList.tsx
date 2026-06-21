@@ -183,7 +183,7 @@ export function ClientList({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-xs text-axia-teal-700 hover:text-axia-teal-700 hover:bg-axia-teal-50 dark:text-axia-teal-700 dark:hover:bg-axia-teal-900/30"
+                      className="h-7 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30"
                       onClick={(e) => handleShare(client._id, e)}
                       title="Share workspace with client"
                     >
@@ -257,7 +257,7 @@ export function ClientList({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-axia-teal-700" />
+              <Share2 className="w-5 h-5 text-violet-500" />
               Share Client Workspace
             </DialogTitle>
             <DialogDescription>
@@ -266,7 +266,7 @@ export function ClientList({
           </DialogHeader>
           {shareLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-axia-teal-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : shareToken ? (
             <div className="space-y-4">
@@ -294,7 +294,7 @@ export function ClientList({
                 href={`/workspace/${shareToken}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-axia-teal-700 dark:text-axia-teal-700 hover:underline"
+                className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400 hover:underline"
               >
                 <ExternalLink className="w-4 h-4" />
                 Preview as client

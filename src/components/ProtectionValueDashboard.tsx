@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, TrendingUp, DollarSign, AlertTriangle, Award, BarChart3 } from "lucide-react";
+import { Shield, TrendingUp, DollarSign, AlertTriangle, Award, BarChart3, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 
@@ -12,10 +13,64 @@ export function ProtectionValueDashboard() {
   const metrics = useQuery(api.protection.protectionValue.getProtectionValueMetrics, {});
   const history = useQuery(api.protection.protectionValue.getValueHistory, {});
 
+  // ── Timeout & retry logic for auth failures / Convex unreachable ──
+  const [timedOut, setTimedOut] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    setTimedOut(false);
+    if (metrics === undefined) {
+      const timer = setTimeout(() => setTimedOut(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [metrics, retryKey]);
+
+  const handleRetry = useCallback(() => {
+    setTimedOut(false);
+    setRetryKey((k) => k + 1);
+  }, []);
+
+  // Show error state after timeout
+  if (metrics === undefined && timedOut) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <AlertTriangle className="h-10 w-10 text-orange-500 mb-3" />
+        <h3 className="text-lg font-semibold text-foreground mb-1">Unable to load protection data</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-[320px]">
+          This may be caused by a network issue or authentication problem. Please try again.
+        </p>
+        <Button variant="outline" onClick={handleRetry} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  // Show spinner while loading (before timeout)
   if (!metrics) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Check for zero-value metrics (no protection data yet)
+  const hasMeaningfulData =
+    (metrics.lifetime?.protectedValue ?? 0) > 0 ||
+    (metrics.lifetime?.protectedHours ?? 0) > 0 ||
+    (metrics.monthly?.protectedValue ?? 0) > 0 ||
+    (metrics.monthly?.atRiskValue ?? 0) > 0;
+
+  if (!hasMeaningfulData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <Shield className="h-10 w-10 text-muted-foreground mb-3" />
+        <h3 className="text-lg font-semibold text-foreground mb-1">No protection data yet</h3>
+        <p className="text-sm text-muted-foreground max-w-[320px]">
+          Start tracking work sessions to see your protection value, ROI, and dispute prevention metrics here.
+        </p>
       </div>
     );
   }

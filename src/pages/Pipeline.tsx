@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
@@ -70,12 +70,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Settings2,
-  Link,
+  Share2,
 } from "lucide-react";
-import { CustomFieldManager } from "@/components/CustomFieldManager";
-import { CustomFieldValues } from "@/components/CustomFieldValues";
-import { STAGE_COLORS, PLATFORM_COLORS, SEMANTIC_COLORS } from "@/lib/tokens";
+import { PageLayout } from "@/components/design-system/PageLayout";
+import { ShareRecordsPanel } from "@/components/ShareRecordsPanel";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -103,7 +101,6 @@ interface Deal {
   contactName?: string;
   expectedCloseDate?: number;
   notes?: string;
-  customFields?: Record<string, any>;
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -122,79 +119,15 @@ interface PipelineStats {
   }[];
 }
 
-// ─── Mock Data (fallback when Convex returns empty) ─────────────────────────
-
-const MOCK_STAGES: Stage[] = [
-  { _id: "mock_lead" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lead", color: STAGE_COLORS.lead, order: 0, isDefault: true },
-  { _id: "mock_qualified" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Qualified", color: STAGE_COLORS.qualified, order: 1, isDefault: true },
-  { _id: "mock_proposal" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Proposal", color: STAGE_COLORS.proposal, order: 2, isDefault: true },
-  { _id: "mock_negotiation" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Negotiation", color: STAGE_COLORS.negotiation, order: 3, isDefault: true },
-  { _id: "mock_won" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Won", color: "var(--success)", order: 4, isDefault: true },
-  { _id: "mock_lost" as Id<"pipelineStages">, userId: "" as Id<"users">, name: "Lost", color: "var(--danger)", order: 5, isDefault: true },
-];
-
-const now = Date.now();
-const day = 86400000;
-
-const MOCK_DEALS: Deal[] = [
-  // Lead
-  { _id: "deal_1" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "E-Commerce Platform Build", value: 12000, probability: 10, source: "upwork", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 60 * day, description: "Full e-commerce platform with product catalog, cart, checkout, and admin dashboard.", notes: "Initial inquiry received. Needs scoping call scheduled for next week.", order: 0, createdAt: now - 5 * day, updatedAt: now },
-  { _id: "deal_7" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "AI Chatbot Integration", value: 6000, probability: 10, source: "fiverr", contactName: "Nina Patel", contactEmail: "nina@smartassist.ai", expectedCloseDate: now + 75 * day, description: "Custom AI chatbot with NLP capabilities for customer support automation.", notes: "Inbound lead from Fiverr. Early stage exploration.", order: 1, createdAt: now - 2 * day, updatedAt: now },
-  { _id: "deal_13" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Real Estate Listing Portal", value: 18000, probability: 15, source: "linkedin", contactName: "Marcus Rivera", contactEmail: "marcus@primeproperty.com", expectedCloseDate: now + 90 * day, description: "Property listing portal with map search, virtual tours, and agent management.", notes: "Found us on LinkedIn. Budget not confirmed yet.", order: 2, createdAt: now - 1 * day, updatedAt: now },
-  { _id: "deal_14" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "EdTech Course Platform", value: 9500, probability: 10, source: "referral", contactName: "Prof. Anika Desai", contactEmail: "anika@learnvista.edu", expectedCloseDate: now + 50 * day, description: "Online course platform with video hosting, quizzes, progress tracking.", notes: "Referred by Priya at FinServe. Long sales cycle expected.", order: 3, createdAt: now - 3 * day, updatedAt: now },
-  { _id: "deal_15" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lead" as Id<"pipelineStages">, title: "Fitness App MVP", value: 7500, probability: 8, source: "upwork", contactName: "Jake Morrison", contactEmail: "jake@fittrack.app", expectedCloseDate: now + 40 * day, description: "MVP fitness tracking app with workout plans and social features.", notes: "Startup founder with limited budget. Exploring options.", order: 4, createdAt: now - 4 * day, updatedAt: now },
-  // Qualified
-  { _id: "deal_2" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "SaaS Dashboard Redesign", value: 8500, probability: 25, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now + 45 * day, description: "Complete redesign of analytics dashboard with real-time data visualization.", notes: "Qualified lead. Demo scheduled for next week. Shortlisted among 3 agencies.", order: 5, createdAt: now - 12 * day, updatedAt: now },
-  { _id: "deal_8" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Digital Marketing Landing Pages", value: 4500, probability: 25, source: "upwork", contactName: "Lisa Park", contactEmail: "lisa@digitalmarketingco.com", expectedCloseDate: now + 30 * day, description: "5 A/B tested landing pages with analytics tracking.", notes: "Returning client. Budget approved internally. Quick turnaround expected.", order: 6, createdAt: now - 8 * day, updatedAt: now },
-  { _id: "deal_16" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Supply Chain Management System", value: 32000, probability: 30, source: "direct", contactName: "Robert Chang", contactEmail: "rchang@logisync.com", expectedCloseDate: now + 60 * day, description: "End-to-end supply chain management with inventory tracking and predictive analytics.", notes: "Enterprise client. Thorough evaluation process. Decision expected in 3 weeks.", order: 7, createdAt: now - 15 * day, updatedAt: now },
-  { _id: "deal_17" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_qualified" as Id<"pipelineStages">, title: "Restaurant POS & Ordering System", value: 14000, probability: 20, source: "referral", contactName: "Maria Santos", contactEmail: "maria@freshbites.co", expectedCloseDate: now + 35 * day, description: "Point-of-sale system with online ordering and kitchen display integration.", notes: "Referred by Sam from TechCorp. Chain of 12 restaurants. Pilot at 2 locations first.", order: 8, createdAt: now - 10 * day, updatedAt: now },
-  // Proposal
-  { _id: "deal_3" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Mobile Banking App", value: 25000, probability: 50, source: "referral", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now + 30 * day, description: "Full-featured mobile banking app with biometric auth and compliance reporting.", notes: "Proposal sent. Awaiting board approval. CTO is our champion internally.", order: 9, createdAt: now - 20 * day, updatedAt: now },
-  { _id: "deal_9" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Creative Studios Motion Design Package", value: 7500, probability: 50, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now + 21 * day, description: "Motion graphics reel and social media content package for brand launch.", notes: "Existing client expanding scope. They viewed it within 2 hours of sending.", order: 10, createdAt: now - 10 * day, updatedAt: now },
-  { _id: "deal_18" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Healthcare Patient Portal", value: 35000, probability: 45, source: "direct", contactName: "Dr. Robert Singh", contactEmail: "robert@medportal.health", expectedCloseDate: now + 28 * day, description: "HIPAA-compliant patient portal with appointment scheduling and secure messaging.", notes: "Proposal sent with detailed compliance section. Their CIO requested additional security docs.", order: 11, createdAt: now - 14 * day, updatedAt: now },
-  { _id: "deal_19" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_proposal" as Id<"pipelineStages">, title: "Brand Identity for NovaTech", value: 8500, probability: 55, source: "fiverr", contactName: "Aisha Khan", contactEmail: "aisha@novatech.io", expectedCloseDate: now + 14 * day, description: "Complete brand identity package: logo, color palette, typography, guidelines.", notes: "Startup rebranding after Series A. They love our portfolio. Decision imminent.", order: 12, createdAt: now - 7 * day, updatedAt: now },
-  // Negotiation
-  { _id: "deal_4" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Full-Stack SaaS Platform", value: 45000, probability: 70, source: "referral", contactName: "Rachel Green", contactEmail: "rachel@scaleup.io", expectedCloseDate: now + 7 * day, description: "Multi-tenant SaaS platform with subscription billing and white-label capabilities.", notes: "Close to agreement. Legal team reviewing contract terms. Only sticking point is IP clause.", order: 13, createdAt: now - 35 * day, updatedAt: now },
-  { _id: "deal_10" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "StartupHub Mobile App Phase 2", value: 9500, probability: 70, source: "fiverr", contactName: "Sarah Mitchell", contactEmail: "sarah@startuphub.co", expectedCloseDate: now + 10 * day, description: "Phase 2: push notifications, payment integration, and analytics dashboard.", notes: "Phase 1 successful. Negotiating final scope and timeline.", order: 14, createdAt: now - 18 * day, updatedAt: now },
-  { _id: "deal_20" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Insurance Claims Platform", value: 28000, probability: 65, source: "linkedin", contactName: "Vikram Mehta", contactEmail: "vikram@insureflow.com", expectedCloseDate: now + 14 * day, description: "Claims processing platform with document OCR and automated workflows.", notes: "Budget approved by CFO. Final negotiation on maintenance terms and SLA.", order: 15, createdAt: now - 25 * day, updatedAt: now },
-  { _id: "deal_23" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_negotiation" as Id<"pipelineStages">, title: "Manufacturing Quality Control System", value: 38000, probability: 60, source: "direct", contactName: "Ingrid Svensson", contactEmail: "ingrid@precisemfg.se", expectedCloseDate: now + 5 * day, description: "IoT-connected quality control system with real-time defect detection.", notes: "Final negotiation on change order process. Proposing hybrid model. Decision imminent.", order: 16, createdAt: now - 40 * day, updatedAt: now },
-  // Won
-  { _id: "deal_5" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "TechCorp Phase 2 — CMS & Marketing Automation", value: 15000, probability: 100, source: "upwork", contactName: "David Chen", contactEmail: "david.chen@techcorp.io", expectedCloseDate: now - 3 * day, description: "Phase 2: CMS integration, marketing automation, and analytics dashboard.", notes: "Won! Phase 2 approved. Kickoff meeting scheduled for next Monday.", order: 17, createdAt: now - 60 * day, updatedAt: now },
-  { _id: "deal_11" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "FinServe Analytics Platform", value: 5720, probability: 100, source: "upwork", contactName: "Michael Torres", contactEmail: "cto@finserve.io", expectedCloseDate: now - 10 * day, description: "Financial analytics platform with real-time market data and compliance reporting.", notes: "Monthly retainer won. First invoice paid. Excellent client relationship.", order: 18, createdAt: now - 30 * day, updatedAt: now },
-  { _id: "deal_21" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "GlobalEnt Data Dashboard", value: 22000, probability: 100, source: "toptal", contactName: "Anna Schmidt", contactEmail: "anna@insightdata.de", expectedCloseDate: now - 15 * day, description: "Enterprise analytics dashboard with real-time data streaming and role-based access.", notes: "Won after 3-month sales cycle. Enterprise contract with annual renewal.", order: 19, createdAt: now - 45 * day, updatedAt: now },
-  { _id: "deal_29" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "Creative Studios Brand Refresh", value: 5500, probability: 100, source: "direct", contactName: "Tom Bradley", contactEmail: "tom@creativestudios.art", expectedCloseDate: now - 1 * day, description: "Brand refresh including updated visual identity and brand animation toolkit.", notes: "Won! Existing client expanding relationship. Kickoff tomorrow.", order: 20, createdAt: now - 50 * day, updatedAt: now },
-  { _id: "deal_30" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_won" as Id<"pipelineStages">, title: "CloudMetrics SaaS Dashboard", value: 8500, probability: 100, source: "linkedin", contactName: "Jennifer Wu", contactEmail: "jen@cloudmetrics.io", expectedCloseDate: now - 5 * day, description: "Analytics dashboard redesign with real-time data visualization.", notes: "Won after competitive evaluation. CTO championed us. 3-month engagement.", order: 21, createdAt: now - 55 * day, updatedAt: now },
-  // Lost
-  { _id: "deal_6" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Legacy System Migration", value: 22000, probability: 0, source: "toptal", contactName: "Frank Miller", contactEmail: "frank@oldtech.com", expectedCloseDate: now - 20 * day, description: "Legacy .NET system migration to modern React/Node.js stack.", notes: "Lost to competitor. Budget constraints. Went with cheaper offshore alternative.", order: 22, createdAt: now - 45 * day, updatedAt: now },
-  { _id: "deal_12" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Retail Inventory System", value: 14000, probability: 0, source: "linkedin", contactName: "Amy Foster", contactEmail: "amy@retailpro.com", expectedCloseDate: now - 30 * day, description: "Custom inventory management system with barcode scanning.", notes: "Lost due to project scope mismatch. Client needed off-the-shelf solution.", order: 23, createdAt: now - 55 * day, updatedAt: now },
-  { _id: "deal_24" as Id<"deals">, userId: "" as Id<"users">, stageId: "mock_lost" as Id<"pipelineStages">, title: "Government Portal Redesign", value: 48000, probability: 0, source: "direct", contactName: "Director Helen Park", contactEmail: "helen.park@citygov.org", expectedCloseDate: now - 10 * day, description: "Municipal government services portal with citizen authentication.", notes: "Lost due to procurement process favoring incumbent vendor.", order: 24, createdAt: now - 65 * day, updatedAt: now },
-];
-
-const MOCK_PIPELINE_STATS: PipelineStats = {
-  totalDeals: MOCK_DEALS.length,
-  totalValue: MOCK_DEALS.reduce((s, d) => s + d.value, 0),
-  weightedValue: MOCK_DEALS.reduce((s, d) => s + d.value * (d.probability / 100), 0),
-  byStage: MOCK_STAGES.map((stage) => {
-    const stageDeals = MOCK_DEALS.filter((d) => d.stageId === stage._id);
-    return {
-      stageId: stage._id,
-      stageName: stage.name,
-      color: stage.color,
-      dealCount: stageDeals.length,
-      totalValue: stageDeals.reduce((s, d) => s + d.value, 0),
-    };
-  }),
-};
-
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SOURCE_OPTIONS = [
-  { value: "upwork", label: "Upwork", color: PLATFORM_COLORS.upwork },
-  { value: "fiverr", label: "Fiverr", color: PLATFORM_COLORS.fiverr },
-  { value: "linkedin", label: "LinkedIn", color: PLATFORM_COLORS.linkedin },
-  { value: "referral", label: "Referral", color: "hsl(var(--primary))" },
-  { value: "direct", label: "Direct", color: STAGE_COLORS.lead },
-  { value: "other", label: "Other", color: SEMANTIC_COLORS.neutral },
+  { value: "upwork", label: "Upwork", color: "#14a800" },
+  { value: "fiverr", label: "Fiverr", color: "#00b22d" },
+  { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
+  { value: "referral", label: "Referral", color: "#8B5CF6" },
+  { value: "direct", label: "Direct", color: "#f59e0b" },
+  { value: "other", label: "Other", color: "#6b7280" },
 ];
 
 const DEFAULT_PROBABILITIES: Record<string, number> = {
@@ -217,10 +150,6 @@ const CORE_FIELDS = [
   { value: "contactEmail", label: "Contact Email" },
   { value: "expectedCloseDate", label: "Expected Close Date" },
   { value: "notes", label: "Notes" },
-  { value: "custom:text", label: "→ Custom: Text" },
-  { value: "custom:number", label: "→ Custom: Number" },
-  { value: "custom:boolean", label: "→ Custom: Boolean" },
-  { value: "custom:link", label: "→ Custom: Link" },
   { value: "_skip", label: "Skip this column" },
 ];
 
@@ -260,10 +189,7 @@ const AUTO_DETECT_MAP: Record<string, string> = {
 
 function autoDetectMapping(headerName: string): string {
   const normalized = headerName.toLowerCase().trim();
-  const coreMatch = AUTO_DETECT_MAP[normalized];
-  if (coreMatch) return coreMatch;
-  // Auto-detect unknown columns as custom text fields
-  return "custom:text";
+  return AUTO_DETECT_MAP[normalized] ?? "_skip";
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -304,13 +230,13 @@ export default function Pipeline() {
   const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
 
   // ── Convex Queries & Mutations ──
-  const stages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : {}) as
+  const stages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as
     | Stage[]
     | undefined;
-  const deals = useQuery(api.pipeline.crud.getDeals, workspaceId ? { workspaceId } : {}) as
+  const deals = useQuery(api.pipeline.crud.getDeals, workspaceId ? { workspaceId } : "skip") as
     | Deal[]
     | undefined;
-  const stats = useQuery(api.pipeline.crud.getPipelineStats, workspaceId ? { workspaceId } : {}) as
+  const stats = useQuery(api.pipeline.crud.getPipelineStats, workspaceId ? { workspaceId } : "skip") as
     | PipelineStats
     | undefined;
 
@@ -334,6 +260,7 @@ export default function Pipeline() {
   const [isCreating, setIsCreating] = useState(false);
   const [dragOverStageId, setDragOverStageId] = useState<Id<"pipelineStages"> | null>(null);
   const [isCreatingProposal, setIsCreatingProposal] = useState<string | null>(null); // dealId being processed
+  const [activeTab, setActiveTab] = useState<"pipeline" | "share-records">("pipeline");
 
   // ── Create Deal Form State ──
   const [formTitle, setFormTitle] = useState("");
@@ -355,7 +282,6 @@ export default function Pipeline() {
   const [editContactEmail, setEditContactEmail] = useState("");
   const [editCloseDate, setEditCloseDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
   const [editStageId, setEditStageId] = useState<Id<"pipelineStages"> | null>(null);
 
   // ── Import State ──
@@ -369,40 +295,13 @@ export default function Pipeline() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Custom fields dialog state
-  const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
-
-  // ── Derived State (with mock data fallback when Convex returns empty) ──
-  const isMockData = useMemo(() => {
-    const s = stages ?? [];
-    const d = deals ?? [];
-    return s.length === 0 && d.length === 0;
-  }, [stages, deals]);
-
-  // Local override for mock deal stage moves (optimistic updates for demo data)
-  const [mockDealOverrides, setMockDealOverrides] = useState<Map<string, string>>(new Map());
-
-  const safeStages = useMemo(() => {
-    const s = stages ?? [];
-    return s.length > 0 ? s : MOCK_STAGES;
-  }, [stages]);
-  const safeDeals = useMemo(() => {
-    const d = deals ?? [];
-    if (d.length > 0) return d;
-    // Apply mock deal overrides (stage moves) on top of MOCK_DEALS
-    if (mockDealOverrides.size === 0) return MOCK_DEALS;
-    return MOCK_DEALS.map((deal) => {
-      const overrideStageId = mockDealOverrides.get(deal._id);
-      if (overrideStageId) {
-        return { ...deal, stageId: overrideStageId as Id<"pipelineStages"> };
-      }
-      return deal;
-    });
-  }, [deals, mockDealOverrides]);
+  // ── Derived State ──
+  const safeStages = useMemo(() => stages ?? [], [stages]);
+  const safeDeals = useMemo(() => deals ?? [], [deals]);
   const safeStats = useMemo(
     () => {
       if (stats && stats.totalDeals > 0) return stats;
-      // Recalculate mock stats from safeDeals (respects mock overrides)
+      // Compute from local data
       const totalValue = safeDeals.reduce((s, d) => s + d.value, 0);
       const weightedValue = safeDeals.reduce((s, d) => s + d.value * (d.probability / 100), 0);
       return {
@@ -423,7 +322,10 @@ export default function Pipeline() {
     },
     [stats, safeDeals, safeStages]
   );
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = stages === undefined || deals === undefined;
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   const dealsByStage = useMemo(() => {
     const map = new Map<Id<"pipelineStages">, Deal[]>();
@@ -455,13 +357,27 @@ export default function Pipeline() {
   }, [safeStages, dealsByStage]);
 
   // ── Auto-create default stages on first load ──
+  // Use a ref so the effect doesn't re-fire when createDefaultStages identity changes
+  const createDefaultStagesRef = useRef(createDefaultStages);
+  createDefaultStagesRef.current = createDefaultStages;
+
+  // Track whether we've already attempted to create defaults to avoid race conditions
+  const hasAttemptedDefaults = useRef(false);
+
   useEffect(() => {
-    if (stages !== undefined && stages.length === 0) {
-      createDefaultStages(workspaceId ? { workspaceId } : {}).catch(() => {
-        // Silently fail - user might not be authenticated
-      });
-    }
-  }, [stages, createDefaultStages, workspaceId]);
+    // Skip if demo mode (workspaceId is a fake "ws_" string, not a real Convex ID)
+    if (workspaceId && typeof workspaceId === "string" && workspaceId.startsWith("ws_")) return;
+    // Only run when stages have been loaded (not undefined) and are empty
+    if (stages === undefined) return;
+    if (stages.length > 0) return;
+    // Only attempt once per mount
+    if (hasAttemptedDefaults.current) return;
+    hasAttemptedDefaults.current = true;
+
+    createDefaultStagesRef.current(workspaceId ? { workspaceId } : {}).catch(() => {
+      // Silently fail - user might not be authenticated
+    });
+  }, [stages, workspaceId]);
 
   // ── Handlers ──
   const handleOpenCreateDialog = useCallback(
@@ -529,7 +445,7 @@ export default function Pipeline() {
   const handleSeedData = useCallback(async () => {
     setIsSeeding(true);
     try {
-      const result = await seedMockPipeline({});
+      const result = await seedMockPipeline(workspaceId ? { workspaceId } : {});
       const seedResult = result as { seeded?: boolean; dealCount?: number };
       if (seedResult?.seeded) {
         toast.success(`Seeded ${seedResult.dealCount} demo deals`);
@@ -542,7 +458,7 @@ export default function Pipeline() {
     } finally {
       setIsSeeding(false);
     }
-  }, [seedMockPipeline]);
+  }, [seedMockPipeline, workspaceId]);
 
   // ── Drag & Drop ──
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
@@ -591,51 +507,20 @@ export default function Pipeline() {
         return;
       }
       const targetStageName = safeStages.find((s) => s._id === targetStageId)?.name ?? "new stage";
-      const isWonStage = targetStageName === "Won";
 
-      if (isMockData) {
-        // Mock data: do optimistic local update (no Convex mutation needed)
-        setMockDealOverrides((prev) => {
-          const next = new Map(prev);
-          next.set(draggedDeal._id, targetStageId);
-          return next;
+      try {
+        await moveDealMutation({
+          dealId: draggedDeal._id,
+          stageId: targetStageId,
         });
         toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
-        if (isWonStage) {
-          toast("Deal won! Create an invoice?", {
-            description: "Convert this deal into an invoice",
-            action: {
-              label: "Create Invoice",
-              onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
-            },
-            duration: 8000,
-          });
-        }
-      } else {
-        try {
-          await moveDealMutation({
-            dealId: draggedDeal._id,
-            stageId: targetStageId,
-          });
-          toast.success(`Moved "${draggedDeal.title}" to ${targetStageName}`);
-          if (isWonStage) {
-            toast("Deal won! Create an invoice?", {
-              description: "Convert this deal into an invoice",
-              action: {
-                label: "Create Invoice",
-                onClick: () => navigate(`/invoices/new?dealId=${draggedDeal._id}`),
-              },
-              duration: 8000,
-            });
-          }
-        } catch (err) {
-          console.error("Failed to move deal:", err);
-          toast.error("Failed to move deal");
-        }
+      } catch (err) {
+        console.error("Failed to move deal:", err);
+        toast.error("Failed to move deal");
       }
       setDraggedDeal(null);
     },
-    [draggedDeal, moveDealMutation, safeStages, isMockData]
+    [draggedDeal, moveDealMutation, safeStages]
   );
 
   const handleDragEnd = useCallback(() => {
@@ -659,7 +544,6 @@ export default function Pipeline() {
         : ""
     );
     setEditNotes(deal.notes ?? "");
-    setEditCustomFields(deal.customFields || {});
     setEditStageId(deal.stageId);
   }, []);
 
@@ -678,7 +562,6 @@ export default function Pipeline() {
           ? new Date(editCloseDate).getTime()
           : undefined,
         notes: editNotes.trim() || undefined,
-        customFields: Object.keys(editCustomFields).length > 0 ? editCustomFields : undefined,
       };
       if (editStageId && editStageId !== detailDeal.stageId) {
         updates.stageId = editStageId;
@@ -701,7 +584,6 @@ export default function Pipeline() {
     editContactEmail,
     editCloseDate,
     editNotes,
-    editCustomFields,
     editStageId,
     updateDealMutation,
   ]);
@@ -710,26 +592,16 @@ export default function Pipeline() {
     async (dealId: Id<"deals">, targetStageId: Id<"pipelineStages">) => {
       const stageName =
         safeStages.find((s) => s._id === targetStageId)?.name ?? "stage";
-      if (isMockData) {
-        setMockDealOverrides((prev) => {
-          const next = new Map(prev);
-          next.set(dealId, targetStageId);
-          return next;
-        });
+      try {
+        await moveDealMutation({ dealId, stageId: targetStageId });
         toast.success(`Deal moved to ${stageName}`);
         setDetailDeal(null);
-      } else {
-        try {
-          await moveDealMutation({ dealId, stageId: targetStageId });
-          toast.success(`Deal moved to ${stageName}`);
-          setDetailDeal(null);
-        } catch (err) {
-          console.error("Failed to move deal:", err);
-          toast.error("Failed to move deal");
-        }
+      } catch (err) {
+        console.error("Failed to move deal:", err);
+        toast.error("Failed to move deal");
       }
     },
-    [moveDealMutation, safeStages, isMockData]
+    [moveDealMutation, safeStages]
   );
 
   const handleDeleteDeal = useCallback(async () => {
@@ -748,14 +620,6 @@ export default function Pipeline() {
   const handleCreateProposalFromDeal = useCallback(async (deal: Deal) => {
     setIsCreatingProposal(deal._id);
     try {
-      if (isMockData) {
-        // Mock data: show a helpful message since we can't create a real proposal
-        toast.info("Sign in to create proposals", {
-          description: `Proposal for "${deal.title}" can be created once you're signed in with real data. Click "Load Demo Data" to seed your pipeline.`,
-          duration: 5000,
-        });
-        return;
-      }
       const proposalId = await createProposalFromDeal({ dealId: deal._id as any });
       if (proposalId) {
         toast.success("Draft proposal created from deal!", {
@@ -776,7 +640,7 @@ export default function Pipeline() {
     } finally {
       setIsCreatingProposal(null);
     }
-  }, [createProposalFromDeal, navigate, isMockData]);
+  }, [createProposalFromDeal, navigate]);
 
   // ── Import Handlers ──
   const handleFileUpload = useCallback((file: File) => {
@@ -884,20 +748,8 @@ export default function Pipeline() {
         
         for (const [csvCol, field] of Object.entries(columnMappings)) {
           if (field === "_skip") continue;
-          if (field.startsWith("custom:")) {
-            const fieldType = field.replace("custom:", "");
-            const rawValue = row[csvCol];
-            let parsedValue = rawValue;
-            if (fieldType === "number") {
-              parsedValue = Number(String(rawValue).replace(/[^0-9.-]/g, "")) || 0;
-            } else if (fieldType === "boolean") {
-              const lower = String(rawValue).toLowerCase().trim();
-              parsedValue = lower === "true" || lower === "yes" || lower === "1" || lower === "x";
-            } else if (fieldType === "link") {
-              parsedValue = String(rawValue || "");
-            }
-            // Store as typed custom field: { value, type }
-            customFields[csvCol] = { value: parsedValue, type: fieldType };
+          if (field === "custom") {
+            customFields[csvCol] = row[csvCol];
           } else {
             deal[field] = row[csvCol];
           }
@@ -957,11 +809,11 @@ export default function Pipeline() {
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
-      <div className="p-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold tracking-tight mb-1">
+            <h1 className="text-2xl md:text-[32px] font-bold tracking-tight mb-1">
               Deal Pipeline
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -969,7 +821,7 @@ export default function Pipeline() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {safeDeals.length === 0 && !isLoading && (
+            {import.meta.env.DEV && safeDeals.length === 0 && !isLoading && (
               <Button
                 onClick={handleSeedData}
                 disabled={isSeeding}
@@ -996,19 +848,11 @@ export default function Pipeline() {
             <Button
               onClick={handleOpenImportDialog}
               variant="outline"
-              className="gap-2 h-9 text-xs"
+              className="gap-2"
               disabled={safeStages.length === 0}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-4 w-4" />
               Import
-            </Button>
-            <Button
-              onClick={() => setCustomFieldsDialogOpen(true)}
-              variant="outline"
-              className="gap-2 h-9 text-xs"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-              Fields
             </Button>
             <Button
               onClick={() => {
@@ -1017,9 +861,9 @@ export default function Pipeline() {
                 }
               }}
               disabled={safeStages.length === 0}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground h-9 text-xs"
+              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               Add Deal
             </Button>
           </div>
@@ -1031,31 +875,65 @@ export default function Pipeline() {
             icon={<BarChart3 className="h-5 w-5" />}
             label="Total Deals"
             value={isLoading ? "—" : String(safeStats.totalDeals)}
-            accent="hsl(var(--primary))"
+            accent="#8B5CF6"
           />
           <StatsCard
             icon={<DollarSign className="h-5 w-5" />}
             label="Pipeline Value"
             value={isLoading ? "—" : formatCurrency(safeStats.totalValue)}
-            accent={STAGE_COLORS.lead}
+            accent="#6366f1"
           />
           <StatsCard
             icon={<TrendingUp className="h-5 w-5" />}
             label="Weighted Value"
             value={isLoading ? "—" : formatCurrency(safeStats.weightedValue)}
             subtitle="Value × Probability"
-            accent={STAGE_COLORS.proposal}
+            accent="#a855f7"
           />
           <StatsCard
             icon={<Target className="h-5 w-5" />}
             label="Win Rate"
             value={isLoading ? "—" : `${winRate}%`}
-            accent="var(--success)"
+            subtitle="Won vs Lost deals"
+            accent="#22c55e"
           />
         </div>
 
-        {/* ── Kanban Board ── */}
-        {isLoading ? (
+        {/* ── Tab Navigation: Pipeline | Share Records (placed ABOVE the board
+             so switching to Share Records hides the Kanban cleanly) ── */}
+        <div className="flex items-center gap-1 border-b border-border pb-0 mt-6">
+          <button
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "pipeline"
+                ? "border-[#8B5CF6] text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("pipeline")}
+          >
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Pipeline
+            </div>
+          </button>
+          <button
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "share-records"
+                ? "border-[#8B5CF6] text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("share-records")}
+          >
+            <div className="flex items-center gap-2">
+              <Share2 className="h-4 w-4" />
+              Share Records
+            </div>
+          </button>
+        </div>
+
+        {/* ── Kanban Board (only on Pipeline tab; previously rendered unconditionally
+             and stacked on top of the Share Records panel, which made the page
+             look like the board was duplicated) ── */}
+        {activeTab === "pipeline" && (showLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="space-y-3">
@@ -1077,14 +955,14 @@ export default function Pipeline() {
             </p>
             <Button
               onClick={() => createDefaultStages(workspaceId ? { workspaceId } : {})}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             >
               <Plus className="h-4 w-4" />
               Create Default Stages
             </Button>
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin">
             {safeStages.map((stage) => {
               const stageDeals = dealsByStage.get(stage._id) ?? [];
               const stageValue = stageDeals.reduce(
@@ -1097,12 +975,12 @@ export default function Pipeline() {
                 <div
                   key={stage._id}
                   className={`
-                    flex-shrink-0 w-[220px] sm:w-[240px] snap-start
-                    flex flex-col rounded-lg border
+                    flex-shrink-0 w-[280px] sm:w-[300px] snap-start
+                    flex flex-col rounded-xl border
                     transition-colors duration-200
                     ${
                       isDragOver
-                        ? "border-primary bg-primary/5 shadow-lg"
+                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
                         : "border-border bg-muted/30"
                     }
                   `}
@@ -1112,29 +990,29 @@ export default function Pipeline() {
                 >
                   {/* ── Stage Header ── */}
                   <div
-                    className="px-3 py-2 rounded-t-lg border-b"
+                    className="px-4 py-3 rounded-t-xl border-b"
                     style={{
                       borderColor: `${stage.color}30`,
                       backgroundColor: `${stage.color}08`,
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
                         <div
-                          className="h-2 w-2 rounded-full"
+                          className="h-2.5 w-2.5 rounded-full"
                           style={{ backgroundColor: stage.color }}
                         />
-                        <h3 className="font-semibold text-xs">{stage.name}</h3>
+                        <h3 className="font-semibold text-sm">{stage.name}</h3>
                       </div>
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4 px-1"
+                        className="text-xs h-5 px-1.5"
                       >
                         {stageDeals.length}
                       </Badge>
                     </div>
                     <p
-                      className="text-[10px] font-medium mt-0.5"
+                      className="text-xs font-medium"
                       style={{ color: stage.color }}
                     >
                       {formatCurrency(stageValue)}
@@ -1142,7 +1020,7 @@ export default function Pipeline() {
                   </div>
 
                   {/* ── Deal Cards ── */}
-                  <div className="flex-1 p-1.5 space-y-1.5 min-h-[80px] max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-thin">
+                  <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-360px)] overflow-y-auto scrollbar-thin">
                       {stageDeals.map((deal) => (
                         <DealCard
                           key={deal._id}
@@ -1167,28 +1045,36 @@ export default function Pipeline() {
                   </div>
 
                   {/* ── Add Deal Button ── */}
-                  <div className="p-1.5 pt-0">
+                  <div className="p-2 pt-0">
                     <button
                       onClick={() => handleOpenCreateDialog(stage._id)}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                     >
-                      <Plus className="h-3 w-3" />
-                      Add
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Deal
                     </button>
                   </div>
                 </div>
               );
             })}
           </div>
+        ))}
+
+        {/* ── Tab Content: Share Records panel (Pipeline board is rendered above
+             inside the activeTab === "pipeline" conditional) ── */}
+        {activeTab === "share-records" && (
+          <div className="mt-6">
+            <ShareRecordsPanel />
+          </div>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Create Deal Dialog ── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-primary" />
+              <Plus className="h-5 w-5 text-[#8B5CF6]" />
               Create New Deal
             </DialogTitle>
             <DialogDescription>
@@ -1346,7 +1232,7 @@ export default function Pipeline() {
             <Button
               onClick={handleCreateDeal}
               disabled={isCreating || !formTitle.trim() || !formValue}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             >
               {isCreating ? "Creating..." : "Create Deal"}
             </Button>
@@ -1364,7 +1250,7 @@ export default function Pipeline() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           {detailDeal && (
             <>
               {!editMode ? (
@@ -1372,7 +1258,7 @@ export default function Pipeline() {
                   {/* ── View Mode ── */}
                   <DialogHeader>
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <DialogTitle className="text-xl">
                           {detailDeal.title}
                         </DialogTitle>
@@ -1403,7 +1289,7 @@ export default function Pipeline() {
                         <p className="text-xs text-muted-foreground">
                           Weighted Value
                         </p>
-                        <p className="text-lg font-bold text-primary">
+                        <p className="text-lg font-bold text-[#8B5CF6]">
                           {formatCurrency(
                             detailDeal.value *
                               (detailDeal.probability / 100)
@@ -1502,7 +1388,7 @@ export default function Pipeline() {
                           <p className="text-xs text-muted-foreground font-medium">
                             Notes
                           </p>
-                          <p className="text-sm whitespace-pre-wrap">
+                          <p className="text-sm whitespace-pre-wrap break-words">
                             {detailDeal.notes}
                           </p>
                         </div>
@@ -1528,7 +1414,7 @@ export default function Pipeline() {
                                         stage._id
                                       )
                                     }
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/5 transition-colors"
                                   >
                                     <div
                                       className="h-2 w-2 rounded-full"
@@ -1547,14 +1433,6 @@ export default function Pipeline() {
                           ))}
                       </div>
                     </div>
-
-                    {/* Custom Fields (View Mode) */}
-                    <CustomFieldValues
-                      workspaceId={workspaceId ?? null}
-                      tableName="deals"
-                      values={detailDeal.customFields}
-                      onChange={() => {}}
-                    />
                   </div>
 
                   <DialogFooter className="gap-2 sm:gap-0">
@@ -1574,7 +1452,7 @@ export default function Pipeline() {
                         if (detailDeal) handleCreateProposalFromDeal(detailDeal);
                       }}
                       disabled={isCreatingProposal === detailDeal?._id}
-                      className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
                     >
                       {isCreatingProposal === detailDeal?._id ? (
                         <motion.div
@@ -1604,7 +1482,7 @@ export default function Pipeline() {
                   {/* ── Edit Mode ── */}
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      <Pencil className="h-5 w-5 text-primary" />
+                      <Pencil className="h-5 w-5 text-[#8B5CF6]" />
                       Edit Deal
                     </DialogTitle>
                     <DialogDescription>
@@ -1746,14 +1624,6 @@ export default function Pipeline() {
                         onChange={(e) => setEditNotes(e.target.value)}
                       />
                     </div>
-
-                    {/* Custom Fields (Edit Mode) */}
-                    <CustomFieldValues
-                      workspaceId={workspaceId ?? null}
-                      tableName="deals"
-                      values={editCustomFields}
-                      onChange={setEditCustomFields}
-                    />
                   </div>
 
                   <DialogFooter>
@@ -1765,7 +1635,7 @@ export default function Pipeline() {
                     </Button>
                     <Button
                       onClick={handleUpdateDeal}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
                     >
                       Save Changes
                     </Button>
@@ -1799,25 +1669,9 @@ export default function Pipeline() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Custom Field Manager Dialog ── */}
-      <Dialog open={customFieldsDialogOpen} onOpenChange={setCustomFieldsDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings2 className="h-5 w-5 text-primary" />
-              Custom Fields
-            </DialogTitle>
-            <DialogDescription>
-              Add and manage custom fields for your deals
-            </DialogDescription>
-          </DialogHeader>
-          <CustomFieldManager workspaceId={workspaceId ?? null} tableName="deals" />
-        </DialogContent>
-      </Dialog>
-
       {/* ── CSV Import Dialog ── */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Import Deals</DialogTitle>
             <DialogDescription>
@@ -1850,7 +1704,7 @@ export default function Pipeline() {
                 {importResult.errors.length > 0 && (
                   <div className="mt-2 text-xs text-red-600 space-y-1 max-h-32 overflow-y-auto">
                     {importResult.errors.map((err, i) => (
-                      <div key={i} className="flex items-start gap-1">
+                      <div key={i} className="flex items-start gap-1 min-w-0 break-words">
                         <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
                         {err}
                       </div>
@@ -1867,7 +1721,7 @@ export default function Pipeline() {
                 value={selectedStageId ?? ""}
                 onValueChange={(val) => setSelectedStageId(val as Id<"pipelineStages">)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a pipeline stage" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1893,8 +1747,8 @@ export default function Pipeline() {
                   border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                   transition-colors duration-200
                   ${isDragOver
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+                    ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
+                    : "border-muted-foreground/25 hover:border-[#8B5CF6]/50 hover:bg-muted/30"
                   }
                 `}
                 onDragOver={handleDragOverFile}
@@ -1945,44 +1799,33 @@ export default function Pipeline() {
                     {importData.length} rows detected • Showing first 5 rows preview
                   </div>
                   <div className="space-y-2">
-                    {importHeaders.map((header) => {
-                      const mapping = columnMappings[header] ?? "_skip";
-                      const isCustom = mapping.startsWith("custom:");
-                      const customType = isCustom ? mapping.replace("custom:", "") : null;
-                      return (
-                        <div key={header} className="flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{header}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {String(importData[0]?.[header] ?? "").slice(0, 40)}
-                            </div>
+                    {importHeaders.map((header) => (
+                      <div key={header} className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{header}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {String(importData[0]?.[header] ?? "").slice(0, 40)}
                           </div>
-                          {isCustom && customType && (
-                            <Badge variant="outline" className="text-[9px] h-5 px-1.5 shrink-0 border-primary/30 text-primary">
-                              {customType}
-                            </Badge>
-                          )}
-                          <Select
-                            value={mapping}
-                            onValueChange={(val) =>
-                              setColumnMappings((prev) => ({ ...prev, [header]: val }))
-                            }
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="_skip" className="text-muted-foreground">Skip this column</SelectItem>
-                              {CORE_FIELDS.filter(f => f.value !== "_skip").map((field) => (
-                                <SelectItem key={field.value} value={field.value}>
-                                  {field.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </div>
-                      );
-                    })}
+                        <Select
+                          value={columnMappings[header] ?? "_skip"}
+                          onValueChange={(val) =>
+                            setColumnMappings((prev) => ({ ...prev, [header]: val }))
+                          }
+                        >
+                          <SelectTrigger className="w-full sm:w-[180px] shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CORE_FIELDS.map((field) => (
+                              <SelectItem key={field.value} value={field.value}>
+                                {field.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -2036,7 +1879,7 @@ export default function Pipeline() {
               <Button
                 onClick={handleImport}
                 disabled={isImporting || !selectedStageId || !workspaceId}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
               >
                 {isImporting ? (
                   <>
@@ -2080,7 +1923,7 @@ function StatsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="py-4 gap-3 hover:shadow-md transition-shadow">
+      <Card className="py-4 gap-3 hover:shadow-md transition-shadow min-h-[88px]">
         <CardHeader className="pb-0 pt-0 px-4">
           <div className="flex items-center gap-2">
             <div
@@ -2096,11 +1939,9 @@ function StatsCard({
         </CardHeader>
         <CardContent className="pt-0 px-4">
           <p className="text-2xl font-bold tracking-tight">{value}</p>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {subtitle}
-            </p>
-          )}
+          <p className="text-[11px] text-muted-foreground mt-0.5 min-h-[16px]">
+            {subtitle ?? "\u00A0"}
+          </p>
         </CardContent>
       </Card>
     </motion.div>
@@ -2136,19 +1977,19 @@ function DealCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={`
-        group relative p-2 rounded-md border cursor-pointer
+        group relative p-3 rounded-lg border cursor-pointer
         transition-all duration-150 select-none
         ${
           isDragging
-            ? "border-primary/40 bg-primary/5 shadow-lg z-50 opacity-50 scale-[1.02]"
-            : "border-border bg-card hover:border-primary/25 hover:shadow-sm"
+            ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5 shadow-lg z-50 opacity-50 scale-[1.02]"
+            : "border-border bg-card hover:border-[#8B5CF6]/25 hover:shadow-sm"
         }
       `}
     >
       {/* Drag handle + Create Proposal buttons */}
-      <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          className="h-5 w-5 flex items-center justify-center rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onCreateProposal();
@@ -2161,33 +2002,33 @@ function DealCard({
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
             >
-              <Zap className="h-2.5 w-2.5" />
+              <Zap className="h-3 w-3" />
             </motion.div>
           ) : (
-            <FileText className="h-2.5 w-2.5" />
+            <FileText className="h-3 w-3" />
           )}
         </button>
-        <GripVertical className="h-3 w-3 opacity-50" />
+        <GripVertical className="h-3.5 w-3.5 opacity-50" />
       </div>
 
       {/* Title & Value */}
-      <div className="mb-1">
-        <h4 className="text-[11px] font-semibold leading-tight pr-5 line-clamp-2">
+      <div className="mb-2">
+        <h4 className="text-sm font-semibold leading-tight pr-6 line-clamp-2">
           {deal.title}
         </h4>
-        <div className="flex items-baseline gap-1 mt-0.5">
-          <span className="text-[11px] font-bold">
+        <div className="flex items-baseline gap-1.5 mt-1">
+          <span className="text-sm font-bold">
             {formatCurrency(deal.value)}
           </span>
-          <span className="text-[9px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground">
             ({deal.probability}%)
           </span>
         </div>
       </div>
 
       {/* Weighted Value Bar */}
-      <div className="mb-1">
-        <div className="h-0.5 rounded-full bg-muted overflow-hidden">
+      <div className="mb-2">
+        <div className="h-1 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -2200,13 +2041,13 @@ function DealCard({
 
       {/* Source Badge */}
       {deal.source && (
-        <div className="mb-1">
+        <div className="mb-2">
           <Badge
             variant="secondary"
-            className="text-[9px] h-4 px-1 gap-0.5"
+            className="text-[10px] h-5 px-1.5 gap-1"
           >
             <div
-              className="h-1 w-1 rounded-full"
+              className="h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: sourceInfo.color }}
             />
             {sourceInfo.label}
@@ -2215,18 +2056,18 @@ function DealCard({
       )}
 
       {/* Footer: Contact + Date */}
-      <div className="flex items-center justify-between gap-1.5 mt-0.5">
+      <div className="flex items-center justify-between gap-2 mt-1">
         {deal.contactName ? (
-          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground min-w-0">
-            <User className="h-2.5 w-2.5 flex-shrink-0" />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
+            <User className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{deal.contactName}</span>
           </div>
         ) : (
           <div />
         )}
         {deal.expectedCloseDate && (
-          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground flex-shrink-0">
-            <Calendar className="h-2.5 w-2.5" />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground flex-shrink-0">
+            <Calendar className="h-3 w-3" />
             {daysLeft !== null && daysLeft < 0 ? (
               <span className="text-destructive font-medium">
                 {Math.abs(daysLeft)}d overdue
@@ -2258,7 +2099,7 @@ function DetailRow({
       <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-        <div className="text-sm">{value}</div>
+        <div className="text-sm break-words">{value}</div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import {
   Shield,
@@ -35,6 +36,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -110,7 +112,7 @@ function getChangeTypeIcon(type: string) {
     case "addition": return <Plus className="w-3.5 h-3.5 text-blue-500" />;
     case "modification": return <Edit3 className="w-3.5 h-3.5 text-amber-500" />;
     case "removal": return <Trash2 className="w-3.5 h-3.5 text-red-500" />;
-    case "revision": return <GitBranch className="w-3.5 h-3.5 text-platinum-400" />;
+    case "revision": return <GitBranch className="w-3.5 h-3.5 text-purple-500" />;
     default: return <FileText className="w-3.5 h-3.5" />;
   }
 }
@@ -129,7 +131,7 @@ function getStatusBadge(status: string) {
     case "rejected":
       return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-0 text-xs"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
     case "auto_generated":
-      return <Badge className="bg-platinum-100 text-platinum-400 dark:bg-platinum-900/30 dark:text-platinum-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
+      return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
     case "active":
       return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-0 text-xs">Active</Badge>;
     case "completed":
@@ -147,7 +149,7 @@ function getDeliverableStatusIcon(status?: string) {
   switch (status) {
     case "completed": return <CheckCircle2 className="w-4 h-4 text-green-500" />;
     case "in_progress": return <Clock className="w-4 h-4 text-blue-500" />;
-    case "revised": return <Edit3 className="w-4 h-4 text-platinum-400" />;
+    case "revised": return <Edit3 className="w-4 h-4 text-purple-500" />;
     case "pending": return <Clock className="w-4 h-4 text-muted-foreground" />;
     default: return <Clock className="w-4 h-4 text-muted-foreground" />;
   }
@@ -547,17 +549,20 @@ function ChangeOrderSkeleton() {
 // ─── Main Scope Page ────────────────────────────────────────────────────────
 
 export default function Scope() {
+  const [searchParams] = useSearchParams();
+  const proposalIdFromUrl = searchParams.get("proposalId");
+
   const [selectedScopeId, setSelectedScopeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("definitions");
 
   // Dialog states
-  const [showCreateScope, setShowCreateScope] = useState(false);
+  const [showCreateScope, setShowCreateScope] = useState(!!proposalIdFromUrl);
   const [showCreateChangeOrder, setShowCreateChangeOrder] = useState(false);
   const [showFormalizeDialog, setShowFormalizeDialog] = useState(false);
 
   // Create scope form
-  const [newScopeTitle, setNewScopeTitle] = useState("");
-  const [newScopeDescription, setNewScopeDescription] = useState("");
+  const [newScopeTitle, setNewScopeTitle] = useState(proposalIdFromUrl ? "Scope for Proposal" : "");
+  const [newScopeDescription, setNewScopeDescription] = useState(proposalIdFromUrl ? "Scope definition from signed proposal" : "");
   const [newScopeRevisionLimit, setNewScopeRevisionLimit] = useState("3");
   const [newScopeEstimatedHours, setNewScopeEstimatedHours] = useState("");
 
@@ -585,6 +590,12 @@ export default function Scope() {
     selectedScopeId ? api.scope.crud.getChangeOrders : "skip",
     selectedScopeId ? { scopeId: selectedScopeId as any } : "skip"
   ) as ScopeChangeOrder[] | undefined;
+
+  // Fetch proposal data if coming from proposal page
+  const proposalData = useQuery(
+    proposalIdFromUrl ? api.proposals.crud.getProposal : "skip",
+    proposalIdFromUrl ? { proposalId: proposalIdFromUrl as any } : "skip"
+  ) as any | undefined;
 
   // ─── Convex Mutations ────────────────────────────────────────────────────
   const createScopeMutation = useMutation(api.scope.crud.createScopeDefinition);
@@ -615,6 +626,32 @@ export default function Scope() {
     }
   }, [scopes, selectedScopeId]);
 
+  // Pre-populate scope form from proposal data when navigating from Proposals page
+  useEffect(() => {
+    if (proposalIdFromUrl && proposalData && showCreateScope) {
+      if (proposalData.title && newScopeTitle === "Scope for Proposal") {
+        setNewScopeTitle(`Scope: ${proposalData.title}`);
+      }
+      if (proposalData.sections) {
+        // Extract text sections to build a richer description
+        const textSections = proposalData.sections
+          .filter((s: any) => s.type === "text" || s.type === "heading")
+          .map((s: any) => s.content)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join("; ");
+        if (textSections && newScopeDescription === "Scope definition from signed proposal") {
+          setNewScopeDescription(textSections);
+        }
+      }
+      if (proposalData.totalValue && !newScopeEstimatedHours) {
+        // Estimate hours from total value assuming a default rate
+        const estimatedHours = Math.round(proposalData.totalValue / 75);
+        setNewScopeEstimatedHours(String(estimatedHours > 0 ? estimatedHours : 40));
+      }
+    }
+  }, [proposalIdFromUrl, proposalData, showCreateScope]);
+
   // ─── Computed Values ─────────────────────────────────────────────────────
   const selectedScope = scopes?.find(s => s._id === selectedScopeId) ?? null;
 
@@ -638,6 +675,7 @@ export default function Scope() {
         revisionLimit: parseInt(newScopeRevisionLimit) || 3,
         totalEstimatedHours: newScopeEstimatedHours ? parseInt(newScopeEstimatedHours) : undefined,
         deliverables: [],
+        proposalId: proposalIdFromUrl || undefined,
       } as any);
       toast.success("Scope definition created successfully!");
       setShowCreateScope(false);
@@ -723,11 +761,14 @@ export default function Scope() {
   };
 
   // ─── Loading State ──────────────────────────────────────────────────────
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = scopes === undefined;
+  const timedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !timedOut && !isDisconnected;
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="flex-1 transition-all duration-300 p-8 space-y-6">
+      <PageLayout spaced>
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -761,7 +802,7 @@ export default function Scope() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {isLoading ? (
+          {showLoading ? (
             <>
               <SummaryCardSkeleton />
               <SummaryCardSkeleton />
@@ -805,8 +846,8 @@ export default function Scope() {
               </Card>
               <Card className="p-4 bg-card rounded-xl border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-platinum-100 dark:bg-platinum-900/30">
-                    <FileText className="w-4 h-4 text-platinum-400 dark:text-platinum-400" />
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{totalUnformalized}</p>
@@ -861,14 +902,14 @@ export default function Scope() {
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               Formalizations
               {totalUnformalized > 0 && (
-                <Badge className="ml-1.5 bg-platinum-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
+                <Badge className="ml-1.5 bg-purple-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
 
           {/* ─── Scope Definitions Tab ────────────────────────────────── */}
           <TabsContent value="definitions" className="space-y-4">
-            {isLoading ? (
+            {showLoading ? (
               <div className="space-y-4">
                 <ScopeCardSkeleton />
                 <ScopeCardSkeleton />
@@ -904,7 +945,7 @@ export default function Scope() {
 
           {/* ─── Change Orders Tab ────────────────────────────────────── */}
           <TabsContent value="changes" className="space-y-4">
-            {isLoading ? (
+            {showLoading ? (
               <div className="space-y-3">
                 <ChangeOrderSkeleton />
                 <ChangeOrderSkeleton />
@@ -1040,7 +1081,7 @@ export default function Scope() {
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              <Button size="sm" className="h-7 text-xs bg-platinum-600 hover:bg-platinum-700 text-white" onClick={() => setShowFormalizeDialog(true)}>
+                              <Button size="sm" className="h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setShowFormalizeDialog(true)}>
                                 <FileText className="w-3 h-3 mr-1" />
                                 Formalize This Change
                               </Button>
@@ -1089,15 +1130,15 @@ export default function Scope() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </PageLayout>
 
       {/* ─── Create Scope Definition Dialog ──────────────────────────── */}
       <Dialog open={showCreateScope} onOpenChange={setShowCreateScope}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              Create Scope Definition
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <Shield className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Create Scope Definition</span>
             </DialogTitle>
             <DialogDescription>
               Define the scope of work for a project. This creates a baseline for tracking scope changes and protecting against scope creep.
@@ -1105,9 +1146,9 @@ export default function Scope() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="p-3 bg-axia-teal-50 dark:bg-axia-teal-950/20 border border-axia-teal-200 dark:border-axia-teal-800 rounded-lg flex items-start gap-2">
-              <Shield className="w-4 h-4 text-axia-teal-600 dark:text-axia-teal-600 mt-0.5" />
-              <div className="text-xs text-axia-teal-600 dark:text-axia-teal-600">
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-start gap-2">
+              <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+              <div className="text-xs text-indigo-800 dark:text-indigo-200 min-w-0 break-words">
                 <p className="font-bold mb-1">Why define scope?</p>
                 <p>Scope definitions create a documented baseline. When clients request changes beyond this baseline, they're formally tracked as change orders with time, cost, and deadline impacts — protecting your income from scope creep.</p>
               </div>
@@ -1155,9 +1196,9 @@ export default function Scope() {
       <Dialog open={showCreateChangeOrder} onOpenChange={setShowCreateChangeOrder}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-primary" />
-              Record Scope Change
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <GitBranch className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Record Scope Change</span>
             </DialogTitle>
             <DialogDescription>
               Document a scope change to track its impact and ensure proper client approval. This creates a formal record for dispute protection.
@@ -1179,7 +1220,7 @@ export default function Scope() {
               <div className="grid gap-2">
                 <Label>Change Type</Label>
                 <Select value={coChangeType} onValueChange={(v: any) => setCoChangeType(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="addition">Addition</SelectItem>
                     <SelectItem value="modification">Modification</SelectItem>
@@ -1201,7 +1242,7 @@ export default function Scope() {
                 <DollarSign className="w-4 h-4" />
                 Impact Assessment
               </h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="coHoursAdded">Hours Added <span className="text-red-500">*</span></Label>
                   <Input id="coHoursAdded" type="number" placeholder="16" value={coHoursAdded} onChange={(e) => setCoHoursAdded(e.target.value)} />
@@ -1232,9 +1273,9 @@ export default function Scope() {
       <Dialog open={showFormalizeDialog} onOpenChange={setShowFormalizeDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Formalize Scope Change
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <FileText className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Formalize Scope Change</span>
             </DialogTitle>
             <DialogDescription>
               Document scope changes to protect your work and maintain clear client expectations. This creates a formal record that can be referenced in case of disputes.
@@ -1244,7 +1285,7 @@ export default function Scope() {
           <div className="space-y-4 py-4">
             <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="text-xs text-amber-800 dark:text-amber-200">
+              <div className="text-xs text-amber-800 dark:text-amber-200 min-w-0 break-words">
                 <p className="font-bold mb-1">Why formalize scope changes?</p>
                 <p>Unformalized scope creep is the #1 cause of payment disputes. Documenting changes protects your income and maintains professional boundaries.</p>
               </div>
@@ -1295,7 +1336,7 @@ export default function Scope() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowFormalizeDialog(false)}>Cancel</Button>
-            <Button onClick={handleFormalize} className="bg-axia-teal-600 hover:bg-axia-teal-700">
+            <Button onClick={handleFormalize} className="bg-indigo-600 hover:bg-indigo-700">
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Formalize Change
             </Button>

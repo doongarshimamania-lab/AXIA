@@ -47,7 +47,7 @@ export function TestimonialCarousel() {
       <div className="relative bg-white dark:bg-card rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 md:p-12 overflow-hidden">
         {/* Decorative Quote Icon */}
         <div className="absolute top-6 left-8 opacity-10">
-          <Quote className="w-24 h-24 text-primary dark:text-white" />
+          <Quote className="w-24 h-24 text-[#00246B] dark:text-white" />
         </div>
 
         <div className="relative z-10 min-h-[200px] flex flex-col justify-center items-center text-center">
@@ -66,7 +66,7 @@ export function TestimonialCarousel() {
                 ))}
               </div>
               
-              <p className="text-xl md:text-2xl font-medium text-slate-800 dark:text-slate-100 mb-8 leading-relaxed italic">
+              <p className="text-xl md:text-2xl font-medium text-slate-800 dark:text-slate-100 mb-8 leading-relaxed italic" style={{ fontFamily: "Space Grotesk" }}>
                 "{testimonials[activeIndex].quote}"
               </p>
               
@@ -90,7 +90,7 @@ export function TestimonialCarousel() {
               onClick={() => setActiveIndex(index)}
               className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
                 index === activeIndex 
-                  ? "bg-primary dark:bg-blue-400 w-8" 
+                  ? "bg-[#00246B] dark:bg-blue-400 w-8" 
                   : "bg-slate-300 dark:bg-slate-700 hover:bg-slate-400"
               }`}
               aria-label={`Go to testimonial ${index + 1}`}

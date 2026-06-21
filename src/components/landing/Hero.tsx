@@ -22,14 +22,14 @@ export function Hero() {
       >
         <h1 
           className="text-[48px] md:text-[56px] font-bold text-foreground leading-[56px] md:leading-[64px] tracking-[-0.02em] mb-4"
-         
+          style={{ fontFamily: "Space Grotesk" }}
         >
           Prevent And Save From Payment Denials Before They Happen
         </h1>
 
         <p 
           className="text-[20px] font-medium text-muted-foreground leading-[28px] mb-12 max-w-[700px]"
-         
+          style={{ fontFamily: "Space Grotesk" }}
         >
           Axia verifies your work context meets platform requirements—so your billable hours are payment-protected. The only platform that analyzes work against platform-specific requirements to help prevent denials.
         </p>

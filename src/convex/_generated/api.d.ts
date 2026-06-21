@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as adminSeed from "../adminSeed.js";
 import type * as ai_disputePrediction from "../ai/disputePrediction.js";
 import type * as ai_disputePredictionNode from "../ai/disputePredictionNode.js";
 import type * as audit_storeConsentAudit from "../audit/storeConsentAudit.js";
@@ -23,10 +24,12 @@ import type * as clients_clientAuth from "../clients/clientAuth.js";
 import type * as clients_clientDisputeSimulation from "../clients/clientDisputeSimulation.js";
 import type * as clients_clientGapPrediction from "../clients/clientGapPrediction.js";
 import type * as clients_clientPolicyProfile from "../clients/clientPolicyProfile.js";
+import type * as clients_clientPortal from "../clients/clientPortal.js";
 import type * as clients_clientProtection from "../clients/clientProtection.js";
 import type * as clients_clientProtectionScore from "../clients/clientProtectionScore.js";
 import type * as clients_clientProtectionSimple from "../clients/clientProtectionSimple.js";
 import type * as clients_clientTrustScore from "../clients/clientTrustScore.js";
+import type * as clients_clientWorkspace from "../clients/clientWorkspace.js";
 import type * as clients_crud from "../clients/crud.js";
 import type * as clients_freelancerDirectory from "../clients/freelancerDirectory.js";
 import type * as clients_verificationRequests from "../clients/verificationRequests.js";
@@ -39,6 +42,7 @@ import type * as debug from "../debug.js";
 import type * as disputeReports from "../disputeReports.js";
 import type * as evidence from "../evidence.js";
 import type * as evidence_analytics from "../evidence/analytics.js";
+import type * as evidence_extension from "../evidence/extension.js";
 import type * as evidence_library from "../evidence/library.js";
 import type * as extension from "../extension.js";
 import type * as extensionRotate from "../extensionRotate.js";
@@ -46,14 +50,18 @@ import type * as goals_crud from "../goals/crud.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
 import type * as manualSends from "../manualSends.js";
+import type * as messaging_channelMutations from "../messaging/channelMutations.js";
 import type * as messaging_channels from "../messaging/channels.js";
 import type * as messaging_dms from "../messaging/dms.js";
 import type * as messaging_helpers from "../messaging/helpers.js";
+import type * as messaging_messageMutations from "../messaging/messageMutations.js";
 import type * as messaging_messages from "../messaging/messages.js";
 import type * as network_premiumNetwork from "../network/premiumNetwork.js";
 import type * as notifications from "../notifications.js";
 import type * as permissions from "../permissions.js";
 import type * as permissions_shareRecord from "../permissions/shareRecord.js";
+import type * as permissions_shareRecords from "../permissions/shareRecords.js";
+import type * as permissions_transferOwnership from "../permissions/transferOwnership.js";
 import type * as pipeline_bulkImport from "../pipeline/bulkImport.js";
 import type * as pipeline_crud from "../pipeline/crud.js";
 import type * as platforms_complianceStorage from "../platforms/complianceStorage.js";
@@ -93,6 +101,7 @@ import type * as security_utils from "../security/utils.js";
 import type * as seed from "../seed.js";
 import type * as seedNew from "../seedNew.js";
 import type * as seedProjects from "../seedProjects.js";
+import type * as seedTeamUsers from "../seedTeamUsers.js";
 import type * as sharedValidators from "../sharedValidators.js";
 import type * as tables_billing from "../tables/billing.js";
 import type * as tables_business from "../tables/business.js";
@@ -141,6 +150,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminSeed: typeof adminSeed;
   "ai/disputePrediction": typeof ai_disputePrediction;
   "ai/disputePredictionNode": typeof ai_disputePredictionNode;
   "audit/storeConsentAudit": typeof audit_storeConsentAudit;
@@ -156,10 +166,12 @@ declare const fullApi: ApiFromModules<{
   "clients/clientDisputeSimulation": typeof clients_clientDisputeSimulation;
   "clients/clientGapPrediction": typeof clients_clientGapPrediction;
   "clients/clientPolicyProfile": typeof clients_clientPolicyProfile;
+  "clients/clientPortal": typeof clients_clientPortal;
   "clients/clientProtection": typeof clients_clientProtection;
   "clients/clientProtectionScore": typeof clients_clientProtectionScore;
   "clients/clientProtectionSimple": typeof clients_clientProtectionSimple;
   "clients/clientTrustScore": typeof clients_clientTrustScore;
+  "clients/clientWorkspace": typeof clients_clientWorkspace;
   "clients/crud": typeof clients_crud;
   "clients/freelancerDirectory": typeof clients_freelancerDirectory;
   "clients/verificationRequests": typeof clients_verificationRequests;
@@ -172,6 +184,7 @@ declare const fullApi: ApiFromModules<{
   disputeReports: typeof disputeReports;
   evidence: typeof evidence;
   "evidence/analytics": typeof evidence_analytics;
+  "evidence/extension": typeof evidence_extension;
   "evidence/library": typeof evidence_library;
   extension: typeof extension;
   extensionRotate: typeof extensionRotate;
@@ -179,14 +192,18 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   invoices: typeof invoices;
   manualSends: typeof manualSends;
+  "messaging/channelMutations": typeof messaging_channelMutations;
   "messaging/channels": typeof messaging_channels;
   "messaging/dms": typeof messaging_dms;
   "messaging/helpers": typeof messaging_helpers;
+  "messaging/messageMutations": typeof messaging_messageMutations;
   "messaging/messages": typeof messaging_messages;
   "network/premiumNetwork": typeof network_premiumNetwork;
   notifications: typeof notifications;
   permissions: typeof permissions;
   "permissions/shareRecord": typeof permissions_shareRecord;
+  "permissions/shareRecords": typeof permissions_shareRecords;
+  "permissions/transferOwnership": typeof permissions_transferOwnership;
   "pipeline/bulkImport": typeof pipeline_bulkImport;
   "pipeline/crud": typeof pipeline_crud;
   "platforms/complianceStorage": typeof platforms_complianceStorage;
@@ -226,6 +243,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   seedNew: typeof seedNew;
   seedProjects: typeof seedProjects;
+  seedTeamUsers: typeof seedTeamUsers;
   sharedValidators: typeof sharedValidators;
   "tables/billing": typeof tables_billing;
   "tables/business": typeof tables_business;

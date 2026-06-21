@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link as LinkIcon, Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Link as LinkIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -23,8 +23,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useQuery, useMutation, useConvexAuth } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
 
@@ -166,13 +167,13 @@ export default function PlatformIntegrations() {
   if (!isAuthenticated) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
           <div className="mb-6">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
               Platform Connections
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Connect and manage your freelance platforms
+              Connect and manage your professional platforms
             </p>
           </div>
 
@@ -183,7 +184,7 @@ export default function PlatformIntegrations() {
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Demo Mode</h3>
               <p className="text-sm text-muted-foreground max-w-md">
-                Sign in to connect your freelance platforms and sync your work data for real-time income protection.
+                Sign in to connect your professional platforms and sync your work data for real-time income protection.
               </p>
             </CardContent>
           </Card>
@@ -222,24 +223,27 @@ export default function PlatformIntegrations() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </PageLayout>
       </div>
     );
   }
 
   // ─── Loading state ────────────────────────────────────────────────────────
+  const { isDisconnected } = useConvexConnectionState();
   const isLoading = connections === undefined;
+  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
           <div className="mb-6">
             <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
               Platform Connections
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Connect and manage your freelance platforms
+              Connect and manage your professional platforms
             </p>
           </div>
           <Card>
@@ -263,7 +267,7 @@ export default function PlatformIntegrations() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </PageLayout>
       </div>
     );
   }
@@ -272,13 +276,13 @@ export default function PlatformIntegrations() {
   return (
     <>
       <div className="w-full min-h-screen bg-background text-foreground">
-        <div className="container mx-auto px-4 py-6">
+        <PageLayout>
             <div className="mb-6">
               <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
                 Platform Connections
               </h1>
               <p className="text-[16px] text-muted-foreground">
-                Connect and manage your freelance platforms
+                Connect and manage your professional platforms
               </p>
             </div>
 
@@ -373,12 +377,12 @@ export default function PlatformIntegrations() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </PageLayout>
         </div>
 
       {/* Connect Modal */}
       <Dialog open={showConnectModal} onOpenChange={setShowConnectModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               Connect {selectedPlatform && platformLabels[selectedPlatform]}
@@ -414,14 +418,14 @@ export default function PlatformIntegrations() {
             </div>
 
             <div className="bg-muted p-3 rounded-lg border">
-              <p className="text-xs text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground italic break-words">
                 <strong className="text-foreground">Why we need this:</strong> Axia analyzes your work patterns to ensure
                 they meet platform requirements, preventing payment rejections before they happen.
               </p>
             </div>
 
             <div className="bg-muted p-3 rounded-lg border-l-4 border-primary">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-words">
                 <strong className="text-foreground">Your data is secure:</strong> We only store the minimum required information,
                 encrypt sensitive data, and you can disconnect anytime.
               </p>
@@ -460,7 +464,7 @@ export default function PlatformIntegrations() {
 
       {/* Disconnect Confirmation */}
       <AlertDialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Disconnect {selectedPlatform && platformLabels[selectedPlatform]}?

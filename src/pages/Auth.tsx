@@ -276,10 +276,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           </form>
 
           <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
-            Secured by{" "}
-            <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
-              vly.ai
-            </a>
+            Secured by AXIA
           </div>
         </Card>
       </div>
@@ -323,13 +320,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               onClick={() => navigate("/")}
             />
           </div>
-          <CardTitle className="text-[28px]">
-            {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
+          <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk" }}>
+            {step === "signUp" ? "Create your account" : "Stop Scope Creep Before It Starts"}
           </CardTitle>
           <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
             {step === "signUp"
-              ? "Sign up to start protecting your freelance work with dispute-proof evidence."
-              : "Axia prevents payment denials by validating your work meets ALL requirements — with dispute-proof evidence."}
+              ? "Sign up to protect your agency from scope creep and billing disputes with automated compliance tracking."
+              : "Axia protects your agency from scope creep, billing disputes, and unbilled work — with dispute-proof evidence."}
           </CardDescription>
         </CardHeader>
 
@@ -443,7 +440,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
+                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -499,7 +496,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
                 type="submit"
-                className="w-full h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
+                className="w-full h-11 bg-[#5C6AC4] hover:bg-[#4A56B0] text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -583,10 +580,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
         {/* Footer branding */}
         <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
-          Secured by{" "}
-          <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
-            vly.ai
-          </a>
+          Secured by AXIA
         </div>
       </Card>
     </div>

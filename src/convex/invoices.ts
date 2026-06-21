@@ -1008,7 +1008,14 @@ export const processDueReminders = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    // Get all scheduled reminders where scheduledAt < now
+    // Get all scheduled reminders where scheduledAt < now.
+    // OLD BUG: this used to mark them as "sent" — but we never actually sent
+    // anything. That was a fake-send: DB said "sent" but the client never
+    // received a reminder.
+    //
+    // FIX: flip status to "due" and create an in-app notification prompting
+    // the user to actually deliver the reminder via their preferred channel
+    // and self-report it via the manual-send workflow.
     const scheduledReminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_status_and_date", (q) =>
@@ -1019,40 +1026,33 @@ export const processDueReminders = internalMutation({
     let processedCount = 0;
 
     for (const reminder of scheduledReminders) {
-      // Flip the reminder row's status to "due" (NOT "sent" — nothing was actually sent).
-      // The invoice's own status is left untouched. The user must manually deliver
-      // the reminder and can log it via manualSends.logInvoiceManualSend.
+      if (reminder.status === "due") continue;
+
+      // Mark as due (not "sent")
       await ctx.db.patch(reminder._id, {
         status: "due",
-        dueAt: now,
       });
 
-      // Create an in-app notification prompting the user to actually send this reminder.
-      // Avoid duplicates: skip if we already notified about this reminder row.
-      const existing = await ctx.db
-        .query("notifications")
-        .withIndex("by_entity", (q) =>
-          q.eq("entityType", "reminder").eq("entityId", reminder._id)
-        )
-        .first();
-      if (!existing && reminder.userId) {
-        const invoice = await ctx.db.get(reminder.invoiceId as any);
-        const invoiceNumber = invoice?.invoiceNumber ?? "your invoice";
-        await ctx.db.insert("notifications", {
-          userId: reminder.userId,
-          workspaceId: invoice?.workspaceId,
-          type: "payment_reminder",
-          title: `Payment reminder due: ${invoiceNumber}`,
-          body: `Day-${reminder.dayNumber ?? reminder.sequenceDay ?? "?"} payment reminder for ${invoiceNumber} is due now. Send it manually via your preferred channel, then mark it as sent.`,
-          link: "/invoices",
-          entityType: "reminder",
-          entityId: reminder._id,
-          severity: (reminder.dayNumber ?? 0) >= 14 ? "danger" : "warning",
-          read: false,
-          dismissed: false,
-          createdAt: now,
-        });
-      }
+      // Look up invoice for context
+      const invoice = await ctx.db.get(reminder.invoiceId);
+      if (!invoice) continue;
+
+      // Create in-app notification
+      await ctx.db.insert("notifications", {
+        userId: reminder.userId,
+        workspaceId: reminder.workspaceId,
+        type: "payment_reminder",
+        title: `Payment reminder due: Invoice ${invoice.invoiceNumber}`,
+        body: `Day ${reminder.dayNumber} payment reminder is due. The client hasn't been contacted automatically — open the invoice, download the PDF, and send the reminder via your preferred channel, then mark it as sent.`,
+        link: `/invoices`,
+        entityType: "reminder",
+        entityId: reminder._id,
+        severity: "warning",
+        read: false,
+        dismissed: false,
+        createdAt: now,
+      });
+
       processedCount++;
     }
 

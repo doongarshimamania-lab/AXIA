@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EvidenceTimelineEntry } from "@/types/projectProtection";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
@@ -16,12 +16,13 @@ export function EvidenceTimelineModal({ open, onOpenChange, timeline }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
             Evidence Timeline - Session Analysis
           </DialogTitle>
+          <DialogDescription>Analyze verification status and value at risk across your work sessions.</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 mt-4">

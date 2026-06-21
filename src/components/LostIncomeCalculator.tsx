@@ -162,7 +162,7 @@ export function LostIncomeCalculator({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-foreground">Toptal</span>
-            <span className="font-[Space_Grotesk] text-axia-teal-700">
+            <span className="font-[Space_Grotesk] text-violet-500">
               ${platformLosses.toptal.toFixed(0)} lost → $
               {Math.max(platformLosses.toptal - 7, 0).toFixed(0)} net
             </span>

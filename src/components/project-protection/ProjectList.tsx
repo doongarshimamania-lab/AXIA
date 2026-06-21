@@ -37,7 +37,7 @@ export function ProjectList({
   const getProtectionColor = (level: string) => {
     switch (level) {
       case "standard": return "text-blue-500 bg-blue-500/10";
-      case "enhanced": return "text-platinum-400 bg-platinum-500/10";
+      case "enhanced": return "text-purple-500 bg-purple-500/10";
       case "maximum": return "text-emerald-500 bg-emerald-500/10";
       default: return "text-muted-foreground bg-muted";
     }

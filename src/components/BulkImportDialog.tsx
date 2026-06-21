@@ -124,9 +124,6 @@ export function BulkImportDialog({
   const [importProgress, setImportProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // New custom fields being created during import
-  const [newCustomFields, setNewCustomFields] = useState<Record<string, { label: string; type: string }>>({});
-
   // Import results
   const [importResults, setImportResults] = useState<{
     imported: number;
@@ -227,25 +224,6 @@ export function BulkImportDialog({
       }
     }
 
-    // Add new custom fields being created during import
-    for (const [csvHeader, fieldDef] of Object.entries(newCustomFields)) {
-      if (fieldDef.label) {
-        const fieldName = fieldDef.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-        options.push({
-          value: `custom:${fieldName}`,
-          label: `${fieldDef.label} (new custom)`,
-          group: "custom",
-        });
-      }
-    }
-
-    // Add "New Custom Field" option
-    options.push({
-      value: "_new_custom",
-      label: "+ New Custom Field...",
-      group: "new_custom",
-    });
-
     return options;
   }, [dbFields, customFields, tableName]);
 
@@ -296,26 +274,15 @@ export function BulkImportDialog({
 
     // Auto-detect column mapping
     const mapping: Record<string, string> = {};
-    const detectedNewFields: Record<string, { label: string; type: string }> = {};
     for (const header of csvHeaders) {
       const headerLower = header.toLowerCase().trim();
       if (AUTO_DETECT_MAP[headerLower]) {
         mapping[header] = AUTO_DETECT_MAP[headerLower];
       } else {
-        // Auto-detect as custom field if header contains letters
-        const sanitized = headerLower.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-        if (sanitized && /[a-z]/.test(sanitized)) {
-          mapping[header] = `custom:${sanitized}`;
-          detectedNewFields[header] = { label: header, type: "text" };
-        } else {
-          mapping[header] = "_skip";
-        }
+        mapping[header] = "_skip";
       }
     }
     setColumnMapping(mapping);
-    if (Object.keys(detectedNewFields).length > 0) {
-      setNewCustomFields(detectedNewFields);
-    }
     setStep("mapping");
   }, []);
 
@@ -360,26 +327,15 @@ export function BulkImportDialog({
 
           // Auto-detect mapping
           const mapping: Record<string, string> = {};
-          const detectedNewFields: Record<string, { label: string; type: string }> = {};
           for (const header of csvHeaders) {
             const headerLower = header.toLowerCase().trim();
             if (AUTO_DETECT_MAP[headerLower]) {
               mapping[header] = AUTO_DETECT_MAP[headerLower];
             } else {
-              // Auto-detect as custom field if header contains letters
-              const sanitized = headerLower.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-              if (sanitized && /[a-z]/.test(sanitized)) {
-                mapping[header] = `custom:${sanitized}`;
-                detectedNewFields[header] = { label: header, type: "text" };
-              } else {
-                mapping[header] = "_skip";
-              }
+              mapping[header] = "_skip";
             }
           }
           setColumnMapping(mapping);
-          if (Object.keys(detectedNewFields).length > 0) {
-            setNewCustomFields(detectedNewFields);
-          }
           setStep("mapping");
         } catch (err: any) {
           toast.error(
@@ -429,30 +385,6 @@ export function BulkImportDialog({
       return;
     }
 
-    // Create new custom field definitions before importing
-    const hasCustomFieldsApi = !!(api as any).customFields?.crud?.createField;
-    const createFieldMutation = hasCustomFieldsApi ? (api as any).customFields.crud.createField : null;
-    const newFieldNames: Record<string, string> = {}; // csvHeader -> fieldName
-    for (const [csvHeader, fieldDef] of Object.entries(newCustomFields)) {
-      if (fieldDef.label && createFieldMutation) {
-        const fieldName = fieldDef.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-        try {
-          await createFieldMutation({
-            workspaceId,
-            tableName,
-            fieldName,
-            label: fieldDef.label,
-            type: fieldDef.type || "text",
-          });
-          newFieldNames[csvHeader] = fieldName;
-        } catch (err: any) {
-          // Field may already exist, that's fine
-          console.warn("Could not create custom field:", fieldDef.label, err?.message);
-          newFieldNames[csvHeader] = fieldName;
-        }
-      }
-    }
-
     setStep("importing");
     setImportProgress(0);
 
@@ -461,7 +393,7 @@ export function BulkImportDialog({
       const records = rawData.map((row) => {
         const mapped: Record<string, any> = {};
         for (const [csvCol, targetField] of Object.entries(columnMapping)) {
-          if (targetField === "_skip" || targetField === "_new_custom") continue;
+          if (targetField === "_skip") continue;
           const value = row[csvCol];
           if (value !== undefined && value !== "") {
             mapped[targetField] = value;
@@ -529,7 +461,6 @@ export function BulkImportDialog({
     setRawData([]);
     setHeaders([]);
     setColumnMapping({});
-    setNewCustomFields({});
     setImportResults(null);
     setIsExcelFile(false);
     setImportProgress(0);
@@ -560,7 +491,7 @@ export function BulkImportDialog({
       <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-platinum-400" />
+            <Upload className="w-5 h-5 text-purple-500" />
             Bulk Import {tableDisplayName}
           </DialogTitle>
           <DialogDescription>
@@ -669,9 +600,9 @@ export function BulkImportDialog({
                   {headers.map((header) => (
                     <TableRow key={header}>
                       <TableCell className="font-medium text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                          {header}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{header}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -684,7 +615,7 @@ export function BulkImportDialog({
                             }))
                           }
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="w-full h-8 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -719,57 +650,15 @@ export function BulkImportDialog({
                                   ))}
                               </>
                             )}
-                            {/* New Custom Field option */}
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t border-border mt-1">
-                              Create New
-                            </div>
-                            <SelectItem value="_new_custom">
-                              + New Custom Field...
-                            </SelectItem>
                           </SelectContent>
                         </Select>
-                        {/* New Custom Field inline form */}
-                        {columnMapping[header] === "_new_custom" && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <Input
-                              placeholder="Field name..."
-                              className="h-7 text-xs flex-1"
-                              value={newCustomFields[header]?.label || ""}
-                              onChange={(e) =>
-                                setNewCustomFields(prev => ({
-                                  ...prev,
-                                  [header]: { label: e.target.value, type: prev[header]?.type || "text" }
-                                }))
-                              }
-                            />
-                            <Select
-                              value={newCustomFields[header]?.type || "text"}
-                              onValueChange={(type) =>
-                                setNewCustomFields(prev => ({
-                                  ...prev,
-                                  [header]: { label: prev[header]?.label || "", type }
-                                }))
-                              }
-                            >
-                              <SelectTrigger className="h-7 text-xs w-24">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="text">Text</SelectItem>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="boolean">Boolean</SelectItem>
-                                <SelectItem value="date">Date</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         <div className="space-y-0.5">
                           {rawData.slice(0, 3).map((row, idx) => (
                             <div
                               key={idx}
-                              className="truncate max-w-48"
+                              className="truncate max-w-48 min-w-0"
                               title={row[header] || "—"}
                             >
                               {row[header] || "—"}

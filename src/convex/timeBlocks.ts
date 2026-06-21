@@ -63,6 +63,10 @@ export const getSessionBlocks = query({
       return [];
     }
 
+    // SECURITY: Verify the session belongs to the requesting user
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.userId !== user._id) return [];
+
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))

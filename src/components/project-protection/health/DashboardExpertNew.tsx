@@ -5,7 +5,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Info } from "lucide-react";
 import { VulnerabilityScanner } from "./VulnerabilityScanner";
 import { WorkRhythmVisualizer } from "./WorkRhythmVisualizer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -46,7 +46,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
       impact: "Protects your income stability if one client fails or one platform changes rules."
     },
     "Overall Health": {
-      description: "The aggregate protection score of your entire freelance business.",
+      description: "The aggregate protection score of your entire professional services business.",
       impact: "Your master KPI for business stability and dispute immunity."
     },
     // Pro Tier Metrics (for Deep Dive)
@@ -63,13 +63,13 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
       impact: "'Maximum' protection ensures no billable hour goes unaccounted for or unprotected."
     },
     "Pattern Health": {
-      description: "How well your work matches successful, dispute-free freelancer patterns.",
+      description: "How well your work matches successful, dispute-free professional patterns.",
       impact: "Deviations can flag potential payment risks before they become disputes."
     }
   };
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border border-yellow-500/30 dark:border-yellow-500/20 shadow-2xl">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-yellow-500/20 shadow-2xl">
       {/* Premium Gold Accent */}
       <div className="absolute top-0 right-0 p-4">
         <Badge className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-bold border-0 px-3 py-1">
@@ -84,16 +84,16 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
             <Award className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-foreground dark:text-white font-serif tracking-wide">Business Health Overview</h3>
-            <p className="text-slate-500 dark:text-slate-400">Enterprise-grade protection & strategy</p>
+            <h3 className="text-2xl font-bold text-white font-serif tracking-wide">Business Health Overview</h3>
+            <p className="text-slate-400">Enterprise-grade protection & strategy</p>
           </div>
         </div>
 
         {/* Big Numbers */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-1 bg-slate-50 dark:bg-white/5 rounded-2xl p-6 border border-black/10 dark:border-white/10 backdrop-blur-sm flex flex-col justify-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Value Protected</p>
-            <div className="text-4xl font-bold text-foreground dark:text-white flex items-baseline gap-2">
+          <div className="lg:col-span-1 bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm flex flex-col justify-center">
+            <p className="text-sm text-slate-400 mb-1">Total Value Protected</p>
+            <div className="text-4xl font-bold text-white flex items-baseline gap-2">
               ${valueMetric.amount.toLocaleString()}
               <span className="text-sm font-normal text-slate-500">/ {valueMetric.cadence}</span>
             </div>
@@ -105,25 +105,25 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
               return (
                 <HoverCard key={idx}>
                   <HoverCardTrigger asChild>
-                    <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 border border-black/10 dark:border-white/10 backdrop-blur-sm flex flex-col justify-center cursor-help hover:bg-slate-100 dark:hover:bg-white/10 transition-colors group">
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm flex flex-col justify-center cursor-help hover:bg-white/10 transition-colors group">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-foreground dark:group-hover:text-white transition-colors">{pillar.name}</p>
+                        <p className="text-sm text-slate-400 group-hover:text-white transition-colors">{pillar.name}</p>
                         <Info className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <div className="text-2xl font-bold text-yellow-400">{pillar.value}{pillar.unit}</div>
                     </div>
                   </HoverCardTrigger>
-                  <HoverCardContent className="w-80 bg-white dark:bg-slate-900 border-yellow-500/30 dark:border-yellow-500/20 text-slate-700 dark:text-slate-200 shadow-2xl" align="center">
+                  <HoverCardContent className="w-80 bg-slate-900 border-yellow-500/20 text-slate-200 shadow-2xl" align="center">
                     <div className="space-y-2">
                       <h4 className="text-sm font-bold text-yellow-500 flex items-center gap-2 font-serif">
                         {pillar.name}
                       </h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <p className="text-xs text-slate-300 leading-relaxed">
                         {def.description}
                       </p>
-                      <div className="pt-2 border-t border-black/10 dark:border-white/10 mt-2">
+                      <div className="pt-2 border-t border-white/10 mt-2">
                         <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wide mb-1">Strategic Value</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                        <p className="text-xs text-slate-400 italic">
                           "{def.impact}"
                         </p>
                       </div>
@@ -138,9 +138,9 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
         {/* Current Project Deep Dive Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
               <Target className="w-4 h-4 text-yellow-500" />
-              Active Project Analysis: <span className="text-foreground dark:text-white">{currentProjectMetrics.projectName || "Unknown Project"}</span>
+              Active Project Analysis: <span className="text-white">{currentProjectMetrics.projectName || "Unknown Project"}</span>
             </h4>
             <Badge variant="outline" className={`${
               currentProjectMetrics.status === 'healthy' ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 
@@ -158,13 +158,13 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                 return (
                   <HoverCard key={idx}>
                     <HoverCardTrigger asChild>
-                      <div className="bg-white/95 dark:bg-slate-950/50 border border-black/5 dark:border-white/5 rounded-xl p-4 hover:border-yellow-500/30 dark:hover:border-yellow-500/20 transition-colors cursor-help group">
+                      <div className="bg-slate-950/50 border border-white/5 rounded-xl p-4 hover:border-yellow-500/20 transition-colors cursor-help group">
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium group-hover:text-foreground dark:group-hover:text-white transition-colors">{pillar.name}</span>
+                          <span className="text-xs text-slate-400 font-medium group-hover:text-white transition-colors">{pillar.name}</span>
                           <div className={`w-2 h-2 rounded-full ${pillar.value > 80 ? 'bg-emerald-500' : pillar.value > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} />
                         </div>
-                        <div className="text-xl font-bold text-foreground dark:text-white mb-1">{pillar.value}{pillar.unit}</div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+                        <div className="text-xl font-bold text-white mb-1">{pillar.value}{pillar.unit}</div>
+                        <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
                           <div 
                             className={`h-full ${pillar.value > 80 ? 'bg-emerald-500' : pillar.value > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} 
                             style={{ width: `${pillar.value}%` }}
@@ -172,17 +172,17 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                         </div>
                       </div>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-80 bg-white dark:bg-slate-900 border-axia-teal-500/30 text-slate-700 dark:text-slate-200 shadow-2xl" align="center">
+                    <HoverCardContent className="w-80 bg-slate-900 border-indigo-500/30 text-slate-200 shadow-2xl" align="center">
                       <div className="space-y-2">
-                        <h4 className="text-sm font-bold text-axia-teal-600 flex items-center gap-2 font-mono">
+                        <h4 className="text-sm font-bold text-indigo-400 flex items-center gap-2 font-mono">
                           {pillar.name.toUpperCase()}
                         </h4>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <p className="text-xs text-slate-300 leading-relaxed">
                           {def.description}
                         </p>
-                        <div className="pt-2 border-t border-black/10 dark:border-white/10 mt-2">
-                          <p className="text-[10px] font-bold text-axia-teal-600 uppercase tracking-wide mb-1">Tactical Impact</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                        <div className="pt-2 border-t border-white/10 mt-2">
+                          <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-1">Tactical Impact</p>
+                          <p className="text-xs text-slate-400 italic">
                             "{def.impact}"
                           </p>
                         </div>
@@ -193,7 +193,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
               })}
             </div>
           ) : (
-            <div className="p-6 text-center text-slate-500 bg-slate-50 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 border-dashed">
+            <div className="p-6 text-center text-slate-500 bg-white/5 rounded-xl border border-white/5 border-dashed">
               <p className="text-sm">No detailed analysis available for this project yet.</p>
               <p className="text-xs mt-1 opacity-70">Track time to generate dynamic health metrics.</p>
             </div>
@@ -206,8 +206,8 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
           <div className="lg:col-span-2 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Business Map */}
-              <div className="bg-white/95 dark:bg-slate-950/50 rounded-2xl p-6 border border-black/5 dark:border-white/5 flex flex-col h-[400px]">
-                <h4 className="text-sm font-bold text-foreground dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 flex-shrink-0">
+              <div className="bg-slate-950/50 rounded-2xl p-6 border border-white/5 flex flex-col h-[400px]">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2 flex-shrink-0">
                   <Globe className="w-4 h-4 text-blue-400" />
                   Portfolio Health
                 </h4>
@@ -220,18 +220,18 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                           key={idx} 
                           className={`p-3 rounded-xl transition-all cursor-pointer group border ${
                             isCurrent 
-                              ? 'bg-yellow-500/10 border-yellow-500/30 shadow-sm' 
-                              : 'bg-slate-50 dark:bg-white/5 border-black/5 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/10'
+                              ? 'bg-yellow-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
+                              : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${
-                                project.status === 'healthy' ? 'bg-emerald-500' : 
-                                project.status === 'warning' ? 'bg-yellow-500' : 
-                                'bg-red-500'
+                                project.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
+                                project.status === 'warning' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 
+                                'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
                               }`} />
-                              <span className={`font-medium text-sm ${isCurrent ? 'text-yellow-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                              <span className={`font-medium text-sm ${isCurrent ? 'text-yellow-400' : 'text-slate-200'}`}>
                                 {project.projectName}
                                 {isCurrent && <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/20">ACTIVE</span>}
                               </span>
@@ -243,7 +243,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                           
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 w-full mr-4">
-                              <div className="h-1.5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-1.5 flex-1 bg-slate-800 rounded-full overflow-hidden">
                                 <div 
                                   className={`h-full rounded-full ${
                                     project.health > 80 ? 'bg-emerald-500' : 
@@ -252,9 +252,9 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                                   style={{ width: `${project.health}%` }}
                                 />
                               </div>
-                              <span className="text-slate-500 dark:text-slate-400 w-8 text-right">{project.health}%</span>
+                              <span className="text-slate-400 w-8 text-right">{project.health}%</span>
                             </div>
-                            <div className="font-mono text-slate-600 dark:text-slate-300">
+                            <div className="font-mono text-slate-300">
                               ${project.value.toLocaleString()}
                             </div>
                           </div>
@@ -266,14 +266,14 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
               </div>
 
               {/* Recommendations */}
-              <div className="bg-gradient-to-br from-yellow-100 dark:from-yellow-900/20 to-transparent rounded-2xl p-6 border border-yellow-500/20 dark:border-yellow-500/10 h-[400px] overflow-y-auto custom-scrollbar">
+              <div className="bg-gradient-to-br from-yellow-900/20 to-transparent rounded-2xl p-6 border border-yellow-500/10 h-[400px] overflow-y-auto custom-scrollbar">
                 <h4 className="text-sm font-bold text-yellow-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
                   Strategic Insights
                 </h4>
                 <ul className="space-y-4">
                   {strategicRecommendations.map((rec: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                    <li key={idx} className="flex items-start gap-3 text-sm text-slate-300">
                       <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-yellow-500 flex-shrink-0" />
                       {rec}
                     </li>
@@ -291,32 +291,33 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
             {proData.vulnerabilities && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="bg-white/95 dark:bg-slate-950/50 rounded-xl p-4 border border-axia-teal-500/20 hover:bg-axia-teal-500/5 dark:hover:bg-axia-teal-950/20 transition-all cursor-pointer group">
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-indigo-500/20 hover:bg-indigo-950/20 transition-all cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-axia-teal-500/10 rounded-lg">
-                          <Shield className="w-4 h-4 text-axia-teal-600" />
+                        <div className="p-2 bg-indigo-500/10 rounded-lg">
+                          <Shield className="w-4 h-4 text-indigo-400" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-axia-teal-600">Security Ops</h4>
-                          <p className="text-[10px] text-axia-teal-600">Pro Module</p>
+                          <h4 className="text-sm font-bold text-indigo-100">Security Ops</h4>
+                          <p className="text-[10px] text-indigo-400">Pro Module</p>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-axia-teal-600 transition-colors" />
+                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-xs text-slate-400">
                         {proData.vulnerabilities.length} active threats detected
                       </span>
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="bg-white dark:bg-slate-950 border-axia-teal-500/30 text-foreground dark:text-white shadow-lg sm:max-w-lg">
+                <DialogContent className="bg-slate-950 border-indigo-500/30 text-white sm:max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="font-mono text-axia-teal-600 flex items-center gap-2">
+                    <DialogTitle className="font-mono text-indigo-400 flex items-center gap-2">
                       <Shield className="w-4 h-4" />
                       SECURITY_OPERATIONS_CENTER
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">View and manage detected security threats.</DialogDescription>
                   </DialogHeader>
                   <VulnerabilityScanner vulnerabilities={proData.vulnerabilities} className="bg-transparent" />
                 </DialogContent>
@@ -327,34 +328,35 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
             {starterData.workPatterns && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="bg-white/95 dark:bg-slate-950/50 rounded-xl p-4 border border-platinum-500/20 hover:bg-platinum-500/5 dark:hover:bg-platinum-950/20 transition-all cursor-pointer group">
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-teal-500/20 hover:bg-teal-950/20 transition-all cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-platinum-500/10 rounded-lg">
-                          <Zap className="w-4 h-4 text-platinum-400" />
+                        <div className="p-2 bg-teal-500/10 rounded-lg">
+                          <Zap className="w-4 h-4 text-teal-400" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-platinum-100">Productivity</h4>
-                          <p className="text-[10px] text-platinum-400">Starter Module</p>
+                          <h4 className="text-sm font-bold text-teal-100">Productivity</h4>
+                          <p className="text-[10px] text-teal-400">Starter Module</p>
                         </div>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-platinum-400 transition-colors" />
+                      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-teal-400 transition-colors" />
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Trend: <span className="text-foreground dark:text-white">{starterData.workPatterns.trend}</span>
+                      <span className="text-xs text-slate-400">
+                        Trend: <span className="text-white">{starterData.workPatterns.trend}</span>
                       </span>
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="bg-white dark:bg-slate-950 border-platinum-500/30 text-foreground dark:text-white shadow-lg sm:max-w-lg">
+                <DialogContent className="bg-slate-950 border-teal-500/30 text-white sm:max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="font-bold text-platinum-400 flex items-center gap-2">
+                    <DialogTitle className="font-bold text-teal-400 flex items-center gap-2">
                       <Zap className="w-4 h-4" />
                       Productivity Engine Analysis
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">Analyze your work rhythm and productivity patterns.</DialogDescription>
                   </DialogHeader>
-                  <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 h-[200px] mb-4">
+                  <div className="bg-white/5 rounded-xl p-4 h-[200px] mb-4">
                     <WorkRhythmVisualizer 
                       rhythm={starterData.pillars?.find((p: any) => p.name === "Rhythm Health")?.value || 0}
                       velocity={starterData.workPatterns.velocity}
@@ -364,9 +366,9 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {starterData.pillars?.map((p: any, i: number) => (
-                      <div key={i} className="bg-slate-50 dark:bg-platinum-950/30 p-3 rounded-lg border border-platinum-500/20 dark:border-platinum-500/10 text-center">
-                        <div className="text-[10px] text-platinum-400 uppercase mb-1">{p.name}</div>
-                        <div className="text-xl font-bold text-foreground dark:text-white">{p.value}{p.unit}</div>
+                      <div key={i} className="bg-teal-950/30 p-3 rounded-lg border border-teal-500/10 text-center">
+                        <div className="text-[10px] text-teal-400 uppercase mb-1">{p.name}</div>
+                        <div className="text-xl font-bold text-white">{p.value}{p.unit}</div>
                       </div>
                     ))}
                   </div>

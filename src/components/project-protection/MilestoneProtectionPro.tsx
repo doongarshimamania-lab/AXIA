@@ -135,7 +135,7 @@ export function MilestoneProtectionPro({
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 rounded-2xl border-2 border-slate-300 dark:border-slate-700 shadow-xl">
       {/* Animated gradient header */}
-      <div className="relative p-6 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-500 via-axia-teal-500 to-platinum-500">
+      <div className="relative p-6 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-bold text-xl text-white">
@@ -160,24 +160,24 @@ export function MilestoneProtectionPro({
 
       {/* NEW: Testing Controls with Enhanced Explanations */}
       {projectId && (
-        <div className="p-4 bg-gradient-to-br from-platinum-50 to-blue-50 dark:from-platinum-950/30 dark:to-blue-950/30 border-b border-platinum-200 dark:border-platinum-800">
+        <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 border-b border-purple-200 dark:border-purple-800">
           <div className="flex items-center gap-2 mb-3">
-            <TestTube className="w-5 h-5 text-platinum-400 dark:text-platinum-400" />
-            <h5 className="font-semibold text-platinum-400 dark:text-platinum-400">
+            <TestTube className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h5 className="font-semibold text-purple-900 dark:text-purple-100">
               Test Milestone Features
             </h5>
           </div>
           
           <div className="space-y-3 mb-3">
             {/* Snapshot Explanation */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-platinum-200 dark:border-platinum-800">
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
               <div className="flex items-start gap-2">
-                <Camera className="w-4 h-4 text-platinum-400 dark:text-platinum-400 mt-0.5 flex-shrink-0" />
+                <Camera className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-platinum-400 dark:text-platinum-400 mb-1">
+                  <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     📸 Weekly Snapshot
                   </div>
-                  <p className="text-xs text-platinum-400 dark:text-platinum-400 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Captures a point-in-time record of your work week: total hours worked, evidence collected, and protection rate. 
                     This creates a permanent record that proves your work history if disputes arise later.
                   </p>
@@ -194,14 +194,14 @@ export function MilestoneProtectionPro({
             </div>
 
             {/* Alert Explanation */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-platinum-200 dark:border-platinum-800">
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
               <div className="flex items-start gap-2">
                 <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-platinum-400 dark:text-platinum-400 mb-1">
+                  <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     🔔 Protection Alert
                   </div>
-                  <p className="text-xs text-platinum-400 dark:text-platinum-400 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Notifies you when your protection rate drops below safe levels or evidence gaps are detected. 
                     Helps you fix issues before they become disputes.
                   </p>
@@ -218,14 +218,14 @@ export function MilestoneProtectionPro({
             </div>
 
             {/* Report Explanation */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-platinum-200 dark:border-platinum-800">
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
               <div className="flex items-start gap-2">
                 <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-medium text-sm text-platinum-400 dark:text-platinum-400 mb-1">
+                  <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     📊 Weekly Report
                   </div>
-                  <p className="text-xs text-platinum-400 dark:text-platinum-400 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Analyzes your week's work patterns, compares to previous weeks, and provides actionable insights. 
                     Shows trends in hours, protection rate, and evidence quality to help you improve.
                   </p>
@@ -319,7 +319,7 @@ export function MilestoneProtectionPro({
       {/* Enhanced Latest Report Summary with Metric Explanations */}
       {latestReport && (
         <div className="px-6 pb-4">
-          <div className="bg-gradient-to-br from-blue-50 to-axia-teal-50 dark:from-blue-950/30 dark:to-axia-teal-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <h5 className="font-semibold text-blue-900 dark:text-blue-100">
@@ -536,7 +536,7 @@ export function MilestoneProtectionPro({
 
       {/* Pro Features List */}
       <div className="px-6 pb-6">
-        <div className="bg-gradient-to-br from-blue-50 to-axia-teal-50 dark:from-blue-950/30 dark:to-axia-teal-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
           <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
             Pro Protection Features
@@ -563,18 +563,18 @@ export function MilestoneProtectionPro({
       </div>
 
       {/* Upgrade to Expert */}
-      <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-gradient-to-br from-platinum-50 to-amber-50 dark:from-platinum-950/30 dark:to-amber-950/30">
+      <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
         <div className="mb-3">
-          <h5 className="font-semibold text-platinum-400 dark:text-platinum-400 mb-1">
+          <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-1">
             Unlock Advanced Milestone Intelligence
           </h5>
-          <p className="text-sm text-platinum-400 dark:text-platinum-400">
+          <p className="text-sm text-purple-800 dark:text-purple-200">
             Get 8-week tracking, predictive analytics, and automated milestone reports
           </p>
         </div>
         <Button
           onClick={onUpgrade}
-          className="w-full bg-gradient-to-r from-platinum-500 to-amber-600 hover:from-platinum-600 hover:to-amber-700 text-white font-semibold shadow-lg"
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold shadow-lg"
         >
           Upgrade to Expert → $12/mo
         </Button>

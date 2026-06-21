@@ -10,7 +10,6 @@ import {
   Hash,
   X,
   Palette,
-  Info,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,97 +30,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
-import { TAG_COLORS, SEMANTIC_COLORS } from "@/lib/tokens";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PRESET_COLORS = [...TAG_COLORS];
-
-// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
-
-const MOCK_TAGS = [
-  {
-    _id: "tag_1" as any,
-    name: "Urgent",
-    color: TAG_COLORS[5],
-    category: "general" as string | null,
-    usageCount: 23,
-    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_2" as any,
-    name: "Design",
-    color: TAG_COLORS[2],
-    category: "project" as string | null,
-    usageCount: 18,
-    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_3" as any,
-    name: "Development",
-    color: TAG_COLORS[9],
-    category: "project" as string | null,
-    usageCount: 42,
-    createdAt: Date.now() - 145 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_4" as any,
-    name: "Client Communication",
-    color: TAG_COLORS[13],
-    category: "client" as string | null,
-    usageCount: 31,
-    createdAt: Date.now() - 140 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_5" as any,
-    name: "Bug Fix",
-    color: TAG_COLORS[6],
-    category: "general" as string | null,
-    usageCount: 14,
-    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_6" as any,
-    name: "Documentation",
-    color: TAG_COLORS[14],
-    category: "project" as string | null,
-    usageCount: 9,
-    createdAt: Date.now() - 115 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_7" as any,
-    name: "Revision",
-    color: TAG_COLORS[7],
-    category: "general" as string | null,
-    usageCount: 19,
-    createdAt: Date.now() - 110 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_8" as any,
-    name: "Research",
-    color: TAG_COLORS[0],
-    category: "general" as string | null,
-    usageCount: 7,
-    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_9" as any,
-    name: "Testing",
-    color: TAG_COLORS[3],
-    category: "evidence" as string | null,
-    usageCount: 11,
-    createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "tag_10" as any,
-    name: "Payment",
-    color: TAG_COLORS[8],
-    category: "client" as string | null,
-    usageCount: 5,
-    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-  },
+const PRESET_COLORS = [
+  "#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e",
+  "#14b8a6", "#06b6d4", "#6366f1", "#a855f7", "#ec4899",
+  "#f43f5e", "#0ea5e9",
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -155,18 +73,10 @@ export default function Tags() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ─── Loading timeout pattern ────────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
+  const { isDisconnected } = useConvexConnectionState();
+  const timedOut = useQueryTimeout(!authLoading && tagsData === undefined, 3000);
 
-  useEffect(() => {
-    if (tagsData === undefined) {
-      const timer = setTimeout(() => setQueryTimeout(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [tagsData]);
-
-  const isLoading = !authLoading && tagsData === undefined && !queryTimeout;
+  const isLoading = !authLoading && tagsData === undefined && !timedOut && !isDisconnected;
 
   // ─── Demo mode ──────────────────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -181,7 +91,7 @@ export default function Tags() {
     createdAt: t.createdAt,
   }));
 
-  const tags = isDemoMode ? MOCK_TAGS : realTags;
+  const tags = realTags;
 
   // ── Computed Stats ──
   const totalTags = tags.length;
@@ -327,7 +237,7 @@ export default function Tags() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background text-foreground"
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -346,7 +256,7 @@ export default function Tags() {
                 Create Tag
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Tag</DialogTitle>
                 <DialogDescription>
@@ -425,18 +335,24 @@ export default function Tags() {
           </Dialog>
         </div>
 
-        {/* ── Demo mode banner ── */}
+        {/* ── Demo mode empty state ── */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real tags.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Tag className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your tags</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to organize your work with custom tags.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* ── Loading state ── */}
@@ -652,7 +568,7 @@ export default function Tags() {
             )}
           </>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Edit Tag Dialog ── */}
       <Dialog
@@ -665,7 +581,7 @@ export default function Tags() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Tag</DialogTitle>
             <DialogDescription>Update the details of this tag.</DialogDescription>
@@ -755,12 +671,12 @@ export default function Tags() {
           if (!open) setDeletingTag(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Tag</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the tag{" "}
-              <span className="font-semibold text-foreground">{deletingTag?.name}</span>? This will
+              <span className="font-semibold text-foreground break-words">{deletingTag?.name}</span>? This will
               remove the tag from all associated entries. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

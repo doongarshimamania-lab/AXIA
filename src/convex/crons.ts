@@ -4,10 +4,8 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Every hour: find proposal follow-ups whose scheduledAt has passed.
-// Flips them from "scheduled" → "due" and creates an in-app notification
-// prompting the user to actually deliver the follow-up manually.
-// (This used to fake-flip the status to "sent" — that was a bug.)
+// Process due proposal follow-ups every hour
+// This finds follow-ups scheduled for Day 3/7/14 that are now due and marks them as "sent"
 crons.interval(
   "process due proposal follow-ups",
   { hours: 1 },
@@ -15,21 +13,12 @@ crons.interval(
   {}
 );
 
-// Every hour: same pattern for payment reminders on invoices.
+// Process due payment reminders every hour
+// This finds reminders scheduled for Day 3/7/14 after invoice sent that are now due
 crons.interval(
   "process due payment reminders",
   { hours: 1 },
   internal.invoices.processDueReminders,
-  {}
-);
-
-// Daily at 9am UTC: scan for proposal/invoice drafts older than 7 days
-// that haven't been sent yet. Creates a "send_reminder" notification
-// prompting the user to actually deliver them.
-crons.cron(
-  "remindAboutStaleDrafts",
-  "0 9 * * *",
-  internal.notifications.remindAboutStaleDrafts,
   {}
 );
 
@@ -38,6 +27,17 @@ crons.cron(
   "processRecurringInvoices",
   "0 6 * * *",
   internal.invoices.processRecurringInvoices,
+  {}
+);
+
+// Daily 9am UTC — scan for stale draft proposals/invoices (>7 days old) and
+// create "send_reminder" notifications prompting the user to actually send them.
+// This replaces the old fake-send behavior: instead of silently flipping DB
+// status, we surface an actionable in-app notification.
+crons.cron(
+  "remindAboutStaleDrafts",
+  "0 9 * * *",
+  internal.notifications.remindAboutStaleDrafts,
   {}
 );
 

@@ -20,10 +20,10 @@ export function WaitlistCTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-[36px] font-bold text-foreground mb-4">
+          <h2 className="text-[36px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
             Start Protecting Your Income Today
           </h2>
-          <p className="text-xl text-muted-foreground leading-7 max-w-[600px] mx-auto mb-10">
+          <p className="text-xl text-muted-foreground leading-7 max-w-[600px] mx-auto mb-10" style={{ fontFamily: "Space Grotesk" }}>
             Join the waitlist and be among the first to access Axia's payment protection platform
           </p>
 
@@ -41,10 +41,10 @@ export function WaitlistCTA() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="flex flex-col items-center min-w-[180px]"
               >
-                <div className="text-[32px] font-bold text-primary dark:text-white leading-none mb-2">
+                <div className="text-[32px] font-bold text-[#00246B] dark:text-white leading-none mb-2" style={{ fontFamily: "Space Grotesk" }}>
                   {metric.amount}
                 </div>
-                <div className="text-base text-muted-foreground">
+                <div className="text-base text-muted-foreground" style={{ fontFamily: "Space Grotesk" }}>
                   {metric.description}
                 </div>
               </motion.div>

@@ -126,7 +126,7 @@ export function PlatformConnectionCard() {
         <CardHeader>
           <CardTitle className="text-xl font-bold">Platform Connections</CardTitle>
           <CardDescription>
-            Connect your freelance platforms to enable full income protection
+            Connect your professional platforms to enable full income protection
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -195,7 +195,7 @@ export function PlatformConnectionCard() {
 
       {/* Connect Modal */}
       <Dialog open={showConnectModal} onOpenChange={setShowConnectModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               Connect {selectedPlatform && platformLabels[selectedPlatform]}

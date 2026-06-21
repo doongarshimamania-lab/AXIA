@@ -133,7 +133,7 @@ export function getProposalActions(proposalId: string, proposalStatus: string): 
       feature: "Projects",
       url: `/projects?createFromProposal=${proposalId}`,
       variant: "default",
-      color: "bg-primary hover:bg-primary/90 text-primary-foreground",
+      color: "bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white",
     });
   }
 
@@ -226,7 +226,7 @@ export function getInvoiceActions(invoiceId: string, hasProofs?: boolean): Workf
       feature: "Evidence",
       url: `/evidence-library?invoiceId=${invoiceId}`,
       variant: "default",
-      color: "bg-axia-teal-600 hover:bg-axia-teal-700 text-white",
+      color: "bg-indigo-600 hover:bg-indigo-700 text-white",
     });
   }
 

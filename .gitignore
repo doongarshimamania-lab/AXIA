@@ -48,3 +48,4 @@ skills/
 upload/
 backups/*.tar.gz
 backups/timelock-fullcode-*
+src_backup_phase1_*/

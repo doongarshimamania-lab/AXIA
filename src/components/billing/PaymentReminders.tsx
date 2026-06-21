@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -29,13 +28,6 @@ import {
   Settings2,
   Zap,
   ShieldAlert,
-  Plus,
-  Minus,
-  Play,
-  Square,
-  MessageSquare,
-  Smartphone,
-  Globe,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -79,181 +71,7 @@ interface ReminderSettings {
   defaultChannel?: "email" | "sms" | "whatsapp";
 }
 
-// ─── Mock Data ──────────────────────────────────────────────────────────────
 
-const mockNow = Date.now();
-const mockDay = 86400000;
-
-const MOCK_OVERDUE_INVOICES: OverdueInvoice[] = [
-  {
-    _id: "mock_inv_1",
-    invoiceNumber: "INV-003",
-    clientName: "GlobalMedia",
-    clientEmail: "accounts@globalmedia.com",
-    status: "overdue",
-    issueDate: mockNow - 45 * mockDay,
-    dueDate: mockNow - 15 * mockDay,
-    total: 14300,
-    currency: "USD",
-    daysPastDue: 15,
-    reminders: [
-      {
-        _id: "rem_1",
-        invoiceId: "mock_inv_1",
-        dayNumber: 3,
-        channel: "email",
-        tone: "friendly",
-        subject: "Just a friendly reminder — Invoice INV-003",
-        body: "Hi GlobalMedia,\n\nJust a friendly reminder that invoice INV-003 for $14,300.00 is past due.",
-        status: "sent",
-        scheduledAt: mockNow - 12 * mockDay,
-        sentAt: mockNow - 12 * mockDay,
-        createdAt: mockNow - 12 * mockDay,
-      },
-      {
-        _id: "rem_2",
-        invoiceId: "mock_inv_1",
-        dayNumber: 7,
-        channel: "email",
-        tone: "firm",
-        subject: "Payment reminder — Invoice INV-003 is now past due",
-        body: "Hi GlobalMedia,\n\nYour invoice INV-003 for $14,300.00 is now past due.",
-        status: "sent",
-        scheduledAt: mockNow - 8 * mockDay,
-        sentAt: mockNow - 8 * mockDay,
-        createdAt: mockNow - 8 * mockDay,
-      },
-      {
-        _id: "rem_3",
-        invoiceId: "mock_inv_1",
-        dayNumber: 14,
-        channel: "email",
-        tone: "urgent",
-        subject: "URGENT: Final notice — Invoice INV-003 is significantly overdue",
-        body: "Hi GlobalMedia,\n\nThis is a final notice. Invoice INV-003 for $14,300.00 is significantly overdue.",
-        status: "scheduled",
-        scheduledAt: mockNow - 1 * mockDay,
-        createdAt: mockNow - 1 * mockDay,
-      },
-    ],
-    lastReminderSent: {
-      _id: "rem_2",
-      invoiceId: "mock_inv_1",
-      dayNumber: 7,
-      channel: "email",
-      tone: "firm",
-      subject: "Payment reminder — Invoice INV-003 is now past due",
-      body: "Hi GlobalMedia,\n\nYour invoice INV-003 for $14,300.00 is now past due.",
-      status: "sent",
-      scheduledAt: mockNow - 8 * mockDay,
-      sentAt: mockNow - 8 * mockDay,
-      createdAt: mockNow - 8 * mockDay,
-    },
-    nextScheduledReminder: {
-      _id: "rem_3",
-      invoiceId: "mock_inv_1",
-      dayNumber: 14,
-      channel: "email",
-      tone: "urgent",
-      subject: "URGENT: Final notice — Invoice INV-003 is significantly overdue",
-      body: "Hi GlobalMedia,\n\nThis is a final notice. Invoice INV-003 for $14,300.00 is significantly overdue.",
-      status: "scheduled",
-      scheduledAt: mockNow - 1 * mockDay,
-      createdAt: mockNow - 1 * mockDay,
-    },
-  },
-  {
-    _id: "mock_inv_2",
-    invoiceNumber: "INV-005",
-    clientName: "NovaTech Labs",
-    clientEmail: "billing@novatech.io",
-    status: "overdue",
-    issueDate: mockNow - 60 * mockDay,
-    dueDate: mockNow - 30 * mockDay,
-    total: 8750,
-    currency: "USD",
-    daysPastDue: 30,
-    reminders: [
-      {
-        _id: "rem_4",
-        invoiceId: "mock_inv_2",
-        dayNumber: 3,
-        channel: "email",
-        tone: "friendly",
-        subject: "Just a friendly reminder — Invoice INV-005",
-        body: "Hi NovaTech Labs,\n\nJust a friendly reminder that invoice INV-005 for $8,750.00 is past due.",
-        status: "sent",
-        scheduledAt: mockNow - 27 * mockDay,
-        sentAt: mockNow - 27 * mockDay,
-        createdAt: mockNow - 27 * mockDay,
-      },
-      {
-        _id: "rem_5",
-        invoiceId: "mock_inv_2",
-        dayNumber: 7,
-        channel: "email",
-        tone: "firm",
-        subject: "Payment reminder — Invoice INV-005 is now past due",
-        body: "Hi NovaTech Labs,\n\nYour invoice INV-005 for $8,750.00 is now past due.",
-        status: "sent",
-        scheduledAt: mockNow - 23 * mockDay,
-        sentAt: mockNow - 23 * mockDay,
-        createdAt: mockNow - 23 * mockDay,
-      },
-      {
-        _id: "rem_6",
-        invoiceId: "mock_inv_2",
-        dayNumber: 14,
-        channel: "email",
-        tone: "urgent",
-        subject: "URGENT: Final notice — Invoice INV-005 is significantly overdue",
-        body: "Hi NovaTech Labs,\n\nThis is a final notice. Invoice INV-005 for $8,750.00 is significantly overdue.",
-        status: "sent",
-        scheduledAt: mockNow - 16 * mockDay,
-        sentAt: mockNow - 16 * mockDay,
-        createdAt: mockNow - 16 * mockDay,
-      },
-    ],
-    lastReminderSent: {
-      _id: "rem_6",
-      invoiceId: "mock_inv_2",
-      dayNumber: 14,
-      channel: "email",
-      tone: "urgent",
-      subject: "URGENT: Final notice — Invoice INV-005 is significantly overdue",
-      body: "Hi NovaTech Labs,\n\nThis is a final notice. Invoice INV-005 for $8,750.00 is significantly overdue.",
-      status: "sent",
-      scheduledAt: mockNow - 16 * mockDay,
-      sentAt: mockNow - 16 * mockDay,
-      createdAt: mockNow - 16 * mockDay,
-    },
-    nextScheduledReminder: null,
-  },
-  {
-    _id: "mock_inv_3",
-    invoiceNumber: "INV-007",
-    clientName: "StarterCo",
-    clientEmail: "pay@starterco.com",
-    status: "overdue",
-    issueDate: mockNow - 17 * mockDay,
-    dueDate: mockNow - 3 * mockDay,
-    total: 2200,
-    currency: "USD",
-    daysPastDue: 3,
-    reminders: [],
-    lastReminderSent: null,
-    nextScheduledReminder: null,
-  },
-];
-
-const MOCK_SETTINGS: ReminderSettings = {
-  autoRemindersEnabled: true,
-  day3Enabled: true,
-  day7Enabled: true,
-  day14Enabled: true,
-  day21Enabled: false,
-  defaultChannel: "email",
-};
 
 // ─── Reminder Templates ─────────────────────────────────────────────────────
 
@@ -328,12 +146,6 @@ function formatRelativeTime(ts: number): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-function getToneLabel(day: number): string {
-  if (day <= 3) return "Friendly";
-  if (day <= 7) return "Firm";
-  return "Urgent";
-}
-
 function getToneConfig(tone: "friendly" | "firm" | "urgent") {
   switch (tone) {
     case "friendly":
@@ -373,8 +185,8 @@ function getStatusConfig(status: string) {
       return {
         label: "Scheduled",
         icon: Clock,
-        color: "text-primary",
-        badgeClass: "bg-primary/15 text-primary border-primary/25",
+        color: "text-[#8B5CF6]",
+        badgeClass: "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25",
       };
     case "skipped":
       return {
@@ -400,114 +212,6 @@ function getStatusConfig(status: string) {
   }
 }
 
-// ─── Interval Config Inline Component ───────────────────────────────────────
-
-function IntervalConfig({
-  intervals,
-  onIntervalsChange,
-  onConfirm,
-  onCancel,
-}: {
-  intervals: number[];
-  onIntervalsChange: (vals: number[]) => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const handleAdd = () => {
-    const last = intervals[intervals.length - 1] ?? 0;
-    onIntervalsChange([...intervals, last + 7]);
-  };
-
-  const handleRemove = (idx: number) => {
-    if (intervals.length <= 1) return;
-    onIntervalsChange(intervals.filter((_, i) => i !== idx));
-  };
-
-  const handleChange = (idx: number, val: string) => {
-    const num = parseInt(val, 10);
-    if (isNaN(num) || num < 1) return;
-    const next = [...intervals];
-    next[idx] = num;
-    next.sort((a, b) => a - b);
-    onIntervalsChange(next);
-  };
-
-  return (
-    <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="overflow-hidden"
-    >
-      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mt-2">
-        <p className="text-[11px] font-semibold text-primary mb-2">Configure Reminder Intervals</p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {intervals.map((day, idx) => (
-            <div key={idx} className="flex items-center gap-1">
-              <div className="relative">
-                <Input
-                  type="number"
-                  min={1}
-                  value={day}
-                  onChange={(e) => handleChange(idx, e.target.value)}
-                  className="h-7 w-16 text-[11px] text-center pr-6"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">d</span>
-              </div>
-              <Badge
-                variant="outline"
-                className={`text-[8px] px-1 py-0 h-4 ${
-                  day <= 3
-                    ? "bg-amber-500/15 text-amber-600 border-amber-500/25"
-                    : day <= 7
-                      ? "bg-orange-500/15 text-orange-600 border-orange-500/25"
-                      : "bg-red-500/15 text-red-600 border-red-500/25"
-                }`}
-              >
-                {getToneLabel(day)}
-              </Badge>
-              {intervals.length > 1 && (
-                <button
-                  onClick={() => handleRemove(idx)}
-                  className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                >
-                  <Minus className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            onClick={handleAdd}
-            className="h-7 px-2 rounded-md border border-dashed border-primary/30 flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 transition-colors"
-          >
-            <Plus className="h-3 w-3" />
-            Add
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="h-6 px-3 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={onConfirm}
-          >
-            <Play className="h-2.5 w-2.5 mr-1" />
-            Start
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-3 text-[10px]"
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Component ──────────────────────────────────────────────────────────────
 
 interface PaymentRemindersProps {
@@ -519,11 +223,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
-  const [configInvoiceId, setConfigInvoiceId] = useState<string | null>(null);
-  const [configIntervals, setConfigIntervals] = useState<number[]>([3, 7, 14]);
-  const [showSettings, setShowSettings] = useState(false);
-  const [customSettingsInterval, setCustomSettingsInterval] = useState("");
-  const [skippingReminderId, setSkippingReminderId] = useState<string | null>(null);
 
   // ── Convex Queries ───────────────────────────────────────────────────────
   const overdueInvoices = useQuery(api.billing.reminders.getOverdueInvoices, {}) as
@@ -538,21 +237,23 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
   const sendReminder = useMutation(api.billing.reminders.sendReminder);
   const scheduleAutoReminders = useMutation(api.billing.reminders.scheduleAutoReminders);
   const updateReminderSettings = useMutation(api.billing.reminders.updateReminderSettings);
-  const startReminders = useMutation(api.invoices.startReminders);
-  const stopReminders = useMutation(api.invoices.stopReminders);
-  const skipReminder = useMutation(api.billing.reminders.skipReminder);
 
-  // ── Fallback to Mock Data ────────────────────────────────────────────────
+  // ── Data with safe fallbacks ────────────────────────────────────────────────
   const safeOverdueInvoices = useMemo(() => {
     if (overdueInvoices && overdueInvoices.length > 0) return overdueInvoices;
-    if (overdueInvoices === undefined && overdueCount > 0) return MOCK_OVERDUE_INVOICES;
-    if (overdueCount > 0) return MOCK_OVERDUE_INVOICES;
     return [];
-  }, [overdueInvoices, overdueCount]);
+  }, [overdueInvoices]);
 
   const safeSettings: ReminderSettings = useMemo(() => {
     if (reminderSettings) return reminderSettings;
-    return MOCK_SETTINGS;
+    return {
+      autoRemindersEnabled: false,
+      day3Enabled: true,
+      day7Enabled: true,
+      day14Enabled: true,
+      day21Enabled: false,
+      defaultChannel: "email",
+    };
   }, [reminderSettings]);
 
   // ── Don't render if no overdue invoices ──────────────────────────────────
@@ -570,44 +271,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
       toast.error("Failed to send reminder", { description: err.message });
     } finally {
       setSendingReminderId(null);
-    }
-  };
-
-  const handleStartReminders = async (invoiceId: string, intervals: number[]) => {
-    try {
-      const result = await startReminders({
-        invoiceId: invoiceId as any,
-        intervals,
-      });
-      toast.success("Reminders started!", {
-        description: `${(result as any)?.scheduledCount ?? intervals.length} reminders scheduled`,
-      });
-      setConfigInvoiceId(null);
-    } catch (err: any) {
-      toast.error("Failed to start reminders", { description: err.message });
-    }
-  };
-
-  const handleStopReminders = async (invoiceId: string) => {
-    try {
-      const result = await stopReminders({ invoiceId: invoiceId as any });
-      toast.success("Reminders stopped", {
-        description: `${(result as any)?.cancelledCount ?? 0} reminders cancelled`,
-      });
-    } catch (err: any) {
-      toast.error("Failed to stop reminders", { description: err.message });
-    }
-  };
-
-  const handleSkipReminder = async (reminderId: string) => {
-    setSkippingReminderId(reminderId);
-    try {
-      await skipReminder({ reminderId: reminderId as any });
-      toast.success("Reminder skipped");
-    } catch (err: any) {
-      toast.error("Failed to skip reminder", { description: err.message });
-    } finally {
-      setSkippingReminderId(null);
     }
   };
 
@@ -631,37 +294,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
     }
   };
 
-  const handleToggleDay = async (day: number, enabled: boolean) => {
-    try {
-      const key = `day${day}Enabled` as keyof ReminderSettings;
-      await updateReminderSettings({ [key]: enabled });
-      toast.success(`Day ${day} reminder ${enabled ? "enabled" : "disabled"}`);
-    } catch (err: any) {
-      toast.error("Failed to update settings", { description: err.message });
-    }
-  };
-
-  const handleSetDefaultChannel = async (channel: "email" | "sms" | "whatsapp") => {
-    try {
-      await updateReminderSettings({ defaultChannel: channel });
-      toast.success(`Default channel set to ${channel}`);
-    } catch (err: any) {
-      toast.error("Failed to update settings", { description: err.message });
-    }
-  };
-
-  const handleAddCustomSettingsInterval = () => {
-    const num = parseInt(customSettingsInterval, 10);
-    if (isNaN(num) || num < 1) return;
-    toast.info(`Custom interval Day ${num} added — use "Start Reminders" on an invoice to apply`);
-    setCustomSettingsInterval("");
-  };
-
-  const openIntervalConfig = (invoiceId: string) => {
-    setConfigInvoiceId(invoiceId);
-    setConfigIntervals([3, 7, 14]);
-  };
-
   // ── Computed ─────────────────────────────────────────────────────────────
   const totalOverdueAmount = safeOverdueInvoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalRemindersSent = safeOverdueInvoices.reduce(
@@ -672,14 +304,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
     (sum, inv) => sum + inv.reminders.filter((r) => r.status === "scheduled").length,
     0
   );
-
-  const channelIcon = (channel: string) => {
-    switch (channel) {
-      case "sms": return <Smartphone className="h-2 w-2 mr-0.5" />;
-      case "whatsapp": return <MessageSquare className="h-2 w-2 mr-0.5" />;
-      default: return <Mail className="h-2 w-2 mr-0.5" />;
-    }
-  };
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -705,153 +329,28 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-[12px] text-muted-foreground">Auto-reminders</span>
                 <Switch
                   checked={safeSettings.autoRemindersEnabled}
                   onCheckedChange={handleToggleAutoReminders}
-                  className="data-[state=checked]:bg-primary"
+                  className="data-[state=checked]:bg-[#8B5CF6]"
                 />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 h-8 text-[12px] border-primary/30 text-primary hover:bg-primary/10"
+                className="gap-1.5 h-8 text-[12px] border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
                 onClick={handleScheduleAutoReminders}
               >
                 <Zap className="h-3.5 w-3.5" />
                 Process Now
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 h-8 text-[12px] text-muted-foreground hover:text-foreground"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-                Settings
-                {showSettings ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          {/* ── Reminder Settings Panel ──────────────────────────────────── */}
-          <AnimatePresence>
-            {showSettings && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <h5 className="text-[11px] font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-                    <Settings2 className="h-3 w-3" />
-                    Reminder Settings
-                  </h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Day toggles */}
-                    <div>
-                      <p className="text-[10px] font-medium text-muted-foreground mb-2">Schedule Days</p>
-                      <div className="flex gap-2">
-                        {[3, 7, 14, 21].map((day) => {
-                          const key = `day${day}Enabled` as keyof ReminderSettings;
-                          const isEnabled = safeSettings[key] as boolean ?? (day !== 21);
-                          return (
-                            <div
-                              key={day}
-                              className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-border/50 bg-background"
-                            >
-                              <Switch
-                                checked={isEnabled}
-                                onCheckedChange={(val) => handleToggleDay(day, val)}
-                                className="scale-75 data-[state=checked]:bg-primary"
-                              />
-                              <span className="text-[10px] font-medium text-foreground">Day {day}</span>
-                              <Badge
-                                variant="outline"
-                                className={`text-[8px] px-1 py-0 h-3 ${
-                                  day <= 3
-                                    ? "bg-amber-500/15 text-amber-600 border-amber-500/25"
-                                    : day <= 7
-                                      ? "bg-orange-500/15 text-orange-600 border-orange-500/25"
-                                      : "bg-red-500/15 text-red-600 border-red-500/25"
-                                }`}
-                              >
-                                {getToneLabel(day)}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {/* Default channel */}
-                    <div>
-                      <p className="text-[10px] font-medium text-muted-foreground mb-2">Default Channel</p>
-                      <div className="flex gap-2">
-                        {(["email", "sms", "whatsapp"] as const).map((ch) => (
-                          <button
-                            key={ch}
-                            onClick={() => handleSetDefaultChannel(ch)}
-                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[10px] font-medium transition-colors ${
-                              safeSettings.defaultChannel === ch
-                                ? "border-primary/40 bg-primary/10 text-primary"
-                                : "border-border/50 bg-background text-muted-foreground hover:bg-muted/40"
-                            }`}
-                          >
-                            {channelIcon(ch)}
-                            {ch.charAt(0).toUpperCase() + ch.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Custom interval */}
-                    <div className="sm:col-span-2">
-                      <p className="text-[10px] font-medium text-muted-foreground mb-2">Add Custom Interval</p>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={1}
-                          placeholder="e.g. 10"
-                          value={customSettingsInterval}
-                          onChange={(e) => setCustomSettingsInterval(e.target.value)}
-                          className="h-7 w-24 text-[11px]"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-[10px] gap-1"
-                          onClick={handleAddCustomSettingsInterval}
-                          disabled={!customSettingsInterval || parseInt(customSettingsInterval) < 1}
-                        >
-                          <Plus className="h-3 w-3" />
-                          Add
-                        </Button>
-                        {customSettingsInterval && parseInt(customSettingsInterval) > 0 && (
-                          <Badge
-                            variant="outline"
-                            className={`text-[8px] px-1.5 py-0 h-4 ${
-                              parseInt(customSettingsInterval) <= 3
-                                ? "bg-amber-500/15 text-amber-600 border-amber-500/25"
-                                : parseInt(customSettingsInterval) <= 7
-                                  ? "bg-orange-500/15 text-orange-600 border-orange-500/25"
-                                  : "bg-red-500/15 text-red-600 border-red-500/25"
-                            }`}
-                          >
-                            {getToneLabel(parseInt(customSettingsInterval))}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* ── Summary Stats ──────────────────────────────────────────────── */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
@@ -864,10 +363,10 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
               <p className="text-[18px] font-bold text-emerald-600">{totalRemindersSent}</p>
               <p className="text-[10px] text-emerald-500">delivered</p>
             </div>
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+            <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/10">
               <p className="text-[11px] text-muted-foreground">Scheduled</p>
-              <p className="text-[18px] font-bold text-primary">{totalScheduledReminders}</p>
-              <p className="text-[10px] text-primary">pending</p>
+              <p className="text-[18px] font-bold text-[#8B5CF6]">{totalScheduledReminders}</p>
+              <p className="text-[10px] text-[#8B5CF6]">pending</p>
             </div>
           </div>
 
@@ -951,7 +450,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {safeOverdueInvoices.map((invoice, idx) => {
               const isExpanded = expandedInvoiceId === invoice._id;
-              const hasScheduledReminders = invoice.reminders.some((r) => r.status === "scheduled");
               const urgencyLevel =
                 invoice.daysPastDue >= 21
                   ? "critical"
@@ -1029,15 +527,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                                   {getToneConfig(invoice.lastReminderSent.tone).label}
                                 </Badge>
                               )}
-                              {invoice.reminders.filter((r) => r.status === "scheduled").length > 0 && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0 h-4 bg-primary/15 text-primary border-primary/25"
-                                >
-                                  <Bell className="h-2.5 w-2.5 mr-0.5" />
-                                  {invoice.reminders.filter((r) => r.status === "scheduled").length} scheduled
-                                </Badge>
-                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -1050,44 +539,15 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-3 flex-shrink-0">
                           <div className="text-right hidden sm:block">
                             <p className="text-[15px] font-bold text-foreground">
                               {formatCurrency(invoice.total, invoice.currency)}
                             </p>
                           </div>
-                          {/* Start / Stop Reminders buttons */}
-                          {hasScheduledReminders ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2.5 gap-1.5 text-[11px] border-red-500/30 text-red-600 hover:bg-red-500/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStopReminders(invoice._id);
-                              }}
-                            >
-                              <Square className="h-3 w-3" />
-                              Stop
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="h-7 px-2.5 gap-1.5 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openIntervalConfig(invoice._id);
-                              }}
-                            >
-                              <Play className="h-3 w-3" />
-                              Start Reminders
-                            </Button>
-                          )}
-                          {/* Remind (one-off) button */}
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-7 px-2.5 gap-1.5 text-[11px] border-primary/30 text-primary hover:bg-primary/10"
+                            className="h-7 px-2.5 gap-1.5 text-[11px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendReminder(invoice._id);
@@ -1105,20 +565,6 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                           </motion.div>
                         </div>
                       </div>
-
-                      {/* ── Interval Config Inline ──────────────────────────── */}
-                      <AnimatePresence>
-                        {configInvoiceId === invoice._id && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <IntervalConfig
-                              intervals={configIntervals}
-                              onIntervalsChange={setConfigIntervals}
-                              onConfirm={() => handleStartReminders(invoice._id, configIntervals)}
-                              onCancel={() => setConfigInvoiceId(null)}
-                            />
-                          </div>
-                        )}
-                      </AnimatePresence>
 
                       {/* ── Timeline Progress ──────────────────────────────── */}
                       <div className="mt-2.5 flex items-center gap-2">
@@ -1141,7 +587,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                                   reminderForDay?.status === "sent"
                                     ? "bg-emerald-500 text-white"
                                     : reminderForDay?.status === "scheduled"
-                                      ? "bg-primary text-primary-foreground"
+                                      ? "bg-[#8B5CF6] text-white"
                                       : isReached
                                         ? "bg-red-500/20 text-red-600"
                                         : "bg-muted text-muted-foreground/50"
@@ -1179,7 +625,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                               <div className="text-center py-3">
                                 <FileText className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground/40" />
                                 <p className="text-[11px] text-muted-foreground">
-                                  No reminders sent yet. Click &quot;Start Reminders&quot; or &quot;Remind&quot; to begin.
+                                  No reminders sent yet. Click &quot;Remind&quot; to send one.
                                 </p>
                               </div>
                             ) : (
@@ -1232,26 +678,14 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                                                 : "Cancelled"}
                                         </p>
                                       </div>
-                                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      <div className="flex items-center gap-1 flex-shrink-0">
                                         <Badge
                                           variant="outline"
                                           className="text-[9px] px-1 py-0 h-3.5 bg-muted/50"
                                         >
-                                          {channelIcon(reminder.channel)}
+                                          <Mail className="h-2 w-2 mr-0.5" />
                                           {reminder.channel}
                                         </Badge>
-                                        {reminder.status === "scheduled" && (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 px-1.5 text-[9px] text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10"
-                                            onClick={() => handleSkipReminder(reminder._id)}
-                                            disabled={skippingReminderId === reminder._id}
-                                          >
-                                            <SkipForward className="h-2.5 w-2.5 mr-0.5" />
-                                            Skip
-                                          </Button>
-                                        )}
                                       </div>
                                     </div>
                                   );

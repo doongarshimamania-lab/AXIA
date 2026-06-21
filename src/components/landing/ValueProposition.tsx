@@ -10,7 +10,7 @@ const values = [
   {
     icon: DollarSign,
     heading: "$1,028 Median Loss Prevented",
-    content: "Freelancers using Axia prevent an average of $1,028 per potential dispute, based on verified user data.",
+    content: "Agencies using Axia prevent an average of $1,028 per potential dispute, based on verified user data.",
   },
   {
     icon: Clock,
@@ -30,11 +30,11 @@ export function ValueProposition() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-[32px] font-bold text-foreground mb-4">
-            Real Results from Real Freelancers
+          <h2 className="text-[32px] font-bold text-foreground mb-4" style={{ fontFamily: "Space Grotesk" }}>
+            Real Results from Real Agencies
           </h2>
-          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto">
-            Axia helps freelancers identify and fix context gaps before submission
+          <p className="text-[18px] text-muted-foreground max-w-[700px] mx-auto" style={{ fontFamily: "Space Grotesk" }}>
+            Axia helps agencies identify and fix context gaps before submission
           </p>
         </motion.div>
 
@@ -49,13 +49,13 @@ export function ValueProposition() {
               whileHover={{ y: -8 }}
               className="bg-card rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all border border-border"
             >
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-primary">
+              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-[#00246B]">
                 <value.icon className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-[24px] font-bold text-foreground text-center mb-4">
+              <h3 className="text-[24px] font-bold text-foreground text-center mb-4" style={{ fontFamily: "Space Grotesk" }}>
                 {value.heading}
               </h3>
-              <p className="text-base text-muted-foreground text-center leading-6">
+              <p className="text-base text-muted-foreground text-center leading-6" style={{ fontFamily: "Space Grotesk" }}>
                 {value.content}
               </p>
             </motion.div>

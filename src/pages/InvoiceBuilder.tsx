@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate, useSearchParams } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -62,6 +63,7 @@ import {
 } from "lucide-react";
 import { InvoiceTemplateImportDialog } from "@/components/billing/InvoiceTemplateImportDialog";
 import type { InvoiceSection } from "@/lib/template-parser";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -178,34 +180,16 @@ export default function InvoiceBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit") as any;
-  const projectIdParam = searchParams.get("projectId");
-  const proposalIdParam = searchParams.get("proposalId");
-  const dealIdParam = searchParams.get("dealId");
 
   // ── Convex Queries ─────────────────────────────────────────────────────
   const existingInvoice = useQuery(
     editId ? api.billing.crud.getInvoice : "skip",
-    editId ? { invoiceId: editId } : {}
+    editId ? { invoiceId: editId } : "skip"
   );
 
   const workLinks = useQuery(
     editId ? api.billing.crud.getWorkLinks : "skip",
-    editId ? { invoiceId: editId } : {}
-  );
-
-  // Fetch clients for the client selector
-  const clients = useQuery(api.clients.crud.getClients, {});
-
-  // Fetch project details if projectId in URL
-  const projectFromUrl = useQuery(
-    projectIdParam ? api.projects.projectProtection.getProjectProtectionDetails : "skip",
-    projectIdParam ? { projectId: projectIdParam as any } : {}
-  );
-
-  // Fetch deal details if dealId in URL
-  const dealFromUrl = useQuery(
-    dealIdParam ? api.pipeline.crud.getDeal : "skip",
-    dealIdParam ? { dealId: dealIdParam as any } : {}
+    editId ? { invoiceId: editId } : "skip"
   );
 
   // ── Convex Mutations ───────────────────────────────────────────────────
@@ -214,7 +198,6 @@ export default function InvoiceBuilder() {
   const sendInvoiceMutation = useMutation(api.billing.crud.sendInvoice);
   const addWorkLinkMutation = useMutation(api.billing.crud.addWorkLink);
   const removeWorkLinkMutation = useMutation(api.billing.crud.removeWorkLink);
-  const createStripePaymentLinkMutation = useMutation(api.invoices.createStripePaymentLink);
 
   // ── State ──────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -222,7 +205,6 @@ export default function InvoiceBuilder() {
   const [sending, setSending] = useState(false);
   const [invoiceId, setInvoiceId] = useState<string | null>(editId || null);
 
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [issueDate, setIssueDate] = useState(timestampToDate(Date.now()));
@@ -234,9 +216,6 @@ export default function InvoiceBuilder() {
   const [notes, setNotes] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("(auto-generated)");
   const [status, setStatus] = useState("draft");
-  const [linkedProjectId, setLinkedProjectId] = useState<string | null>(projectIdParam || null);
-  const [linkedProposalId, setLinkedProposalId] = useState<string | null>(proposalIdParam || null);
-  const [generatingPaymentLink, setGeneratingPaymentLink] = useState(false);
 
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: generateId(), description: "", quantity: 1, rate: 0, amount: 0, hasProof: false },
@@ -268,9 +247,6 @@ export default function InvoiceBuilder() {
       const inv = existingInvoice as any;
       setClientName(inv.clientName || "");
       setClientEmail(inv.clientEmail || "");
-      setSelectedClientId(inv.clientId || null);
-      setLinkedProjectId(inv.projectId || null);
-      setLinkedProposalId(inv.proposalId || null);
       setIssueDate(timestampToDate(inv.issueDate));
       setDueDate(timestampToDate(inv.dueDate));
       setCurrency(inv.currency || "USD");
@@ -295,39 +271,6 @@ export default function InvoiceBuilder() {
       }
     }
   }, [existingInvoice, editId]);
-
-  // ── Auto-populate from project URL param ──────────────────────────────
-  useEffect(() => {
-    if (projectFromUrl && projectIdParam) {
-      const proj = projectFromUrl as any;
-      if (proj.clientId) {
-        setSelectedClientId(proj.clientId);
-      }
-    }
-  }, [projectFromUrl, projectIdParam]);
-
-  // ── Auto-populate from deal URL param ──────────────────────────────────
-  useEffect(() => {
-    if (dealFromUrl && dealIdParam) {
-      const deal = dealFromUrl as any;
-      if (deal.clientId) {
-        setSelectedClientId(deal.clientId);
-      }
-      if (deal.contactName) setClientName(deal.contactName);
-      if (deal.contactEmail) setClientEmail(deal.contactEmail);
-    }
-  }, [dealFromUrl, dealIdParam]);
-
-  // ── Auto-fill client info when client selected ─────────────────────────
-  useEffect(() => {
-    if (selectedClientId && clients) {
-      const client = (clients as any[]).find((c: any) => c._id === selectedClientId);
-      if (client) {
-        setClientName(client.name || "");
-        setClientEmail(client.email || "");
-      }
-    }
-  }, [selectedClientId, clients]);
 
   // ── Computed values ────────────────────────────────────────────────────
   const subtotal = useMemo(
@@ -465,34 +408,10 @@ export default function InvoiceBuilder() {
     }
   };
 
-  // ── Generate Payment Link ──────────────────────────────────────────────
-  const handleGeneratePaymentLink = async () => {
-    if (!invoiceId) {
-      toast.error("Please save the invoice first");
-      return;
-    }
-    setGeneratingPaymentLink(true);
-    try {
-      const result = await createStripePaymentLinkMutation({ invoiceId: invoiceId as any });
-      if (result?.paymentUrl) {
-        await navigator.clipboard.writeText(result.paymentUrl);
-        toast.success("Payment link copied!", {
-          description: result.mock ? "Mock link — configure Stripe for real payments" : "Link copied to clipboard",
-        });
-      }
-    } catch (err: any) {
-      toast.error("Failed to generate payment link", {
-        description: err.message || "Please try again",
-      });
-    } finally {
-      setGeneratingPaymentLink(false);
-    }
-  };
-
   // ── Save Invoice ───────────────────────────────────────────────────────
   const handleSaveDraft = async () => {
-    if (!selectedClientId) {
-      toast.error("Please select a client");
+    if (!clientName.trim()) {
+      toast.error("Client name is required");
       return;
     }
     const validItems = lineItems.filter((li) => li.description.trim() && li.quantity > 0 && li.rate > 0);
@@ -516,9 +435,8 @@ export default function InvoiceBuilder() {
       if (invoiceId) {
         await updateInvoice({
           invoiceId: invoiceId as any,
-          clientId: selectedClientId as any,
-          projectId: linkedProjectId as any || undefined,
-          proposalId: linkedProposalId as any || undefined,
+          clientName: clientName.trim(),
+          clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
           subtotal,
           taxRate,
@@ -532,9 +450,8 @@ export default function InvoiceBuilder() {
         });
       } else {
         const newId = await createInvoice({
-          clientId: selectedClientId as any,
-          projectId: linkedProjectId as any || undefined,
-          proposalId: linkedProposalId as any || undefined,
+          clientName: clientName.trim(),
+          clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
           subtotal,
           taxRate,
@@ -629,7 +546,12 @@ export default function InvoiceBuilder() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
-  if (editId && existingInvoice === undefined) {
+  const { isDisconnected } = useConvexConnectionState();
+  const editLoading = !!(editId && existingInvoice === undefined);
+  const editLoadTimedOut = useQueryTimeout(editLoading, 3000);
+  const showEditLoading = editLoading && !editLoadTimedOut && !isDisconnected;
+
+  if (showEditLoading) {
     return (
       <div className="w-full min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
@@ -648,7 +570,7 @@ export default function InvoiceBuilder() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="max-w-6xl mx-auto">
+      <PageLayout maxWidth="max-w-6xl">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -663,7 +585,7 @@ export default function InvoiceBuilder() {
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {editId ? "Edit Invoice" : "New Invoice"}
                 </h1>
                 {invoiceNumber !== "(auto-generated)" && (
@@ -679,7 +601,7 @@ export default function InvoiceBuilder() {
                   </Badge>
                 )}
                 {hasAnyProofs && (
-                  <Badge className="bg-success/15 text-success border-success/25 text-[11px] h-5">
+                  <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[11px] h-5">
                     <ShieldCheck className="h-3 w-3 mr-1" />
                     Validated Billing
                   </Badge>
@@ -716,7 +638,7 @@ export default function InvoiceBuilder() {
               <Paperclip className="h-4 w-4" />
               Proofs
               {allWorkProofs.length > 0 && (
-                <span className="ml-1 bg-success text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="ml-1 bg-[#22c55e] text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
                   {allWorkProofs.length}
                 </span>
               )}
@@ -724,7 +646,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
               onClick={() => setImportDialogOpen(true)}
             >
               <Upload className="h-4 w-4" />
@@ -733,7 +655,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
               onClick={handleSaveDraft}
               disabled={saving}
             >
@@ -743,24 +665,12 @@ export default function InvoiceBuilder() {
             {invoiceId && (
               <Button
                 size="sm"
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
                 onClick={handleSendInvoice}
                 disabled={sending || status !== "draft"}
               >
                 <Send className="h-4 w-4" />
                 {sending ? "Sending..." : "Send Invoice"}
-              </Button>
-            )}
-            {invoiceId && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                onClick={handleGeneratePaymentLink}
-                disabled={generatingPaymentLink}
-              >
-                <DollarSign className="h-4 w-4" />
-                {generatingPaymentLink ? "Generating..." : "Payment Link"}
               </Button>
             )}
           </div>
@@ -784,28 +694,11 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
+                        <FileText className="h-4 w-4 text-[#8B5CF6]" />
                         Client Details
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">
-                          Select Client <span className="text-red-500">*</span>
-                        </Label>
-                        <Select value={selectedClientId || ""} onValueChange={(val) => setSelectedClientId(val)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a client..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(clients as any[] || []).map((c: any) => (
-                              <SelectItem key={c._id} value={c._id}>
-                                {c.name}{c.company ? ` (${c.company})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="clientName" className="text-sm">
@@ -831,20 +724,6 @@ export default function InvoiceBuilder() {
                           />
                         </div>
                       </div>
-                      {(linkedProjectId || linkedProposalId) && (
-                        <div className="flex gap-2 flex-wrap">
-                          {linkedProjectId && (
-                            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                              Linked Project
-                            </Badge>
-                          )}
-                          {linkedProposalId && (
-                            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                              Linked Proposal
-                            </Badge>
-                          )}
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
 
@@ -852,7 +731,7 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-primary" />
+                        <Calendar className="h-4 w-4 text-[#8B5CF6]" />
                         Invoice Details
                       </CardTitle>
                     </CardHeader>
@@ -908,13 +787,13 @@ export default function InvoiceBuilder() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-primary" />
+                          <DollarSign className="h-4 w-4 text-[#8B5CF6]" />
                           Line Items
                         </CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                          className="gap-1.5 text-[#8B5CF6] border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/10"
                           onClick={addLineItem}
                         >
                           <Plus className="h-4 w-4" />
@@ -949,7 +828,7 @@ export default function InvoiceBuilder() {
                                       className="border-0 shadow-none focus-visible:ring-0 px-1 h-8 text-sm"
                                     />
                                     {li.hasProof && (
-                                      <Badge className="mt-1 bg-success/15 text-success border-success/25 text-[10px] h-4 px-1.5">
+                                      <Badge className="mt-1 bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
                                         <Paperclip className="h-2.5 w-2.5 mr-0.5" />
                                         Proof Attached
                                       </Badge>
@@ -996,7 +875,7 @@ export default function InvoiceBuilder() {
                                         title="Link Work Proof"
                                         onClick={() => openProofDialog(li.id)}
                                       >
-                                        <Link2 className="h-3.5 w-3.5 text-primary" />
+                                        <Link2 className="h-3.5 w-3.5 text-[#8B5CF6]" />
                                       </Button>
                                       <Button
                                         variant="ghost"
@@ -1042,7 +921,7 @@ export default function InvoiceBuilder() {
                           <Separator />
                           <div className="flex justify-between text-base font-bold">
                             <span>Total</span>
-                            <span className="text-primary">{formatCurrency(total, currency)}</span>
+                            <span className="text-[#8B5CF6]">{formatCurrency(total, currency)}</span>
                           </div>
                         </div>
                       </div>
@@ -1080,7 +959,7 @@ export default function InvoiceBuilder() {
                         <div>
                           <h2
                             className="text-3xl font-bold text-foreground"
-                           
+                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                           >
                             INVOICE
                           </h2>
@@ -1088,7 +967,7 @@ export default function InvoiceBuilder() {
                         </div>
                         <div className="text-right">
                           {hasAnyProofs && (
-                            <Badge className="bg-success/15 text-success border-success/25 mb-2">
+                            <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 mb-2">
                               <ShieldCheck className="h-3.5 w-3.5 mr-1" />
                               Validated Billing
                             </Badge>
@@ -1133,7 +1012,7 @@ export default function InvoiceBuilder() {
                                     <div className="flex items-center gap-2">
                                       {li.description}
                                       {li.hasProof && (
-                                        <Badge className="bg-success/15 text-success border-success/25 text-[10px] h-4 px-1.5">
+                                        <Badge className="bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/25 text-[10px] h-4 px-1.5">
                                           <Paperclip className="h-2.5 w-2.5 mr-0.5" />
                                           Proof
                                         </Badge>
@@ -1176,7 +1055,7 @@ export default function InvoiceBuilder() {
                               >
                                 Total
                               </TableCell>
-                              <TableCell className="text-right font-bold text-base text-primary">
+                              <TableCell className="text-right font-bold text-base text-[#8B5CF6]">
                                 {formatCurrency(total, currency)}
                               </TableCell>
                             </TableRow>
@@ -1196,10 +1075,10 @@ export default function InvoiceBuilder() {
 
                       {/* Work Proof Summary */}
                       {allWorkProofs.length > 0 && (
-                        <div className="mt-6 p-4 rounded-lg bg-success/5 border border-success/20">
+                        <div className="mt-6 p-4 rounded-lg bg-[#22c55e]/5 border border-[#22c55e]/20">
                           <div className="flex items-center gap-2 mb-3">
-                            <ShieldCheck className="h-4 w-4 text-success" />
-                            <span className="font-semibold text-sm text-success">
+                            <ShieldCheck className="h-4 w-4 text-[#22c55e]" />
+                            <span className="font-semibold text-sm text-[#22c55e]">
                               Work Proof Summary
                             </span>
                           </div>
@@ -1258,7 +1137,7 @@ export default function InvoiceBuilder() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Paperclip className="h-4 w-4 text-primary" />
+                        <Paperclip className="h-4 w-4 text-[#8B5CF6]" />
                         Work Proofs
                       </CardTitle>
                       <Button
@@ -1271,8 +1150,8 @@ export default function InvoiceBuilder() {
                       </Button>
                     </div>
                     {hasAnyProofs && (
-                      <div className="mt-2 p-2 rounded-md bg-success/10 border border-success/20">
-                        <div className="flex items-center gap-1.5 text-xs text-success font-medium">
+                      <div className="mt-2 p-2 rounded-md bg-[#22c55e]/10 border border-[#22c55e]/20">
+                        <div className="flex items-center gap-1.5 text-xs text-[#22c55e] font-medium">
                           <ShieldCheck className="h-3.5 w-3.5" />
                           Validated Billing Active
                         </div>
@@ -1303,12 +1182,12 @@ export default function InvoiceBuilder() {
                               key={proof._id}
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="p-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors"
+                              className="p-3 rounded-lg border border-border bg-card hover:border-[#8B5CF6]/30 transition-colors"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-start gap-2 min-w-0">
-                                  <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-primary" />}
+                                  <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-[#8B5CF6]" />}
                                   </div>
                                   <div className="min-w-0">
                                     <p className="text-sm font-medium text-foreground truncate">
@@ -1375,19 +1254,20 @@ export default function InvoiceBuilder() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </PageLayout>
 
       {/* ── Link Work Proof Dialog ─────────────────────────────────────── */}
       <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-primary" />
+              <Link2 className="h-5 w-5 text-[#8B5CF6]" />
               Link Work Proof
             </DialogTitle>
+            <DialogDescription>Attach a work proof to support this invoice line item.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             {/* Proof Type */}
             <div className="space-y-1.5">
               <Label className="text-sm">Proof Type</Label>
@@ -1397,7 +1277,7 @@ export default function InvoiceBuilder() {
                   setProofForm((p) => ({ ...p, proofType: v as ProofType }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1524,7 +1404,7 @@ export default function InvoiceBuilder() {
               Cancel
             </Button>
             <Button
-              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
               onClick={handleAddProof}
               disabled={!proofForm.title.trim() || !invoiceId}
             >

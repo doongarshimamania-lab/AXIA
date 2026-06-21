@@ -35,13 +35,13 @@ export function DashboardFree({ data, onUpgrade }: DashboardFreeProps) {
       <div className="relative p-6 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold text-xl text-slate-900">
+            <h3 className="font-bold text-xl text-slate-900" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
               Timeline Health Monitor
             </h3>
             <p className="text-sm text-slate-600 mt-1">Basic 7-day timeline view</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            <div className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
               ${valueMetric.amount}
             </div>
             <div className="text-xs text-slate-500 uppercase tracking-wide">{valueMetric.label}</div>
@@ -64,7 +64,7 @@ export function DashboardFree({ data, onUpgrade }: DashboardFreeProps) {
                 label={pillar.name}
                 unit={pillar.unit}
                 size="lg"
-                color={idx === 0 ? "var(--platinum-800)" : "var(--platinum-700)"}
+                color={idx === 0 ? "#00C9B7" : "#0087A6"}
               />
             </motion.div>
           ))}
@@ -98,7 +98,7 @@ export function DashboardFree({ data, onUpgrade }: DashboardFreeProps) {
         className="px-6 py-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white"
       >
         <p className="text-center text-slate-900">
-          You've tracked <span className="font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">${valueMetric.amount}</span> this {valueMetric.cadence} with basic timeline monitoring
+          You've tracked <span className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">${valueMetric.amount}</span> this {valueMetric.cadence} with basic timeline monitoring
         </p>
       </motion.div>
 

@@ -58,7 +58,7 @@ export function DashboardFreeNew({ data, onUpgrade }: DashboardFreeNewProps) {
             <p className="text-sm text-slate-500 mb-6">
               Upgrade to Starter to unlock detailed health metrics, work rhythm analysis, and interactive timelines.
             </p>
-            <Button onClick={onUpgrade} className="w-full bg-slate-200 text-slate-800 dark:bg-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
+            <Button onClick={onUpgrade} className="w-full bg-slate-900 text-white hover:bg-slate-800">
               Unlock Dashboard
             </Button>
           </motion.div>

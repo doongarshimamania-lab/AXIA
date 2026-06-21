@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TimelineSegment } from "@/types/projectProtection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,13 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-axia-teal-600" />
+              <TrendingUp className="w-5 h-5 text-indigo-500" />
               Scope Defense Timeline - Detailed Analysis
             </DialogTitle>
+            <DialogDescription>Track project phases and identify scope creep risk levels.</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
@@ -66,7 +67,7 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
                 <div key={segment.id} className="p-4 rounded-lg border bg-card">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h4 className="font-bold text-lg">{segment.label}</h4>
+                      <h4 className="font-bold text-lg break-words">{segment.label}</h4>
                       <p className="text-sm text-muted-foreground">
                         Project Progress: {segment.start}% - {segment.end}%
                       </p>
@@ -95,7 +96,7 @@ export function ScopeDefenseModal({ open, onOpenChange, segments, projectId, pro
                     </div>
                   </div>
 
-                  <div className="mt-3 p-3 bg-muted/50 rounded text-xs">
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg text-xs">
                     <p className="font-medium mb-1">Risk Assessment:</p>
                     {segment.riskLevel === 'high' && (
                       <p>High scope creep risk detected. Ensure all changes are documented and formalized with client approval.</p>

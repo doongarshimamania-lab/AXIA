@@ -10,7 +10,6 @@ import {
 import {
   Smile,
   Reply,
-  MoreHorizontal,
   Pin,
   Pencil,
   Trash2,
@@ -20,6 +19,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { format } from "date-fns";
+import { renderMarkdown } from "@/lib/markdown";
 
 export interface Message {
   id: string;
@@ -30,6 +30,7 @@ export interface Message {
   timestamp: number;
   isEdited: boolean;
   isPinned: boolean;
+  parentId?: string;
   reactions: { emoji: string; count: number; hasReacted: boolean }[];
   threadReplyCount: number;
   lastThreadReplyTime?: number;
@@ -130,12 +131,15 @@ export function MessageList({
     );
   };
 
-  // Read receipt logic: show check marks only on YOUR messages
+  // Read receipt logic: ONLY show "seen" (blue ✓✓) when others have read.
+  // NEVER show a gray "sent" checkmark on the sender's own message — that
+  // was being perceived as a "pending" notification by the sender.
+  // Sender should see no indicator until someone else actually reads it.
   const getReadStatus = (msg: Message) => {
     if (msg.authorId !== currentUserId) return null;
     const readByOthers = (msg.readBy || []).filter((id) => id !== currentUserId);
-    if (readByOthers.length > 0) return "seen"; // ✓✓ blue
-    return "sent"; // ✓ gray
+    if (readByOthers.length > 0) return "seen"; // ✓✓ blue — others have read
+    return null; // No indicator until read — avoids "pending" feeling
   };
 
   return (
@@ -175,7 +179,7 @@ export function MessageList({
                   {!consecutive && (
                     <Avatar className="h-8 w-8 mt-0.5 flex-shrink-0">
                       <AvatarImage src={msg.authorAvatar} />
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-axia-teal-400 to-axia-teal-500 text-white">
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
                         {msg.authorName
                           .split(" ")
                           .map((n) => n[0])
@@ -196,6 +200,12 @@ export function MessageList({
                         <span className="text-[11px] text-muted-foreground">
                           {formatTime(msg.timestamp)}
                         </span>
+                        {msg.isPinned && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                            <Pin className="h-2.5 w-2.5" />
+                            Pinned
+                          </span>
+                        )}
                       </div>
                     )}
 
@@ -231,7 +241,12 @@ export function MessageList({
                     ) : (
                       <div className="flex items-end gap-1.5">
                         <div className="text-sm leading-relaxed break-words">
-                          {msg.content}
+                          {renderMarkdown(msg.content, {
+                            onMention: (name) => {
+                              // Could open a profile popup or DM here in the future
+                              console.log("Mention clicked:", name);
+                            },
+                          })}
                           {msg.isEdited && (
                             <span className="text-[10px] text-muted-foreground ml-1">
                               (edited)

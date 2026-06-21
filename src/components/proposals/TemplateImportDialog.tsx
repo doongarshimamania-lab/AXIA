@@ -69,16 +69,16 @@ const sectionTypeConfig: Record<
   SectionType,
   { label: string; icon: React.ElementType; color: string }
 > = {
-  heading: { label: "Heading", icon: Heading, color: "hsl(var(--primary))" },
+  heading: { label: "Heading", icon: Heading, color: "#8B5CF6" },
   text: { label: "Text", icon: Type, color: "#6366f1" },
-  pricing: { label: "Pricing", icon: DollarSign, color: "var(--success)" },
-  terms: { label: "Terms", icon: FileCheck, color: "var(--warning)" },
-  milestone: { label: "Milestone", icon: Milestone, color: "var(--primary)" },
+  pricing: { label: "Pricing", icon: DollarSign, color: "#22c55e" },
+  terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
+  milestone: { label: "Milestone", icon: Milestone, color: "#3b82f6" },
   divider: { label: "Divider", icon: Minus, color: "#6b7280" },
   client_info: { label: "Client Info", icon: User, color: "#ec4899" },
-  sender_info: { label: "Company Info", icon: Building2, color: "#64748B" },
+  sender_info: { label: "Company Info", icon: Building2, color: "#14b8a6" },
   summary: { label: "Summary", icon: ClipboardList, color: "#f97316" },
-  scope_of_work: { label: "Scope", icon: FileText, color: "#475569" },
+  scope_of_work: { label: "Scope", icon: FileText, color: "#06b6d4" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -224,10 +224,10 @@ export function TemplateImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-primary" />
+            <Upload className="h-5 w-5 text-[#8B5CF6]" />
             Import Template
           </DialogTitle>
           <DialogDescription>
@@ -251,8 +251,8 @@ export function TemplateImportDialog({
                   transition-all duration-200
                   ${
                     isDragOver
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/30"
+                      ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
+                      : "border-border hover:border-[#8B5CF6]/50 hover:bg-muted/30"
                   }
                 `}
                 onDrop={handleDrop}
@@ -295,7 +295,7 @@ export function TemplateImportDialog({
             >
               {/* File info */}
               <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                <File className="h-4 w-4 text-primary" />
+                <File className="h-4 w-4 text-[#8B5CF6]" />
                 <span className="text-[13px] font-medium">{fileName}</span>
                 <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
                   {parsedSections.length} sections
@@ -304,7 +304,7 @@ export function TemplateImportDialog({
 
               {isParsing ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
+                  <Loader2 className="h-8 w-8 text-[#8B5CF6] animate-spin mb-3" />
                   <p className="text-[14px] text-muted-foreground">Parsing document structure...</p>
                 </div>
               ) : (
@@ -402,7 +402,7 @@ export function TemplateImportDialog({
               <Button
                 onClick={handleApply}
                 disabled={parsedSections.length === 0}
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
               >
                 <Check className="h-3.5 w-3.5" />
                 Apply to Proposal
@@ -421,7 +421,7 @@ export function TemplateImportDialog({
               </Button>
               <Button
                 onClick={handleSaveAsTemplate}
-                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Template
@@ -519,7 +519,7 @@ function SectionPreviewItem({
             transition={{ duration: 0.15 }}
             className="px-3 py-2 text-[12px] text-muted-foreground border-t border-border bg-background"
           >
-            <p className="whitespace-pre-wrap max-h-32 overflow-y-auto">
+            <p className="whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
               {section.content || "(empty)"}
             </p>
             {section.metadata?.placeholders && (

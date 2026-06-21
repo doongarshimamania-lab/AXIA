@@ -42,7 +42,7 @@ export function PlatformConnections({
           return (
             <div
               key={platform}
-              className="flex items-center justify-between p-1.5 rounded bg-muted/50 dark:bg-platinum-800 border border-border-muted"
+              className="flex items-center justify-between p-1.5 rounded bg-[#1F2937] border border-[#374151]"
             >
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <div 
@@ -52,11 +52,11 @@ export function PlatformConnections({
                   {platformLabels[platform][0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-foreground text-[11px] font-medium truncate">
+                  <div className="text-white text-[11px] font-medium truncate">
                     {platformLabels[platform]}
                   </div>
                   {isConnected && connection.lastSyncedAt && (
-                    <div className="text-[8px] text-muted-foreground mt-0.5">
+                    <div className="text-[8px] text-[#9CA3AF] mt-0.5">
                       Last synced: {new Date(connection.lastSyncedAt).toLocaleDateString()}
                     </div>
                   )}
@@ -67,7 +67,7 @@ export function PlatformConnections({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 px-1 text-[8px] text-muted-foreground hover:text-foreground hover:bg-border-muted"
+                    className="h-5 px-1 text-[8px] text-white/60 hover:text-white hover:bg-[#374151]"
                     onClick={() => onDisconnectClick(platform)}
                   >
                     Disconnect
@@ -75,7 +75,7 @@ export function PlatformConnections({
                 ) : (
                   <Button
                     size="sm"
-                    className="h-5 px-1 text-[8px] bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="h-5 px-1 text-[8px] bg-[#3B82F6] hover:bg-[#2563EB] text-white"
                     onClick={() => onConnectClick(platform)}
                   >
                     Connect

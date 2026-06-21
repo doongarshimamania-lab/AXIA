@@ -1,5 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery_experimental, useMutation } from "convex/react";
+import { useConvexAuth, useQuery_experimental } from "convex/react";
+import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useEffect, useState, useRef } from "react";
 

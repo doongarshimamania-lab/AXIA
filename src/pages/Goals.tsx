@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -13,7 +13,6 @@ import {
   Calendar,
   Flag,
   BarChart3,
-  Info,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,8 +41,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -113,131 +113,6 @@ const daysUntil = (timestamp: number) => {
   return diff;
 };
 
-// ─── Mock Data (demo mode) ───────────────────────────────────────────────────
-
-const MOCK_GOALS = [
-  {
-    _id: "goal_1" as any,
-    title: "Reach $10K monthly revenue",
-    description: "Scale freelance income to $10,000 per month by diversifying client base and raising rates for premium protection services.",
-    type: "revenue",
-    target: 10000,
-    current: 7200,
-    unit: "USD",
-    deadline: new Date("2025-09-30").getTime(),
-    status: "in_progress",
-    milestones: [
-      { id: "m1", title: "Reach $5K/mo", completed: true, completedAt: undefined as number | undefined },
-      { id: "m2", title: "Reach $7.5K/mo", completed: true, completedAt: undefined as number | undefined },
-      { id: "m3", title: "Reach $10K/mo", completed: false, completedAt: undefined as number | undefined },
-    ],
-    streak: 14,
-    lastCheckIn: Date.now() - 86400000,
-    createdAt: Date.now() - 150 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 86400000,
-  },
-  {
-    _id: "goal_2" as any,
-    title: "Achieve 95% on-time delivery",
-    description: "Maintain a 95% on-time project delivery rate to strengthen client trust and improve dispute protection standing.",
-    type: "protection",
-    target: 100,
-    current: 88,
-    unit: "%",
-    deadline: new Date("2025-08-15").getTime(),
-    status: "in_progress",
-    milestones: [
-      { id: "m4", title: "Track first 10 projects", completed: true, completedAt: undefined as number | undefined },
-      { id: "m5", title: "Hit 90% on-time", completed: true, completedAt: undefined as number | undefined },
-      { id: "m6", title: "Hit 95% on-time", completed: false, completedAt: undefined as number | undefined },
-    ],
-    streak: 21,
-    lastCheckIn: Date.now() - 172800000,
-    createdAt: Date.now() - 135 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 172800000,
-  },
-  {
-    _id: "goal_3" as any,
-    title: "Complete 50 evidence-backed sessions",
-    description: "Accumulate 50 fully evidence-backed work sessions with automated screenshots and activity logs for maximum protection.",
-    type: "hours",
-    target: 50,
-    current: 28,
-    unit: "hours",
-    deadline: new Date("2025-12-31").getTime(),
-    status: "in_progress",
-    milestones: [
-      { id: "m7", title: "Complete 10 sessions", completed: true, completedAt: undefined as number | undefined },
-      { id: "m8", title: "Complete 25 sessions", completed: true, completedAt: undefined as number | undefined },
-      { id: "m9", title: "Complete 50 sessions", completed: false, completedAt: undefined as number | undefined },
-    ],
-    streak: 7,
-    lastCheckIn: Date.now() - 259200000,
-    createdAt: Date.now() - 95 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 259200000,
-  },
-  {
-    _id: "goal_4" as any,
-    title: "Zero unpaid invoices this quarter",
-    description: "Ensure all invoices are paid within the agreed terms by using automated follow-ups and milestone-based payment protection.",
-    type: "revenue",
-    target: 0,
-    current: 0,
-    unit: "USD",
-    deadline: new Date("2025-06-30").getTime(),
-    status: "completed",
-    milestones: [
-      { id: "m10", title: "Set up payment tracking", completed: true, completedAt: undefined as number | undefined },
-      { id: "m11", title: "Automate reminders", completed: true, completedAt: undefined as number | undefined },
-      { id: "m12", title: "Zero unpaid for 30 days", completed: true, completedAt: undefined as number | undefined },
-    ],
-    streak: 30,
-    lastCheckIn: Date.now() - 432000000,
-    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 432000000,
-  },
-  {
-    _id: "goal_5" as any,
-    title: "Launch 3 new client projects",
-    description: "Onboard and launch 3 new client projects with full protection from day one, including scope definition and milestone contracts.",
-    type: "clients",
-    target: 3,
-    current: 1,
-    unit: "clients",
-    deadline: new Date("2025-10-15").getTime(),
-    status: "not_started",
-    milestones: [
-      { id: "m13", title: "Launch first project", completed: true, completedAt: undefined as number | undefined },
-      { id: "m14", title: "Launch second project", completed: false, completedAt: undefined as number | undefined },
-      { id: "m15", title: "Launch third project", completed: false, completedAt: undefined as number | undefined },
-    ],
-    streak: 0,
-    lastCheckIn: undefined as number | undefined,
-    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-  },
-  {
-    _id: "goal_6" as any,
-    title: "Maintain 4.9+ client satisfaction",
-    description: "Keep average client satisfaction rating at 4.9 or above through proactive communication and quality deliverables.",
-    type: "protection",
-    target: 100,
-    current: 45,
-    unit: "score",
-    deadline: new Date("2025-05-31").getTime(),
-    status: "abandoned",
-    milestones: [
-      { id: "m16", title: "Collect 10 reviews", completed: true, completedAt: undefined as number | undefined },
-      { id: "m17", title: "Hit 4.8 avg", completed: false, completedAt: undefined as number | undefined },
-      { id: "m18", title: "Hit 4.9+ avg", completed: false, completedAt: undefined as number | undefined },
-    ],
-    streak: 0,
-    lastCheckIn: undefined as number | undefined,
-    createdAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
-    updatedAt: Date.now() - 120 * 24 * 60 * 60 * 1000,
-  },
-];
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Goals() {
@@ -276,24 +151,16 @@ export default function Goals() {
   const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
   // ─── Loading timeout pattern ────────────────────────────────────────────
-  const [queryTimeout, setQueryTimeout] = useState(false);
+  const { isDisconnected } = useConvexConnectionState();
+  const timedOut = useQueryTimeout(!authLoading && goalsData === undefined, 3000);
 
-  useEffect(() => {
-    if (goalsData === undefined) {
-      const timer = setTimeout(() => setQueryTimeout(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setQueryTimeout(false);
-    }
-  }, [goalsData]);
-
-  const isLoading = !authLoading && goalsData === undefined && !queryTimeout;
+  const isLoading = !authLoading && goalsData === undefined && !timedOut && !isDisconnected;
 
   // ─── Demo mode ──────────────────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
 
   // ─── Data resolution ────────────────────────────────────────────────────
-  const goals = isDemoMode ? MOCK_GOALS : (goalsData ?? []);
+  const goals = goalsData ?? [];
 
   // ── Computed Stats ──
   const activeGoals = goals.filter((g: any) => g.status === "in_progress").length;
@@ -509,7 +376,7 @@ export default function Goals() {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-background text-foreground"
     >
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <PageLayout spaced>
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -517,7 +384,7 @@ export default function Goals() {
               Goals
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Set and track professional goals to protect your income and grow your freelance career
+              Set and track professional goals to protect your income and grow your agency
             </p>
           </div>
 
@@ -538,7 +405,7 @@ export default function Goals() {
               <DialogHeader>
                 <DialogTitle>Create New Goal</DialogTitle>
                 <DialogDescription>
-                  Define a measurable goal with a deadline to keep your freelance career on track.
+                  Define a measurable goal with a deadline to keep your professional growth on track.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
@@ -565,7 +432,7 @@ export default function Goals() {
                   <div className="space-y-2">
                     <Label>Type</Label>
                     <Select value={formType} onValueChange={setFormType}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -580,7 +447,7 @@ export default function Goals() {
                   <div className="space-y-2">
                     <Label>Unit</Label>
                     <Select value={formUnit} onValueChange={setFormUnit}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -651,18 +518,24 @@ export default function Goals() {
           </Dialog>
         </div>
 
-        {/* ── Demo mode banner ── */}
+        {/* ── Demo mode empty state ── */}
         {isDemoMode && (
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <span className="font-semibold">Demo Mode</span> — You're viewing sample data.{" "}
-              <a href="/auth" className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                Sign in
-              </a>{" "}
-              to manage your real goals.
+          <Card className="p-8 bg-card rounded-xl border border-border">
+            <div className="text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Target className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Sign in to see your goals</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect your account to set and track professional goals.
+                </p>
+              </div>
+              <Button asChild>
+                <a href="/auth">Sign In</a>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* ── Loading state ── */}
@@ -935,7 +808,7 @@ export default function Goals() {
             )}
           </>
         )}
-      </div>
+      </PageLayout>
 
       {/* ── Edit Goal Dialog ── */}
       <Dialog
@@ -975,7 +848,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -990,7 +863,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Unit</Label>
                 <Select value={formUnit} onValueChange={setFormUnit}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1036,7 +909,7 @@ export default function Goals() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1083,12 +956,12 @@ export default function Goals() {
           if (!open) setDeletingGoal(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Goal</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the goal{" "}
-              <span className="font-semibold text-foreground">{deletingGoal?.title}</span>? This
+              <span className="font-semibold text-foreground break-words">{deletingGoal?.title}</span>? This
               action cannot be undone and all progress will be lost.
             </DialogDescription>
           </DialogHeader>
