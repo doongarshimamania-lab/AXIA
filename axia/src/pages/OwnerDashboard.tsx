@@ -32,7 +32,7 @@ import {
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { useQuery, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+import { useQuery, useQueryTimeout, useConvexConnectionState, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 
@@ -47,8 +47,14 @@ function useOwnerAuth() {
   const [showError, setShowError] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const timeoutRef = useRef<number | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const CORRECT_PASSWORD = "@@@@HHH$";
+  // Server-side credential verification — the actual owner password lives
+  // in the OWNER_PASSWORD Convex env var, never in the JS bundle. Previous
+  // implementation hardcoded "@@@@HHH$" in client source which meant anyone
+  // who opened DevTools could read it. (v5.4.0 security audit)
+  const verifyOwner = useMutation(api.ownerAuth.ownerAuth_verifyOwnerCredentials);
+
   const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
   const logout = useCallback((message?: string) => {
@@ -77,38 +83,55 @@ function useOwnerAuth() {
     }, SESSION_TIMEOUT);
   }, [logout]);
 
-  const login = (inputPassword: string) => {
-    if (inputPassword === CORRECT_PASSWORD) {
-      setIsAuthenticated(true);
-      localStorage.setItem("ownerSessionActive", "true");
-      resetActivityTimer();
-      setFailedAttempts(0);
-      setShowError(false);
-    } else {
-      const newFailedAttempts = failedAttempts + 1;
-      setFailedAttempts(newFailedAttempts);
-      
-      if (newFailedAttempts >= 3) {
-        setShowError(true);
-        setTimeout(() => setShowError(false), 5000);
+  const login = async (inputPassword: string) => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+    try {
+      // Cap password length client-side too (LPDOS guard).
+      const candidate = inputPassword.slice(0, 64);
+      const result = await verifyOwner({ password: candidate });
+      if (result.success) {
+        setIsAuthenticated(true);
+        localStorage.setItem("ownerSessionActive", "true");
+        resetActivityTimer();
+        setFailedAttempts(0);
+        setShowError(false);
+      } else {
+        const newFailedAttempts = failedAttempts + 1;
+        setFailedAttempts(newFailedAttempts);
+        if (newFailedAttempts >= 3) {
+          setShowError(true);
+          setTimeout(() => setShowError(false), 5000);
+        }
+        if (result.error) {
+          toast.error(result.error);
+        }
       }
+    } catch (err) {
+      toast.error("Owner verification failed. Try again.");
+    } finally {
+      setIsVerifying(false);
+      setPassword("");
     }
-    setPassword("");
   };
 
   useEffect(() => {
-    // Check existing session
-    const sessionActive = localStorage.getItem("ownerSessionActive") === "true";
+    // SECURITY: do NOT auto-restore `isAuthenticated` from localStorage.
+    // Previously, anyone with XSS could `localStorage.setItem("ownerSessionActive","true")`
+    // and bypass the owner password prompt entirely. The owner dashboard
+    // exposes Stripe MRR, churn, and high-value user lists.
+    //
+    // We DO restore the inactivity-timer (so an open tab still logs out after
+    // 10 min), but auth state itself must come from a fresh `login()` call.
     const storedLastActivity = localStorage.getItem("ownerLastActivity");
-    
-    if (sessionActive && storedLastActivity) {
+    if (storedLastActivity) {
       const timeSinceLastActivity = Date.now() - parseInt(storedLastActivity);
-      if (timeSinceLastActivity < SESSION_TIMEOUT) {
-        setIsAuthenticated(true);
-        resetActivityTimer();
-      } else {
-        logout("Session expired");
+      if (timeSinceLastActivity >= SESSION_TIMEOUT) {
+        localStorage.removeItem("ownerSessionActive");
+        localStorage.removeItem("ownerLastActivity");
       }
+    } else {
+      localStorage.removeItem("ownerSessionActive");
     }
 
     // Activity listeners

@@ -86,10 +86,15 @@ export const getScopeByApprovalToken = query({
 
 // ─── MUTATIONS ────────────────────────────────────────────────────────────
 
+/**
+ * Cryptographically secure token generator (see proposals/crud.ts).
+ */
 function generateToken(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const buf = new Uint32Array(32);
+  crypto.getRandomValues(buf);
   let result = "";
-  for (let i = 0; i < 32; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 32; i++) result += chars.charAt(buf[i] % chars.length);
   return result;
 }
 

@@ -24,10 +24,21 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getCurrentUser } from "./users";
 
 // Dev user credentials (used only for the enrichDevUser mutation below)
 const DEV_USER_EMAIL = "dev@axia.app";
 const DEV_USER_NAME = "Dev User";
+
+/**
+ * Admin-only guard. `resetDevUser` previously allowed ANY authenticated
+ * user to wipe the dev user's data. Now admin-only (v5.4.0 security audit).
+ */
+async function requireAdmin(ctx: any): Promise<void> {
+  const user = await getCurrentUser(ctx);
+  if (!user) throw new Error("Not authenticated");
+  if (user.role !== "admin") throw new Error("Admin access required");
+}
 
 /**
  * Check if the dev user has been seeded already.
@@ -55,17 +66,12 @@ export const isDevUserSeeded = query({
 export const resetDevUser = mutation({
   args: {},
   handler: async (ctx) => {
-    // SECURITY: Require authentication
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Authentication required");
+    // SECURITY: Admin-only (was: any authenticated user; was originally: no auth).
+    // Admin-only is stricter than the previous "dev user can reset their own
+    // account" check, so that check is now redundant and removed.
+    await requireAdmin(ctx);
 
-    // SECURITY: Only allow the dev user to reset their own account
-    const user = await ctx.db.get(userId);
-    if (user?.email !== DEV_USER_EMAIL) {
-      throw new Error("Only dev user can reset their account");
-    }
-
-    // Find the dev user document (should be the same as the authenticated user)
+    // Find the dev user document
     const devUser = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", DEV_USER_EMAIL))

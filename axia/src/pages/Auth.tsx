@@ -41,9 +41,20 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Get redirect from URL params or props
+  // Get redirect from URL params or props.
+  // SECURITY: whitelist redirect targets to prevent open-redirect phishing.
+  // Previously, `?redirect=//evil.com` would navigate the user to evil.com
+  // after sign-in. Now we only allow same-origin relative paths.
   const redirectParam = searchParams.get("redirect");
-  const redirect = redirectParam || redirectAfterAuth || "/dashboard";
+  const SAFE_REDIRECT_RE = /^\/[a-zA-Z0-9_\-./?=&%]*$/;
+  const isSafeRedirect = (s: string | null): s is string =>
+    !!s &&
+    !s.startsWith("//") &&
+    !s.startsWith("/\\") &&
+    SAFE_REDIRECT_RE.test(s);
+  const redirect = isSafeRedirect(redirectParam)
+    ? redirectParam
+    : redirectAfterAuth || "/dashboard";
 
   // Honor ?mode=signup to default the form to the sign-up step.
   // This lets the landing page's "Get Started" button deep-link to signup.
@@ -76,6 +87,14 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    // Cap sign-in password length too — a malicious user can submit a 1 MB
+    // password to the sign-in endpoint to trigger scrypt hashing on a known
+    // email. This is the LPDOS attack vector even without creating an account.
+    if (password.length > 16) {
+      setError("Password must be at most 16 characters.");
+      setIsLoading(false);
+      return;
+    }
     try {
       const formData = new FormData();
       formData.set("email", email);
@@ -120,17 +139,16 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
     // Password length validation — client-side defense.
     // Min 8 (matches Convex Auth's `validateDefaultPasswordRequirements`).
-    // Max 1024 (DoS prevention — prevents an attacker from submitting a
-    // multi-megabyte password that would burn server CPU on scrypt hashing).
-    // Scrypt itself enforces a `maxmem=1GB` cap so longer passwords throw,
-    // but we'd rather reject before the network round-trip.
+    // Max 16 (LPDOS guard — at 1,000 users, a 1,024-char password costs
+    // ~50 ms CPU + 2 MB RAM per scrypt hash; 100 concurrent submits = DoS).
+    // Server-side Password provider also enforces this cap.
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
       setIsLoading(false);
       return;
     }
-    if (password.length > 1024) {
-      setError("Password must be at most 1024 characters long.");
+    if (password.length > 16) {
+      setError("Password must be at most 16 characters.");
       setIsLoading(false);
       return;
     }
@@ -394,7 +412,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                 </div>
               </div>
               <div>
-                <Label htmlFor="signup-password" className="text-muted-foreground text-sm">Password (min 8 characters)</Label>
+                <Label htmlFor="signup-password" className="text-muted-foreground text-sm">Password (8–16 characters)</Label>
                 <div className="relative mt-1">
                   <Input
                     id="signup-password"
@@ -402,10 +420,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     placeholder="Create a strong password"
                     className="h-11 bg-background border-border pr-10"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value.slice(0, 16))}
                     disabled={isLoading}
                     required
                     minLength={8}
+                    maxLength={16}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -459,9 +479,11 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     placeholder="Enter your password"
                     className="h-11 bg-background border-border pr-10"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value.slice(0, 16))}
                     disabled={isLoading}
                     required
+                    maxLength={16}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"

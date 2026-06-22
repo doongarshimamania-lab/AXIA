@@ -76,19 +76,27 @@ export const recordEvents = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
 
-    // Validate evidence session exists and is active
+    // Validate evidence session exists, is active, AND belongs to the caller.
+    // IDOR fix: previously any authenticated user could write events to ANY
+    // evidence session by ID.
     const evidenceSession = await ctx.db.get(args.evidenceSessionId);
     if (!evidenceSession || evidenceSession.status !== "active") {
       throw new Error("Evidence session not found or not active");
     }
+    if (evidenceSession.userId !== user._id && evidenceSession.createdBy !== user._id) {
+      throw new Error("Not authorized to write to this evidence session");
+    }
+
+    // Cap total events per call to prevent storage flooding (1000-user scale).
+    const events = args.events.slice(0, 2000);
 
     // Chunk events to stay under Convex limits (max 500 per batch)
     const chunks = [];
-    for (let i = 0; i < args.events.length; i += 500) {
-      chunks.push(args.events.slice(i, i + 500));
+    for (let i = 0; i < events.length; i += 500) {
+      chunks.push(events.slice(i, i + 500));
     }
 
     let insertedCount = 0;
@@ -110,18 +118,21 @@ export const recordEvents = mutation({
   },
 });
 
-// Finalize evidence session
+// Finalize evidence session — IDOR fix: verify caller owns the session.
 export const finalizeEvidenceSession = mutation({
   args: {
     evidenceSessionId: v.id("evidenceSessions"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
 
     const evidenceSession = await ctx.db.get(args.evidenceSessionId);
     if (!evidenceSession) {
       throw new Error("Evidence session not found");
+    }
+    if (evidenceSession.userId !== user._id && evidenceSession.createdBy !== user._id) {
+      throw new Error("Not authorized to finalize this evidence session");
     }
 
     await ctx.db.patch(args.evidenceSessionId, {
@@ -133,14 +144,14 @@ export const finalizeEvidenceSession = mutation({
   },
 });
 
-// Get evidence summary for a session
+// Get evidence summary for a session — IDOR fix: verify caller owns the session.
 export const getEvidenceSummary = query({
   args: {
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
 
     const evidenceSession = await ctx.db
       .query("evidenceSessions")
@@ -148,6 +159,9 @@ export const getEvidenceSummary = query({
       .first();
 
     if (!evidenceSession) return null;
+    if (evidenceSession.userId !== user._id && evidenceSession.createdBy !== user._id) {
+      return null;
+    }
 
     const eventCount = await ctx.db
       .query("evidenceEvents")

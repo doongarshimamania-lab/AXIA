@@ -74,23 +74,30 @@ export function generateJWT(payload: Record<string, any>, expiresIn: string = "5
 }
 
 /**
- * Verify and decode JWT token
+ * Verify and decode JWT token. Constant-time signature comparison.
  */
 export function verifyJWT(token: string): Record<string, any> | null {
   try {
     const [encodedHeader, encodedPayload, signature] = token.split(".");
-    
+
     const expectedSignature = crypto
       .createHmac("sha256", getJwtSecret())
       .update(`${encodedHeader}.${encodedPayload}`)
       .digest("base64url");
 
-    if (signature !== expectedSignature) {
+    // Constant-time comparison to prevent timing attacks on token forgery.
+    // Buffers must be equal length; if not, the token is malformed anyway.
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSignature);
+    if (sigBuf.length !== expBuf.length) {
+      return null;
+    }
+    if (!crypto.timingSafeEqual(sigBuf, expBuf)) {
       return null;
     }
 
     const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString());
-    
+
     // Check expiration
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       return null;

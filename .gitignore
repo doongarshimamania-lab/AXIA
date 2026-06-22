@@ -73,3 +73,48 @@ convex_local_backend.sqlite3
 /resources/backups/*.zip
 
 # Screenshots are tracked (small, useful for docs)
+
+# ─── v5.4.0 security-audit cleanup ──────────────────────────────────────
+# The repo should be LEAN: only axia/ production code + small top-level
+# metadata. Everything else is build output, deliverables, multi-agent
+# scratch space, or unrelated projects. Untracked files remain on disk.
+
+# Top-level tool-results (transient agent scratch)
+/tool-results/
+
+# Z.ai skills library (1023 files — not part of AXIA source)
+/skills/
+
+# Deliverables (PDFs, screenshots, audit reports, backup zips).
+# These are produced by audits/scripts and should never be tracked.
+# A 16 MB backup zip was previously tracked — removed in v5.4.0.
+/download/
+
+# Anything under resources/ is archive/backup/scratch — untrack all of it.
+# (Files stay on disk; just not in git.)
+/resources/
+
+# Multi-agent workdir at root (transient)
+/agent-ctx/
+
+# Build/orchestration scripts at root (not app runtime)
+/.zscripts/
+
+# Misc standalone backups at root
+/backups/
+/src_backup_*/
+/timelock-messy-backup/
+/ecc/
+/examples/
+
+# Research / planning JSON at root (input data, not source)
+/research_*.json
+
+# Binary archives anywhere
+*.zip
+*.tar.gz
+*.tar.bz2
+
+# Runtime files
+*.pid
+*.seed

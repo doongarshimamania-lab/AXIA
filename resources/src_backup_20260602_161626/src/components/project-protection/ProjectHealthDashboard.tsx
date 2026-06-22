@@ -1,1 +1,0 @@
-export { ProjectHealthDashboardNew as ProjectHealthDashboard } from "./ProjectHealthDashboardNew";

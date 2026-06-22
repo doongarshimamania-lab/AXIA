@@ -1,17 +1,32 @@
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import { getCurrentUser } from "./users";
 
 /**
- * List all authAccounts for a given email.
- * Useful for debugging "InvalidSecret" errors.
+ * Admin-only guard. Both `listAuthAccountsForEmail` and
+ * `cleanOrphanedAuthAccounts` previously allowed ANY authenticated user to
+ * enumerate auth accounts for any email, or DELETE auth accounts for any
+ * user by email. Both are now admin-only (v5.4.0 security audit).
+ */
+async function requireAdmin(ctx: any): Promise<void> {
+  const user = await getCurrentUser(ctx);
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  if (user.role !== "admin") {
+    throw new Error("Admin access required");
+  }
+}
+
+/**
+ * List all authAccounts for a given email. ADMIN ONLY.
  * Usage: npx convex run debug:listAuthAccountsForEmail '{ "email": "dev@axia.app" }'
  */
 export const listAuthAccountsForEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY: Require authentication
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Authentication required");
+    await requireAdmin(ctx);
 
     // Find user by email
     const user = await ctx.db
@@ -48,16 +63,13 @@ export const listAuthAccountsForEmail = query({
 });
 
 /**
- * Clean up orphaned auth accounts for a given email.
- * This removes authAccounts that have no matching secret (orphaned).
+ * Clean up orphaned auth accounts for a given email. ADMIN ONLY.
  * Usage: npx convex run debug:cleanOrphanedAuthAccounts '{ "email": "dev@axia.app" }'
  */
 export const cleanOrphanedAuthAccounts = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY: Require authentication
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Authentication required");
+    await requireAdmin(ctx);
 
     const user = await ctx.db
       .query("users")
@@ -83,9 +95,7 @@ export const cleanOrphanedAuthAccounts = mutation({
   },
 });
 
-import { v } from "convex/values";
-
-// Debug query to check user's tokens
+// Debug query to check user's tokens (self-only — returns caller's tokens)
 export const checkMyTokens = query({
   args: {},
   handler: async (ctx) => {

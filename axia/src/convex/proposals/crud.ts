@@ -165,11 +165,19 @@ export const getFollowUps = query({
 
 // ─── MUTATIONS ────────────────────────────────────────────────────────────
 
+/**
+ * Cryptographically secure token generator.
+ * Replaces Math.random()-based generation which is predictable and has only
+ * ~52 bits of entropy. Uses Web Crypto's getRandomValues (available in the
+ * Convex runtime). 32 chars from 62-char alphabet ≈ 190 bits of entropy.
+ */
 function generateToken(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const buf = new Uint32Array(32);
+  crypto.getRandomValues(buf);
   let result = "";
   for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(buf[i] % chars.length);
   }
   return result;
 }
