@@ -652,3 +652,32 @@ Stage Summary:
 - Theme selection persists across sessions (localStorage) and syncs across tabs
 - Preview server (PID 5846, PPID 1) serving latest build on port 3000
 - All changes pushed to GitHub at commit 98fd6c6
+
+---
+Task ID: reverse-hallmark-integration
+Agent: main
+Task: Reverse the Hallmark integration commits and changes per user request
+
+Work Log:
+- Inspected git log to identify Hallmark-related commits:
+  - 98fd6c6 "feat: integrate Hallmark design skill (21 themes) into AXIA UI workflow" — the integration commit (7 files, 1886 insertions)
+  - ea8f242 (UUID commit) — added resources/external-repos/hallmark cloned repo + preview-daemon scripts
+- Decision: revert ONLY the Hallmark integration (98fd6c6) + remove the cloned repo. KEEP the preview-daemon infrastructure (preview-daemon.py, supervisor.sh) since it's needed for the preview server to stay up reliably — not part of "Hallmark integration".
+- Step 1: `git revert 98fd6c6 --no-edit` → created commit f0674de "Revert 'feat: integrate Hallmark design skill...'" (7 files changed, 3 insertions, 1886 deletions). Deleted: axia/src/components/hallmark/HallmarkThemeCard.tsx, axia/src/hooks/use-hallmark-theme.tsx, axia/src/pages/HallmarkThemes.tsx, axia/src/styles/hallmark-tokens.css. Reverted edits to: axia/src/components/CollapsibleSidebar.tsx, axia/src/main.tsx, axia/src/pages/Landing.tsx.
+- Step 2: Removed cloned Hallmark repo. `git rm -f resources/external-repos/hallmark` failed because git treated it as a gitlink (the folder had a .git dir, no .gitmodules file). Worked around with `rm -rf resources/external-repos/hallmark` + `git add -A resources/external-repos/` + commit. Created commit e8709f7 "chore: remove cloned Hallmark repo" (1 file changed, 1 deletion).
+- Step 3: Verified the revert — `ls src/components/hallmark src/hooks/use-hallmark-theme.tsx src/pages/HallmarkThemes.tsx src/styles/hallmark-tokens.css` all return "No such file or directory". `grep HallmarkThemeProvider src/main.tsx` returns 0 matches. `grep HallmarkScope src/pages/Landing.tsx` returns 0 matches.
+- Step 4: Rebuilt axia/dist. `bunx vite build` → 3381 modules (back from 3385) in 10.56s. CSS back to 362.10 kB (was 390.34 kB with Hallmark). Same chunk hashes as pre-Hallmark: index-CA6RJur8.js (2.56 MB), index-vCAQmmmF.css (362 kB). Confirms no Hallmark code in bundle.
+- Step 5: Verified preview server (PID 5846, PPID 1, 29 min uptime) serving reverted build. curl http://localhost:3000/ → HTTP 200 (8794 bytes). curl http://localhost:3000/hallmark-themes → HTTP 200 (8794 bytes — SPA fallback returns index.html, route no longer exists in app). Grep for "data-hallmark-theme" in served CSS → 0 matches. Grep for "HallmarkScope|HallmarkThemes" in served JS → 0 matches.
+- Step 6: Pushed both revert commits to origin/main (98fd6c6 → e8709f7). GitHub now has the rollback.
+
+Stage Summary:
+- Hallmark integration fully reversed:
+  - 4 new files deleted (HallmarkThemeCard, use-hallmark-theme, HallmarkThemes page, hallmark-tokens.css)
+  - 3 modified files reverted to pre-Hallmark state (CollapsibleSidebar, main.tsx, Landing.tsx)
+  - Cloned repo at resources/external-repos/hallmark removed
+- Preview server (PID 5846) still running on port 3000, now serving pre-Hallmark build
+- /hallmark-themes route no longer exists in the app (SPA fallback returns index.html)
+- Sidebar no longer shows "Hallmark Themes" entry
+- Landing page no longer has the theme picker pill or Hallmark Showcase Section
+- Local HEAD: e8709f7 (matches origin/main)
+- The original Hallmark integration commit (98fd6c6) is preserved in git history for reference; only the changes are reverted via revert commit f0674de
