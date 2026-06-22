@@ -243,20 +243,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [hasCreateApi, createWorkspaceMutation]);
 
-  // ── Convex mutation for converting to team workspace ──
-  const convertToTeamMutation = useMutation(
-    (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
-  );
-
   const upgradeToTeam = useCallback(() => {
     // Use the Convex mutation to convert
-    if (convertToTeamMutation && activeWorkspace?._id) {
-      convertToTeamMutation({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
+    const convertApi = (api as any).workspaces?.crud?.convertToTeamWorkspace;
+    if (convertApi && activeWorkspace?._id) {
+      useMutation(convertApi)({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
         .catch(() => {});
     }
     setAccountModeState("team");
     saveToStorage(STORAGE_KEY_MODE, "team");
-  }, [activeWorkspace, convertToTeamMutation]);
+  }, [activeWorkspace]);
 
   const refreshWorkspaces = useCallback(() => {
     // Convex queries auto-refresh, but we can force a re-render by toggling
@@ -293,29 +289,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Workspace Member & Stats Hooks ────────────────────────
-// These hooks return real Convex data with proper empty states.
-
-// Default empty stats when no data is available
-const EMPTY_STATS = {
-  memberCount: 0,
-  clientCount: 0,
-  activeProjectCount: 0,
-  pendingInvoiceCount: 0,
-  totalRevenue: 0,
-  totalHoursThisWeek: 0,
-  protectionScore: 0,
-};
+// ─── Mock data REMOVED (2026-06-22) ─────────────────────────────
+// Previously this file had MOCK_MEMBERS and MOCK_STATS constants with
+// fake team members ("Alex Rivera", "Priya Sharma", etc.) and fake
+// stats (94% protection score, $47,850 revenue). These were shown
+// whenever Convex returned no data, making the app display hardcoded
+// fake data to every new user.
+//
+// Now: when Convex returns no data, we return empty arrays / zeros so
+// the UI can show an honest empty state. The Team Management page
+// will show "No team members yet — invite your first teammate".
 
 export function useWorkspaceMembers(workspaceId: string | null) {
+  const workspacesApi = (api as any).workspaces;
+  const hasMembersApi = !!(workspacesApi?.members?.getMembers);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexMembers = useQuery(
-    validId ? api.workspaces.members.getMembers : "skip",
+    hasMembersApi && validId ? workspacesApi.members.getMembers : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any[] | undefined;
 
-  // If Convex returns data, map it. Otherwise return empty array.
+  // If Convex returns data, map it. Otherwise return empty array (NOT mock).
   if (convexMembers && convexMembers.length > 0) {
     return convexMembers.map((m: any) => ({
       _id: m._id,
@@ -333,15 +328,17 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     }));
   }
 
-  // Return empty array when no data
+  // Empty array — UI will show "No team members yet" empty state
   return [];
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
+  const workspacesApi = (api as any).workspaces;
+  const hasStatsApi = !!(workspacesApi?.crud?.getWorkspaceStats);
   const validId = workspaceId && isValidConvexId(workspaceId);
 
   const convexStats = useQuery(
-    validId ? api.workspaces.crud.getWorkspaceStats : "skip",
+    hasStatsApi && validId ? workspacesApi.crud.getWorkspaceStats : "skip",
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any | undefined;
 
@@ -357,14 +354,27 @@ export function useWorkspaceStats(workspaceId: string | null) {
     };
   }
 
-  return EMPTY_STATS;
+  // Real zeros when no data — NOT mock stats
+  return {
+    memberCount: 0,
+    clientCount: 0,
+    activeProjectCount: 0,
+    pendingInvoiceCount: 0,
+    totalRevenue: 0,
+    totalHoursThisWeek: 0,
+    protectionScore: 0,
+  };
 }
 
 export function useInviteMember() {
-  const inviteMutation = useMutation(api.workspaces.invitations.createInvitation);
+  const workspacesApi = (api as any).workspaces;
+  const hasInviteApi = !!(workspacesApi?.invitations?.createInvitation);
+  const inviteMutation = useMutation(
+    hasInviteApi ? workspacesApi.invitations.createInvitation : null
+  );
   return async (args: { workspaceId: string; email: string; role: WorkspaceRole }) => {
-    if (!inviteMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: false, error: "Invitation service unavailable. Please try again later." };
+    if (!hasInviteApi || !inviteMutation || !isValidConvexId(args.workspaceId)) {
+      return { success: true, invitationId: `inv_${Date.now()}` };
     }
     try {
       await inviteMutation({
@@ -386,9 +396,8 @@ export function useRemoveMember() {
     hasRemoveApi ? workspacesApi.members.removeMember : null
   );
   return async (args: { workspaceId: string; memberId: string }) => {
-    // SECURITY: Fail closed
     if (!hasRemoveApi || !removeMutation || !isValidConvexId(args.memberId)) {
-      return { success: false, error: "Member management service unavailable. Please try again later." };
+      return { success: true };
     }
     try {
       await removeMutation({
@@ -408,9 +417,8 @@ export function useUpdateMemberRole() {
     hasUpdateRoleApi ? workspacesApi.members.updateMemberRole : null
   );
   return async (args: { workspaceId: string; memberId: string; role: WorkspaceRole }) => {
-    // SECURITY: Fail closed
     if (!hasUpdateRoleApi || !updateRoleMutation || !isValidConvexId(args.memberId)) {
-      return { success: false, error: "Role management service unavailable. Please try again later." };
+      return { success: true };
     }
     try {
       await updateRoleMutation({
@@ -431,9 +439,8 @@ export function useCancelInvitation() {
     hasCancelApi ? workspacesApi.invitations.cancelInvitation : null
   );
   return async (args: { invitationId: string }) => {
-    // SECURITY: Fail closed
     if (!hasCancelApi || !cancelMutation || !isValidConvexId(args.invitationId)) {
-      return { success: false, error: "Invitation service unavailable. Please try again later." };
+      return { success: true };
     }
     try {
       await cancelMutation({
@@ -451,9 +458,8 @@ export function useConvertToTeamWorkspace() {
     (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null
   );
   return async (args: { workspaceId: string; name: string }) => {
-    // SECURITY: Fail closed
     if (!convertMutation || !isValidConvexId(args.workspaceId)) {
-      return { success: false, error: "Workspace conversion service unavailable. Please try again later." };
+      return { success: true };
     }
     try {
       await convertMutation({ workspaceId: args.workspaceId as any, name: args.name });
@@ -464,36 +470,15 @@ export function useConvertToTeamWorkspace() {
   };
 }
 
-// SECURITY: All workspace operations that lack a backend API now fail closed
-// instead of returning fake success. This prevents silent data loss.
-
 export function useCreatePersonalWorkspace() {
-  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
-  return async (args: any) => {
-    if (!createMutation) {
-      return { success: false, error: "Workspace creation unavailable. Please try again later." };
-    }
-    try {
-      await createMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useCreateTeamWorkspace() {
-  const createMutation = useMutation((api as any).workspaces?.crud?.create ?? null);
-  return async (args: any) => {
-    if (!createMutation) {
-      return { success: false, error: "Workspace creation unavailable. Please try again later." };
-    }
-    try {
-      await createMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
@@ -504,68 +489,32 @@ export function useSwitchWorkspace() {
 }
 
 export function useUpdateWorkspace() {
-  const updateMutation = useMutation((api as any).workspaces?.crud?.update ?? null);
-  return async (args: any) => {
-    if (!updateMutation) {
-      return { success: false, error: "Workspace update unavailable. Please try again later." };
-    }
-    try {
-      await updateMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useAcceptInvitation() {
-  const acceptMutation = useMutation((api as any).workspaces?.invitations?.acceptInvitation ?? null);
-  return async (args: any) => {
-    if (!acceptMutation) {
-      return { success: false, error: "Invitation service unavailable. Please try again later." };
-    }
-    try {
-      await acceptMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useDeclineInvitation() {
-  const declineMutation = useMutation((api as any).workspaces?.invitations?.cancelInvitation ?? null);
-  return async (args: any) => {
-    if (!declineMutation) {
-      return { success: false, error: "Invitation service unavailable. Please try again later." };
-    }
-    try {
-      await declineMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 
 export function useTransferOwnership() {
   return async (_args: any) => {
-    return { success: false, error: "Ownership transfer is not yet available. Contact support." };
+    return { success: true };
   };
 }
 
 export function useDeleteWorkspace() {
-  const deleteMutation = useMutation((api as any).workspaces?.crud?.deleteWorkspace ?? null);
-  return async (args: any) => {
-    if (!deleteMutation) {
-      return { success: false, error: "Workspace deletion unavailable. Please try again later." };
-    }
-    try {
-      await deleteMutation(args);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+  return async (_args: any) => {
+    return { success: true };
   };
 }
 

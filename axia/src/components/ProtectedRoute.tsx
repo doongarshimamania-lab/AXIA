@@ -67,5 +67,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to={`/auth?redirect=${encodeURIComponent(redirectPath)}`} replace />;
   }
 
+  // Onboarding gate: if the user is authenticated but hasn't completed
+  // onboarding yet, redirect them to the first onboarding step.
+  // Skip this redirect for:
+  //   - The onboarding routes themselves (so the user can actually complete them)
+  //   - The auth route (handled separately)
+  //   - When user data is still loading (user === undefined)
+  const isOnboardingRoute =
+    location.pathname === "/onboarding-user-information" ||
+    location.pathname === "/onboarding-source";
+  if (user && !user.onboardingComplete && !isOnboardingRoute) {
+    return <Navigate to="/onboarding-user-information" replace />;
+  }
+
   return <>{children}</>;
 }

@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "./vly-toolbar-readonly.tsx";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import Dashboard from "@/pages/Dashboard.tsx";
 import Clients from "@/pages/Clients.tsx";
@@ -8,7 +7,6 @@ import { ProtectionValueDashboard } from "@/components/ProtectionValueDashboard.
 import { PremiumNetwork } from "@/components/PremiumNetwork.tsx";
 import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
-import EvidenceLibrary from "@/pages/EvidenceLibrary.tsx";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { Component, StrictMode, useEffect } from "react";
@@ -23,6 +21,7 @@ import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CollapsibleSidebar } from "@/components/CollapsibleSidebar";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import "./types/global.d.ts";
 import TimeTracking from "./pages/TimeTracking.tsx";
 import Tags from "./pages/Tags.tsx";
@@ -40,13 +39,26 @@ import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
-import Scope from "./pages/Scope.tsx";
-import ApiSettings from "./pages/ApiSettings.tsx";
+import ClientWorkspace from "./pages/ClientWorkspace.tsx";
 import ClientLogin from "./pages/ClientLogin.tsx";
 import ClientSignup from "./pages/ClientSignup.tsx";
+import Scope from "./pages/Scope.tsx";
+import AccountSettings from "./pages/AccountSettings.tsx";
+import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
+import OnboardingUserInformation from "./pages/OnboardingUserInformation.tsx";
+import OnboardingSource from "./pages/OnboardingSource.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
-// Error Boundary to catch Convex errors and prevent app crash
+// Error Boundary to catch Convex errors and prevent app crash.
+// CRITICAL: When hasError is true, we render a fallback UI INSTEAD of children.
+// Previously we rendered children alongside the error banner, which caused the
+// same error to fire again → boundary catches again → infinite loop. Now we
+// stop the loop by showing a clean fallback until the user clicks "Try again".
 class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null };
   static getDerivedStateFromError(error: Error) {
@@ -57,13 +69,34 @@ class ConvexErrorBoundary extends Component<{ children: React.ReactNode }, { has
   }
   render() {
     if (this.state.hasError) {
-      // Show a subtle error banner instead of crashing the whole page
+      // Render a fallback INSTEAD of children — this breaks the error loop.
       return (
-        <div>
-          <div className="p-3 px-4 bg-red-50 dark:bg-red-950 border-b border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm">
-            Something went wrong on this page. <button onClick={() => this.setState({ hasError: false, error: null })} className="underline cursor-pointer bg-transparent border-none text-red-800 dark:text-red-200 font-inherit">Try again</button>
+        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-background">
+          <div className="max-w-md space-y-4">
+            <div className="h-14 w-14 mx-auto rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 text-red-500">
+                <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground">
+              {this.state.error?.message || "An unexpected error occurred while rendering this page."}
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => this.setState({ hasError: false, error: null })}
+                className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Try again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Reload page
+              </button>
+            </div>
           </div>
-          {this.props.children}
         </div>
       );
     }
@@ -143,17 +176,55 @@ function RouteSyncer() {
   return null;
 }
 
+// ─── Mobile Header with hamburger menu ──────────────────────────────────
+function MobileHeader() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border flex items-center justify-between px-4 z-[9998] md:hidden">
+      <div className="flex items-center gap-2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+          <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <span className="font-[Space_Grotesk] font-semibold text-base text-foreground">Axia</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <NotificationCenter />
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <CollapsibleSidebar />
+          </SheetContent>
+        </Sheet>
+      </div>
+    </div>
+  );
+}
+
 function DashboardLayout() {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
-    const savedState = localStorage.getItem("axia_sidebar_state");
-    const isExpanded = savedState !== "collapsed";
-    document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '320px' : '80px');
-  }, []);
+    if (isMobile) {
+      document.documentElement.style.setProperty('--sidebar-width', '0px');
+    } else {
+      const savedState = localStorage.getItem("axia_sidebar_state");
+      const isExpanded = savedState !== "collapsed";
+      document.documentElement.style.setProperty('--sidebar-width', isExpanded ? '280px' : '64px');
+    }
+  }, [isMobile]);
 
   return (
     <div className="flex w-full min-h-screen">
       <CollapsibleSidebar />
-      <div className="flex-1 min-h-screen bg-background" style={{ marginLeft: 'var(--sidebar-width, 320px)', transition: 'margin-left 0.3s ease-in-out' }}>
+      {/* Mobile header with hamburger */}
+      {isMobile && <MobileHeader />}
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
         <Outlet />
       </div>
     </div>
@@ -164,7 +235,6 @@ const root = createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>
-    <VlyToolbar />
     <ThemeProvider>
       <InstrumentationProvider>
         <ConvexProvider client={convex}>
@@ -182,10 +252,21 @@ root.render(
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
-                  <Route path="/client-login" element={<ClientLogin />} />
-                  <Route path="/client-signup" element={<ClientSignup />} />
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
+
+                  {/* Onboarding flow (auth-guarded) — step 1: user info, step 2: acquisition source.
+                      These render full-screen (no sidebar) — the page components themselves
+                      are wrapped in min-h-screen centered containers. */}
+                  <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                    <Route path="/onboarding-user-information" element={<OnboardingUserInformation />} />
+                    <Route path="/onboarding-source" element={<OnboardingSource />} />
+                  </Route>
+
+                  {/* Client Portal (Public, No Auth) */}
+                  <Route path="/workspace/:token" element={<ClientWorkspace />} />
+                  <Route path="/client-login" element={<ClientLogin />} />
+                  <Route path="/client-signup" element={<ClientSignup />} />
 
                   {/* Dashboard Routes (With Sidebar + Auth Guard) */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -196,6 +277,7 @@ root.render(
                     <Route path="/network" element={<PremiumNetwork />} />
                     <Route path="/teams" element={<TeamManagement />} />
                     <Route path="/evidence-library" element={<EvidenceLibrary />} />
+                    <Route path="/evidence-export" element={<EvidenceExport />} />
                     <Route path="/time-tracking" element={<TimeTracking />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/goals" element={<Goals />} />
@@ -203,16 +285,16 @@ root.render(
                     <Route path="/invoices/new" element={<InvoiceBuilder />} />
                     <Route path="/payment-patterns" element={<PaymentPatterns />} />
                     <Route path="/reports" element={<Reports />} />
-                    <Route path="/platform-integrations" element={<PlatformIntegrations />} />
-                    <Route path="/evidence-export" element={<EvidenceExport />} />
-                    <Route path="/subscription" element={<Subscription />} />
-                    <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/pipeline" element={<Pipeline />} />
                     <Route path="/proposals" element={<Proposals />} />
                     <Route path="/proposals/new" element={<ProposalBuilder />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
-                    <Route path="/api-settings" element={<ApiSettings />} />
+                    <Route path="/account-settings" element={<AccountSettings />} />
+                    {/* Legacy redirects — these pages are now consolidated */}
+                    <Route path="/platform-integrations" element={<AccountSettings />} />
+                    <Route path="/subscription" element={<AccountSettings />} />
+                    <Route path="/help-center" element={<AccountSettings />} />
                   </Route>
 
                   {/* Catch-all */}

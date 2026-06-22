@@ -98,8 +98,19 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     setIsLoading(true);
     setError(null);
 
+    // Password length validation — client-side defense.
+    // Min 8 (matches Convex Auth's `validateDefaultPasswordRequirements`).
+    // Max 1024 (DoS prevention — prevents an attacker from submitting a
+    // multi-megabyte password that would burn server CPU on scrypt hashing).
+    // Scrypt itself enforces a `maxmem=1GB` cap so longer passwords throw,
+    // but we'd rather reject before the network round-trip.
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
+      setIsLoading(false);
+      return;
+    }
+    if (password.length > 1024) {
+      setError("Password must be at most 1024 characters long.");
       setIsLoading(false);
       return;
     }

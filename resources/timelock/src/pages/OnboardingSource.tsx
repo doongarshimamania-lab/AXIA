@@ -8,12 +8,19 @@ import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/ThemeProvider';
+import { useMutation } from '@/lib/safe-convex-react';
+import { api } from '@/convex/_generated/api';
 
 export default function OnboardingSource() {
   const navigate = useNavigate();
-  const completeOnboarding = async (_args: any) => {
-    return;
-  };
+  // CRITICAL FIX (2026-06-22): Previously this was a NO-OP stub:
+  //   const completeOnboarding = async (_args: any) => { return; };
+  // That meant user-entered data was NEVER saved to Convex — the entire
+  // onboarding flow was cosmetic. Now we call the real Convex mutation
+  // `users.completeOnboarding`, which patches the user document with
+  // name, hourlyRate, primaryPlatform, yearsExperience, professionalBio,
+  // acquisitionSource, acquisitionSourceDetail, and sets onboardingComplete=true.
+  const completeOnboardingMutation = useMutation(api.users.completeOnboarding);
   const [selectedSource, setSelectedSource] = useState('');
   const [referrer, setReferrer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +54,7 @@ export default function OnboardingSource() {
       id: 'podcast',
       label: 'Podcast',
       icon: Radio,
-      description: 'Freelance podcasts',
+      description: 'Professional podcasts',
       detailPrompt: "Which podcast? (Optional)"
     },
     {
@@ -79,7 +86,7 @@ export default function OnboardingSource() {
       detailPrompt: "Where do you work together? (Optional)"
     },
     {
-      id: 'freelance_community',
+      id: 'professional_community',
       label: 'Community',
       icon: GraduationCap,
       description: 'Forums, Slack, Discord',
@@ -132,7 +139,7 @@ export default function OnboardingSource() {
     
     setIsSubmitting(true);
     try {
-      await completeOnboarding({
+      await completeOnboardingMutation({
         fullName: onboardingData.fullName,
         hourlyRate: Number(onboardingData.hourlyRate),
         primaryPlatform: onboardingData.primaryPlatform,
@@ -143,11 +150,11 @@ export default function OnboardingSource() {
       });
       
       localStorage.removeItem('onboardingData');
-      toast.success('Welcome to Axia!');
+      toast.success('Welcome to Axia! Your profile has been saved.');
       navigate('/dashboard');
     } catch (error) {
       console.error('Onboarding error:', error);
-      toast.error('Failed to complete onboarding. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to complete onboarding. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -175,7 +182,7 @@ export default function OnboardingSource() {
             <CardTitle className="text-2xl">How Did You Find Us?</CardTitle>
           </div>
           <CardDescription>
-            Help us understand how freelancers discover Axia so we can better serve you
+            Help us understand how agencies discover Axia so we can better serve you
           </CardDescription>
         </CardHeader>
         

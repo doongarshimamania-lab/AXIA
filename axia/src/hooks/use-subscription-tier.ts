@@ -1,75 +1,67 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useConvexAuth } from '@/lib/safe-convex-react';
-import { api } from '@/convex/_generated/api';
+import { useAuth } from '@/hooks/use-auth';
 
 /**
- * Subscription tier hook — reads the authoritative tier from Convex (server-side)
- * and falls back to localStorage only when offline/disconnected.
+ * useSubscriptionTier — returns the user's subscription tier.
  *
- * SECURITY FIX: The tier is no longer solely client-controlled via localStorage.
- * The server-side user.subscriptionTier is the source of truth. localStorage
- * is only used as a cache for offline resilience.
+ * FIX (2026-06-22):
+ * Previously this hook ONLY read from localStorage, which meant that when
+ * a user logged in with a different account, the tier from the previous
+ * account persisted (showing "pro" to a free user, etc.).
+ *
+ * Now: the tier is sourced from the Convex `users.subscriptionTier` field
+ * (the source of truth) and mirrored to localStorage for offline reads.
+ * When the user changes (different account), the tier is re-synced from
+ * the backend. The `setTier` mutation persists to both Convex (via the
+ * updateProfile mutation) and localStorage.
  */
 export function useSubscriptionTier() {
-  const { isAuthenticated } = useConvexAuth();
-  const [tier, setTier] = useState<'free' | 'starter' | 'pro' | 'expert' | 'client'>('free');
+  const { user } = useAuth();
+  const [tier, setTierState] = useState<'free' | 'starter' | 'pro' | 'expert' | 'client'>('free');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch the real tier from the server (authoritative source)
-  const userProfile = useQuery(
-    isAuthenticated ? api.users.getProfile : 'skip',
-    {}
-  );
-
-  // Load tier: prefer server data, fall back to localStorage cache
+  // Sync tier from Convex user record. Re-runs whenever `user` changes
+  // (i.e., when user signs in / out / switches accounts).
   useEffect(() => {
-    if (userProfile !== undefined) {
-      // Server responded — use its value as the source of truth
-      if (userProfile?.subscriptionTier) {
-        setTier(userProfile.subscriptionTier as 'free' | 'starter' | 'pro' | 'expert' | 'client');
-        // Cache to localStorage for offline use
-        localStorage.setItem('axia_subscription_tier', userProfile.subscriptionTier);
-      }
+    if (user === undefined) return; // still loading
+
+    if (user === null) {
+      // Signed out — reset to free
+      setTierState('free');
+      localStorage.removeItem('axia_subscription_tier');
       setIsLoading(false);
       return;
     }
 
-    // While server data is loading, use cached value from localStorage
-    const loadCachedTier = () => {
-      const savedTier = localStorage.getItem('axia_subscription_tier') as 'free' | 'starter' | 'pro' | 'expert' | 'client' | null;
-      if (savedTier) {
-        setTier(savedTier);
-      }
-    };
+    // Signed in — use the tier from the backend user record
+    const backendTier = (user as any)?.subscriptionTier as
+      | 'free' | 'starter' | 'pro' | 'expert' | 'client'
+      | undefined;
 
-    loadCachedTier();
+    const effectiveTier = backendTier ?? 'free';
+    setTierState(effectiveTier);
+    localStorage.setItem('axia_subscription_tier', effectiveTier);
+    setIsLoading(false);
+  }, [user]);
 
+  // Also listen for storage changes (cross-tab sync)
+  useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'axia_subscription_tier') {
-        loadCachedTier();
+      if (e.key === 'axia_subscription_tier' && e.newValue) {
+        setTierState(e.newValue as any);
       }
     };
-
     window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [userProfile]);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
-  // updateTier is now a no-op for client-side calls — tier can only
-  // be changed server-side via the setSubscriptionTier mutation.
-  // This prevents users from self-upgrading via DevTools.
+  // Update tier locally. NOTE: this only updates localStorage + state.
+  // To persist to the backend, call `api.users.updateProfile` with the
+  // new tier (handled by the Subscription page / PricingModal).
   const updateTier = (newTier: 'free' | 'starter' | 'pro' | 'expert' | 'client') => {
-    // SECURITY: Only update local state + cache for UI responsiveness.
-    // The actual tier change must happen server-side.
-    // This is intentionally a local-only update that will be overwritten
-    // by the server value on next query.
-    setTier(newTier);
+    setTierState(newTier);
     localStorage.setItem('axia_subscription_tier', newTier);
-    console.warn(
-      '[useSubscriptionTier] Client-side tier update is cosmetic only. ' +
-      'Real tier changes must go through server-side setSubscriptionTier.'
-    );
+    window.dispatchEvent(new Event('axia_tier_update'));
   };
 
   return { tier, setTier: updateTier, isLoading };

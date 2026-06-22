@@ -45,6 +45,8 @@ import ClientSignup from "./pages/ClientSignup.tsx";
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
 import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
+import OnboardingUserInformation from "./pages/OnboardingUserInformation.tsx";
+import OnboardingSource from "./pages/OnboardingSource.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
@@ -252,6 +254,14 @@ root.render(
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
                   <Route path="/client-dashboard" element={<ClientDashboard />} />
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
+
+                  {/* Onboarding flow (auth-guarded) — step 1: user info, step 2: acquisition source.
+                      These render full-screen (no sidebar) — the page components themselves
+                      are wrapped in min-h-screen centered containers. */}
+                  <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                    <Route path="/onboarding-user-information" element={<OnboardingUserInformation />} />
+                    <Route path="/onboarding-source" element={<OnboardingSource />} />
+                  </Route>
 
                   {/* Client Portal (Public, No Auth) */}
                   <Route path="/workspace/:token" element={<ClientWorkspace />} />
