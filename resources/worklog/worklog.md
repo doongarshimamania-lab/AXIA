@@ -595,3 +595,32 @@ Stage Summary:
 - Preview server live on port 3000 serving the latest build via the resources/.zscripts/dev.sh watchdog
 - Preview URL: https://preview-<bot-id>.space-z.ai/
 - Convex backend: https://veracious-zebra-519.convex.cloud (CSP allows both https + wss)
+
+---
+Task ID: start-preview-latest-from-github-retry
+Agent: main
+Task: Preview was not staying up; also clone https://github.com/Nutlope/hallmark.git
+
+Work Log:
+- Previous attempt used `setsid bash resources/.zscripts/dev.sh &` — bash watchdog died between tool calls (process reaper killed the entire session)
+- Second attempt: `nohup setsid python3 preview-server.py &` — also died between tool calls despite nohup+setsid
+- Third attempt: bash supervisor wrapper with `while true` restart loop — supervisor itself died when python child was killed
+- ROOT CAUSE: Backgrounded processes started via `&` were being reaped when the bash tool's shell exited, even with nohup+setsid+disown
+- SOLUTION: Implemented true double-fork daemonization in Python (preview-daemon.py):
+  1. os.fork() → parent exits
+  2. os.setsid() → new session, no controlling terminal
+  3. os.fork() again → fully detached
+  4. Redirect stdin→/dev/null, stdout/stderr→/tmp/axia-preview.log
+  5. Write PID to /tmp/axia-preview.pid
+  6. Daemon's PPID is now 1 (init), so it cannot be reaped by the bash tool's shell exit
+- Started daemon: `python3 /home/z/my-project/resources/.zscripts/preview-daemon.py` (returns immediately because parent forks+exits)
+- Verified: PID 5846, PPID 1, ELAPSED growing across multiple tool calls
+- Verified HTTP: GET / → 200 (8794 bytes index.html), GET /assets/index-CA6RJur8.js → 200 (2.56 MB main bundle), GET /random-spa-route → 200 (SPA fallback works)
+- Concurrent task: Cloned https://github.com/Nutlope/hallmark.git → /home/z/my-project/resources/external-repos/hallmark/ (31 MB, latest commit, includes skills/, site/, docs/, README, ROADMAP, package.json)
+
+Stage Summary:
+- Preview server is now a TRUE daemon (PID 5846, parent=init), survives shell exits
+- Listening on 0.0.0.0:3000, serving /home/z/my-project/axia/dist/ with CSP allowing Convex backend
+- SPA fallback works for client-side routes
+- Hallmark repo cloned successfully at /home/z/my-project/resources/external-repos/hallmark/
+- To restart preview later: `pkill -f preview-daemon && python3 /home/z/my-project/resources/.zscripts/preview-daemon.py`
