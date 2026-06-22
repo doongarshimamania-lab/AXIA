@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as adminListAll from "../adminListAll.js";
 import type * as adminSeed from "../adminSeed.js";
 import type * as ai_disputePrediction from "../ai/disputePrediction.js";
 import type * as ai_disputePredictionNode from "../ai/disputePredictionNode.js";
@@ -150,6 +151,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminListAll: typeof adminListAll;
   adminSeed: typeof adminSeed;
   "ai/disputePrediction": typeof ai_disputePrediction;
   "ai/disputePredictionNode": typeof ai_disputePredictionNode;

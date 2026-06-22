@@ -86,7 +86,27 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       navigate(redirect);
     } catch (err: any) {
       console.error("Sign-in error:", err);
-      setError(err?.message || "Invalid email or password. Please try again.");
+      // Convex Auth returns these internal error codes as the raw error message:
+      //   "InvalidSecret"     → email exists, but password is wrong
+      //   "InvalidAccountId"  → no account exists for that email
+      //   "TooManyFailedAttempts" → rate-limited after too many wrong guesses
+      // We translate all of these to a single friendly message that does NOT
+      // reveal whether the email exists (security best practice — prevents
+      // user-enumeration attacks).
+      const rawMessage = String(err?.message ?? "");
+      let friendlyMessage: string;
+      if (
+        rawMessage.includes("InvalidSecret") ||
+        rawMessage.includes("InvalidAccountId")
+      ) {
+        friendlyMessage = "Incorrect email or password. Please try again.";
+      } else if (rawMessage.includes("TooManyFailedAttempts")) {
+        friendlyMessage =
+          "Too many failed sign-in attempts. Please wait a few minutes and try again.";
+      } else {
+        friendlyMessage = err?.message || "Invalid email or password. Please try again.";
+      }
+      setError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
