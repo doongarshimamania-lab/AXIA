@@ -44,11 +44,8 @@ import ClientLogin from "./pages/ClientLogin.tsx";
 import ClientSignup from "./pages/ClientSignup.tsx";
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
-import HallmarkThemes from "./pages/HallmarkThemes.tsx";
 import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { HallmarkThemeProvider } from "@/hooks/use-hallmark-theme";
-import "./styles/hallmark-tokens.css";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
@@ -245,7 +242,6 @@ root.render(
             <ConvexErrorBoundary>
               <WorkspaceProvider>
                 <ProfileModal />
-                <HallmarkThemeProvider>
                 <Routes>
                   {/* Owner Dashboard - uses separate Convex clients */}
                   <Route path="/owner-dashboard" element={<OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} />} />
@@ -285,7 +281,6 @@ root.render(
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
-                    <Route path="/hallmark-themes" element={<HallmarkThemes />} />
                     {/* Legacy redirects — these pages are now consolidated */}
                     <Route path="/platform-integrations" element={<AccountSettings />} />
                     <Route path="/subscription" element={<AccountSettings />} />
@@ -295,7 +290,6 @@ root.render(
                   {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                </HallmarkThemeProvider>
               </WorkspaceProvider>
             </ConvexErrorBoundary>
             <Toaster />

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag, Palette } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { useAuth } from "@/hooks/use-auth";
@@ -410,9 +410,6 @@ export function CollapsibleSidebar() {
                   <button onClick={() => navigate("/account-settings")} className="w-full text-left" type="button">
                     <NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} />
                   </button>
-                  <button onClick={() => navigate("/hallmark-themes")} className="w-full text-left" type="button">
-                    <NavItem icon={Palette} label="Hallmark Themes" isExpanded={true} isActive={currentPath === "/hallmark-themes"} />
-                  </button>
                 </div>
               </motion.div>
             ) : (
@@ -480,9 +477,6 @@ export function CollapsibleSidebar() {
 
                 <button onClick={() => navigate("/account-settings")} title="Account Settings" className={`p-1.5 rounded-md transition-colors ${currentPath === "/account-settings" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <Settings className={`w-4 h-4 ${currentPath === "/account-settings" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
-                </button>
-                <button onClick={() => navigate("/hallmark-themes")} title="Hallmark Themes" className={`p-1.5 rounded-md transition-colors ${currentPath === "/hallmark-themes" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
-                  <Palette className={`w-4 h-4 ${currentPath === "/hallmark-themes" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
               </motion.div>
             )}
@@ -593,7 +587,6 @@ export function CollapsibleSidebar() {
             <div className="px-2 space-y-0.5 mt-4">
               <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">ADMIN</div>
               <button onClick={() => navigate("/account-settings")} className="w-full text-left"><NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} /></button>
-              <button onClick={() => navigate("/hallmark-themes")} className="w-full text-left"><NavItem icon={Palette} label="Hallmark Themes" isExpanded={true} isActive={currentPath === "/hallmark-themes"} /></button>
             </div>
           </div>
           {/* Bottom: Theme + Work Timeline */}
