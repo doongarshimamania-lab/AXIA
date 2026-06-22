@@ -1,8 +1,15 @@
 import { motion } from "framer-motion";
-import { WaitlistForm } from "./WaitlistForm";
-import { CheckCircle2, ShieldCheck, TrendingUp } from "lucide-react";
+import { CheckCircle2, ShieldCheck, TrendingUp, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function HeroSection() {
+interface HeroSectionProps {
+  /** Called when the primary CTA is clicked (sign up OR go to dashboard) */
+  onPrimaryCTA: () => void;
+  /** Whether the user is already authenticated — changes CTA label */
+  isAuthenticated: boolean;
+}
+
+export function HeroSection({ onPrimaryCTA, isAuthenticated }: HeroSectionProps) {
   return (
     <section className="relative pt-4 pb-2 px-6 md:px-10 overflow-hidden gradient-hero">
       {/* Background Pattern */}
@@ -44,23 +51,39 @@ export function HeroSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg md:text-xl text-muted-foreground mb-6 max-w-[700px] leading-relaxed"
           >
-            35% of payment disputes happen because of simple mistakes you can prevent. 
+            35% of payment disputes happen because of simple mistakes you can prevent.
             Axia verifies your work against platform requirements <i>before</i> submission—so you get paid, every time.
           </motion.p>
 
-          {/* Waitlist Form */}
+          {/* Auth CTAs — REAL sign up / go to dashboard, NOT a waitlist form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="w-full flex justify-center mb-6"
+            className="w-full flex flex-col sm:flex-row justify-center items-center gap-3 mb-6"
           >
-            <WaitlistForm 
-              variant="dark" 
-              ctaText="Secure My Spot" 
-              showScarcity={true}
-              className="bg-muted/50 dark:bg-white/10 backdrop-blur-sm p-2 rounded-2xl border border-border dark:border-white/10"
-            />
+            <Button
+              onClick={onPrimaryCTA}
+              size="lg"
+              className="h-14 px-8 text-lg font-bold rounded-xl shadow-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isAuthenticated ? (
+                <>
+                  <LayoutDashboard className="mr-2 h-5 w-5" />
+                  Go to Dashboard
+                </>
+              ) : (
+                <>
+                  Get Started Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
+            {!isAuthenticated && (
+              <p className="text-sm text-muted-foreground sm:ml-2">
+                No credit card required · Free forever tier
+              </p>
+            )}
           </motion.div>
 
           {/* Social Proof / Trust Indicators */}

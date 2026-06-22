@@ -150,14 +150,18 @@ export const getProtectionMetrics = query({
     const totalBlocks = recentBlocks.length;
     const compliantBlocks = recentBlocks.filter(b => b.complianceStatus === "compliant").length;
     const rejectedBlocks = recentBlocks.filter(b => b.complianceStatus === "rejected").length;
-    
-    // If no real data exists, use realistic estimates based on typical work patterns
-    const hourlyRate = user.hourlyRate || 25;
+
+    // FIX (2026-06-22): Return REAL data, not fake estimates.
+    // Previously this returned fake "95% protection score / 171 protected hours"
+    // for every new user — that was hardcoded data masquerading as analytics.
+    // Now: when there's no real data, return zeros so the UI can show an
+    // honest empty state instead of misleading fake metrics.
+    const hourlyRate = user.hourlyRate || 0;
     let protectedHours: number;
     let protectedValue: number;
     let denialRate: number;
     let protectionScore: number;
-    
+
     if (totalBlocks > 0) {
       // Use actual data
       protectedHours = Math.round((compliantBlocks * 5 / 60) * 10) / 10;
@@ -165,16 +169,11 @@ export const getProtectionMetrics = query({
       denialRate = Math.round((rejectedBlocks / totalBlocks) * 100);
       protectionScore = Math.round((compliantBlocks / totalBlocks) * 100);
     } else {
-      // Use realistic estimates: assume 8-10 hours/day average, 20 working days/month
-      const avgDailyHours = 9; // 9 hours average
-      const workingDaysPerMonth = 20;
-      const estimatedMonthlyHours = avgDailyHours * workingDaysPerMonth; // 180 hours
-      
-      // Assume 95% compliance rate (typical for protected users)
-      protectedHours = Math.round(estimatedMonthlyHours * 0.95 * 10) / 10; // ~171 hours
-      protectedValue = Math.round(protectedHours * hourlyRate * 100) / 100;
-      denialRate = 5; // 5% typical denial rate for protected users
-      protectionScore = 95; // 95% protection score
+      // No real data — return zeros (NOT fake estimates)
+      protectedHours = 0;
+      protectedValue = 0;
+      denialRate = 0;
+      protectionScore = 0;
     }
 
     // Count evidence events

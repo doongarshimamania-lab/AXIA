@@ -1,9 +1,17 @@
 import { motion } from "framer-motion";
-import { WaitlistForm } from "./WaitlistForm";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function FinalCTA() {
+interface FinalCTAProps {
+  /** Called when the primary CTA is clicked (sign up OR go to dashboard) */
+  onPrimaryCTA: () => void;
+  /** Whether the user is already authenticated — changes CTA label */
+  isAuthenticated: boolean;
+}
+
+export function FinalCTA({ onPrimaryCTA, isAuthenticated }: FinalCTAProps) {
   return (
-    <section 
+    <section
       data-waitlist-section
       className="py-8 px-6 md:px-10 gradient-hero relative overflow-hidden"
     >
@@ -21,25 +29,40 @@ export function FinalCTA() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Protect Your Income Today
+            {isAuthenticated ? "Welcome back to Axia" : "Protect Your Income Today"}
           </h2>
-          
+
           <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto leading-relaxed">
-            Join the waitlist to get early access to the only tool that verifies your work context against platform requirements—before you submit.
+            {isAuthenticated
+              ? "Jump back into your dashboard to keep tracking clients, deals, proposals, and invoices — all in one place."
+              : "Get started for free with the only tool that verifies your work context against platform requirements — before you submit."}
           </p>
 
           <div className="flex justify-center">
-            <WaitlistForm 
-              variant="dark" 
-              ctaText="Get Early Access" 
-              showScarcity={true}
-              className="bg-muted/50 dark:bg-white/10 backdrop-blur-sm p-2 rounded-2xl border border-border dark:border-white/10"
-            />
+            <Button
+              onClick={onPrimaryCTA}
+              size="lg"
+              className="h-14 px-8 text-lg font-bold rounded-xl shadow-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-2xl bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isAuthenticated ? (
+                <>
+                  <LayoutDashboard className="mr-2 h-5 w-5" />
+                  Open Dashboard
+                </>
+              ) : (
+                <>
+                  Create Free Account
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
+            </Button>
           </div>
-          
-          <p className="mt-6 text-sm text-muted-foreground">
-            Join 2,000+ freelancers on the waitlist. Launching soon.
-          </p>
+
+          {!isAuthenticated && (
+            <p className="mt-6 text-sm text-muted-foreground">
+              No credit card required · Free forever tier · Cancel anytime
+            </p>
+          )}
         </motion.div>
       </div>
     </section>

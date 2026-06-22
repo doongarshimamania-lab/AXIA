@@ -289,136 +289,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Rich Mock Data for Team Workspace ────────────────────────
-// These hooks return realistic mock data so the Team Management
-// page looks fully populated when Convex returns no data.
-
-const MOCK_MEMBERS = [
-  {
-    _id: "mem_001",
-    userId: "user_owner",
-    name: "Alex Rivera",
-    displayName: "Alex Rivera",
-    email: "alex.rivera@axiaagency.com",
-    image: "",
-    role: "owner" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 5 * 60 * 1000,
-    projectsAssigned: 8,
-    hoursThisWeek: 34.5,
-  },
-  {
-    _id: "mem_002",
-    userId: "user_manager_1",
-    name: "Priya Sharma",
-    displayName: "Priya Sharma",
-    email: "priya.sharma@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 15 * 60 * 1000,
-    projectsAssigned: 5,
-    hoursThisWeek: 28.0,
-  },
-  {
-    _id: "mem_003",
-    userId: "user_manager_2",
-    name: "Jordan Kim",
-    displayName: "Jordan Kim",
-    email: "jordan.kim@axiaagency.com",
-    image: "",
-    role: "manager" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 45 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 2 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 22.5,
-  },
-  {
-    _id: "mem_004",
-    userId: "user_member_1",
-    name: "Sam Chen",
-    displayName: "Sam Chen",
-    email: "sam.chen@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 1 * 60 * 60 * 1000,
-    projectsAssigned: 4,
-    hoursThisWeek: 40.0,
-  },
-  {
-    _id: "mem_005",
-    userId: "user_member_2",
-    name: "Elena Volkov",
-    displayName: "Elena Volkov",
-    email: "elena.volkov@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 21 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 30 * 60 * 1000,
-    projectsAssigned: 2,
-    hoursThisWeek: 35.0,
-  },
-  {
-    _id: "mem_006",
-    userId: "user_member_3",
-    name: "Marcus Thompson",
-    displayName: "Marcus Thompson",
-    email: "marcus.t@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "active",
-    joinedAt: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    lastActiveAt: Date.now() - 4 * 60 * 60 * 1000,
-    projectsAssigned: 3,
-    hoursThisWeek: 18.0,
-  },
-  {
-    _id: "mem_007",
-    userId: "user_member_4",
-    name: "Aisha Patel",
-    displayName: "Aisha Patel",
-    email: "aisha.patel@axiaagency.com",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-  {
-    _id: "mem_008",
-    userId: "user_member_5",
-    name: "Lucas Weber",
-    displayName: "Lucas Weber",
-    email: "lucas.w@freelance.dev",
-    image: "",
-    role: "member" as WorkspaceRole,
-    status: "invited",
-    joinedAt: null,
-    lastActiveAt: null,
-    invitedAt: Date.now() - 6 * 60 * 60 * 1000,
-    projectsAssigned: 0,
-    hoursThisWeek: 0,
-  },
-];
-
-const MOCK_STATS = {
-  memberCount: 8,
-  clientCount: 12,
-  activeProjectCount: 6,
-  pendingInvoiceCount: 4,
-  totalRevenue: 47850,
-  totalHoursThisWeek: 178,
-  protectionScore: 94,
-};
+// ─── Mock data REMOVED (2026-06-22) ─────────────────────────────
+// Previously this file had MOCK_MEMBERS and MOCK_STATS constants with
+// fake team members ("Alex Rivera", "Priya Sharma", etc.) and fake
+// stats (94% protection score, $47,850 revenue). These were shown
+// whenever Convex returned no data, making the app display hardcoded
+// fake data to every new user.
+//
+// Now: when Convex returns no data, we return empty arrays / zeros so
+// the UI can show an honest empty state. The Team Management page
+// will show "No team members yet — invite your first teammate".
 
 export function useWorkspaceMembers(workspaceId: string | null) {
   const workspacesApi = (api as any).workspaces;
@@ -430,7 +310,7 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     validId ? { workspaceId: workspaceId as any } : "skip"
   ) as any[] | undefined;
 
-  // If Convex returns data, map it. Otherwise fall back to mock.
+  // If Convex returns data, map it. Otherwise return empty array (NOT mock).
   if (convexMembers && convexMembers.length > 0) {
     return convexMembers.map((m: any) => ({
       _id: m._id,
@@ -448,8 +328,8 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     }));
   }
 
-  // Fallback to mock data
-  return MOCK_MEMBERS;
+  // Empty array — UI will show "No team members yet" empty state
+  return [];
 }
 
 export function useWorkspaceStats(workspaceId: string | null) {
@@ -474,7 +354,16 @@ export function useWorkspaceStats(workspaceId: string | null) {
     };
   }
 
-  return MOCK_STATS;
+  // Real zeros when no data — NOT mock stats
+  return {
+    memberCount: 0,
+    clientCount: 0,
+    activeProjectCount: 0,
+    pendingInvoiceCount: 0,
+    totalRevenue: 0,
+    totalHoursThisWeek: 0,
+    protectionScore: 0,
+  };
 }
 
 export function useInviteMember() {

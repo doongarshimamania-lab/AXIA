@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router";
 import { Switch } from "@/components/ui/switch";
-import { Sun, Moon, ArrowRight } from "lucide-react";
+import { Sun, Moon, ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
@@ -14,7 +14,7 @@ import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 
 export default function Landing() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
@@ -25,10 +25,29 @@ export default function Landing() {
     }
   };
 
-  const scrollToWaitlist = () => {
+  const scrollToFinalCTA = () => {
     const el = document.querySelector('[data-waitlist-section]');
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  // Primary CTA depends on auth state
+  const handlePrimaryCTA = () => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    } else {
+      // Go to signup (auth page defaults to sign-in, but we pass a hint)
+      navigate("/auth?mode=signup&redirect=/dashboard");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (err) {
+      console.error("Sign out failed:", err);
     }
   };
 
@@ -57,35 +76,68 @@ export default function Landing() {
               <img src="/logo.svg" alt="Axia" width={32} height={32} />
               <span className="text-2xl font-bold tracking-tight">Axia</span>
             </motion.div>
-            
+
             <div className="flex items-center gap-6">
-              <button 
+              <button
                 onClick={() => scrollToSection("problems")}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:block"
               >
                 Problems We Solve
               </button>
-              <button 
+              <button
                 onClick={() => scrollToSection("social-proof")}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:block"
               >
                 Reviews
               </button>
-              <Button 
-                onClick={scrollToWaitlist}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
-                disabled={isLoading}
-              >
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+
+              {/* Auth-aware navigation */}
+              {isLoading ? (
+                <div className="h-9 w-24 rounded-full bg-muted animate-pulse" />
+              ) : isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => navigate("/dashboard")}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5"
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    onClick={handleSignOut}
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => navigate("/auth?redirect=/dashboard")}
+                    variant="ghost"
+                    className="rounded-full px-5"
+                  >
+                    Sign in
+                  </Button>
+                  <Button
+                    onClick={handlePrimaryCTA}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5"
+                  >
+                    Get Started
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </nav>
       </header>
 
       <main>
-        <HeroSection />
+        <HeroSection onPrimaryCTA={handlePrimaryCTA} isAuthenticated={isAuthenticated} />
 
         <div id="problems">
           <ProblemCards />
@@ -95,7 +147,7 @@ export default function Landing() {
           <SocialProofSection />
         </div>
 
-        <FinalCTA />
+        <FinalCTA onPrimaryCTA={handlePrimaryCTA} isAuthenticated={isAuthenticated} />
       </main>
 
       <Footer />

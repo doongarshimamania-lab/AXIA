@@ -39,3 +39,52 @@ Stage Summary:
   13. ~15+ half-wired / no-op buttons (toast-only actions with no real mutation)
 - Includes prioritized 8-phase action plan (38 items) for remediation.
 - Did NOT audit Convex backend or shared components — recommended as follow-up.
+
+---
+Task ID: AUTH-FIX-1
+Agent: main
+Task: Fix the convex error when logging in with a different account, AND make the complete auth flow from landing page → dashboard real and dynamic (no hardcoded data).
+
+Work Log:
+- Read the existing auth flow end-to-end:
+  - `src/pages/Landing.tsx` — landing page only had a waitlist form, NO login/signup buttons.
+  - `src/components/landing/HeroSection.tsx` + `FinalCTA.tsx` — both showed a waitlist form, not auth CTAs.
+  - `src/pages/Auth.tsx` — supported password sign-in/up + email OTP, plus non-functional Google/GitHub buttons (providers not configured).
+  - `src/hooks/use-auth.ts` — auto-fired `seed.seedDevProfile` on every new login. ROOT CAUSE of the convex error.
+  - `convex/seed.ts` (`seedDevProfile`) — created the SAME hardcoded sample data ("Acme Corp", "TechStart Inc", "DesignFlow Agency" clients, sample deals, sample projects) for EVERY new user.
+  - `convex/users.ts` (`getProtectionMetrics`) — returned fake "95% protection score / 171 protected hours" estimates when no real data existed.
+  - `src/hooks/use-workspace.tsx` — had MOCK_MEMBERS (8 fake team members) and MOCK_STATS (94% protection score, $47,850 revenue) shown as fallbacks.
+  - `src/hooks/use-subscription-tier.ts` — only read tier from localStorage, so tier leaked across account switches.
+- Diagnosed the "convex error when logging in with a different account": the auto-fired `seedDevProfile` mutation tried to insert duplicate pipeline stages / clients / workspace for a fresh user, conflicting with prior seeding attempts and the parallel `workspaces.crud.seedPersonalWorkspace` mutation called from `useWorkspace`.
+
+Changes made (all TS-clean — verified with `bunx tsc --noEmit`):
+
+1. `src/hooks/use-auth.ts` — REWROTE. Removed the auto-fire of `seed.seedDevProfile` (root cause of convex error). Now the hook is read-only: it only fetches the current user. The personal workspace is created lazily via `workspaces.crud.seedPersonalWorkspace` (idempotent — only creates an empty workspace + default pipeline stages, NO fake clients/projects/deals).
+
+2. `convex/seed.ts` + `src/convex/seed.ts` — Stripped ALL hardcoded sample data creation from `seedDevProfile`. Now it ONLY enriches user profile fields (name from email, role, subscriptionTier, joinedAt). Removed the auto-creation of Acme Corp/TechStart Inc/DesignFlow Agency clients, sample projects, sample deals. Kept `enrichDevUser` intact for the dev@axia.app test user.
+
+3. `convex/users.ts` + `src/convex/users.ts` (`getProtectionMetrics`) — Now returns REAL zeros when no data exists (0 protected hours, 0 protected value, 0% protection score). Previously returned fake "95% protection score / 171 protected hours" for every new user.
+
+4. `src/hooks/use-workspace.tsx` — Removed MOCK_MEMBERS (8 fake members: "Alex Rivera", "Priya Sharma", etc.) and MOCK_STATS (94% protection score, $47,850 revenue) hardcoded fallbacks. `useWorkspaceMembers` now returns `[]` when no data; `useWorkspaceStats` returns all-zero stats. UI will show honest empty states.
+
+5. `src/pages/Landing.tsx` — REWROTE nav. Added "Sign in" + "Get Started" buttons (unauthenticated state) and "Dashboard" + sign-out buttons (authenticated state). Primary CTA deep-links to `/auth?mode=signup&redirect=/dashboard`.
+
+6. `src/components/landing/HeroSection.tsx` — Replaced waitlist form with a real "Get Started Free" / "Go to Dashboard" CTA button (auth-aware). Removed `WaitlistForm` import.
+
+7. `src/components/landing/FinalCTA.tsx` — Replaced waitlist form with a real "Create Free Account" / "Open Dashboard" CTA button (auth-aware).
+
+8. `src/pages/Auth.tsx` — Three fixes:
+   a. Honor `?mode=signup` URL param so the "Get Started" button deep-links directly to the signup form.
+   b. Removed the non-functional Google/GitHub OAuth buttons (providers are commented out in `convex/auth.config.ts` because `AUTH_GOOGLE_ID` / `AUTH_GITHUB_ID` env vars are not set).
+   c. Cleaned up unused `Github` import.
+
+9. `src/hooks/use-subscription-tier.ts` — REWROTE. Now syncs tier from the Convex `users.subscriptionTier` field (source of truth) whenever the user record changes. When user signs out, tier resets to "free" and clears localStorage. When user signs in with a different account, tier follows the backend record (no more stale tier leaking across accounts).
+
+Stage Summary:
+- Convex error root cause fixed: removed the auto-seed of hardcoded sample data that conflicted on multi-account login.
+- Auth flow is now REAL: landing page → "Get Started" → /auth?mode=signup → signup form → /dashboard → empty dashboard with "Seed Demo Data" button (explicit, user-triggered).
+- No more hardcoded data: every new user starts with an empty dashboard. Real Convex data is shown when present; honest empty states are shown when absent.
+- Subscription tier now follows the user record across account switches.
+- All changes are TypeScript-clean (no new errors introduced; pre-existing errors in other files are unchanged).
+- Files modified: 9 files (5 frontend, 3 convex backend, 1 hook).
+- To re-enable Google/GitHub OAuth: set AUTH_GOOGLE_ID / AUTH_GITHUB_ID env vars, uncomment providers in `convex/auth.config.ts`, re-add OAuth buttons in `Auth.tsx`.
