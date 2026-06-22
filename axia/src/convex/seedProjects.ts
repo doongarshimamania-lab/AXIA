@@ -34,7 +34,7 @@ export const seedTestProjects = mutation({
     const existingProjects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingProjects.length > 0) {
       return { 

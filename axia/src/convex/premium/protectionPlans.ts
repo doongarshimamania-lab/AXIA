@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get active protection plan
 export const getActivePlan = query({
   args: {},
@@ -34,6 +35,7 @@ export const createPlan = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createPlan");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -48,7 +50,7 @@ export const createPlan = mutation({
       .withIndex("by_user_and_active", (q) =>
         q.eq("userId", userId).eq("isActive", true)
       )
-      .collect();
+      .take(1000);
 
     for (const plan of existingPlans) {
       await ctx.db.patch(plan._id, { isActive: false });
@@ -141,6 +143,7 @@ export const updatePlanPerformance = mutation({
     incomeSecured: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updatePlanPerformance");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

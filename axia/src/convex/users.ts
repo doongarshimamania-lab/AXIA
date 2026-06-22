@@ -3,6 +3,7 @@ import { query, QueryCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 /**
  * Get the current signed in user. Returns null if the user is not signed in.
  * Usage: const signedInUser = await ctx.runQuery(api.authHelpers.currentUser);
@@ -61,6 +62,7 @@ export const updateProfile = mutation({
     protectedValue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateProfile");
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       throw new Error("Not authenticated");
@@ -185,6 +187,7 @@ export const completeOnboarding = mutation({
     acquisitionSourceDetail: v.optional(v.string())
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "completeOnboarding");
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -235,7 +238,7 @@ export const getProtectionMetrics = query({
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.gte(q.field("startTime"), last30Days))
-      .collect();
+      .take(1000);
 
     const totalBlocks = recentBlocks.length;
     const compliantBlocks = recentBlocks.filter(b => b.complianceStatus === "compliant").length;
@@ -270,14 +273,14 @@ export const getProtectionMetrics = query({
     const evidenceSessions = await ctx.db
       .query("evidenceSessions")
       .withIndex("by_user_and_status", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(1000);
 
     let totalEvidenceEvents = 0;
     for (const session of evidenceSessions) {
       const events = await ctx.db
         .query("evidenceEvents")
         .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", session._id))
-        .collect();
+        .take(1000);
       totalEvidenceEvents += events.length;
     }
 

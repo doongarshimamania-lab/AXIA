@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getStages = query({
@@ -22,7 +23,7 @@ export const getStages = query({
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
         .order("asc")
-        .collect();
+        .take(1000);
 
       // Dedup by _id (defensive — historical seed races could create dupes)
       const seen = new Set<string>();
@@ -47,7 +48,7 @@ export const getStages = query({
       .query("pipelineStages")
       .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
       .order("asc")
-      .collect();
+      .take(1000);
     const seen = new Set<string>();
     return stages.filter((s) => {
       if (seen.has(s._id)) return false;
@@ -72,13 +73,13 @@ export const getDeals = query({
       return await ctx.db
         .query("deals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     }
 
     return await ctx.db
       .query("deals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -91,7 +92,7 @@ export const getDealsByStage = query({
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", stageId))
       .order("asc")
-      .collect();
+      .take(1000);
   },
 });
 
@@ -109,11 +110,11 @@ export const getPipelineStats = query({
       deals = await ctx.db
         .query("deals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
       // Dedupe stages so the byStage breakdown doesn't show duplicate columns
       const seenStageIds = new Set<string>();
       const seenStageKeys = new Set<string>();
@@ -129,11 +130,11 @@ export const getPipelineStats = query({
       deals = await ctx.db
         .query("deals")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     const totalValue = deals.reduce((sum, d) => sum + d.value, 0);
@@ -173,12 +174,12 @@ export const createDefaultStages = mutation({
       existing = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     } else {
       existing = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     if (existing.length > 0) return existing;
@@ -229,12 +230,12 @@ export const addStage = mutation({
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     } else {
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     const maxOrder = stages.length > 0 ? Math.max(...stages.map(s => s.order)) : -1;
@@ -301,12 +302,12 @@ export const deleteStage = mutation({
     const deals = await ctx.db
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", stageId))
-      .collect();
+      .take(1000);
 
     const stages = await ctx.db
       .query("pipelineStages")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const fallbackStage = stages.find(s => s._id !== stageId);
     if (fallbackStage) {
@@ -337,6 +338,7 @@ export const createDeal = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createDeal");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -350,7 +352,7 @@ export const createDeal = mutation({
     const dealsInStage = await ctx.db
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", args.stageId))
-      .collect();
+      .take(1000);
 
     const maxOrder = dealsInStage.length > 0 ? Math.max(...dealsInStage.map(d => d.order)) : -1;
 

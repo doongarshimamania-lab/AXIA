@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Create a new scope change formalization
 export const createFormalization = mutation({
   args: {
@@ -17,6 +18,7 @@ export const createFormalization = mutation({
     clientAcknowledgment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createFormalization");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -49,6 +51,7 @@ export const completeFormalization = mutation({
     clientApprovalEvidence: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "completeFormalization");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -84,7 +87,7 @@ export const getProjectFormalizations = query({
     const formalizations = await ctx.db
       .query("scopeFormalizations")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
-      .collect();
+      .take(1000);
 
     return formalizations.sort((a, b) => b.createdAt - a.createdAt);
   },
@@ -109,7 +112,7 @@ export const getPendingFormalizationsCount = query({
       .withIndex("by_project_and_status", (q) => 
         q.eq("projectId", args.projectId).eq("status", "pending")
       )
-      .collect();
+      .take(1000);
 
     return formalizations.length;
   },
@@ -134,7 +137,7 @@ export const detectScopeCreep = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("projectName"), project.projectName))
-      .collect();
+      .take(1000);
 
     const recentSessions = sessions.filter(
       (s) => s.startTime >= Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -150,7 +153,7 @@ export const detectScopeCreep = query({
     const formalizations = await ctx.db
       .query("scopeFormalizations")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
-      .collect();
+      .take(1000);
 
     const recentFormalizations = formalizations.filter(
       (f) => f.createdAt >= Date.now() - 14 * 24 * 60 * 60 * 1000

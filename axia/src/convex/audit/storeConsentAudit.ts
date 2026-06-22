@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // SECURITY: storeConsentAudit now requires auth and can only log for the authenticated user
 export const storeConsentAudit = mutation({
   args: {
@@ -15,6 +16,7 @@ export const storeConsentAudit = mutation({
     details: v.optional(v.any())
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "storeConsentAudit");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -45,6 +47,7 @@ export const logConsentAction = mutation({
     details: v.optional(v.any())
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "logConsentAction");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -110,7 +113,7 @@ export const getPlatformDataUsageStats = query({
       .withIndex("by_user_and_platform", (q) => 
         q.eq("userId", userId).eq("platform", args.platform)
       )
-      .collect();
+      .take(1000);
 
     const stats = {
       totalAccesses: audits.filter(a => a.action === 'data_accessed').length,

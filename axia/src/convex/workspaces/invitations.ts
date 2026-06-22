@@ -10,6 +10,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /** Get all invitations for a workspace. */
@@ -45,12 +46,12 @@ export const getInvitations = query({
         .withIndex("by_workspace_and_status", (q) =>
           q.eq("workspaceId", args.workspaceId).eq("status", args.status!)
         )
-        .collect();
+        .take(1000);
     } else {
       invitations = await ctx.db
         .query("workspaceInvitations")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
     }
 
     // Enrich with inviter name
@@ -101,6 +102,7 @@ export const createInvitation = mutation({
     title: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createInvitation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -128,7 +130,7 @@ export const createInvitation = mutation({
       .withIndex("by_workspace_and_status", (q) =>
         q.eq("workspaceId", args.workspaceId).eq("status", "pending")
       )
-      .collect();
+      .take(1000);
 
     const alreadyInvited = existing.find((inv) => inv.email === args.email);
     if (alreadyInvited) {
@@ -139,7 +141,7 @@ export const createInvitation = mutation({
     const allMembers = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
 
     // Try to find user by email
     const existingUser = await ctx.db
@@ -179,6 +181,7 @@ export const createInvitation = mutation({
 export const acceptInvitation = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "acceptInvitation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -242,6 +245,7 @@ export const acceptInvitation = mutation({
 export const cancelInvitation = mutation({
   args: { invitationId: v.id("workspaceInvitations") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "cancelInvitation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -276,13 +280,14 @@ export const cancelInvitation = mutation({
 export const expireOldInvitations = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "expireOldInvitations");
     const now = Date.now();
     const pending = await ctx.db
       .query("workspaceInvitations")
       .withIndex("by_status_and_expires", (q) =>
         q.eq("status", "pending")
       )
-      .collect();
+      .take(1000);
 
     const expired = pending.filter((inv) => inv.expiresAt < now);
 

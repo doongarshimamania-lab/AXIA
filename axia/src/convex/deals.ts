@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ═════════════════════════════════════════════
 // PIPELINE STAGES
 // ═════════════════════════════════════════════
@@ -18,6 +19,7 @@ export const createDefaultStages = mutation({
     workspaceId: v.optional(v.id("workspaces")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createDefaultStages");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -32,12 +34,12 @@ export const createDefaultStages = mutation({
       existing = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
     } else {
       existing = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     if (existing.length > 0) {
@@ -92,14 +94,14 @@ export const listStages = query({
       return await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
     }
 
     // Backward compat: no workspaceId → filter by userId
     const stages = await ctx.db
       .query("pipelineStages")
       .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     return stages;
   },
@@ -116,6 +118,7 @@ export const updateStage = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateStage");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -162,6 +165,7 @@ export const removeStage = mutation({
     stageId: v.id("pipelineStages"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "removeStage");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -181,12 +185,12 @@ export const removeStage = mutation({
       allStages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", stage.workspaceId))
-        .collect();
+        .take(1000);
     } else {
       allStages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     // Cannot delete if this is the only stage
@@ -209,7 +213,7 @@ export const removeStage = mutation({
       .withIndex("by_user_and_stage", (q) =>
         q.eq("userId", userId).eq("pipelineStageId", args.stageId)
       )
-      .collect();
+      .take(1000);
 
     const now = Date.now();
     for (const deal of dealsInStage) {
@@ -255,6 +259,7 @@ export const create = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -360,6 +365,7 @@ export const update = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "update");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -456,6 +462,7 @@ export const moveToStage = mutation({
     lostReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "moveToStage");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -553,7 +560,7 @@ export const list = query({
       const allDeals = await ctx.db
         .query("deals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       // Filter by team visibility
       let visible = allDeals.filter((d) => isRecordVisible(d, visibility));
@@ -579,7 +586,7 @@ export const list = query({
           q.eq("userId", userId).eq("pipelineStageId", args.pipelineStageId!)
         )
         .order("desc")
-        .collect();
+        .take(1000);
       return deals;
     }
 
@@ -588,7 +595,7 @@ export const list = query({
       .query("deals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     return deals.sort((a, b) => b.updatedAt - a.updatedAt);
   },
@@ -623,12 +630,12 @@ export const getPipelineStats = query({
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
 
       const allDeals = await ctx.db
         .query("deals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
 
       deals = allDeals.filter((d) => isRecordVisible(d, visibility));
     } else {
@@ -636,13 +643,13 @@ export const getPipelineStats = query({
       stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
 
       // Get all deals for the user
       deals = await ctx.db
         .query("deals")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     // Total deals by stage
@@ -700,6 +707,7 @@ export const remove = mutation({
     dealId: v.id("deals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "remove");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 

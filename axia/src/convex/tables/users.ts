@@ -23,15 +23,15 @@ export const users = defineTable({
     joinedAt: v.optional(v.number()),
 
     // Add: Profile and protection fields
-    professionalBio: v.optional(v.string()),
+    professionalBio: v.optional(v.string().maxLength(5000)),
     protectedHours: v.optional(v.number()),
     protectedValue: v.optional(v.number()),
 
     // Add: Onboarding fields
-    primaryPlatform: v.optional(v.string()),
-    yearsExperience: v.optional(v.string()),
-    acquisitionSource: v.optional(v.string()),
-    acquisitionSourceDetail: v.optional(v.string()),
+    primaryPlatform: v.optional(v.string().maxLength(50)),
+    yearsExperience: v.optional(v.string().maxLength(1000)),
+    acquisitionSource: v.optional(v.string().maxLength(1000)),
+    acquisitionSourceDetail: v.optional(v.string().maxLength(1000)),
     onboardingComplete: v.optional(v.boolean()),
     onboardingCompletedAt: v.optional(v.number()),
 

@@ -22,7 +22,7 @@ export const getProtectionValueMetrics = query({
     const allBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const monthlyBlocks = allBlocks.filter(b => b.startTime >= thirtyDaysAgo);
     const quarterlyBlocks = allBlocks.filter(b => b.startTime >= ninetyDaysAgo);
@@ -55,7 +55,7 @@ export const getProtectionValueMetrics = query({
     const allReports = await ctx.db
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const resolvedReports = allReports.filter(r => r.status === "resolved");
     const savedValue = resolvedReports.reduce((sum, r) => sum + r.lostIncome, 0);
@@ -172,7 +172,7 @@ export const getValueHistory = query({
             q.lt(q.field("startTime"), monthEnd.getTime())
           )
         )
-        .collect();
+        .take(1000);
 
       const compliantBlocks = monthBlocks.filter(b => b.complianceStatus === "compliant").length;
       const protectedValue = (compliantBlocks * (5 / 60)) * hourlyRate;

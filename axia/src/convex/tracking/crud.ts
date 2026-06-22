@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /** Get the active (running) session for the current user */
@@ -80,7 +81,7 @@ export const getSessionsByDateRange = query({
         q.eq("userId", userId).gte("startTime", args.startTimestamp)
       )
       .filter((q) => q.lte(q.field("startTime"), args.endTimestamp))
-      .collect();
+      .take(1000);
 
     return sessions;
   },
@@ -102,7 +103,7 @@ export const getTimeBlocks = query({
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
+      .take(1000);
 
     return blocks;
   },
@@ -122,6 +123,7 @@ export const startSession = mutation({
     teamId: v.optional(v.id("teams")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "startSession");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -171,6 +173,7 @@ export const stopSession = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "stopSession");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -205,6 +208,7 @@ export const pauseSession = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "pauseSession");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -233,6 +237,7 @@ export const resumeSession = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "resumeSession");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -269,6 +274,7 @@ export const createManualEntry = mutation({
     teamId: v.optional(v.id("teams")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createManualEntry");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -315,6 +321,7 @@ export const deleteSession = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteSession");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("User not authenticated");
 
@@ -335,7 +342,7 @@ export const deleteSession = mutation({
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
+      .take(1000);
 
     for (const block of blocks) {
       await ctx.db.delete(block._id);

@@ -22,20 +22,20 @@ export const businessTables = {
     teamId: v.optional(v.id("teams")),
     sharing: v.optional(v.array(sharingEntry)),
     customFields: v.optional(v.any()),
-    name: v.string(),
-    email: v.optional(v.string()),
-    company: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    industry: v.optional(v.string()),
-    website: v.optional(v.string()),
-    notes: v.optional(v.string()),
+    name: v.string().maxLength(100),
+    email: v.optional(v.string().maxLength(320)),
+    company: v.optional(v.string().maxLength(1000)),
+    phone: v.optional(v.string().maxLength(32)),
+    industry: v.optional(v.string().maxLength(1000)),
+    website: v.optional(v.string().maxLength(2048)),
+    notes: v.optional(v.string().maxLength(5000)),
     hourlyRate: v.optional(v.number()),
     address: v.optional(v.object({
-      street: v.optional(v.string()),
-      city: v.optional(v.string()),
-      state: v.optional(v.string()),
-      zip: v.optional(v.string()),
-      country: v.optional(v.string()),
+      street: v.optional(v.string().maxLength(1000)),
+      city: v.optional(v.string().maxLength(1000)),
+      state: v.optional(v.string().maxLength(1000)),
+      zip: v.optional(v.string().maxLength(1000)),
+      country: v.optional(v.string().maxLength(1000)),
     })),
     status: v.union(v.literal("active"), v.literal("archived"), v.literal("lead")),
     // Payment behavior tracking
@@ -62,7 +62,7 @@ export const businessTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    name: v.string(),
+    name: v.string().maxLength(100),
     order: v.number(), // display order
     color: v.optional(v.string()), // hex color
     isDefault: v.optional(v.boolean()),
@@ -84,13 +84,13 @@ export const businessTables = {
     customFields: v.optional(v.any()),
     clientId: v.optional(v.id("clients")),
     pipelineStageId: v.id("pipelineStages"),
-    title: v.string(),
+    title: v.string().maxLength(200),
     value: v.number(), // deal value in dollars
     probability: v.optional(v.number()), // 0-100 close probability
     expectedCloseDate: v.optional(v.number()), // timestamp
     proposalId: v.optional(v.id("proposals")),
-    notes: v.optional(v.string()),
-    lostReason: v.optional(v.string()),
+    notes: v.optional(v.string().maxLength(5000)),
+    lostReason: v.optional(v.string().maxLength(1000)),
     source: v.optional(v.string()), // lead source
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -113,10 +113,10 @@ export const businessTables = {
     customFields: v.optional(v.any()),
     clientId: v.id("clients"),
     dealId: v.optional(v.id("deals")),
-    title: v.string(),
+    title: v.string().maxLength(200),
     // Content stored as JSON array of sections
     content: v.array(v.object({
-      id: v.string(),
+      id: v.string().maxLength(1000),
       type: v.union(
         v.literal("heading"),
         v.literal("text"),
@@ -137,19 +137,19 @@ export const businessTables = {
       v.literal("declined"),
     ),
     totalValue: v.optional(v.number()),
-    currency: v.optional(v.string()),
+    currency: v.optional(v.string().maxLength(8)),
     validUntil: v.optional(v.number()),
     // Tracking
     sentAt: v.optional(v.number()),
     viewedAt: v.optional(v.number()),
     viewedCount: v.optional(v.number()),
     signedAt: v.optional(v.number()),
-    signedIp: v.optional(v.string()),
-    signedName: v.optional(v.string()),
+    signedIp: v.optional(v.string().maxLength(1000)),
+    signedName: v.optional(v.string().maxLength(100)),
     declinedAt: v.optional(v.number()),
-    declinedReason: v.optional(v.string()),
+    declinedReason: v.optional(v.string().maxLength(1000)),
     // Public access token for client viewing
-    publicToken: v.optional(v.string()),
+    publicToken: v.optional(v.string().maxLength(64)),
     version: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -168,11 +168,11 @@ export const businessTables = {
     userId: v.optional(v.id("users")), // null = system template
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    name: v.string(),
-    industry: v.optional(v.string()),
+    name: v.string().maxLength(100),
+    industry: v.optional(v.string().maxLength(1000)),
     category: v.optional(v.string()), // "web_design", "consulting", "marketing", etc.
     content: v.array(v.object({
-      id: v.string(),
+      id: v.string().maxLength(1000),
       type: v.union(
         v.literal("heading"),
         v.literal("text"),
@@ -207,8 +207,8 @@ export const businessTables = {
       v.literal("skipped"),
       v.literal("cancelled"),
     ),
-    emailSubject: v.string(),
-    emailBody: v.string(),
+    emailSubject: v.string().maxLength(320),
+    emailBody: v.string().maxLength(320),
     scheduledFor: v.number(), // timestamp when it should be sent
     sentAt: v.optional(v.number()),
     openedAt: v.optional(v.number()),
@@ -243,9 +243,9 @@ export const businessTables = {
     clientId: v.optional(v.id("clients")),
     // Deliverables with revision limits
     deliverables: v.array(v.object({
-      id: v.string(),
-      name: v.string(),
-      description: v.string(),
+      id: v.string().maxLength(1000),
+      name: v.string().maxLength(100),
+      description: v.string().maxLength(5000),
       revisionLimit: v.number(), // max revisions allowed
       revisionsUsed: v.number(), // revisions requested so far
       status: v.union(v.literal("pending"), v.literal("in_progress"), v.literal("completed"), v.literal("revisions_exceeded")),
@@ -256,7 +256,7 @@ export const businessTables = {
     assumptions: v.optional(v.array(v.string())),
     // Client approval
     clientApprovedAt: v.optional(v.number()),
-    clientApprovalToken: v.optional(v.string()),
+    clientApprovalToken: v.optional(v.string().maxLength(64)),
     status: v.union(v.literal("draft"), v.literal("active"), v.literal("completed"), v.literal("archived")),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -281,7 +281,7 @@ export const businessTables = {
     clientId: v.optional(v.id("clients")),
     deliverableId: v.optional(v.string()), // which deliverable triggered this
     requestedBy: v.union(v.literal("client"), v.literal("freelancer")),
-    description: v.string(),
+    description: v.string().maxLength(5000),
     // Impact assessment
     costImpact: v.optional(v.number()),
     timelineImpactDays: v.optional(v.number()),
@@ -295,9 +295,9 @@ export const businessTables = {
     ),
     // Client approval
     clientApprovedAt: v.optional(v.number()),
-    clientApprovalToken: v.optional(v.string()),
+    clientApprovalToken: v.optional(v.string().maxLength(64)),
     clientRejectedAt: v.optional(v.number()),
-    rejectionReason: v.optional(v.string()),
+    rejectionReason: v.optional(v.string().maxLength(1000)),
     // Link to invoice if approved
     invoiceId: v.optional(v.id("invoices")),
     createdAt: v.number(),

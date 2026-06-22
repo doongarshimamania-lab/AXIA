@@ -3,6 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Test utility: Create snapshot for a project
 // Note: Due to TypeScript limitations with Convex internal references,
 // these test functions directly insert data instead of calling internal mutations
@@ -11,6 +12,7 @@ export const testCreateSnapshot = mutation({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "testCreateSnapshot");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -34,7 +36,7 @@ export const testCreateSnapshot = mutation({
           q.lt(q.field("startTime"), weekEnd)
         )
       )
-      .collect();
+      .take(1000);
 
     const projectSessions = sessions.filter((s) => s.projectName === project.projectName);
     const totalHours = projectSessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
@@ -69,6 +71,7 @@ export const testCreateAlert = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "testCreateAlert");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -99,6 +102,7 @@ export const testGenerateReport = mutation({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "testGenerateReport");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

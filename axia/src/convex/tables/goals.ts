@@ -6,8 +6,8 @@ export const goalTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    title: v.string(),
-    description: v.optional(v.string()),
+    title: v.string().maxLength(200),
+    description: v.optional(v.string().maxLength(5000)),
     type: v.string(), // "revenue"|"hours"|"clients"|"protection"|"custom"
     target: v.number(),
     current: v.number(),
@@ -17,8 +17,8 @@ export const goalTables = {
     milestones: v.optional(
       v.array(
         v.object({
-          id: v.string(),
-          title: v.string(),
+          id: v.string().maxLength(1000),
+          title: v.string().maxLength(200),
           completed: v.boolean(),
           completedAt: v.optional(v.number()),
         })

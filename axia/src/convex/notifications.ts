@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ═════════════════════════════════════════════
 // QUERIES
 // ═════════════════════════════════════════════
@@ -50,7 +51,7 @@ export const unreadCount = query({
       .query("notifications")
       .withIndex("by_user_and_read", (q) => q.eq("userId", userId).eq("read", false))
       .filter((q) => q.eq(q.field("dismissed"), false))
-      .collect();
+      .take(1000);
 
     return all.length;
   },
@@ -83,6 +84,7 @@ export const get = query({
 export const markAsRead = mutation({
   args: { notificationId: v.id("notifications") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markAsRead");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -104,6 +106,7 @@ export const markAsRead = mutation({
 export const markAllAsRead = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "markAllAsRead");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -111,7 +114,7 @@ export const markAllAsRead = mutation({
     const unread = await ctx.db
       .query("notifications")
       .withIndex("by_user_and_read", (q) => q.eq("userId", userId).eq("read", false))
-      .collect();
+      .take(1000);
 
     let count = 0;
     for (const n of unread) {
@@ -128,6 +131,7 @@ export const markAllAsRead = mutation({
 export const dismiss = mutation({
   args: { notificationId: v.id("notifications") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "dismiss");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -153,6 +157,7 @@ export const dismiss = mutation({
 export const remove = mutation({
   args: { notificationId: v.id("notifications") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "remove");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -198,6 +203,7 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -275,7 +281,7 @@ export const remindAboutStaleDrafts = internalMutation({
       .query("proposals")
       .withIndex("by_status", (q) => q.eq("status", "draft"))
       .filter((q) => q.lt(q.field("createdAt"), cutoff))
-      .collect();
+      .take(1000);
 
     let proposalReminders = 0;
     for (const p of staleProposals) {
@@ -323,7 +329,7 @@ export const remindAboutStaleDrafts = internalMutation({
           q.lt(q.field("createdAt"), cutoff)
         )
       )
-      .collect();
+      .take(1000);
 
     let invoiceReminders = 0;
     for (const inv of staleInvoices) {

@@ -3,6 +3,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireWorkspaceAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Core field definitions for clients ────────────────────────────────────
 // These map to the actual columns in the `clients` table.
 // The `key` is the column name in the DB; the `label` is what the user sees.
@@ -41,6 +42,7 @@ export const importClients = mutation({
     skipDuplicates: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "importClients");
     const { userId } = await requireWorkspaceAccess(
       ctx,
       args.workspaceId,
@@ -59,7 +61,7 @@ export const importClients = mutation({
         .withIndex("by_workspace", (q) =>
           q.eq("workspaceId", args.workspaceId)
         )
-        .collect();
+        .take(1000);
       existingNames = new Set(
         existingClients.map((c) => c.clientName.toLowerCase())
       );
@@ -204,6 +206,7 @@ export const bulkImportClients = mutation({
     skipDuplicates: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "bulkImportClients");
     // Delegate to the new importClients by transforming args
     const records = args.clients.map((c) => ({
       clientName: c.clientName,
@@ -229,7 +232,7 @@ export const bulkImportClients = mutation({
       const existingClients = await ctx.db
         .query("clients")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
       existingNames = new Set(existingClients.map((c) => c.clientName.toLowerCase()));
     }
 

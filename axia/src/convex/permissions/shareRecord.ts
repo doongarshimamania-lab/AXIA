@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getRecordAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 type ShareableRecord = {
   _id: any;
   workspaceId?: any;
@@ -31,6 +32,7 @@ export const shareRecord = mutation({
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "shareRecord");
     const callerId = await getAuthUserId(ctx);
     if (!callerId) throw new Error("Not authenticated");
 
@@ -95,6 +97,7 @@ export const unshareRecord = mutation({
     userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "unshareRecord");
     const callerId = await getAuthUserId(ctx);
     if (!callerId) throw new Error("Not authenticated");
 

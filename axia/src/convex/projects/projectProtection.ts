@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "../_generated/dataModel";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Helper to resolve user ID (Auth or Guest)
 async function resolveUserId(ctx: any) {
   try {
@@ -92,6 +93,7 @@ export const addProject = mutation({
     guestUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addProject");
     const userId = await resolveUserId(ctx);
     if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -137,6 +139,7 @@ export const updateProjectProtection = mutation({
     guestUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateProjectProtection");
     const userId = await resolveUserId(ctx);
     if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -184,13 +187,13 @@ export const getProjectProtectionDetails = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("projectName"), project.projectName))
-      .collect();
+      .take(1000);
 
     // Get dispute reports for this project
     const reports = await ctx.db
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const projectReports = reports.filter((r) => {
       const session = sessions.find((s) => s._id === r.sessionId);
@@ -214,6 +217,7 @@ export const archiveProject = mutation({
     guestUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "archiveProject");
     const userId = await resolveUserId(ctx);
     if (!userId) return { success: false, error: "Not authenticated" };
 
@@ -293,7 +297,7 @@ export const getProjectProtectionScore = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -326,7 +330,7 @@ export const getProjectProtectionScore = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         totalEvidence += events.length;
         qualityEvidence += events.filter((e) => e.kind === "screenshot_ref" || e.kind === "memo").length;
@@ -345,7 +349,7 @@ export const getProjectProtectionScore = query({
     const timeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const projectBlocks = timeBlocks.filter((block) => {
       const session = sessions.find((s) => s._id === block.sessionId);
@@ -412,7 +416,7 @@ export const getAdaptiveEvidenceSystem = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -433,7 +437,7 @@ export const getAdaptiveEvidenceSystem = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         screenshotCount += events.filter((e) => e.kind === "screenshot_ref").length;
         memoCount += events.filter((e) => e.kind === "memo").length;
@@ -513,7 +517,7 @@ export const getProjectHealthDashboard = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -536,7 +540,7 @@ export const getProjectHealthDashboard = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
         totalEvidence += events.length;
       }
     }
@@ -547,7 +551,7 @@ export const getProjectHealthDashboard = query({
     const timeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const projectBlocks = timeBlocks.filter((block) => {
       const session = sessions.find((s) => s._id === block.sessionId);
@@ -610,7 +614,7 @@ export const getMilestoneProtection = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -631,7 +635,7 @@ export const getMilestoneProtection = query({
       const timeBlocks = await ctx.db
         .query("timeBlocks")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
 
       const weekBlocks = timeBlocks.filter((block) => {
         const session = weekSessions.find((s) => s._id === block.sessionId);
@@ -684,7 +688,7 @@ export const getProjectRiskHeatmap = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -714,7 +718,7 @@ export const getProjectRiskHeatmap = query({
     const timeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const projectBlocks = timeBlocks.filter((block) => {
       const session = sessions.find((s) => s._id === block.sessionId);

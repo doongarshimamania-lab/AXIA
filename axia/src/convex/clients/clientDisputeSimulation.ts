@@ -26,7 +26,7 @@ export const getClientDisputeSimulation = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("clientName"), client.clientName))
-      .collect();
+      .take(1000);
 
     // Calculate evidence metrics
     let totalEvidence = 0;
@@ -44,7 +44,7 @@ export const getClientDisputeSimulation = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         totalEvidence += events.length;
         evidenceWithContext += events.filter((e) => e.kind === "memo" || e.kind === "url").length;

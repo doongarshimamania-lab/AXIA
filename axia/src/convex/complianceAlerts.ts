@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 export const createAlert = mutation({
   args: {
     sessionId: v.optional(v.id("workSessions")),
@@ -14,6 +15,7 @@ export const createAlert = mutation({
     message: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createAlert");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("User not authenticated");
@@ -57,6 +59,7 @@ export const acknowledgeAlert = mutation({
     actionTaken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "acknowledgeAlert");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("User not authenticated");

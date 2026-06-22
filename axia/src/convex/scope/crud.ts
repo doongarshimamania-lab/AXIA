@@ -5,6 +5,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "../permissions";
 import { getUserVisibility, isRecordVisible } from "../workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getScopeDefinitions = query({
@@ -21,7 +22,7 @@ export const getScopeDefinitions = query({
       return await ctx.db
         .query("scopeDefinitions")
         .withIndex("by_project", (q) => q.eq("projectId", projectId))
-        .collect();
+        .take(1000);
     }
 
     // If workspaceId provided, filter by workspace with team-aware visibility
@@ -32,7 +33,7 @@ export const getScopeDefinitions = query({
       const allScopes = await ctx.db
         .query("scopeDefinitions")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
 
       return allScopes.filter((s) => isRecordVisible(s, visibility));
     }
@@ -41,7 +42,7 @@ export const getScopeDefinitions = query({
     return await ctx.db
       .query("scopeDefinitions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -70,7 +71,7 @@ export const getChangeOrders = query({
     return await ctx.db
       .query("scopeChangeOrders")
       .withIndex("by_scope", (q) => q.eq("scopeId", scopeId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -117,6 +118,7 @@ export const createScopeDefinition = mutation({
     revisionLimit: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createScopeDefinition");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -188,6 +190,7 @@ export const recordRevision = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "recordRevision");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -306,7 +309,7 @@ export const deleteScopeDefinition = mutation({
     const changeOrders = await ctx.db
       .query("scopeChangeOrders")
       .withIndex("by_scope", (q) => q.eq("scopeId", scopeId))
-      .collect();
+      .take(1000);
     for (const co of changeOrders) await ctx.db.delete(co._id);
 
     await ctx.db.delete(scopeId);

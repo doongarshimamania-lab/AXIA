@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get protection network connections with enhanced metrics
 export const getProtectionNetwork = query({
   args: {},
@@ -18,7 +19,7 @@ export const getProtectionNetwork = query({
     const connections = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("subscriptionTier"), "pro"))
-      .collect();
+      .take(1000);
 
     // Calculate connection strength based on multiple factors
     const networkConnections = connections
@@ -79,6 +80,7 @@ export const sendConnectionRequest = mutation({
     targetUserId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "sendConnectionRequest");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -123,6 +125,7 @@ export const acceptConnectionRequest = mutation({
     connectionId: v.id("networkConnections"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "acceptConnectionRequest");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -158,7 +161,7 @@ export const getReferralOpportunities = query({
     const recentReports = await ctx.db
       .query("disputeReports")
       .filter((q) => q.gt(q.field("generatedAt"), sevenDaysAgo))
-      .collect();
+      .take(1000);
 
     // Filter for reports from other premium users
     const opportunities = [];
@@ -192,7 +195,7 @@ export const getMyConnectionRequests = query({
     const requests = await ctx.db
       .query("networkConnections")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const enrichedRequests = [];
     for (const req of requests) {

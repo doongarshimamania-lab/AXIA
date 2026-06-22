@@ -5,6 +5,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { api, internal } from "../_generated/api";
 import { obfuscateToken, simpleUserIdHash } from "../security/utils";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Initiate platform connection (generates OAuth URL or manual setup instructions)
 export const initiatePlatformConnection = mutation({
   args: {
@@ -16,6 +17,7 @@ export const initiatePlatformConnection = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "initiatePlatformConnection");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -62,6 +64,7 @@ export const completePlatformConnection = mutation({
     tokenExpiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "completePlatformConnection");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -193,6 +196,7 @@ export const disconnectPlatform = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "disconnectPlatform");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -229,7 +233,7 @@ export const disconnectPlatform = mutation({
       .withIndex("by_user_and_platform", (q) =>
         q.eq("userId", userId).eq("platform", args.platform)
       )
-      .collect();
+      .take(1000);
 
     for (const data of importedData) {
       await ctx.db.delete(data._id);
@@ -251,7 +255,7 @@ export const getUserPlatformConnections = query({
     const connections = await ctx.db
       .query("platformConnections")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     return connections;
   },

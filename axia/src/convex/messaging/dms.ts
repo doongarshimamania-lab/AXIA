@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser } from "./helpers";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get or create a DM channel between two users
 export const getOrCreateDMChannel = mutation({
   args: {
@@ -9,6 +10,7 @@ export const getOrCreateDMChannel = mutation({
     workspaceId: v.id("workspaces"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "getOrCreateDMChannel");
     const userId = await getAuthenticatedUser(ctx);
 
     // Check if a DM channel already exists between these users
@@ -17,13 +19,13 @@ export const getOrCreateDMChannel = mutation({
       .withIndex("by_workspace_type", (q: any) =>
         q.eq("workspaceId", args.workspaceId).eq("type", "dm")
       )
-      .collect();
+      .take(1000);
 
     for (const channel of channels) {
       const members = await ctx.db
         .query("channelMembers")
         .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
-        .collect();
+        .take(1000);
 
       const memberIds = members.map((m: any) => m.userId);
       if (memberIds.includes(userId) && memberIds.includes(args.otherUserId)) {
@@ -78,7 +80,7 @@ export const listDMChannels = query({
     const memberships = await ctx.db
       .query("channelMembers")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const dmChannels = [];
     for (const membership of memberships) {
@@ -90,7 +92,7 @@ export const listDMChannels = query({
         .query("channelMembers")
         .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
         .filter((q: any) => q.neq(q.field("userId"), userId))
-        .collect();
+        .take(1000);
 
       const otherUser = otherMembers[0]
         ? await ctx.db.get(otherMembers[0].userId)

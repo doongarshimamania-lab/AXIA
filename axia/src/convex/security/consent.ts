@@ -3,6 +3,7 @@ import { mutation, query, internalMutation } from "../_generated/server";
 import { getCurrentUser } from "../users";
 import { simpleUserIdHash } from "../security/utils";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 /**
  * Grant consent for a specific data type
  */
@@ -13,6 +14,7 @@ export const grantConsent = mutation({
     expiresInDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "grantConsent");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -66,6 +68,7 @@ export const revokeConsent = mutation({
     consentType: v.union(v.literal("PII"), v.literal("health"), v.literal("financial")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "revokeConsent");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -156,7 +159,7 @@ export const getConsentStatus = query({
       .query("consentManagement")
       .withIndex("by_user_and_type", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("status"), "granted"))
-      .collect();
+      .take(1000);
 
     const now = Date.now();
     return consents.map((c) => ({
@@ -187,7 +190,7 @@ export const autoRevokeExpiredConsents = internalMutation({
           q.eq(q.field("status"), "granted")
         )
       )
-      .collect();
+      .take(1000);
 
     for (const consent of expiredConsents) {
       await ctx.db.patch(consent._id, {

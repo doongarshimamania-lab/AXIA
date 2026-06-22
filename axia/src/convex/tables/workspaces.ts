@@ -23,9 +23,9 @@ export const workspaceTables = {
   // ─── Workspaces ─────────────────────────────────────────────────────────────
   workspaces: defineTable({
     ownerId: v.id("users"),
-    name: v.string(),
+    name: v.string().maxLength(100),
     type: v.union(v.literal("personal"), v.literal("team")),
-    description: v.optional(v.string()),
+    description: v.optional(v.string().maxLength(5000)),
     avatar: v.optional(v.string()), // storage ID or URL
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -53,7 +53,7 @@ export const workspaceTables = {
   // ─── Workspace Invitations ──────────────────────────────────────────────────
   workspaceInvitations: defineTable({
     workspaceId: v.id("workspaces"),
-    email: v.string(),
+    email: v.string().maxLength(320),
     role: v.union(v.literal("manager"), v.literal("member")),
     token: v.string(), // unique token for accept/cancel
     invitedBy: v.id("users"),

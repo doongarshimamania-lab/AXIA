@@ -4,6 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
 import type { Id } from "../_generated/dataModel";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getInvoices = query({
@@ -21,7 +22,7 @@ export const getInvoices = query({
         .query("invoices")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
         .order("desc")
-        .collect();
+        .take(1000);
 
       if (status) return allInvoices.filter((i: any) => i.status === status);
       return allInvoices;
@@ -32,13 +33,13 @@ export const getInvoices = query({
         .query("invoices")
         .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", status as any))
         .order("desc")
-        .collect();
+        .take(1000);
     }
     return await ctx.db
       .query("invoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
   },
 });
 
@@ -77,7 +78,7 @@ export const getWorkLinks = query({
     return await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -91,13 +92,13 @@ export const getPaymentReminders = query({
       return await ctx.db
         .query("paymentReminders")
         .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-        .collect();
+        .take(1000);
     }
 
     return await ctx.db
       .query("paymentReminders")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -114,12 +115,12 @@ export const getInvoiceStats = query({
       invoices = await ctx.db
         .query("invoices")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     } else {
       invoices = await ctx.db
         .query("invoices")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     return {
@@ -194,6 +195,7 @@ export const createInvoice = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createInvoice");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -214,7 +216,7 @@ export const createInvoice = mutation({
     const existing = await ctx.db
       .query("invoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const invoiceNumber = generateInvoiceNumber(existing);
     const proofCount = args.lineItems.filter(li => li.hasProof).length;
@@ -388,7 +390,7 @@ export const markInvoicePaid = mutation({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
 
     for (const r of reminders) {
       if (r.status === "scheduled") {
@@ -421,13 +423,13 @@ export const deleteInvoice = mutation({
     const workLinks = await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
     for (const wl of workLinks) await ctx.db.delete(wl._id);
 
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
     for (const r of reminders) await ctx.db.delete(r._id);
 
     await ctx.db.delete(invoiceId);
@@ -457,6 +459,7 @@ export const addWorkLink = mutation({
     fileName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addWorkLink");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -541,13 +544,14 @@ export const removeWorkLink = mutation({
 export const seedMockInvoices = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "seedMockInvoices");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
     const existing = await ctx.db
       .query("invoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existing.length > 0) return { seeded: false, count: existing.length };
 
@@ -639,7 +643,7 @@ export const getInvoiceTemplates = query({
     const systemTemplates = await ctx.db
       .query("invoiceTemplates")
       .withIndex("by_system", (q) => q.eq("isSystem", true))
-      .collect();
+      .take(1000);
 
     let userTemplates: any[] = [];
     if (userId) {
@@ -647,12 +651,12 @@ export const getInvoiceTemplates = query({
         userTemplates = await ctx.db
           .query("invoiceTemplates")
           .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-          .collect();
+          .take(1000);
         // Also get user's own templates
         const personalTemplates = await ctx.db
           .query("invoiceTemplates")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
         const ids = new Set(userTemplates.map((t: any) => t._id));
         for (const t of personalTemplates) {
           if (!ids.has(t._id)) userTemplates.push(t);
@@ -661,7 +665,7 @@ export const getInvoiceTemplates = query({
         userTemplates = await ctx.db
           .query("invoiceTemplates")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
       }
     }
 
@@ -723,10 +727,11 @@ export const saveUploadedInvoiceTemplate = mutation({
 export const seedInvoiceTemplates = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "seedInvoiceTemplates");
     const existing = await ctx.db
       .query("invoiceTemplates")
       .withIndex("by_system", (q) => q.eq("isSystem", true))
-      .collect();
+      .take(1000);
 
     if (existing.length > 0) return;
 

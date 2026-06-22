@@ -2,6 +2,7 @@ import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Track upgrade trigger views
 export const trackUpgradeTrigger = mutation({
   args: {
@@ -11,6 +12,7 @@ export const trackUpgradeTrigger = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "trackUpgradeTrigger");
     const userId = await getAuthUserId(ctx);
     if (!userId) return;
 
@@ -34,6 +36,7 @@ export const trackUpgradeConversion = mutation({
     triggerSource: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "trackUpgradeConversion");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

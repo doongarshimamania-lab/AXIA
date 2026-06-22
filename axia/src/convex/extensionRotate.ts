@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // Helper: generate cryptographically secure random token (64-character hex = 32 bytes)
 function randomToken(): string {
   const bytes = new Uint8Array(32);
@@ -17,6 +18,7 @@ export const rotateToken = mutation({
     ttlDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "rotateToken");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     
@@ -35,7 +37,7 @@ export const rotateToken = mutation({
     const existing = await ctx.db
       .query("extensionTokens")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     console.log(`[rotateToken] Revoking ${existing.length} existing token(s) for user ${userId}`);
     

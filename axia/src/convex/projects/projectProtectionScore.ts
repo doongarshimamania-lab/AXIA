@@ -43,13 +43,13 @@ async function calculateMetrics(ctx: any, projectId: any, userId: any) {
     .query("workSessions")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
     .filter((q: any) => q.eq(q.field("projectName"), project.projectName))
-    .collect();
+    .take(1000);
 
   // Fetch evidence
   const evidenceItems = await ctx.db
     .query("evidenceMetadata")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
     
   const projectEvidence = evidenceItems.filter((e: any) => {
     const session = sessions.find((s: any) => s._id === e.sessionId);
@@ -179,20 +179,20 @@ async function generateBusinessMapNodes(ctx: any, project: Doc<"projects">, metr
   const allClients = await ctx.db
     .query("clients")
     .withIndex("by_user", (q: any) => q.eq("userId", project.userId))
-    .collect();
+    .take(1000);
 
   // Fetch all projects to calculate client values
   const allProjects = await ctx.db
     .query("projects")
     .withIndex("by_user", (q: any) => q.eq("userId", project.userId))
-    .collect();
+    .take(1000);
 
   // Fetch platform connections
   const platformConnections = await ctx.db
     .query("platformConnections")
     .withIndex("by_user", (q: any) => q.eq("userId", project.userId))
     .filter((q: any) => q.eq(q.field("status"), "connected"))
-    .collect();
+    .take(1000);
 
   // Generate client nodes with dynamic positioning
   const clientCount = allClients.length;

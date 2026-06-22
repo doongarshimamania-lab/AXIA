@@ -4,20 +4,22 @@ import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import crypto from "crypto";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Server-side owner credential verification.
 // The OWNER_PASSWORD is stored as a Convex environment variable.
 // CRITICAL FIXES APPLIED (v5.4.0 security audit):
 //   1. Constant-time password comparison (was `===` — timing attack-able).
-//   2. Bounded rate-limit query (was .collect() — DoS amplification).
+//   2. Bounded rate-limit query (was .take(1000) — DoS amplification).
 //   3. Password length cap to prevent LPDOS via huge-string comparison.
 export const ownerAuth_verifyOwnerCredentials = mutation({
   args: { password: v.string() },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "ownerAuth_verifyOwnerCredentials");
     // Cap input length — same LPDOS guard as the user auth flow.
     const candidate = args.password.slice(0, 256);
 
     // Rate limiting: 5 failed attempts per 15 minutes. Bounded query
-    // (was .collect() — at scale this could fetch thousands of rows per
+    // (was .take(1000) — at scale this could fetch thousands of rows per
     // attempt, amplifying the DoS it was supposed to prevent).
     const fifteenMinAgo = Date.now() - 15 * 60 * 1000;
     const recentAttempts = await ctx.db

@@ -80,7 +80,7 @@ export const getMilestoneProtection = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = projectFilter
       ? allSessions.filter((s) => s.projectName === projectFilter)
@@ -107,7 +107,7 @@ export const getMilestoneProtection = query({
       const timeBlocks = await ctx.db
         .query("timeBlocks")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
 
       const weekBlocks = timeBlocks.filter((block) => {
         const session = weekSessions.find((s) => s._id === block.sessionId);
@@ -136,7 +136,7 @@ export const getMilestoneProtection = query({
             .withIndex("by_session_and_time", (q) =>
               q.eq("evidenceSessionId", evidenceSession._id)
             )
-            .collect();
+            .take(1000);
           evidenceScore += events.length;
         }
       }

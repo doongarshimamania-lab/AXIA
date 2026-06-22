@@ -3,6 +3,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get all clients for the current user
 export const getMyClients = query({
   args: {},
@@ -19,7 +20,7 @@ export const getMyClients = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     // Enrich with protection metrics
     const enrichedClients = await Promise.all(
@@ -29,7 +30,7 @@ export const getMyClients = query({
           .query("workSessions")
           .withIndex("by_user", (q) => q.eq("userId", userId))
           .filter((q) => q.eq(q.field("clientName"), client.clientName))
-          .collect();
+          .take(1000);
 
         const totalHours = sessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
         const activeSession = sessions.find((s) => !s.endTime);
@@ -38,7 +39,7 @@ export const getMyClients = query({
         const timeBlocks = await ctx.db
           .query("timeBlocks")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
 
         const clientBlocks = timeBlocks.filter((block) => {
           const session = sessions.find((s) => s._id === block.sessionId);
@@ -79,6 +80,7 @@ export const addClient = mutation({
     riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addClient");
     let userId;
     try {
       userId = await getAuthUserId(ctx);
@@ -121,6 +123,7 @@ export const updateClientRisk = mutation({
     riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateClientRisk");
     let userId;
     try {
       userId = await getAuthUserId(ctx);
@@ -176,13 +179,13 @@ export const getClientProtectionDetails = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("clientName"), client.clientName))
-      .collect();
+      .take(1000);
 
     // Get dispute reports for this client
     const reports = await ctx.db
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const clientReports = reports.filter((r) => {
       const session = sessions.find((s) => s._id === r.sessionId);
@@ -279,7 +282,7 @@ export const getClientProtectionScore = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = clientFilter
       ? allSessions.filter((s) => s.clientName === clientFilter)
@@ -308,7 +311,7 @@ export const getClientProtectionScore = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         totalEvidence += events.length;
         activityEvents += events.length;
@@ -404,7 +407,7 @@ export const getClientDisputeSimulation = query({
     const simAllSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const simSessions = simClientFilter
       ? simAllSessions.filter((s) => s.clientName === simClientFilter)
@@ -427,7 +430,7 @@ export const getClientDisputeSimulation = query({
           const events = await ctx.db
             .query("evidenceEvents")
             .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-            .collect();
+            .take(1000);
 
           totalEvidence += events.length;
           workContextEvidence += events.filter((e) => e.kind === "url" || e.kind === "memo").length;
@@ -455,7 +458,7 @@ export const getClientDisputeSimulation = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.gte(q.field("startTime"), thirtyDaysAgo))
-      .collect();
+      .take(1000);
 
     let monthClientFilter: string | null = null;
     if (args.clientId) {
@@ -512,7 +515,7 @@ export const getClientGapPrediction = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     let clientFilter: string | null = null;
     if (args.clientId) {
@@ -540,7 +543,7 @@ export const getClientGapPrediction = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         const eventsByHour: Record<number, number> = {};
         events.forEach((e) => {
@@ -622,7 +625,7 @@ export const getClientPolicyProfile = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = clientFilter
       ? allSessions.filter((s) => s.clientName === clientFilter)
@@ -642,7 +645,7 @@ export const getClientPolicyProfile = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         totalEvidence += events.length;
         contextEvidence += events.filter((e) => e.kind === "memo" || e.kind === "url").length;
@@ -658,7 +661,7 @@ export const getClientPolicyProfile = query({
     const timeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const clientBlocks = timeBlocks.filter((block) => {
       const session = sessions.find((s) => s._id === block.sessionId);
@@ -772,7 +775,7 @@ export const getClientTrustScore = query({
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("clientName"), client.clientName))
-      .collect();
+      .take(1000);
 
     const averageResponseTime = 24; // Mock - would calculate from actual communication data
     const communicationResponsiveness = Math.max(0, 100 - averageResponseTime * 0.5);
@@ -781,7 +784,7 @@ export const getClientTrustScore = query({
     const allReports = await ctx.db
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const clientReports = allReports.filter((r) => {
       const session = allSessions.find((s) => s._id === r.sessionId);
@@ -865,7 +868,7 @@ export const getClientPaymentPattern = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const sessions = clientFilter
       ? allSessions.filter((s) => s.clientName === clientFilter)
@@ -898,7 +901,7 @@ export const getClientPaymentPattern = query({
         const events = await ctx.db
           .query("evidenceEvents")
           .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-          .collect();
+          .take(1000);
 
         const qualityScore = events.length * 10;
         evidenceBySession[session._id] = qualityScore;
@@ -917,7 +920,7 @@ export const getClientPaymentPattern = query({
     const disputeReports = await ctx.db
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const clientDisputes = disputeReports.filter((r) => {
       const session = sessions.find((s) => s._id === r.sessionId);

@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ═════════════════════════════════════════════
 // QUERIES
 // ═════════════════════════════════════════════
@@ -26,7 +27,7 @@ export const listForEntity = query({
         q.eq("entityType", args.entityType).eq("entityId", args.entityId)
       )
       .order("desc")
-      .collect();
+      .take(1000);
 
     // Only return logs owned by the current user (or in their workspace)
     return logs.filter(
@@ -91,6 +92,7 @@ export const logProposalManualSend = mutation({
     triggeredByNotificationId: v.optional(v.id("notifications")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "logProposalManualSend");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -201,6 +203,7 @@ export const logInvoiceManualSend = mutation({
     triggeredByNotificationId: v.optional(v.id("notifications")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "logInvoiceManualSend");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 

@@ -136,7 +136,7 @@ export const getProjectRiskTimeline = query({
     const allSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     // Filter sessions by project if specified
     const sessions = projectFilter
@@ -189,7 +189,7 @@ export const getProjectRiskTimeline = query({
     const allTimeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     // Filter blocks to only those belonging to relevant sessions
     const sessionIds = new Set(sessions.map(s => s._id));
@@ -432,7 +432,7 @@ export const getProjectRiskTimeline = query({
     const allProjects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
     
     const activeProjects = allProjects.filter(p => p.status === "active");
     const businessMapScore = activeProjects.length > 0 ? Math.min(100, activeProjects.length * 25) : 0;

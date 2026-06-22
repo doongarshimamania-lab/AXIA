@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // Get team members for the current user
 export const getTeamMembers = query({
   args: {},
@@ -21,6 +22,7 @@ export const inviteTeamMember = mutation({
     email: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "inviteTeamMember");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

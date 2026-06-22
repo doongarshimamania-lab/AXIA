@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 /**
@@ -20,7 +21,7 @@ export const getOverdueInvoices = query({
         q.eq("userId", userId).eq("status", "overdue")
       )
       .order("desc")
-      .collect();
+      .take(1000);
 
     // Enrich each invoice with its reminders
     const enriched = await Promise.all(
@@ -28,7 +29,7 @@ export const getOverdueInvoices = query({
         const reminders = await ctx.db
           .query("paymentReminders")
           .withIndex("by_invoice", (q) => q.eq("invoiceId", inv._id))
-          .collect();
+          .take(1000);
 
         const daysPastDue = Math.max(
           0,
@@ -68,7 +69,7 @@ export const getReminderHistory = query({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
 
     return reminders.sort((a, b) => a.dayNumber - b.dayNumber);
   },
@@ -86,7 +87,7 @@ export const getAllReminders = query({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     return reminders.sort((a, b) => b.createdAt - a.createdAt);
   },
@@ -198,6 +199,7 @@ export const sendReminder = mutation({
 export const scheduleAutoReminders = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "scheduleAutoReminders");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -216,7 +218,7 @@ export const scheduleAutoReminders = mutation({
       .withIndex("by_user_and_status", (q) =>
         q.eq("userId", userId).eq("status", "overdue")
       )
-      .collect();
+      .take(1000);
 
     let scheduled = 0;
     const now = Date.now();
@@ -230,7 +232,7 @@ export const scheduleAutoReminders = mutation({
       const existingReminders = await ctx.db
         .query("paymentReminders")
         .withIndex("by_invoice", (q) => q.eq("invoiceId", invoice._id))
-        .collect();
+        .take(1000);
 
       const sentOrScheduledDays = new Set(
         existingReminders
@@ -305,6 +307,7 @@ export const updateReminderSettings = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateReminderSettings");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

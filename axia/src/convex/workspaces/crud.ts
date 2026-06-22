@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Doc, Id } from "../_generated/dataModel";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /** Get all workspaces the current user belongs to (as owner or member).
@@ -29,13 +30,13 @@ export const getMyWorkspaces = query({
     const owned = await ctx.db
       .query("workspaces")
       .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-      .collect();
+      .take(1000);
 
     // Workspaces the user is a member of
     const memberships = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const memberWorkspaceIds = memberships
       .filter((m) => m.status === "active")
@@ -124,14 +125,14 @@ export const getWorkspaceStats = query({
     const allMembers = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
     const activeMembers = allMembers.filter((m) => m.status === "active");
 
     // Count active projects
     const allProjects = await ctx.db
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
     const activeProjects = allProjects.filter((p) => p.status === "active");
 
     // Count pending invitations
@@ -140,13 +141,13 @@ export const getWorkspaceStats = query({
       .withIndex("by_workspace_and_status", (q) =>
         q.eq("workspaceId", args.workspaceId).eq("status", "pending")
       )
-      .collect();
+      .take(1000);
 
     // Count clients
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
 
     return {
       memberCount: activeMembers.length,
@@ -197,6 +198,7 @@ export const createWorkspace = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createWorkspace");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -257,6 +259,7 @@ export const updateWorkspace = mutation({
     avatar: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateWorkspace");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -292,6 +295,7 @@ export const convertToTeamWorkspace = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "convertToTeamWorkspace");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -314,6 +318,7 @@ export const convertToTeamWorkspace = mutation({
 export const deleteWorkspace = mutation({
   args: { workspaceId: v.id("workspaces") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteWorkspace");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -327,7 +332,7 @@ export const deleteWorkspace = mutation({
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
       .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+      .take(1000);
 
     if (activeProjects.length > 0) {
       throw new Error("Cannot delete workspace with active projects. Archive them first.");
@@ -337,7 +342,7 @@ export const deleteWorkspace = mutation({
     const members = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
 
     for (const member of members) {
       await ctx.db.delete(member._id);
@@ -347,7 +352,7 @@ export const deleteWorkspace = mutation({
     const invitations = await ctx.db
       .query("workspaceInvitations")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
 
     for (const inv of invitations) {
       await ctx.db.patch(inv._id, { status: "cancelled" });
@@ -363,6 +368,7 @@ export const deleteWorkspace = mutation({
 export const seedPersonalWorkspace = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "seedPersonalWorkspace");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

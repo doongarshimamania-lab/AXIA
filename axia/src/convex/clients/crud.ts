@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getClients = query({
@@ -20,12 +21,12 @@ export const getClients = query({
       return await ctx.db
         .query("clients")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     }
     return await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -60,8 +61,8 @@ export const getClientsEnriched = query({
     }
 
     const clients = workspaceId
-      ? await ctx.db.query("clients").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).collect()
-      : await ctx.db.query("clients").withIndex("by_user", (q) => q.eq("userId", userId)).collect();
+      ? await ctx.db.query("clients").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(1000)
+      : await ctx.db.query("clients").withIndex("by_user", (q) => q.eq("userId", userId)).take(1000);
 
     // Resolve assigned members
     const enriched = await Promise.all(
@@ -86,7 +87,7 @@ export const getClientsEnriched = query({
         const projects = await ctx.db
           .query("projects")
           .withIndex("by_client", (q) => q.eq("clientId", client._id))
-          .collect();
+          .take(1000);
 
         return {
           ...client,
@@ -125,6 +126,7 @@ export const createClient = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createClient");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
  
  
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 /* Removed heavy typed api import to prevent deep type instantiation issues */
 
 // Analyze work patterns for dispute risk
@@ -21,7 +22,7 @@ export const analyzeDisputeRisk = query({
       .query("evidenceSessions")
       .withIndex("by_user_and_status", (q) => q.eq("userId", user._id))
       .filter((q) => q.gt(q.field("startTime"), sevenDaysAgo))
-      .collect();
+      .take(1000);
 
     // Analyze for dispute patterns
     const riskFactors = [];
@@ -32,7 +33,7 @@ export const analyzeDisputeRisk = query({
       const events = await ctx.db
         .query("evidenceEvents")
         .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", session._id))
-        .collect();
+        .take(1000);
 
       // Sort events by timestamp
       const sortedEvents = [...events].sort((a, b) => a.t - b.t);
@@ -107,6 +108,7 @@ export const applyRecommendation = mutation({
     recommendationId: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "applyRecommendation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

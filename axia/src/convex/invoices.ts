@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ─────────────────────────────────────────────
 // Shared validators
 // ─────────────────────────────────────────────
@@ -62,6 +63,7 @@ export const create = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -177,6 +179,7 @@ export const update = mutation({
     terms: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "update");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -278,6 +281,7 @@ export const send = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "send");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -319,6 +323,7 @@ export const markViewed = mutation({
     publicToken: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markViewed");
     const invoice = await ctx.db
       .query("invoices")
       .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
@@ -352,6 +357,7 @@ export const markPaid = mutation({
     paidAmount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markPaid");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -440,18 +446,19 @@ export const markPaid = mutation({
 export const markOverdue = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "markOverdue");
     const now = Date.now();
 
     // Find all sent and viewed invoices
     const sentInvoices = await ctx.db
       .query("invoices")
       .filter((q) => q.eq(q.field("status"), "sent"))
-      .collect();
+      .take(1000);
 
     const viewedInvoices = await ctx.db
       .query("invoices")
       .filter((q) => q.eq(q.field("status"), "viewed"))
-      .collect();
+      .take(1000);
 
     const overdueEligible = [...sentInvoices, ...viewedInvoices];
     let overdueCount = 0;
@@ -478,6 +485,7 @@ export const cancel = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "cancel");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -556,7 +564,7 @@ export const list = query({
       const allInvoices = await ctx.db
         .query("invoices")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       let visible = allInvoices.filter((inv) => isRecordVisible(inv, visibility));
 
@@ -575,7 +583,7 @@ export const list = query({
           q.eq("userId", userId).eq("status", args.status!)
         )
         .order("desc")
-        .collect();
+        .take(1000);
       return invoices;
     }
 
@@ -584,7 +592,7 @@ export const list = query({
       .query("invoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     return invoices.sort((a, b) => b.updatedAt - a.updatedAt);
   },
@@ -657,13 +665,13 @@ export const getStats = query({
       const workspaceInvoices = await ctx.db
         .query("invoices")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
       allInvoices = workspaceInvoices.filter((inv) => isRecordVisible(inv, visibility));
     } else {
       allInvoices = await ctx.db
         .query("invoices")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     // Total invoiced (excludes cancelled)
@@ -736,6 +744,7 @@ export const remove = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "remove");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -758,7 +767,7 @@ export const remove = mutation({
     const workLinks = await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     for (const link of workLinks) {
       await ctx.db.delete(link._id);
@@ -768,7 +777,7 @@ export const remove = mutation({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     for (const reminder of reminders) {
       await ctx.db.delete(reminder._id);
@@ -806,6 +815,7 @@ export const addWorkLink = mutation({
     completedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addWorkLink");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -871,6 +881,7 @@ export const removeWorkLink = mutation({
     workLinkId: v.id("invoiceWorkLinks"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "removeWorkLink");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -916,7 +927,7 @@ export const getWorkLinks = query({
     const workLinks = await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     return workLinks;
   },
@@ -954,7 +965,7 @@ export const getWorkLinksByLineItem = query({
     const workLinks = await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     return workLinks.filter((link) => link.lineItemIndex === args.lineItemIndex);
   },
@@ -973,6 +984,7 @@ export const scheduleReminders = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "scheduleReminders");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1021,7 +1033,7 @@ export const processDueReminders = internalMutation({
       .withIndex("by_status_and_date", (q) =>
         q.eq("status", "scheduled").lt("scheduledAt", now)
       )
-      .collect();
+      .take(1000);
 
     let processedCount = 0;
 
@@ -1068,6 +1080,7 @@ export const cancelReminders = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "cancelReminders");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1096,6 +1109,7 @@ export const startReminders = mutation({
     intervals: v.optional(v.array(v.number())),  // custom day intervals, defaults to [3, 7, 14]
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "startReminders");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1182,6 +1196,7 @@ export const stopReminders = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "stopReminders");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1199,7 +1214,7 @@ export const stopReminders = mutation({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     let cancelledCount = 0;
 
@@ -1242,7 +1257,7 @@ export const getReminderHistory = query({
     const reminders = await ctx.db
       .query("paymentReminders")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", args.invoiceId))
-      .collect();
+      .take(1000);
 
     // Sort by dayNumber ascending
     return reminders.sort((a, b) => a.dayNumber - b.dayNumber);
@@ -1261,6 +1276,7 @@ export const generateInvoiceFromSessions = mutation({
     dueDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "generateInvoiceFromSessions");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1283,7 +1299,7 @@ export const generateInvoiceFromSessions = mutation({
       const allSessions = await ctx.db
         .query("workSessions")
         .withIndex("by_user_and_project", (q: any) => q.eq("userId", userId).eq("projectName", project.projectName))
-        .collect();
+        .take(1000);
       sessions = allSessions.filter((s: any) => !s.invoiced);
     }
 
@@ -1351,6 +1367,7 @@ export const createInvoiceFromProposal = mutation({
     dueDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createInvoiceFromProposal");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1426,7 +1443,7 @@ export const processRecurringInvoices = internalMutation({
     const recurring = await ctx.db
       .query("recurringInvoices")
       .withIndex("by_next_due_date", (q: any) => q.lte("nextDueDate", now))
-      .collect();
+      .take(1000);
 
     let generated = 0;
     for (const rec of recurring) {
@@ -1481,6 +1498,7 @@ export const processRecurringInvoices = internalMutation({
 export const createStripePaymentLink = mutation({
   args: { invoiceId: v.id("invoices") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createStripePaymentLink");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1524,6 +1542,7 @@ export const setupRecurringInvoice = mutation({
     frequency: v.union(v.literal("weekly"), v.literal("monthly"), v.literal("quarterly")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "setupRecurringInvoice");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1601,7 +1620,7 @@ export const getRecurringInvoices = query({
     const recurring = await ctx.db
       .query("recurringInvoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     // Enrich with client info
     const enriched = await Promise.all(
@@ -1631,6 +1650,7 @@ export const toggleRecurringInvoice = mutation({
     active: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "toggleRecurringInvoice");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1677,6 +1697,7 @@ export const removeRecurringInvoice = mutation({
     recurringInvoiceId: v.id("recurringInvoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "removeRecurringInvoice");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1706,6 +1727,7 @@ export const handleStripeWebhook = mutation({
     eventType: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "handleStripeWebhook");
     const invoice = await ctx.db.get(args.invoiceId);
     if (!invoice) throw new ConvexError("Invoice not found");
 
@@ -1786,7 +1808,7 @@ async function getNextInvoiceNumberInternal(
   const existingInvoices = await ctx.db
     .query("invoices")
     .withIndex("by_user_and_number", (q: any) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   // Find the highest existing number
   let maxNumber = 0;
@@ -1871,7 +1893,7 @@ async function cancelRemindersInternal(
   const reminders = await ctx.db
     .query("paymentReminders")
     .withIndex("by_invoice", (q: any) => q.eq("invoiceId", invoiceId))
-    .collect();
+    .take(1000);
 
   for (const reminder of reminders) {
     if (reminder.status === "scheduled") {

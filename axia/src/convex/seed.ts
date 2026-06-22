@@ -89,35 +89,35 @@ export const resetDevUser = mutation({
     const stages = await ctx.db
       .query("pipelineStages")
       .withIndex("by_user", (q) => q.eq("userId", devUserId))
-      .collect();
+      .take(1000);
     for (const s of stages) { await ctx.db.delete(s._id); deletedCount++; }
 
     // 2. Deals
     const deals = await ctx.db
       .query("deals")
       .withIndex("by_user", (q) => q.eq("userId", devUserId))
-      .collect();
+      .take(1000);
     for (const d of deals) { await ctx.db.delete(d._id); deletedCount++; }
 
     // 3. Clients
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", devUserId))
-      .collect();
+      .take(1000);
     for (const c of clients) { await ctx.db.delete(c._id); deletedCount++; }
 
     // 4. Projects
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", devUserId))
-      .collect();
+      .take(1000);
     for (const p of projects) { await ctx.db.delete(p._id); deletedCount++; }
 
     // 5. Workspaces
     const workspaces = await ctx.db
       .query("workspaces")
       .withIndex("by_owner", (q) => q.eq("ownerId", devUserId))
-      .collect();
+      .take(1000);
     for (const w of workspaces) { await ctx.db.delete(w._id); deletedCount++; }
 
     // 6. Finally, delete the user document

@@ -3,6 +3,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireWorkspaceAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 /**
@@ -23,7 +24,7 @@ export const getFields = query({
       .withIndex("by_workspace_and_table", (q) =>
         q.eq("workspaceId", args.workspaceId).eq("tableName", args.tableName)
       )
-      .collect();
+      .take(1000);
 
     // Sort by order
     return fields.sort((a, b) => a.order - b.order);
@@ -45,7 +46,7 @@ export const getAllFields = query({
       .withIndex("by_workspace", (q) =>
         q.eq("workspaceId", args.workspaceId)
       )
-      .collect();
+      .take(1000);
   },
 });
 
@@ -90,6 +91,7 @@ export const createField = mutation({
     required: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createField");
     await requireWorkspaceAccess(ctx, args.workspaceId, "member");
 
     // Determine the order — place after the last existing field for this table
@@ -98,7 +100,7 @@ export const createField = mutation({
       .withIndex("by_workspace_and_table", (q) =>
         q.eq("workspaceId", args.workspaceId).eq("tableName", args.tableName)
       )
-      .collect();
+      .take(1000);
 
     const maxOrder =
       existing.length > 0 ? Math.max(...existing.map((f) => f.order)) : -1;
@@ -153,6 +155,7 @@ export const updateField = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateField");
     const { fieldId, ...updates } = args;
 
     const field = await ctx.db.get(fieldId);
@@ -198,6 +201,7 @@ export const deleteField = mutation({
     fieldId: v.id("customFieldDefinitions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteField");
     const field = await ctx.db.get(args.fieldId);
     if (!field) throw new Error("Custom field not found");
 
@@ -225,6 +229,7 @@ export const reorderFields = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "reorderFields");
     await requireWorkspaceAccess(ctx, args.workspaceId, "member");
 
     for (const { fieldId, order } of args.orders) {

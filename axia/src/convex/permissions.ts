@@ -44,7 +44,7 @@ export async function getUserTeamIds(
     .withIndex("by_workspace_and_user", (q) =>
       q.eq("workspaceId", workspaceId).eq("userId", userId)
     )
-    .collect();
+    .take(1000);
   return memberships.map((m) => m.teamId);
 }
 
@@ -61,7 +61,7 @@ export async function isCrossTeamMember(
     .withIndex("by_workspace_and_user", (q) =>
       q.eq("workspaceId", workspaceId).eq("userId", userId)
     )
-    .collect();
+    .take(1000);
 
   for (const m of memberships) {
     const team = await ctx.db.get(m.teamId);

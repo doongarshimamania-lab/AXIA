@@ -11,6 +11,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -131,6 +132,7 @@ export const revokeClientWorkspaceToken = mutation({
 export const getMyClientWorkspaceTokens = query({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "revokeClientWorkspaceToken");
     const userId = (await ctx.auth.getUserIdentity())?.subject as
       | string
       | undefined;
@@ -139,7 +141,7 @@ export const getMyClientWorkspaceTokens = query({
     const tokens = await ctx.db
       .query("clientWorkspaceTokens")
       .withIndex("by_freelancer", (q) => q.eq("freelancerUserId", userId))
-      .collect();
+      .take(1000);
 
     return tokens.filter((t) => !t.revoked).map((t) => ({
       _id: t._id,
@@ -236,7 +238,7 @@ export const getClientProjects = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_client", (q) => q.eq("clientId", clientId))
-      .collect();
+      .take(1000);
 
     // Enrich each project with scope/milestone data and team info
     const enriched = await Promise.all(
@@ -245,7 +247,7 @@ export const getClientProjects = query({
         const scopeDefs = await ctx.db
           .query("scopeDefinitions")
           .withIndex("by_project", (q) => q.eq("projectId", project._id))
-          .collect();
+          .take(1000);
 
         // Calculate progress from scope definitions
         let totalDeliverables = 0;
@@ -271,7 +273,7 @@ export const getClientProjects = query({
             .withIndex("by_workspace", (q) =>
               q.eq("workspaceId", project.workspaceId!)
             )
-            .collect();
+            .take(1000);
 
           for (const member of members.slice(0, 5)) {
             const user = await ctx.db.get(member.userId);
@@ -292,7 +294,7 @@ export const getClientProjects = query({
           .withIndex("by_workspace", (q) =>
             q.eq("workspaceId", project.workspaceId!)
           )
-          .collect();
+          .take(1000);
 
         const projectSessions = workSessions.filter(
           (s) => (s as any).projectId === project._id
@@ -343,7 +345,7 @@ export const getClientProposals = query({
     const clientId = tokenRecord.clientId;
 
     // Get proposals linked to this client
-    const allProposals = await ctx.db.query("proposals").collect();
+    const allProposals = await ctx.db.query("proposals").take(1000);
     const proposals = allProposals.filter(
       (p) => {
         const pClientId = (p as any).clientId;
@@ -390,7 +392,7 @@ export const getClientInvoices = query({
     const invoices = await ctx.db
       .query("invoices")
       .withIndex("by_client", (q) => q.eq("clientId", clientId))
-      .collect();
+      .take(1000);
 
     // Enrich each invoice with work proofs
     const enriched = await Promise.all(
@@ -398,7 +400,7 @@ export const getClientInvoices = query({
         const workLinks = await ctx.db
           .query("invoiceWorkLinks")
           .withIndex("by_invoice", (q) => q.eq("invoiceId", invoice._id))
-          .collect();
+          .take(1000);
 
         return {
           _id: invoice._id,
@@ -457,7 +459,7 @@ export const getClientTeamMembers = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_client", (q) => q.eq("clientId", clientId))
-      .collect();
+      .take(1000);
 
     // Collect team members from assignedMemberIds and workspace
     const memberMap = new Map<
@@ -495,7 +497,7 @@ export const getClientTeamMembers = query({
           .withIndex("by_workspace", (q) =>
             q.eq("workspaceId", project.workspaceId!)
           )
-          .collect();
+          .take(1000);
 
         for (const wm of workspaceMembers) {
           if ((wm as any).status !== "active") continue;
@@ -573,7 +575,7 @@ export const getClientInvoiceByToken = query({
     const workLinks = await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoice._id))
-      .collect();
+      .take(1000);
 
     return {
       _id: invoice._id,

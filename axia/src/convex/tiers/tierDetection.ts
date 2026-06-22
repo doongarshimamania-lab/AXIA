@@ -43,7 +43,7 @@ async function calculateVulnerabilityScore(ctx: any, userId: any): Promise<numbe
     .query("timeBlocks")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
     .filter((q: any) => q.gte(q.field("startTime"), last30Days))
-    .collect();
+    .take(1000);
 
   if (recentBlocks.length === 0) return 0;
 
@@ -166,7 +166,7 @@ export const calculateUpgradeValue = query({
       .query("timeBlocks")
       .withIndex("by_user", (q: any) => q.eq("userId", user._id))
       .filter((q: any) => q.gte(q.field("startTime"), last30Days))
-      .collect();
+      .take(1000);
 
     const rejectedBlocks = recentBlocks.filter((b: any) => b.complianceStatus === "rejected");
     const rejectedHours = rejectedBlocks.length * (5 / 60); // 5-minute blocks

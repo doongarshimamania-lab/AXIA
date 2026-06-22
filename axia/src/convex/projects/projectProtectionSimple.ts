@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Simplified wrapper to avoid deep type instantiation
 export const getProjects = query({
   args: {},
@@ -12,7 +13,7 @@ export const getProjects = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const enrichedProjects = await Promise.all(
       projects.map(async (project) => {
@@ -20,7 +21,7 @@ export const getProjects = query({
           .query("workSessions")
           .withIndex("by_user", (q) => q.eq("userId", userId))
           .filter((q) => q.eq(q.field("projectName"), project.projectName))
-          .collect();
+          .take(1000);
 
         const totalHours = sessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
         const activeSession = sessions.find((s) => !s.endTime);
@@ -28,7 +29,7 @@ export const getProjects = query({
         const timeBlocks = await ctx.db
           .query("timeBlocks")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
 
         const projectBlocks = timeBlocks.filter((block) => {
           const session = sessions.find((s) => s._id === block.sessionId);
@@ -70,6 +71,7 @@ export const addProject = mutation({
     workspaceId: v.optional(v.id("workspaces")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addProject");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

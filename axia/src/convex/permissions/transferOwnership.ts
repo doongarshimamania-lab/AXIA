@@ -301,7 +301,7 @@ export const getTransferHistory = query({
     const logs = await ctx.db
       .query("clientActivityLog")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     const transferLogs = logs.filter((log) =>
       log.action?.includes("ownership_transferred") ||

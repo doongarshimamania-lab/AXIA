@@ -165,7 +165,7 @@ export const finalizeEvidenceSession = internalMutation({
       .withIndex("by_session_and_time", (q) =>
         q.eq("evidenceSessionId", session._id)
       )
-      .collect();
+      .take(1000);
 
     // Calculate summary metrics
     const urlEvents = events.filter(e => e.kind === "url");

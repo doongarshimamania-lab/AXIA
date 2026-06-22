@@ -6,8 +6,8 @@ export const tagTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    name: v.string(),
-    color: v.string(),
+    name: v.string().maxLength(100),
+    color: v.string().maxLength(32),
     category: v.optional(v.string()), // "client"|"project"|"evidence"|"general"
     usageCount: v.number(),
     createdAt: v.number(),

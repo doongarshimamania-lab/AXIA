@@ -5,6 +5,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "../permissions";
 import { getUserVisibility, isRecordVisible } from "../workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getProposals = query({
@@ -23,7 +24,7 @@ export const getProposals = query({
       const allProposals = await ctx.db
         .query("proposals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
 
       let visible = allProposals.filter((p) => isRecordVisible(p, visibility));
       if (status) visible = visible.filter((p) => p.status === status);
@@ -36,13 +37,13 @@ export const getProposals = query({
         .query("proposals")
         .withIndex("by_user_and_status", (q) => q.eq("userId", userId).eq("status", status as any))
         .order("desc")
-        .collect();
+        .take(1000);
     }
     return await ctx.db
       .query("proposals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
   },
 });
 
@@ -83,7 +84,7 @@ export const getTemplates = query({
     const systemTemplates = await ctx.db
       .query("proposalTemplates")
       .withIndex("by_system", (q) => q.eq("isSystem", true))
-      .collect();
+      .take(1000);
 
     let userTemplates: any[] = [];
     if (userId) {
@@ -91,12 +92,12 @@ export const getTemplates = query({
         userTemplates = await ctx.db
           .query("proposalTemplates")
           .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-          .collect();
+          .take(1000);
         // Also get user's own templates
         const personalTemplates = await ctx.db
           .query("proposalTemplates")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
         // Merge and deduplicate
         const ids = new Set(userTemplates.map((t: any) => t._id));
         for (const t of personalTemplates) {
@@ -106,7 +107,7 @@ export const getTemplates = query({
         userTemplates = await ctx.db
           .query("proposalTemplates")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
       }
     }
 
@@ -128,13 +129,13 @@ export const getProposalStats = query({
       const allProposals = await ctx.db
         .query("proposals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
       proposals = allProposals.filter((p) => isRecordVisible(p, visibility));
     } else {
       proposals = await ctx.db
         .query("proposals")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     const sent = proposals.filter(p => p.status === "sent" || p.status === "viewed").length;
@@ -159,7 +160,7 @@ export const getFollowUps = query({
     return await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -204,6 +205,7 @@ export const createProposal = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createProposal");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -358,7 +360,7 @@ export const signProposal = mutation({
     const followUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", proposal._id))
-      .collect();
+      .take(1000);
 
     for (const fu of followUps) {
       if (fu.status === "scheduled") {
@@ -419,7 +421,7 @@ export const deleteProposal = mutation({
     const followUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
-      .collect();
+      .take(1000);
     for (const fu of followUps) await ctx.db.delete(fu._id);
 
     await ctx.db.delete(proposalId);
@@ -429,10 +431,11 @@ export const deleteProposal = mutation({
 export const seedTemplates = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "seedTemplates");
     const existing = await ctx.db
       .query("proposalTemplates")
       .withIndex("by_system", (q) => q.eq("isSystem", true))
-      .collect();
+      .take(1000);
 
     if (existing.length > 0) return;
 
@@ -597,7 +600,7 @@ export const startFollowUps = mutation({
     const existingFollowUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
-      .collect();
+      .take(1000);
 
     for (const fu of existingFollowUps) {
       if (fu.status === "scheduled") {
@@ -651,7 +654,7 @@ export const stopFollowUps = mutation({
     const followUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", proposalId))
-      .collect();
+      .take(1000);
 
     let cancelledCount = 0;
     for (const fu of followUps) {
@@ -695,6 +698,7 @@ export const skipFollowUp = mutation({
 export const getFollowUpSettings = query({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "skipFollowUp");
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return {
@@ -753,6 +757,7 @@ export const updateFollowUpSettings = mutation({
     workspaceId: v.optional(v.id("workspaces")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateFollowUpSettings");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -805,7 +810,7 @@ export const processDueFollowUps = internalMutation({
     const dueFollowUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_status_and_date", (q) => q.eq("status", "scheduled").lt("scheduledAt", now))
-      .collect();
+      .take(1000);
 
     let processedCount = 0;
     for (const fu of dueFollowUps) {

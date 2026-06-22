@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 export const getUserDisputeReports = query({
@@ -14,7 +15,7 @@ export const getUserDisputeReports = query({
       .query("disputeReports")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(1000);
 
     return reports;
   },
@@ -64,7 +65,7 @@ export const getMonthlyUsage = query({
           q.lte(q.field("generatedAt"), endOfMonth)
         )
       )
-      .collect();
+      .take(1000);
 
     const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0);
     const monthlySavings = Math.round((monthlyLoss * 0.83) * 100) / 100;
@@ -93,6 +94,7 @@ export const createDisputeReport = mutation({
     sessionId: v.optional(v.id("workSessions")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createDisputeReport");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("User not authenticated");
 
@@ -111,7 +113,7 @@ export const createDisputeReport = mutation({
             q.lte(q.field("generatedAt"), endOfMonth)
           )
         )
-        .collect();
+        .take(1000);
 
       if (monthlyReports.length >= 1) {
         const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0) + (args.disputedHours * (args.hourlyRate ?? 75));
@@ -170,6 +172,7 @@ export const generateDisputeReport = mutation({
     lostIncome: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "generateDisputeReport");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("User not authenticated");
 
@@ -188,7 +191,7 @@ export const generateDisputeReport = mutation({
             q.lte(q.field("generatedAt"), endOfMonth)
           )
         )
-        .collect();
+        .take(1000);
 
       if (monthlyReports.length >= 1) {
         const monthlyLoss = monthlyReports.reduce((sum, report) => sum + report.lostIncome, 0) + args.lostIncome;
@@ -211,7 +214,7 @@ export const generateDisputeReport = mutation({
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
+      .take(1000);
 
     const rejectedBlocks = blocks.filter(b => b.complianceStatus === "rejected");
 
@@ -253,6 +256,7 @@ export const updateReportStatus = mutation({
     status: v.union(v.literal("generated"), v.literal("sent"), v.literal("viewed"), v.literal("resolved"), v.literal("appealed")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateReportStatus");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("User not authenticated");
 
@@ -288,6 +292,7 @@ export const deleteDisputeReport = mutation({
     reportId: v.id("disputeReports"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteDisputeReport");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("User not authenticated");
 

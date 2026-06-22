@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getGoals = query({
@@ -14,12 +15,12 @@ export const getGoals = query({
       return await ctx.db
         .query("goals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     }
     return await ctx.db
       .query("goals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -61,6 +62,7 @@ export const createGoal = mutation({
     lastCheckIn: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createGoal");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

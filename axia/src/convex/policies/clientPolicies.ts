@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Create a new client policy
 export const createClientPolicy = mutation({
   args: {
@@ -29,6 +30,7 @@ export const createClientPolicy = mutation({
     documentUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createClientPolicy");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -56,7 +58,7 @@ export const getUserPolicies = query({
     const policies = await ctx.db
       .query("clientPolicies")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     return policies;
   },
@@ -82,7 +84,7 @@ export const analyzePolicyCompliance = query({
       .query("evidenceSessions")
       .withIndex("by_user_and_status", (q) => q.eq("userId", userId))
       .filter((q) => q.gt(q.field("startTime"), sevenDaysAgo))
-      .collect();
+      .take(1000);
 
     let compliantCount = 0;
     const issues = [];
@@ -141,6 +143,7 @@ export const deleteClientPolicy = mutation({
     policyId: v.id("clientPolicies"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteClientPolicy");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

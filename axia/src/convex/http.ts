@@ -59,6 +59,22 @@ function sanitizeError(error: any, publicMessage: string = "Bad Request"): Respo
   });
 }
 
+/**
+ * v5.5.0 — Shared request body size guard.
+ * Returns a 413 Response if Content-Length exceeds `maxBytes`, else null.
+ * Use at the top of every httpAction handler.
+ */
+function checkBodySize(req: Request, maxBytes: number = 100_000): Response | null {
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > maxBytes) {
+    return new Response(
+      JSON.stringify({ error: `Request body too large (max ${maxBytes} bytes)` }),
+      { status: 413, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  return null;
+}
+
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
@@ -72,6 +88,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // v5.5.0: Body size cap (10 KB — this endpoint only takes a session ID).
+      const sizeErr = checkBodySize(req, 10_000);
+      if (sizeErr) return sizeErr;
+
       const body = await req.json();
       
       if (!body || typeof body !== "object") {
@@ -141,6 +161,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // v5.5.0: Body size cap (1 MB — events array can be large but bounded).
+      const sizeErr = checkBodySize(req, 1_000_000);
+      if (sizeErr) return sizeErr;
+
       const body = await req.json();
       
       if (!body || typeof body !== "object") {
@@ -173,6 +197,15 @@ http.route({
         });
       }
 
+      // v5.5.0: Cap events array length (2,000 events per call — bounds
+      // server-side processing time per request).
+      if (events.length > 2000) {
+        return new Response(JSON.stringify({ error: "Too many events per call (max 2,000)" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
       // SECURITY: Actually validate the token against the database
       const userId = await validateExtensionToken(ctx, token);
       if (!userId) {
@@ -200,6 +233,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // v5.5.0: Body size cap (10 KB).
+      const sizeErr = checkBodySize(req, 10_000);
+      if (sizeErr) return sizeErr;
+
       const body = await req.json();
       
       if (!body || typeof body !== "object") {
@@ -252,6 +289,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // v5.5.0: Body size cap (10 KB).
+      const sizeErr = checkBodySize(req, 10_000);
+      if (sizeErr) return sizeErr;
+
       const body = await req.json();
       
       if (!body || typeof body !== "object") {
@@ -321,11 +362,23 @@ http.route({
 // POST /api/ai/predict
 // Body: { token: string, evidence: string, clientContext?: string }
 // Returns: { prediction: string, timestamp: number }
+//
+// v5.5.0: Cloud-billing attack defense — bounded input + per-token rate limit.
 http.route({
   path: "/api/ai/predict",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
+      // v5.5.0: Hard cap on request body size (10 KB max — prevents
+      // large-payload DoS + bounds OpenAI token cost per request).
+      const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+      if (contentLength > 10_000) {
+        return new Response(JSON.stringify({ error: "Request body too large (max 10 KB)" }), {
+          status: 413,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       // SECURITY: Require authentication via extension token or Authorization header
       const authHeader = req.headers.get("Authorization");
       const body = await req.json();
@@ -341,16 +394,17 @@ http.route({
 
       // SECURITY: Validate token — either extension token or Bearer token
       let isAuthenticated = false;
-      
+      let authenticatedToken: string | null = null;
+
       if (token && typeof token === "string") {
         const userId = await validateExtensionToken(ctx, token);
-        if (userId) isAuthenticated = true;
+        if (userId) { isAuthenticated = true; authenticatedToken = token; }
       }
-      
+
       if (!isAuthenticated && authHeader?.startsWith("Bearer ")) {
         const bearerToken = authHeader.substring(7);
         const userId = await validateExtensionToken(ctx, bearerToken);
-        if (userId) isAuthenticated = true;
+        if (userId) { isAuthenticated = true; authenticatedToken = bearerToken; }
       }
 
       if (!isAuthenticated) {
@@ -363,6 +417,36 @@ http.route({
       if (!evidence || typeof evidence !== "string") {
         return new Response(JSON.stringify({ error: "Missing or invalid 'evidence' (string)" }), {
           status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // v5.5.0: Evidence length cap (8,000 chars ≈ 2K tokens ≈ $0.00006 per call).
+      // Prevents abuse where a malicious caller submits a 1MB "evidence" string
+      // to inflate OpenAI billing.
+      if (evidence.length > 8000) {
+        return new Response(JSON.stringify({ error: "Evidence too long (max 8,000 chars)" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (typeof clientContext === "string" && clientContext.length > 2000) {
+        return new Response(JSON.stringify({ error: "clientContext too long (max 2,000 chars)" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // v5.5.0: Per-token rate limit (10 AI predictions per hour — bounds
+      // OpenAI spend to ~$0.0006 per token per hour at gpt-4o-mini rates).
+      // Uses the same rateLimits table as mutation-level limits.
+      try {
+        await ctx.runMutation(api.extension.rateLimitAiPredict, {
+          token: (authenticatedToken ?? "").slice(0, 64),
+        });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e.message ?? "Rate limit exceeded" }), {
+          status: 429,
           headers: { "Content-Type": "application/json" },
         });
       }

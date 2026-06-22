@@ -2,10 +2,12 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Verify consistency across connected platforms
 export const verifyPlatforms = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "verifyPlatforms");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -19,7 +21,7 @@ export const verifyPlatforms = mutation({
       .query("platformConnections")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("status"), "connected"))
-      .collect();
+      .take(1000);
 
     const platforms = connections.map((c) => c.platform);
     const discrepancies: Array<{

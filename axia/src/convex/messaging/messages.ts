@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser, getChannelMember } from "./helpers";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get messages for a channel
 export const listMessages = query({
   args: {
@@ -29,7 +30,7 @@ export const listMessages = query({
       const reactions = await ctx.db
         .query("reactions")
         .withIndex("by_message", (q: any) => q.eq("messageId", msg._id))
-        .collect();
+        .take(1000);
 
       const author = await ctx.db.get(msg.authorId);
 
@@ -38,7 +39,7 @@ export const listMessages = query({
         .query("messages")
         .withIndex("by_parent", (q: any) => q.eq("parentId", msg._id))
         .filter((q: any) => q.eq(q.field("isDeleted"), false))
-        .collect();
+        .take(1000);
 
       messagesWithReactions.push({
         ...msg,
@@ -86,7 +87,7 @@ export const getThreadReplies = query({
       .query("messages")
       .withIndex("by_parent", (q: any) => q.eq("parentId", args.parentMessageId))
       .filter((q: any) => q.eq(q.field("isDeleted"), false))
-      .collect();
+      .take(1000);
 
     const repliesWithAuthors = [];
     for (const reply of replies) {
@@ -109,6 +110,7 @@ export const sendMessage = mutation({
     parentId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "sendMessage");
     const userId = await getAuthenticatedUser(ctx);
     const member = await getChannelMember(ctx, args.channelId, userId);
     if (!member) {
@@ -145,7 +147,7 @@ export const sendMessage = mutation({
       const allMembers = await ctx.db
         .query("channelMembers")
         .withIndex("by_channel", (q: any) => q.eq("channelId", args.channelId))
-        .collect();
+        .take(1000);
 
       // Look up each member's user record to match by name
       for (const cm of allMembers) {
@@ -197,7 +199,7 @@ export const getUnreadMentions = query({
       .withIndex("by_user_unread", (q: any) =>
         q.eq("userId", userId).eq("isRead", false)
       )
-      .collect();
+      .take(1000);
 
     // Enrich with author + channel info for display
     const enriched = [];
@@ -239,13 +241,14 @@ export const markMentionRead = mutation({
 export const markAllMentionsRead = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "markAllMentionsRead");
     const userId = await getAuthenticatedUser(ctx);
     const unread = await ctx.db
       .query("mentions")
       .withIndex("by_user_unread", (q: any) =>
         q.eq("userId", userId).eq("isRead", false)
       )
-      .collect();
+      .take(1000);
     for (const m of unread) {
       await ctx.db.patch(m._id, { isRead: true });
     }
@@ -260,6 +263,7 @@ export const editMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "editMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message || message.authorId !== userId) {
@@ -278,6 +282,7 @@ export const deleteMessage = mutation({
     messageId: v.id("messages"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) {
@@ -301,6 +306,7 @@ export const toggleReaction = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "toggleReaction");
     const userId = await getAuthenticatedUser(ctx);
 
     const existing = await ctx.db
@@ -333,6 +339,7 @@ export const togglePinMessage = mutation({
     messageId: v.id("messages"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "togglePinMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
@@ -352,6 +359,7 @@ export const markChannelRead = mutation({
     channelId: v.id("channels"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markChannelRead");
     const userId = await getAuthenticatedUser(ctx);
     const membership = await getChannelMember(ctx, args.channelId, userId);
     if (!membership) return;
@@ -382,7 +390,7 @@ export const searchMessages = query({
           q.includes(q.field("content"), args.query)
         )
       )
-      .collect();
+      .take(1000);
 
     return allMessages;
   },

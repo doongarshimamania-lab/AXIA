@@ -3,6 +3,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Simplified wrapper to avoid deep type instantiation
 export const getClients = query({
   args: {},
@@ -13,7 +14,7 @@ export const getClients = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const enrichedClients = await Promise.all(
       clients.map(async (client) => {
@@ -21,7 +22,7 @@ export const getClients = query({
           .query("workSessions")
           .withIndex("by_user", (q) => q.eq("userId", userId))
           .filter((q) => q.eq(q.field("clientName"), client.clientName))
-          .collect();
+          .take(1000);
 
         const totalHours = sessions.reduce((sum, s) => sum + (s.totalMinutes || 0) / 60, 0);
         const activeSession = sessions.find((s) => !s.endTime);
@@ -29,7 +30,7 @@ export const getClients = query({
         const timeBlocks = await ctx.db
           .query("timeBlocks")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
 
         const clientBlocks = timeBlocks.filter((block) => {
           const session = sessions.find((s) => s._id === block.sessionId);
@@ -70,6 +71,7 @@ export const addClient = mutation({
     riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addClient");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

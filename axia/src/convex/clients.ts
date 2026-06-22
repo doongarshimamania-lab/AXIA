@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ─────────────────────────────────────────────
 // Helper: Email validation regex
 // ─────────────────────────────────────────────
@@ -51,6 +52,7 @@ export const create = mutation({
     source: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -115,6 +117,7 @@ export const update = mutation({
     teamId: v.optional(v.id("teams")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "update");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -173,6 +176,7 @@ export const archive = mutation({
     clientId: v.id("clients"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "archive");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -207,6 +211,7 @@ export const remove = mutation({
     clientId: v.id("clients"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "remove");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -224,7 +229,7 @@ export const remove = mutation({
     const activeDeals = await ctx.db
       .query("deals")
       .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .collect();
+      .take(1000);
 
     const openDeals = activeDeals.filter((d) => d.lostReason === undefined);
     if (openDeals.length > 0) {
@@ -237,7 +242,7 @@ export const remove = mutation({
     const activeProposals = await ctx.db
       .query("proposals")
       .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .collect();
+      .take(1000);
 
     const openProposals = activeProposals.filter(
       (p) => p.status === "draft" || p.status === "sent" || p.status === "viewed"
@@ -252,7 +257,7 @@ export const remove = mutation({
     const activeInvoices = await ctx.db
       .query("invoices")
       .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
-      .collect();
+      .take(1000);
 
     const openInvoices = activeInvoices.filter(
       (inv) =>
@@ -323,7 +328,7 @@ export const list = query({
       const allClients = await ctx.db
         .query("clients")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       // Filter by team visibility
       let visible = allClients.filter((c) => isRecordVisible(c, visibility));
@@ -344,7 +349,7 @@ export const list = query({
           q.eq("userId", userId).eq("status", args.status!)
         )
         .order("desc")
-        .collect();
+        .take(1000);
       return clients;
     }
 
@@ -352,7 +357,7 @@ export const list = query({
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     return clients;
   },
@@ -405,14 +410,14 @@ export const search = query({
       const workspaceClients = await ctx.db
         .query("clients")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       allClients = workspaceClients.filter((c) => isRecordVisible(c, visibility));
     } else {
       allClients = await ctx.db
         .query("clients")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     // Perform case-insensitive partial matching on name and company
@@ -447,14 +452,14 @@ export const getStats = query({
       const workspaceClients = await ctx.db
         .query("clients")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       allClients = workspaceClients.filter((c) => isRecordVisible(c, visibility));
     } else {
       allClients = await ctx.db
         .query("clients")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     const active = allClients.filter((c) => c.status === "active").length;
@@ -483,6 +488,7 @@ export const updatePaymentBehavior = mutation({
     lastPaymentAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updatePaymentBehavior");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 

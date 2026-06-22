@@ -3,18 +3,23 @@
  * Admin seed: Creates 4 test users with auth accounts, adds them to team workspace,
  * and seeds rich unique data for each user covering every entity type and status.
  *
- * PASSWORDS: All users use "Axia2026!" as password (8+ chars, meets requirements).
+ * v5.5.0: PASSWORD now sourced from process.env.SEED_PASSWORD (was: hardcoded
+ * "Axia2026!" — Critical). All mutations require admin auth.
  *
  * Run from Convex dashboard or via:
- *   npx convex run seedTeamUsers:seedAllUsers
+ *   SEED_PASSWORD='YourStrongPass123!' npx convex run seedTeamUsers:seedAllUsers
  */
 import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { createAccount } from "@convex-dev/auth/server";
 import { Scrypt } from "lucia";
 import { internal } from "./_generated/api";
+import { requireAdmin } from "./security/rateLimit";
 
-const PASSWORD = "Axia2026!";
+// v5.5.0: source from env (was: hardcoded "Axia2026!")
+const PASSWORD = process.env.SEED_PASSWORD || (process.env.NODE_ENV === "production"
+  ? (() => { throw new Error("SEED_PASSWORD env var required in production"); })()
+  : "DevSeed123!");
 const day = 86400000;
 
 function generateToken(): string {
@@ -121,11 +126,13 @@ export const seedAllUsers = action({
 export const enrichAllTeamUsers = mutation({
   args: {},
   handler: async (ctx) => {
+    // v5.5.0: Critical fix — require admin auth (was: no auth).
+    await requireAdmin(ctx);
     const now = Date.now();
     const results: string[] = [];
 
     // Find the team workspace — create one if it doesn't exist
-    let workspaces = await ctx.db.query("workspaces").collect();
+    let workspaces = await ctx.db.query("workspaces").take(1000);
     let teamWorkspace = workspaces.find(w => w.type === "team");
 
     if (!teamWorkspace) {
@@ -187,7 +194,7 @@ export const enrichAllTeamUsers = mutation({
       const users = await ctx.db
         .query("users")
         .withIndex("email", (q) => q.eq("email", u.email))
-        .collect();
+        .take(1000);
 
       if (users.length === 0) {
         results.push(`${u.email}: NOT FOUND - run seedAllUsers first`);
@@ -239,7 +246,7 @@ export const enrichAllTeamUsers = mutation({
       const teams = await ctx.db
         .query("teams")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", teamWorkspace._id))
-        .collect();
+        .take(1000);
 
       for (const team of teams) {
         const existingMember = await ctx.db
@@ -273,7 +280,7 @@ export const enrichAllTeamUsers = mutation({
     const ownerUser = workspaces.find(w => w.type === "personal")?.ownerId;
     if (ownerUser) allUserIds.push(ownerUser);
     for (const u of TEST_USERS) {
-      const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", u.email)).collect();
+      const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", u.email)).take(1000);
       if (users.length > 0) allUserIds.push(users[0]._id);
     }
 
@@ -289,7 +296,7 @@ export const enrichAllTeamUsers = mutation({
 export const checkUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
-    const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", email)).collect();
+    const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", email)).take(1000);
     return users.length > 0 ? users[0]._id : null;
   },
 });
@@ -334,7 +341,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingStages = await ctx.db
     .query("pipelineStages")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingStages.length === 0) {
     const stageNames = ["Lead", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
@@ -358,7 +365,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingClients = await ctx.db
     .query("clients")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingClients.length === 0) {
     const clientData = getClientData(u.theme);
@@ -385,7 +392,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingDeals = await ctx.db
     .query("deals")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingDeals.length === 0 && stageIds.length >= 6) {
     const dealsData = getDealsData(u.theme);
@@ -419,7 +426,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingProjects = await ctx.db
     .query("projects")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingProjects.length === 0 && clientIds.length > 0) {
     const projectsData = getProjectsData(u.theme);
@@ -450,7 +457,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingProposals = await ctx.db
     .query("proposals")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingProposals.length === 0 && clientIds.length > 0) {
     const proposalsData = getProposalsData(u.theme);
@@ -487,7 +494,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingInvoices = await ctx.db
     .query("invoices")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingInvoices.length === 0 && clientIds.length > 0) {
     const invoicesData = getInvoicesData(u.theme);
@@ -529,7 +536,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingTags = await ctx.db
     .query("tags")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingTags.length === 0) {
     const tagsData = getTagsData(u.theme);
@@ -551,7 +558,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingGoals = await ctx.db
     .query("goals")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingGoals.length === 0) {
     const goalsData = getGoalsData(u.theme, u.hourlyRate);
@@ -581,7 +588,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingScope = await ctx.db
     .query("scopeDefinitions")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingScope.length === 0) {
     const scopeData = getScopeData(u.theme);
@@ -607,7 +614,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingSessions = await ctx.db
     .query("workSessions")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingSessions.length === 0) {
     const sessionsData = getWorkSessionsData(u.theme, u.hourlyRate);
@@ -682,7 +689,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
     existingEvidence = await ctx.db
       .query("evidenceSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   } catch {
     existingEvidence = [];
   }
@@ -740,7 +747,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
     existingCustomFields = await ctx.db
       .query("customFieldDefinitions")
       .withIndex("by_workspace", (q: any) => q.eq("workspaceId", personalWsId))
-      .collect();
+      .take(1000);
   } catch {
     existingCustomFields = [];
   }
@@ -768,7 +775,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingPlatforms = await ctx.db
     .query("platformConnections")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingPlatforms.length === 0) {
     const platformData = getPlatformConnectionsData(u.theme);
@@ -792,7 +799,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingRecurring = await ctx.db
     .query("recurringInvoices")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingRecurring.length === 0 && clientIds.length > 0) {
     const recurringData = getRecurringInvoicesData(u.theme);
@@ -818,7 +825,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingTemplates = await ctx.db
     .query("proposalTemplates")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingTemplates.length === 0) {
     const templateData = getProposalTemplatesData(u.theme);
@@ -843,7 +850,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
   const existingReminders = await ctx.db
     .query("paymentReminders")
     .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
 
   if (existingReminders.length === 0) {
     await safeInsert(ctx, "reminderSettings", {
@@ -891,7 +898,7 @@ async function seedMessagingData(ctx: any, userIds: any[], workspaceId: any, now
   const existingChannels = await ctx.db
     .query("channels")
     .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-    .collect();
+    .take(1000);
 
   if (existingChannels.length > 0) return; // Already seeded
 
@@ -1606,7 +1613,7 @@ export const listTestUsers = mutation({
   handler: async (ctx) => {
     const results = [];
     for (const u of TEST_USERS) {
-      const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", u.email)).collect();
+      const users = await ctx.db.query("users").withIndex("email", (q) => q.eq("email", u.email)).take(1000);
       if (users.length > 0) {
         const user = users[0];
         const membership = await ctx.db
@@ -1615,7 +1622,7 @@ export const listTestUsers = mutation({
             // Can't easily query all workspaces for a user, just list info
             return q;
           })
-          .collect();
+          .take(1000);
 
         results.push({
           email: u.email,

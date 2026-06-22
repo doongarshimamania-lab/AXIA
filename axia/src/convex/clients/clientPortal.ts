@@ -20,7 +20,7 @@ export const getClientInvoices = query({
     const invoices = await ctx.db
       .query("invoices")
       .withIndex("by_client_email", (q) => q.eq("clientEmail", clientEmail))
-      .collect();
+      .take(1000);
     return invoices.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
@@ -33,7 +33,7 @@ export const getClientProposals = query({
     const proposals = await ctx.db
       .query("proposals")
       .withIndex("by_client_email", (q) => q.eq("clientEmail", clientEmail))
-      .collect();
+      .take(1000);
     return proposals.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
@@ -48,7 +48,7 @@ export const getClientProjects = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_contact_email", (q) => q.eq("contactEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     if (clients.length === 0) return [];
 
@@ -58,7 +58,7 @@ export const getClientProjects = query({
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_client", (q) => q.eq("clientId", client._id))
-        .collect();
+        .take(1000);
       allProjects.push(...projects.map((p) => ({ ...p, clientName: client.clientName })));
     }
 
@@ -77,7 +77,7 @@ export const getClientWorkProofs = query({
     return await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -91,7 +91,7 @@ export const getClientProjectsStatus = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_contact_email", (q) => q.eq("contactEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     if (clients.length === 0) return [];
 
@@ -100,14 +100,14 @@ export const getClientProjectsStatus = query({
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_client", (q) => q.eq("clientId", client._id))
-        .collect();
+        .take(1000);
 
       for (const project of projects) {
         // Get scope definitions for this project (milestones / deliverables)
         const scopeDefs = await ctx.db
           .query("scopeDefinitions")
           .withIndex("by_project", (q) => q.eq("projectId", project._id))
-          .collect();
+          .take(1000);
 
         const deliverables = scopeDefs.flatMap((sd) => sd.deliverables || []);
         const completedDeliverables = deliverables.filter(
@@ -205,7 +205,7 @@ export const getClientPendingApprovals = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_contact_email", (q) => q.eq("contactEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     if (clients.length === 0) return [];
 
@@ -215,13 +215,13 @@ export const getClientPendingApprovals = query({
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_client", (q) => q.eq("clientId", client._id))
-        .collect();
+        .take(1000);
 
       for (const project of projects) {
         const scopeDefs = await ctx.db
           .query("scopeDefinitions")
           .withIndex("by_project", (q) => q.eq("projectId", project._id))
-          .collect();
+          .take(1000);
 
         for (const sd of scopeDefs) {
           if (sd.status === "active" && sd.approvalToken) {
@@ -256,7 +256,7 @@ export const getClientApprovalHistory = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_contact_email", (q) => q.eq("contactEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     if (clients.length === 0) return [];
 
@@ -265,13 +265,13 @@ export const getClientApprovalHistory = query({
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_client", (q) => q.eq("clientId", client._id))
-        .collect();
+        .take(1000);
 
       for (const project of projects) {
         const scopeDefs = await ctx.db
           .query("scopeDefinitions")
           .withIndex("by_project", (q) => q.eq("projectId", project._id))
-          .collect();
+          .take(1000);
 
         for (const sd of scopeDefs) {
           if (sd.status === "completed" || sd.status === "disputed") {
@@ -397,7 +397,7 @@ export const getClientVerificationReports = query({
     const results = await ctx.db
       .query("clientVerificationResults")
       .withIndex("by_client", (q) => q.eq("clientId", clientCompany._id))
-      .collect();
+      .take(1000);
 
     // Enrich with verification request info
     const enriched = [];
@@ -431,24 +431,24 @@ export const getClientOverview = query({
     const invoices = await ctx.db
       .query("invoices")
       .withIndex("by_client_email", (q) => q.eq("clientEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     const proposals = await ctx.db
       .query("proposals")
       .withIndex("by_client_email", (q) => q.eq("clientEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_contact_email", (q) => q.eq("contactEmail", clientEmail))
-      .collect();
+      .take(1000);
 
     let projectCount = 0;
     for (const client of clients) {
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_client", (q) => q.eq("clientId", client._id))
-        .collect();
+        .take(1000);
       projectCount += projects.length;
     }
 

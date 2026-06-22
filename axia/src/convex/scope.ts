@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ─────────────────────────────────────────────
 // Shared validators
 // ─────────────────────────────────────────────
@@ -58,6 +59,7 @@ export const create = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -162,6 +164,7 @@ export const update = mutation({
     teamId: v.optional(v.id("teams")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "update");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -259,6 +262,7 @@ export const activate = mutation({
     scopeDefinitionId: v.id("scopeDefinitions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "activate");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -298,6 +302,7 @@ export const clientApprove = mutation({
     approvalToken: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "clientApprove");
     const scope = await ctx.db
       .query("scopeDefinitions")
       .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
@@ -335,6 +340,7 @@ export const recordRevision = mutation({
     deliverableId: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "recordRevision");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -483,6 +489,7 @@ export const createChangeOrder = mutation({
     additionalRevisions: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createChangeOrder");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -582,6 +589,7 @@ export const clientApproveChangeOrder = mutation({
     approvalToken: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "clientApproveChangeOrder");
     const changeOrder = await ctx.db
       .query("scopeChangeOrders")
       .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
@@ -638,6 +646,7 @@ export const clientRejectChangeOrder = mutation({
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "clientRejectChangeOrder");
     const changeOrder = await ctx.db
       .query("scopeChangeOrders")
       .withIndex("by_approval_token", (q) => q.eq("clientApprovalToken", args.approvalToken))
@@ -709,7 +718,7 @@ export const list = query({
       const allScopes = await ctx.db
         .query("scopeDefinitions")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       let visible = allScopes.filter((s) => isRecordVisible(s, visibility));
 
@@ -724,7 +733,7 @@ export const list = query({
     const allScopes = await ctx.db
       .query("scopeDefinitions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (args.status) {
       return allScopes.filter((s) => s.status === args.status);
@@ -760,7 +769,7 @@ export const getChangeOrders = query({
     const changeOrders = await ctx.db
       .query("scopeChangeOrders")
       .withIndex("by_scope", (q) => q.eq("scopeDefinitionId", args.scopeDefinitionId))
-      .collect();
+      .take(1000);
 
     return changeOrders.sort((a, b) => b.createdAt - a.createdAt);
   },
@@ -801,6 +810,7 @@ export const linkChangeOrderToInvoice = mutation({
     invoiceId: v.id("invoices"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "linkChangeOrderToInvoice");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 

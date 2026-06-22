@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Store compliance check (requires auth)
 export const storeComplianceCheck = mutation({
   args: {
@@ -12,6 +13,7 @@ export const storeComplianceCheck = mutation({
     termsLastUpdated: v.string()
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "storeComplianceCheck");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

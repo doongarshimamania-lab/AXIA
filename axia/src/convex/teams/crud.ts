@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 export const getTeams = query({
   args: { workspaceId: v.id("workspaces") },
   handler: async (ctx, { workspaceId }) => {
@@ -30,7 +31,7 @@ export const getTeams = query({
     return await ctx.db
       .query("teams")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -44,6 +45,7 @@ export const createTeam = mutation({
     isCrossTeam: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createTeam");
     const { userId } = await requireWorkspaceAccess(
       ctx,
       args.workspaceId,
@@ -105,7 +107,7 @@ export const deleteTeam = mutation({
     const memberships = await ctx.db
       .query("teamMemberships")
       .withIndex("by_team", (q) => q.eq("teamId", teamId))
-      .collect();
+      .take(1000);
     for (const m of memberships) {
       await ctx.db.delete(m._id);
     }
@@ -186,7 +188,7 @@ export const getTeamMembers = query({
     const memberships = await ctx.db
       .query("teamMemberships")
       .withIndex("by_team", (q) => q.eq("teamId", teamId))
-      .collect();
+      .take(1000);
     // Enrich with user data
     return await Promise.all(
       memberships.map(async (m) => {

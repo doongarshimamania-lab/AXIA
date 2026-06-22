@@ -42,7 +42,7 @@ export const getWorkspaceShareRecords = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const client of clients) {
       if (!client.sharing || client.sharing.length === 0) continue;
@@ -62,7 +62,7 @@ export const getWorkspaceShareRecords = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const project of projects) {
       if (!project.sharing || project.sharing.length === 0) continue;
@@ -82,7 +82,7 @@ export const getWorkspaceShareRecords = query({
     const deals = await ctx.db
       .query("deals")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const deal of deals) {
       if (!deal.sharing || deal.sharing.length === 0) continue;
@@ -105,7 +105,7 @@ export const getWorkspaceShareRecords = query({
     const proposals = await ctx.db
       .query("proposals")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const proposal of proposals) {
       if (!proposal.sharing || proposal.sharing.length === 0) continue;
@@ -187,7 +187,7 @@ export const getShareStats = query({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const client of clients) {
       if (client.sharing && client.sharing.length > 0) {
@@ -204,7 +204,7 @@ export const getShareStats = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const project of projects) {
       if (project.sharing && project.sharing.length > 0) {
@@ -221,7 +221,7 @@ export const getShareStats = query({
     const deals = await ctx.db
       .query("deals")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const deal of deals) {
       if (deal.sharing && deal.sharing.length > 0) {
@@ -238,7 +238,7 @@ export const getShareStats = query({
     const proposals = await ctx.db
       .query("proposals")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+      .take(1000);
 
     for (const proposal of proposals) {
       if (proposal.sharing && proposal.sharing.length > 0) {

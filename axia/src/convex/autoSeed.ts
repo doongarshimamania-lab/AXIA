@@ -111,7 +111,7 @@ export const autoSeed = mutation({
     const existingStages = await ctx.db
       .query("pipelineStages")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     let stageIds: string[] = [];
     if (existingStages.length === 0) {
@@ -146,7 +146,7 @@ export const autoSeed = mutation({
     const existingDeals = await ctx.db
       .query("deals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingDeals.length === 0 && stageIds.length >= 6) {
       const mockDeals = [
@@ -205,7 +205,7 @@ export const autoSeed = mutation({
     const existingClients = await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingClients.length === 0) {
       const mockClients = [
@@ -241,7 +241,7 @@ export const autoSeed = mutation({
     const existingProjects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingProjects.length === 0 && clientIds.length > 0) {
       const mockProjects = [
@@ -276,7 +276,7 @@ export const autoSeed = mutation({
     const existingProposals = await ctx.db
       .query("proposals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingProposals.length === 0) {
       // Seed templates first
@@ -284,7 +284,7 @@ export const autoSeed = mutation({
       const existingTemplates = await ctx.db
         .query("proposalTemplates")
         .withIndex("by_system", (q) => q.eq("isSystem", true))
-        .collect();
+        .take(1000);
 
       if (existingTemplates.length === 0) {
         const templates = [
@@ -450,7 +450,7 @@ export const autoSeed = mutation({
     const existingInvoices = await ctx.db
       .query("invoices")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingInvoices.length === 0) {
       const mockInvoices = [
@@ -548,7 +548,7 @@ export const autoSeed = mutation({
     const existingChannels = await ctx.db
       .query("channels")
       .withIndex("by_workspace", (q: any) => q.eq("workspaceId", teamWorkspaceId))
-      .collect();
+      .take(1000);
 
     if (existingChannels.length === 0) {
       const channelsToCreate = [
@@ -641,7 +641,7 @@ export const autoSeed = mutation({
     const existingTags = await ctx.db
       .query("tags")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingTags.length === 0) {
       const mockTags = [
@@ -684,7 +684,7 @@ export const autoSeed = mutation({
     const existingGoals = await ctx.db
       .query("goals")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingGoals.length === 0) {
       const mockGoals = [
@@ -805,7 +805,7 @@ export const autoSeed = mutation({
     const existingScope = await ctx.db
       .query("scopeDefinitions")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingScope.length === 0 && clientIds.length > 0) {
       const scopeItems = [
@@ -872,7 +872,7 @@ export const autoSeed = mutation({
     const existingSessions = await ctx.db
       .query("workSessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existingSessions.length === 0) {
       const hourlyRate = user?.hourlyRate ?? 85;
@@ -974,7 +974,7 @@ export const autoSeed = mutation({
     const existingCustomFields = await ctx.db
       .query("customFieldDefinitions")
       .withIndex("by_workspace_table", (q: any) => q.eq("workspaceId", personalWorkspaceId).eq("tableName", "deals"))
-      .collect();
+      .take(1000);
 
     if (existingCustomFields.length === 0) {
       const customFieldDefs = [

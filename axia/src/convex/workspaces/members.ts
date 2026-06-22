@@ -12,6 +12,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /** Get all members of a workspace (active, invited, or all). */
@@ -44,7 +45,7 @@ export const getMembers = query({
     const allMembers = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .collect();
+      .take(1000);
 
     // Filter by status if specified
     const filtered = args.status
@@ -136,7 +137,7 @@ export const searchMembers = query({
       .withIndex("by_workspace_and_status", (q) =>
         q.eq("workspaceId", args.workspaceId).eq("status", "active")
       )
-      .collect();
+      .take(1000);
 
     const searchLower = args.query.toLowerCase();
     const enriched = await Promise.all(
@@ -192,7 +193,7 @@ export const getMemberProjects = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", member.workspaceId))
-      .collect();
+      .take(1000);
 
     return projects.filter(
       (p) => p.assignedMemberIds && p.assignedMemberIds.includes(args.memberId)
@@ -219,6 +220,7 @@ export const updateMemberRole = mutation({
     role: v.union(v.literal("manager"), v.literal("member")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateMemberRole");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -275,6 +277,7 @@ export const updateMemberRole = mutation({
 export const removeMember = mutation({
   args: { memberId: v.id("workspaceMembers") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "removeMember");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -316,7 +319,7 @@ export const removeMember = mutation({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", member.workspaceId))
-      .collect();
+      .take(1000);
 
     for (const project of projects) {
       if (project.assignedMemberIds && project.assignedMemberIds.includes(args.memberId)) {
@@ -329,7 +332,7 @@ export const removeMember = mutation({
     const clients = await ctx.db
       .query("clients")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", member.workspaceId))
-      .collect();
+      .take(1000);
 
     for (const client of clients) {
       if (client.assignedMemberIds && client.assignedMemberIds.includes(args.memberId)) {
@@ -351,6 +354,7 @@ export const updateMemberProfile = mutation({
     lastActiveAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateMemberProfile");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -392,6 +396,7 @@ export const assignMemberToProject = mutation({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "assignMemberToProject");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -426,6 +431,7 @@ export const unassignMemberFromProject = mutation({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "unassignMemberFromProject");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -448,6 +454,7 @@ export const assignMemberToClient = mutation({
     clientId: v.id("clients"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "assignMemberToClient");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -481,6 +488,7 @@ export const unassignMemberFromClient = mutation({
     clientId: v.id("clients"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "unassignMemberFromClient");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

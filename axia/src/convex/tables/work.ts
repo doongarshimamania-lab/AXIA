@@ -12,8 +12,8 @@ export const workSessions = defineTable({
   endTime: v.optional(v.number()),
   totalMinutes: v.optional(v.number()),
   complianceStatus: v.union(v.literal("active"), v.literal("at_risk"), v.literal("rejected")),
-  clientName: v.string(),
-  projectName: v.string(),
+  clientName: v.string().maxLength(100),
+  projectName: v.string().maxLength(100),
   hourlyRate: v.number(),
 }).index("by_user", ["userId"]).index("by_user_and_project", ["userId", "projectName"]).index("by_user_and_date", ["userId", "startTime"]).index("by_workspace", ["workspaceId"]).index("by_team", ["teamId"]);
 
@@ -24,8 +24,8 @@ export const timeBlocks = defineTable({
   createdBy: v.optional(v.id("users")),
   startTime: v.number(),
   endTime: v.number(),
-  activity: v.string(),
-  website: v.string(),
+  activity: v.string().maxLength(1000),
+  website: v.string().maxLength(2048),
   complianceStatus: v.union(v.literal("compliant"), v.literal("at_risk"), v.literal("rejected")),
   screenshotCount: v.number(),
   mouseActivity: v.boolean(),
@@ -40,11 +40,11 @@ export const disputeReports = defineTable({
   teamId: v.optional(v.id("teams")),
   sharing: v.optional(v.array(sharingEntry)),
   sessionId: v.id("workSessions"),
-  caseId: v.string(),
+  caseId: v.string().maxLength(1000),
   generatedAt: v.number(),
   rejectedHours: v.number(),
   lostIncome: v.number(),
-  reportContent: v.string(),
+  reportContent: v.string().maxLength(20000),
   status: v.union(v.literal("generated"), v.literal("sent"), v.literal("resolved")),
 }).index("by_user", ["userId"]).index("by_case_id", ["caseId"]).index("by_workspace", ["workspaceId"]).index("by_team", ["teamId"]);
 
@@ -53,7 +53,7 @@ export const appUsage = defineTable({
   workspaceId: v.optional(v.id("workspaces")),
   createdBy: v.optional(v.id("users")),
   sessionId: v.optional(v.id("workSessions")),
-  appName: v.string(),
+  appName: v.string().maxLength(100),
   startTime: v.number(),
   endTime: v.optional(v.number()),
   duration: v.optional(v.number()),
@@ -72,8 +72,8 @@ export const complianceAlerts = defineTable({
     v.literal("non_browser_work"),
     v.literal("timer_paused")
   ),
-  message: v.string(),
+  message: v.string().maxLength(20000),
   triggeredAt: v.number(),
   acknowledged: v.boolean(),
-  actionTaken: v.optional(v.string()),
+  actionTaken: v.optional(v.string().maxLength(1000)),
 }).index("by_user", ["userId"]).index("by_user_and_type", ["userId", "alertType"]).index("by_workspace", ["workspaceId"]);

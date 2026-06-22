@@ -1,23 +1,19 @@
 /**
- * One-time admin seed script — runs without auth using the Convex deploy key.
+ * One-time admin seed script — v5.5.0: now requires admin auth
+ * (was: hardcoded ADMIN_KEY string — Critical).
  * This enriches the dev user and adds missing data (work sessions, channels, messages).
  *
  * After running, DELETE this file or revert the changes.
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-
-// Admin key for CLI-only access
-const ADMIN_KEY = "axia-seed-2026";
+import { requireAdmin } from "./security/rateLimit";
 
 export const adminSeed = mutation({
-  args: {
-    adminKey: v.string(),
-  },
-  handler: async (ctx, args) => {
-    if (args.adminKey !== ADMIN_KEY) {
-      throw new Error("Unauthorized: Invalid admin key");
-    }
+  args: {},
+  handler: async (ctx) => {
+    // v5.5.0: Critical fix — replace hardcoded ADMIN_KEY with real admin auth.
+    await requireAdmin(ctx);
 
     const DEV_EMAIL = "dev@axia.app";
     const devUser = await ctx.db
@@ -258,7 +254,7 @@ export const adminSeed = mutation({
       const workSessions = await ctx.db
         .query("workSessions")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(10000);
 
       // Create evidence sessions for each work session
       for (const ws of workSessions) {
@@ -285,12 +281,12 @@ export const adminSeed = mutation({
       const clients = await ctx.db
         .query("clients")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(10000);
 
       const projects = await ctx.db
         .query("projects")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(10000);
 
       if (projects.length > 0) {
         const project = projects[0];

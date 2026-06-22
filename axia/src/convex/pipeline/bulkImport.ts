@@ -3,6 +3,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireWorkspaceAccess } from "../permissions";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── Core field definitions for deals ──────────────────────────────────────
 export const DEAL_CORE_FIELDS = [
   { key: "title", label: "Deal Title", required: true },
@@ -38,6 +39,7 @@ export const importDeals = mutation({
     skipDuplicates: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "importDeals");
     const { userId } = await requireWorkspaceAccess(
       ctx,
       args.workspaceId,
@@ -60,7 +62,7 @@ export const importDeals = mutation({
         .withIndex("by_workspace", (q) =>
           q.eq("workspaceId", args.workspaceId)
         )
-        .collect();
+        .take(1000);
       existingTitles = new Set(
         existingDeals.map((d) => d.title.toLowerCase())
       );
@@ -70,7 +72,7 @@ export const importDeals = mutation({
     const stageDeals = await ctx.db
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", args.stageId))
-      .collect();
+      .take(1000);
     let maxOrder =
       stageDeals.length > 0
         ? Math.max(...stageDeals.map((d) => d.order))
@@ -212,6 +214,7 @@ export const bulkImportDeals = mutation({
     skipDuplicates: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "bulkImportDeals");
     const { userId } = await requireWorkspaceAccess(
       ctx,
       args.workspaceId,
@@ -234,7 +237,7 @@ export const bulkImportDeals = mutation({
         .withIndex("by_workspace", (q) =>
           q.eq("workspaceId", args.workspaceId)
         )
-        .collect();
+        .take(1000);
       existingTitles = new Set(
         existingDeals.map((d) => d.title.toLowerCase())
       );
@@ -244,7 +247,7 @@ export const bulkImportDeals = mutation({
     const stageDeals = await ctx.db
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", args.stageId))
-      .collect();
+      .take(1000);
     let maxOrder =
       stageDeals.length > 0
         ? Math.max(...stageDeals.map((d) => d.order))

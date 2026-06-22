@@ -25,7 +25,7 @@ export const createMilestoneSnapshot = internalMutation({
           q.lt(q.field("startTime"), args.weekEnd)
         )
       )
-      .collect();
+      .take(1000);
 
     const projectSessions = sessions.filter((s) => {
       const project = ctx.db.get(args.projectId);
@@ -51,7 +51,7 @@ export const createMilestoneSnapshot = internalMutation({
           .withIndex("by_session_and_time", (q) =>
             q.eq("evidenceSessionId", evidenceSession._id)
           )
-          .collect();
+          .take(1000);
         totalEvidence += events.length;
       }
     }
@@ -60,7 +60,7 @@ export const createMilestoneSnapshot = internalMutation({
     const timeBlocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const weekBlocks = timeBlocks.filter((block) => {
       const session = projectSessions.find((s) => s._id === block.sessionId);
@@ -105,7 +105,7 @@ export const getProjectSnapshots = query({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .filter((q) => q.eq(q.field("userId"), userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     return snapshots;
   },
@@ -119,7 +119,7 @@ export const autoCreateWeeklySnapshots = internalMutation({
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
     // Get all active projects
-    const projects = await ctx.db.query("projects").collect();
+    const projects = await ctx.db.query("projects").take(1000);
 
     for (const project of projects) {
       // Check if snapshot already exists for last week
@@ -148,7 +148,7 @@ export const autoCreateWeeklySnapshots = internalMutation({
               q.lt(q.field("startTime"), weekEnd)
             )
           )
-          .collect();
+          .take(1000);
 
         const projectSessions = sessions.filter(
           (s) => s.projectName === project.projectName
@@ -173,7 +173,7 @@ export const autoCreateWeeklySnapshots = internalMutation({
                 .withIndex("by_session_and_time", (q) =>
                   q.eq("evidenceSessionId", evidenceSession._id)
                 )
-                .collect();
+                .take(1000);
               totalEvidence += events.length;
             }
           }
@@ -181,7 +181,7 @@ export const autoCreateWeeklySnapshots = internalMutation({
           const timeBlocks = await ctx.db
             .query("timeBlocks")
             .withIndex("by_user", (q) => q.eq("userId", project.userId))
-            .collect();
+            .take(1000);
 
           const weekBlocks = timeBlocks.filter((block) => {
             const session = projectSessions.find((s) => s._id === block.sessionId);

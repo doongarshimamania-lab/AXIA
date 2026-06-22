@@ -1,13 +1,17 @@
 // @ts-nocheck
-// TEMPORARY ADMIN DEBUG — list all auth accounts and users.
+// v5.5.0 — TEMPORARY ADMIN DEBUG tools.
+// All mutations now require admin/expert-tier auth (was: no auth — Critical).
+// All queries now require admin/expert-tier auth (was: no auth — Critical).
 // DELETE THIS FILE BEFORE PRODUCTION DEPLOY.
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./security/rateLimit";
 
 export const listAllAuthAccounts = query({
   args: {},
   handler: async (ctx) => {
-    const accounts = await ctx.db.query("authAccounts").collect();
+    await requireAdmin(ctx);
+    const accounts = await ctx.db.query("authAccounts").take(1000);
     return accounts.map(a => ({
       _id: a._id,
       provider: a.provider,
@@ -23,7 +27,8 @@ export const listAllAuthAccounts = query({
 export const listAllUsers = query({
   args: {},
   handler: async (ctx) => {
-    const users = await ctx.db.query("users").collect();
+    await requireAdmin(ctx);
+    const users = await ctx.db.query("users").take(1000);
     return users.map(u => ({
       _id: u._id,
       email: u.email,
@@ -47,11 +52,14 @@ export const resetPassword = mutation({
     newPassword: v.string(),
   },
   handler: async (ctx, args) => {
+    // v5.5.0: Critical fix — require admin auth (was: no auth).
+    await requireAdmin(ctx);
     if (args.newPassword.length < 8) {
       throw new Error("Password must be at least 8 characters");
     }
-    if (args.newPassword.length > 1024) {
-      throw new Error("Password must be at most 1024 characters");
+    // v5.5.0: 16-char cap (LPDOS guard — scrypt DoS prevention at 1k-user scale)
+    if (args.newPassword.length > 16) {
+      throw new Error("Password must be at most 16 characters");
     }
 
     // Find the auth account for this email
@@ -102,7 +110,9 @@ export const resetPassword = mutation({
 export const cleanupDuplicateStages = mutation({
   args: {},
   handler: async (ctx) => {
-    const allStages = await ctx.db.query("pipelineStages").collect();
+    // v5.5.0: Critical fix — require admin auth (was: no auth).
+    await requireAdmin(ctx);
+    const allStages = await ctx.db.query("pipelineStages").take(10000);
     const keep = new Map<string, any>(); // key -> stage (oldest)
     const toDelete: any[] = [];
 
@@ -131,7 +141,7 @@ export const cleanupDuplicateStages = mutation({
         const dealsOnDupe = await ctx.db
           .query("deals")
           .withIndex("by_stage", (q) => q.eq("stageId", s._id))
-          .collect();
+          .take(1000);
         for (const d of dealsOnDupe) {
           await ctx.db.patch(d._id, { stageId: keptStage._id });
         }
@@ -166,7 +176,9 @@ export const cleanupDuplicateStages = mutation({
 export const fixWorkspaceOwnerMemberships = mutation({
   args: {},
   handler: async (ctx) => {
-    const workspaces = await ctx.db.query("workspaces").collect();
+    // v5.5.0: Critical fix — require admin auth (was: no auth).
+    await requireAdmin(ctx);
+    const workspaces = await ctx.db.query("workspaces").take(10000);
     const now = Date.now();
     let inserted = 0;
     let alreadyExisted = 0;

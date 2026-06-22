@@ -10,7 +10,7 @@ export const countActiveProjects = query({
     const allProjects = await ctx.db
       .query("projects")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const activeProjects = allProjects.filter(p => p.status === "active");
     const archivedProjects = allProjects.filter(p => p.status === "archived");

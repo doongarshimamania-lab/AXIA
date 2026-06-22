@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./users";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 export const addTimeBlock = mutation({
   args: {
     sessionId: v.id("workSessions"),
@@ -13,6 +14,7 @@ export const addTimeBlock = mutation({
     inactiveDuration: v.number(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addTimeBlock");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("User not authenticated");
@@ -70,7 +72,7 @@ export const getSessionBlocks = query({
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
+      .take(1000);
 
     return blocks;
   },
@@ -98,7 +100,7 @@ export const getUserTimeBlocks = query({
       );
     }
 
-    const blocks = await query.collect();
+    const blocks = await query.take(1000);
     return blocks;
   },
 });
@@ -126,7 +128,7 @@ export const calculateRejectedHours = query({
       .query("timeBlocks")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .filter((q) => q.gte(q.field("startTime"), startTime))
-      .collect();
+      .take(1000);
 
     const rejectedBlocks = blocks.filter(b => b.complianceStatus === "rejected");
     const atRiskBlocks = blocks.filter(b => b.complianceStatus === "at_risk");

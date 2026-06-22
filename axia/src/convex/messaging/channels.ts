@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser, getChannelMember } from "./helpers";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get all channels for a workspace (with lastMessage preview and unreadCount)
 export const listChannels = query({
   args: {
@@ -13,7 +14,7 @@ export const listChannels = query({
       .query("channels")
       .withIndex("by_workspace", (q: any) => q.eq("workspaceId", args.workspaceId))
       .filter((q: any) => q.eq(q.field("isArchived"), false))
-      .collect();
+      .take(1000);
 
     // Filter to channels the user is a member of
     const memberChannels = [];
@@ -41,7 +42,7 @@ export const listChannels = query({
         const channelMembers = await ctx.db
           .query("channelMembers")
           .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
-          .collect();
+          .take(1000);
         memberCount = channelMembers.length;
 
         // Compute unread count: messages newer than membership.lastReadAt
@@ -55,7 +56,7 @@ export const listChannels = query({
                 q.gt(q.field("_creationTime"), member.lastReadAt!)
               )
             )
-            .collect();
+            .take(1000);
           unreadCount = unreadMessages.length;
         } else {
           // Never read — count all messages
@@ -63,7 +64,7 @@ export const listChannels = query({
             .query("messages")
             .withIndex("by_channel", (q: any) => q.eq("channelId", channel._id))
             .filter((q: any) => q.eq(q.field("isDeleted"), false))
-            .collect();
+            .take(1000);
           unreadCount = allMessages.length;
         }
 
@@ -96,7 +97,7 @@ export const getChannelMembers = query({
     const members = await ctx.db
       .query("channelMembers")
       .withIndex("by_channel", (q: any) => q.eq("channelId", args.channelId))
-      .collect();
+      .take(1000);
 
     const membersWithProfiles = [];
     for (const m of members) {
@@ -126,6 +127,7 @@ export const createChannel = mutation({
     memberIds: v.optional(v.array(v.id("users"))),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createChannel");
     const userId = await getAuthenticatedUser(ctx);
 
     const channelId = await ctx.db.insert("channels", {
@@ -182,6 +184,7 @@ export const joinChannel = mutation({
     channelId: v.id("channels"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "joinChannel");
     const userId = await getAuthenticatedUser(ctx);
     const existing = await getChannelMember(ctx, args.channelId, userId);
     if (existing) {
@@ -210,6 +213,7 @@ export const leaveChannel = mutation({
     channelId: v.id("channels"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "leaveChannel");
     const userId = await getAuthenticatedUser(ctx);
     const membership = await getChannelMember(ctx, args.channelId, userId);
     if (!membership) {
@@ -240,6 +244,7 @@ export const toggleMuteChannel = mutation({
     channelId: v.id("channels"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "toggleMuteChannel");
     const userId = await getAuthenticatedUser(ctx);
     const membership = await getChannelMember(ctx, args.channelId, userId);
     if (!membership) {
@@ -266,7 +271,7 @@ export const searchChannels = query({
           q.includes(q.field("name"), args.query)
         )
       )
-      .collect();
+      .take(1000);
 
     const memberChannels = [];
     for (const channel of channels) {

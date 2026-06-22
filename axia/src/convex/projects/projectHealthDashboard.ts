@@ -31,7 +31,7 @@ export const getProjectHealthDashboard = query({
       .query("workSessions")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
       .filter((q: any) => q.eq(q.field("projectName"), projectData.projectName))
-      .collect();
+      .take(1000);
     
     const totalHours = sessions.reduce((sum: number, s: any) => sum + (s.totalMinutes || 0) / 60, 0);
     const hourlyRate = projectData.hourlyRate || 25;
@@ -193,7 +193,7 @@ async function calculateStarterDashboard(ctx: any, project: any, sessions: any[]
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q: any) => q.eq("sessionId", session._id))
-      .collect();
+      .take(1000);
       
     totalBlocks += blocks.length;
     blocksWithActivity += blocks.filter((b: any) => b.activity && b.activity !== "unknown").length;
@@ -355,7 +355,7 @@ async function calculateProDashboard(ctx: any, project: any, sessions: any[], to
     const blocks = await ctx.db
       .query("timeBlocks")
       .withIndex("by_session", (q: any) => q.eq("sessionId", session._id))
-      .collect();
+      .take(1000);
     
     const hasScreenshots = blocks.some((b: any) => b.screenshotCount > 0);
     const hasActivity = blocks.some((b: any) => b.mouseActivity || b.keyboardActivity);
@@ -523,12 +523,12 @@ async function calculateExpertDashboard(ctx: any, userId: any, currentProject: a
   const allProjects = await ctx.db
     .query("projects")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
   
   const allSessions = await ctx.db
     .query("workSessions")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
   
   // 4 Value Pillars for Expert Tier - HEALTH INDICATORS
   
@@ -552,7 +552,7 @@ async function calculateExpertDashboard(ctx: any, userId: any, currentProject: a
   const platformClients = await ctx.db
     .query("clients")
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
-    .collect();
+    .take(1000);
     
   const integratedClients = platformClients.filter((c: any) => c.platform && c.platform !== "direct");
   const crossPlatformTimeline = platformClients.length > 0

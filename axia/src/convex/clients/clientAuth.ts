@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Register a new client company (requires auth)
 export const registerClient = mutation({
   args: {
@@ -13,6 +14,7 @@ export const registerClient = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "registerClient");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -76,6 +78,7 @@ export const updateClientProfile = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateClientProfile");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

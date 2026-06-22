@@ -14,12 +14,12 @@ export const getTags = query({
       return await ctx.db
         .query("tags")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     }
     return await ctx.db
       .query("tags")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
   },
 });
 
@@ -51,7 +51,7 @@ export const createTag = mutation({
     const existing = await ctx.db
       .query("tags")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existing.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
       throw new Error("A tag with this name already exists");
@@ -90,7 +90,7 @@ export const updateTag = mutation({
       const existing = await ctx.db
         .query("tags")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
 
       if (existing.some((t) => t._id !== tagId && t.name.toLowerCase() === updates.name!.toLowerCase())) {
         throw new Error("A tag with this name already exists");

@@ -7,6 +7,7 @@ import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requir
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // Start evidence collection for a work session
 export const startEvidenceSession = mutation({
   args: {
@@ -22,6 +23,7 @@ export const startEvidenceSession = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "startEvidenceSession");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -76,6 +78,7 @@ export const recordEvents = mutation({
     })),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "recordEvents");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("Not authenticated");
 
@@ -124,6 +127,7 @@ export const finalizeEvidenceSession = mutation({
     evidenceSessionId: v.id("evidenceSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "finalizeEvidenceSession");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("Not authenticated");
 
@@ -166,7 +170,7 @@ export const getEvidenceSummary = query({
     const eventCount = await ctx.db
       .query("evidenceEvents")
       .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", evidenceSession._id))
-      .collect()
+      .take(1000)
       .then(events => events.length);
 
     const lastEvent = await ctx.db
@@ -205,13 +209,13 @@ export const getEvidenceLibraryStats = query({
       const allSessions = await ctx.db
         .query("evidenceSessions")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
       evidenceSessions = allSessions.filter((s) => isRecordVisible(s, visibility));
     } else {
       evidenceSessions = await ctx.db
         .query("evidenceSessions")
         .withIndex("by_user_and_status", (q) => q.eq("userId", user._id))
-        .collect();
+        .take(1000);
     }
 
     let totalEvents = 0;
@@ -224,7 +228,7 @@ export const getEvidenceLibraryStats = query({
       const events = await ctx.db
         .query("evidenceEvents")
         .withIndex("by_session_and_time", (q) => q.eq("evidenceSessionId", session._id))
-        .collect();
+        .take(1000);
 
       totalEvents += events.length;
       screenshotCount += events.filter(e => e.kind === "screenshot_ref").length;
@@ -260,6 +264,7 @@ export const generateUniversalReport = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "generateUniversalReport");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -294,7 +299,7 @@ export const generateUniversalReport = mutation({
             q.lte(q.field("generatedAt"), endOfMonth)
           )
         )
-        .collect();
+        .take(1000);
 
       const sessionHours =
         ((workSession.endTime ?? Date.now()) - workSession.startTime) /
@@ -339,7 +344,7 @@ export const generateUniversalReport = mutation({
         q.eq("evidenceSessionId", evidenceSession._id)
       )
       .order("asc")
-      .collect();
+      .take(1000);
 
     const caseId = `TL-${Date.now()
       .toString(36)
@@ -399,6 +404,7 @@ export const generateProjectAuditReport = mutation({
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "generateProjectAuditReport");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -459,7 +465,7 @@ export const generateProjectAuditReport = mutation({
             q.lte(q.field("generatedAt"), endOfMonth)
           )
         )
-        .collect();
+        .take(1000);
 
       if (monthlyReports.length >= 1) {
         const sessionLoss = Math.max(

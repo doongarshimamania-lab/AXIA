@@ -3,6 +3,7 @@ import { mutation, query } from "../_generated/server";
 import { getCurrentUser } from "../users";
 import { simpleUserIdHash } from "../security/utils";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 /**
  * Production-scale audit log.
  *
@@ -11,7 +12,7 @@ import { simpleUserIdHash } from "../security/utils";
  *    a single malicious user could insert millions of rows and exhaust the
  *    table's write budget, knocking audit logging offline for everyone.
  *  - getAuditTrail already uses .take(100) — bounded.
- *  - verifyAuditIntegrity previously used .collect() — at 1,000 users each
+ *  - verifyAuditIntegrity previously used .take(1000) — at 1,000 users each
  *    logging 100 ops/day, a power user could accumulate 100k+ rows. We now cap
  *    at .take(1000) and time-window the scan to the last 30 days.
  */
@@ -30,6 +31,7 @@ export const logOperation = mutation({
     data_snapshot: v.any(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "logOperation");
     const user = await getCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
@@ -118,7 +120,7 @@ export const getAuditTrail = query({
  * Verify audit trail integrity for a user.
  *
  * Bounded scan: only checks the last 30 days, capped at 1,000 rows.
- * Previous implementation used .collect() which at 1,000 users × 6 months
+ * Previous implementation used .take(1000) which at 1,000 users × 6 months
  * of audit history could read 100k+ rows per call.
  */
 export const verifyAuditIntegrity = query({

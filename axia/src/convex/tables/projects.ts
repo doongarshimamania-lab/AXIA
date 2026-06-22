@@ -7,7 +7,7 @@ export const projectTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    clientName: v.string(),
+    clientName: v.string().maxLength(100),
     platform: v.union(
       v.literal("upwork"),
       v.literal("fiverr"),
@@ -23,12 +23,12 @@ export const projectTables = {
           v.literal("memos"),
           v.literal("timer")
         ),
-        description: v.string(),
-        requirement: v.string(),
-        evidenceType: v.string(),
+        description: v.string().maxLength(5000),
+        requirement: v.string().maxLength(1000),
+        evidenceType: v.string().maxLength(50),
       })
     ),
-    documentUrl: v.optional(v.string()),
+    documentUrl: v.optional(v.string().maxLength(2048)),
     createdAt: v.number(),
     lastUpdated: v.number(),
   })
@@ -46,28 +46,26 @@ export const projectTables = {
     // ── Name fields ──────────────────────────────────────────────────────
     // clientName is canonical (used by freelancer features & indexes).
     // name is an alias used by CRM mutations — both should be kept in sync.
-    clientName: v.string(),
-    name: v.optional(v.string()),
-
+    clientName: v.string().maxLength(100),
+    name: v.optional(v.string().maxLength(100)),
     // ── CRM contact fields ───────────────────────────────────────────────
-    email: v.optional(v.string()),
-    company: v.optional(v.string()),
-    phone: v.optional(v.string()),
-    industry: v.optional(v.string()),
-    website: v.optional(v.string()),
-    notes: v.optional(v.string()),
+    email: v.optional(v.string().maxLength(320)),
+    company: v.optional(v.string().maxLength(1000)),
+    phone: v.optional(v.string().maxLength(32)),
+    industry: v.optional(v.string().maxLength(1000)),
+    website: v.optional(v.string().maxLength(2048)),
+    notes: v.optional(v.string().maxLength(5000)),
     address: v.optional(v.object({
-      street: v.optional(v.string()),
-      city: v.optional(v.string()),
-      state: v.optional(v.string()),
-      zip: v.optional(v.string()),
-      country: v.optional(v.string()),
+      street: v.optional(v.string().maxLength(1000)),
+      city: v.optional(v.string().maxLength(1000)),
+      state: v.optional(v.string().maxLength(1000)),
+      zip: v.optional(v.string().maxLength(1000)),
+      country: v.optional(v.string().maxLength(1000)),
     })),
 
     // ── CRM status & source ──────────────────────────────────────────────
     status: v.optional(v.union(v.literal("active"), v.literal("archived"), v.literal("lead"))),
-    source: v.optional(v.string()),
-
+    source: v.optional(v.string().maxLength(1000)),
     // ── Freelancer platform fields (optional for CRM-created clients) ────
     platform: v.optional(v.union(
       v.literal("upwork"),
@@ -81,9 +79,8 @@ export const projectTables = {
     riskLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
 
     // ── Freelancer-specific contact fields ───────────────────────────────
-    contactEmail: v.optional(v.string()),
-    contactName: v.optional(v.string()),
-
+    contactEmail: v.optional(v.string().maxLength(320)),
+    contactName: v.optional(v.string().maxLength(100)),
     // ── Payment behavior tracking ────────────────────────────────────────
     avgPaymentDays: v.optional(v.number()),
     onTimeRate: v.optional(v.number()), // 0-1
@@ -114,7 +111,7 @@ export const projectTables = {
     sharing: v.optional(v.array(sharingEntry)),
     customFields: v.optional(v.any()),
     clientId: v.id("clients"),
-    projectName: v.string(),
+    projectName: v.string().maxLength(100),
     hourlyRate: v.number(),
     projectType: v.union(v.literal("ongoing"), v.literal("fixed"), v.literal("milestone")),
     protectionLevel: v.union(v.literal("standard"), v.literal("enhanced"), v.literal("maximum")),
@@ -141,7 +138,7 @@ export const projectTables = {
     // Business metrics
     businessPattern: v.optional(v.number()),
     paymentPatternRisk: v.optional(v.number()),
-    disputeTrend: v.optional(v.string()),
+    disputeTrend: v.optional(v.string().maxLength(1000)),
     clientDiversity: v.optional(v.number()),
     platformCoverage: v.optional(v.number()),
     historicalSuccess: v.optional(v.number()),
@@ -158,16 +155,16 @@ export const projectTables = {
   clientCompanies: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    email: v.string(),
-    companyName: v.string(),
-    contactName: v.string(),
-    industry: v.string(),
-    companySize: v.string(),
-    website: v.string(),
+    email: v.string().maxLength(320),
+    companyName: v.string().maxLength(100),
+    contactName: v.string().maxLength(100),
+    industry: v.string().maxLength(1000),
+    companySize: v.string().maxLength(1000),
+    website: v.string().maxLength(2048),
     verificationCount: v.number(),
     createdAt: v.number(),
     lastLoginAt: v.number(),
-    subscriptionTier: v.string(),
+    subscriptionTier: v.string().maxLength(50),
   })
     .index("by_email", ["email"])
     .index("by_workspace", ["workspaceId"]),
@@ -177,8 +174,8 @@ export const projectTables = {
     createdBy: v.optional(v.id("users")),
     clientId: v.id("clientCompanies"),
     freelancerUserId: v.id("users"),
-    projectName: v.string(),
-    projectDescription: v.string(),
+    projectName: v.string().maxLength(100),
+    projectDescription: v.string().maxLength(5000),
     workPeriodStart: v.number(),
     workPeriodEnd: v.number(),
     requestedAt: v.number(),
@@ -188,7 +185,7 @@ export const projectTables = {
       v.literal("rejected"),
       v.literal("completed")
     ),
-    freelancerResponse: v.optional(v.string()),
+    freelancerResponse: v.optional(v.string().maxLength(1000)),
     respondedAt: v.optional(v.number()),
   })
     .index("by_client", ["clientId"])
@@ -209,7 +206,7 @@ export const projectTables = {
       activityScore: v.number(),
       complianceRate: v.number(),
     }),
-    verificationSignature: v.string(),
+    verificationSignature: v.string().maxLength(1000),
     generatedAt: v.number(),
     expiresAt: v.number(),
   })
@@ -222,9 +219,9 @@ export const projectTables = {
     workspaceId: v.optional(v.id("workspaces")),
     userId: v.id("users"),
     createdBy: v.optional(v.id("users")),
-    displayName: v.string(),
-    professionalTitle: v.string(),
-    bio: v.string(),
+    displayName: v.string().maxLength(100),
+    professionalTitle: v.string().maxLength(200),
+    bio: v.string().maxLength(5000),
     hourlyRate: v.number(),
     axiaVerified: v.boolean(),
     verificationScore: v.number(), // 0-100
@@ -243,7 +240,7 @@ export const projectTables = {
   clientActivityLog: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
     clientId: v.id("clientCompanies"),
-    action: v.string(),
+    action: v.string().maxLength(1000),
     targetFreelancerId: v.optional(v.id("users")),
     metadata: v.any(),
     timestamp: v.number(),
@@ -253,12 +250,12 @@ export const projectTables = {
     .index("by_workspace", ["workspaceId"]),
 
   clientWorkspaceTokens: defineTable({
-    token: v.string(),
+    token: v.string().maxLength(1000),
     clientId: v.id("clients"),
-    clientName: v.string(),
-    contactEmail: v.optional(v.string()),
+    clientName: v.string().maxLength(100),
+    contactEmail: v.optional(v.string().maxLength(320)),
     workspaceId: v.optional(v.id("workspaces")),
-    freelancerUserId: v.string(),
+    freelancerUserId: v.string().maxLength(1000),
     createdAt: v.number(),
     lastAccessedAt: v.optional(v.number()),
     accessCount: v.optional(v.number()),

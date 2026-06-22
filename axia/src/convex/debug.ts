@@ -42,7 +42,7 @@ export const listAuthAccountsForEmail = query({
     const authAccounts = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(1000);
 
     return {
       found: true,
@@ -83,7 +83,7 @@ export const cleanOrphanedAuthAccounts = mutation({
     const authAccounts = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
-      .collect();
+      .take(1000);
 
     let deleted = 0;
     for (const account of authAccounts) {
@@ -105,7 +105,7 @@ export const checkMyTokens = query({
     const tokens = await ctx.db
       .query("extensionTokens")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     const now = Date.now();
     return {

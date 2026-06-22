@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Get active protection alerts
 export const getActiveAlerts = query({
   args: {},
@@ -60,6 +61,7 @@ export const resolveAlert = mutation({
     alertId: v.id("protectionAdvisorAlerts"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "resolveAlert");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

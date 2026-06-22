@@ -15,12 +15,12 @@ export const seedMockPipeline = mutation({
       existingStages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     } else {
       existingStages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     let stages = existingStages;
@@ -48,12 +48,12 @@ export const seedMockPipeline = mutation({
         stages = await ctx.db
           .query("pipelineStages")
           .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-          .collect();
+          .take(1000);
       } else {
         stages = await ctx.db
           .query("pipelineStages")
           .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
+          .take(1000);
       }
     }
 
@@ -63,12 +63,12 @@ export const seedMockPipeline = mutation({
       existingDeals = await ctx.db
         .query("deals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .collect();
+        .take(1000);
     } else {
       existingDeals = await ctx.db
         .query("deals")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     if (existingDeals.length > 0) return { seeded: false, dealCount: existingDeals.length };
@@ -526,7 +526,7 @@ export const seedMockProposals = mutation({
     const existing = await ctx.db
       .query("proposals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     if (existing.length > 0) return { seeded: false, count: existing.length };
 
@@ -534,7 +534,7 @@ export const seedMockProposals = mutation({
     const templateResult = await ctx.db
       .query("proposalTemplates")
       .withIndex("by_system", (q) => q.eq("isSystem", true))
-      .collect();
+      .take(1000);
 
     if (templateResult.length === 0) {
       const templates = [

@@ -3,6 +3,7 @@ import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser } from "./helpers";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 /**
  * Message mutations — send, edit, delete, react, pin, mark read.
  */
@@ -27,6 +28,7 @@ export const sendMessage = mutation({
     }))),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "sendMessage");
     const userId = await getAuthenticatedUser(ctx);
     const channel = await ctx.db.get(args.channelId);
     if (!channel) throw new Error("Channel not found");
@@ -66,7 +68,7 @@ export const sendMessage = mutation({
     while ((match = mentionRegex.exec(args.body)) !== null) {
       const mentionedName = match[1];
       // Try to find user by name (simplified)
-      const users = await ctx.db.query("users").collect();
+      const users = await ctx.db.query("users").take(1000);
       const mentionedUser = users.find(
         (u) => u.name?.toLowerCase().replace(/\s+/g, ".") === mentionedName.toLowerCase()
       );
@@ -92,6 +94,7 @@ export const editMessage = mutation({
     body: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "editMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
@@ -109,6 +112,7 @@ export const editMessage = mutation({
 export const deleteMessage = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "deleteMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
@@ -138,6 +142,7 @@ export const toggleReaction = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "toggleReaction");
     const userId = await getAuthenticatedUser(ctx);
 
     const existing = await ctx.db
@@ -166,6 +171,7 @@ export const toggleReaction = mutation({
 export const togglePinMessage = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "togglePinMessage");
     const userId = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
@@ -208,6 +214,7 @@ export const togglePinMessage = mutation({
 export const markChannelRead = mutation({
   args: { channelId: v.id("channels") },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markChannelRead");
     const userId = await getAuthenticatedUser(ctx);
     const member = await ctx.db
       .query("channelMembers")
@@ -227,6 +234,7 @@ export const getOrCreateDMChannel = mutation({
     otherUserId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "getOrCreateDMChannel");
     const userId = await getAuthenticatedUser(ctx);
 
     // Verify both users are workspace members
@@ -254,7 +262,7 @@ export const getOrCreateDMChannel = mutation({
     const myChannels = await ctx.db
       .query("channelMembers")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     for (const cm of myChannels) {
       const channel = await ctx.db.get(cm.channelId);

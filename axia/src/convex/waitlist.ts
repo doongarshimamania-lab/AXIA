@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { generateReferralCode, calculatePosition } from "./waitlistHelpers";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 export const addToWaitlist = mutation({
   args: {
     email: v.string(),
@@ -10,6 +11,7 @@ export const addToWaitlist = mutation({
     referredBy: v.optional(v.string()), // Referral code of referrer
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "addToWaitlist");
     console.log("[BACKEND] addToWaitlist called with:", args);
 
     try {
@@ -31,7 +33,7 @@ export const addToWaitlist = mutation({
       // Get current waitlist count for position
       const allEntries = await ctx.db
         .query("waitlistEntries")
-        .collect();
+        .take(10000);
 
       // Starting position for batch AZ is 83
       const basePosition = allEntries.length + 83;
@@ -179,7 +181,7 @@ export const getReferralStats = query({
     const referrals = await ctx.db
       .query("waitlistEntries")
       .withIndex("by_referred_by", (q) => q.eq("referredBy", args.referralCode))
-      .collect();
+      .take(10000);
 
     return {
       entry,

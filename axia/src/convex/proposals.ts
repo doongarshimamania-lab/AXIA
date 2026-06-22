@@ -6,6 +6,7 @@ import { ConvexError } from "convex/values";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ─────────────────────────────────────────────
 // Shared validators
 // ─────────────────────────────────────────────
@@ -54,6 +55,7 @@ export const create = mutation({
     customFields: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "create");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -166,6 +168,7 @@ export const update = mutation({
     teamId: v.optional(v.id("teams")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "update");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -245,6 +248,7 @@ export const send = mutation({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "send");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -286,6 +290,7 @@ export const markViewed = mutation({
     publicToken: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markViewed");
     const proposal = await ctx.db
       .query("proposals")
       .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
@@ -322,6 +327,7 @@ export const sign = mutation({
     signedName: v.string(),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "sign");
     const proposal = await ctx.db
       .query("proposals")
       .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
@@ -372,6 +378,7 @@ export const decline = mutation({
     declinedReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "decline");
     const proposal = await ctx.db
       .query("proposals")
       .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
@@ -406,13 +413,14 @@ export const decline = mutation({
 export const expire = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "expire");
     const now = Date.now();
 
     // Query all sent proposals and filter for expired ones
     const sentProposals = await ctx.db
       .query("proposals")
       .filter((q) => q.eq(q.field("status"), "sent"))
-      .collect();
+      .take(1000);
 
     let expiredCount = 0;
 
@@ -480,7 +488,7 @@ export const list = query({
       const allProposals = await ctx.db
         .query("proposals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
-        .collect();
+        .take(1000);
 
       let visible = allProposals.filter((p) => isRecordVisible(p, visibility));
 
@@ -499,7 +507,7 @@ export const list = query({
           q.eq("userId", userId).eq("status", args.status!)
         )
         .order("desc")
-        .collect();
+        .take(1000);
       return proposals;
     }
 
@@ -508,7 +516,7 @@ export const list = query({
       .query("proposals")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
-      .collect();
+      .take(1000);
 
     // Sort by updatedAt descending (index order is by creation)
     return proposals.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -559,6 +567,7 @@ export const convertToScope = mutation({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "convertToScope");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -610,13 +619,13 @@ export const getStats = query({
       const workspaceProposals = await ctx.db
         .query("proposals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
       allProposals = workspaceProposals.filter((p) => isRecordVisible(p, visibility));
     } else {
       allProposals = await ctx.db
         .query("proposals")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
     }
 
     const draft = allProposals.filter((p) => p.status === "draft").length;
@@ -670,6 +679,7 @@ export const duplicate = mutation({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "duplicate");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -726,6 +736,7 @@ export const remove = mutation({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "remove");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -748,7 +759,7 @@ export const remove = mutation({
     const followUps = await ctx.db
       .query("proposalFollowUps")
       .withIndex("by_proposal", (q) => q.eq("proposalId", args.proposalId))
-      .collect();
+      .take(1000);
 
     for (const followUp of followUps) {
       await ctx.db.delete(followUp._id);
@@ -778,6 +789,7 @@ export const createTemplate = mutation({
     workspaceId: v.optional(v.id("workspaces")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "createTemplate");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -823,7 +835,7 @@ export const listTemplates = query({
     const userTemplates = await ctx.db
       .query("proposalTemplates")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .take(1000);
 
     // Get workspace templates if provided
     let workspaceTemplates: any[] = [];
@@ -831,7 +843,7 @@ export const listTemplates = query({
       workspaceTemplates = await ctx.db
         .query("proposalTemplates")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .collect();
+        .take(1000);
     }
 
     // Get system templates (userId is null)
@@ -841,7 +853,7 @@ export const listTemplates = query({
       systemTemplates = await ctx.db
         .query("proposalTemplates")
         .withIndex("by_industry", (q) => q.eq("industry", args.industry!))
-        .collect();
+        .take(1000);
       // Filter to only system templates (null userId)
       systemTemplates = systemTemplates.filter((t) => t.userId === undefined);
     } else {
@@ -850,7 +862,7 @@ export const listTemplates = query({
         const templates = await ctx.db
           .query("proposalTemplates")
           .withIndex("by_industry", (q) => q.eq("industry", ind))
-          .collect();
+          .take(1000);
         systemTemplates.push(...templates.filter((t) => t.userId === undefined));
       }
     }
@@ -915,6 +927,7 @@ export const incrementUsage = mutation({
     templateId: v.id("proposalTemplates"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "incrementUsage");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -945,6 +958,7 @@ export const incrementUsage = mutation({
 export const seedDefaultTemplates = mutation({
   args: {},
   handler: async (ctx) => {
+    await rateLimitAuthenticated(ctx, "seedDefaultTemplates");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -952,7 +966,7 @@ export const seedDefaultTemplates = mutation({
     const existingSystemTemplates = await ctx.db
       .query("proposalTemplates")
       .withIndex("by_industry", (q) => q.eq("industry", "web_design"))
-      .collect();
+      .take(1000);
 
     const alreadySeeded = existingSystemTemplates.some((t) => t.userId === undefined);
     if (alreadySeeded) {
@@ -1071,6 +1085,7 @@ export const scheduleFollowUps = mutation({
     proposalId: v.id("proposals"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "scheduleFollowUps");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
@@ -1114,7 +1129,7 @@ export const processDueFollowUps = internalMutation({
     const allFollowUps = await ctx.db
       .query("proposalFollowUps")
       .filter((q) => q.eq(q.field("status"), "scheduled"))
-      .collect();
+      .take(1000);
 
     const dueFollowUps = allFollowUps.filter(
       (fu) => fu.scheduledFor <= now
@@ -1180,7 +1195,7 @@ async function cancelFollowUpsInternal(
   const followUps = await ctx.db
     .query("proposalFollowUps")
     .withIndex("by_proposal", (q: any) => q.eq("proposalId", proposalId))
-    .collect();
+    .take(1000);
 
   for (const fu of followUps) {
     if (fu.status === "scheduled") {

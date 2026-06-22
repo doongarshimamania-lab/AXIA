@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Create a milestone alert
 export const createMilestoneAlert = internalMutation({
   args: {
@@ -68,6 +69,7 @@ export const markAlertAsRead = mutation({
     alertId: v.id("milestoneAlerts"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "markAlertAsRead");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -91,7 +93,7 @@ export const getUnreadAlertCount = query({
       .query("milestoneAlerts")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isRead"), false))
-      .collect();
+      .take(1000);
 
     return alerts.length;
   },

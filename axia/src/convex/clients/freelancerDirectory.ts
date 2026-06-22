@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Create or update public freelancer profile (requires auth + can only edit own profile)
 export const upsertFreelancerProfile = mutation({
   args: {
@@ -14,6 +15,7 @@ export const upsertFreelancerProfile = mutation({
     availability: v.union(v.literal("available"), v.literal("busy"), v.literal("unavailable")),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "upsertFreelancerProfile");
     const authUserId = await getAuthUserId(ctx);
     if (!authUserId) throw new Error("Not authenticated");
 
@@ -68,7 +70,7 @@ export const getVerifiedFreelancers = query({
     const profiles = await ctx.db
       .query("freelancerPublicProfiles")
       .withIndex("by_verified", (q) => q.eq("axiaVerified", true))
-      .collect();
+      .take(1000);
 
     return profiles;
   },

@@ -3,6 +3,7 @@ import { query, mutation, internalQuery } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { getCurrentUser } from "../users";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // WCVM Context Relevance Scanner
 // Analyzes work context against client requirements in real-time
 
@@ -63,7 +64,7 @@ export const analyzeSessionContext = query({
       .withIndex("by_session_and_time", (q) =>
         q.eq("evidenceSessionId", evidenceSession._id)
       )
-      .collect();
+      .take(1000);
 
     // Analyze events for context
     const urlEvents = events.filter((e) => e.kind === "url");
@@ -229,6 +230,7 @@ export const generateWCVMVerification = mutation({
     sessionId: v.id("workSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "generateWCVMVerification");
     const user = await getCurrentUser(ctx);
     if (!user) throw new Error("Not authenticated");
 
@@ -252,7 +254,7 @@ export const generateWCVMVerification = mutation({
       .withIndex("by_session_and_time", (q) =>
         q.eq("evidenceSessionId", evidenceSession._id)
       )
-      .collect();
+      .take(1000);
 
     // Analyze events for context
     const urlEvents = events.filter((e) => e.kind === "url");

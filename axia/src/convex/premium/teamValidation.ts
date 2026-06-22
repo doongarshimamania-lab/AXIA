@@ -2,6 +2,7 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Request validation from team member
 export const requestValidation = mutation({
   args: {
@@ -9,6 +10,7 @@ export const requestValidation = mutation({
     evidenceSessionId: v.id("evidenceSessions"),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "requestValidation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -25,7 +27,7 @@ export const requestValidation = mutation({
       const existingValidations = await ctx.db
         .query("teamValidations")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
+        .take(1000);
       
       // Get unique client count from work sessions via evidence sessions
       const uniqueClients = new Set();
@@ -86,6 +88,7 @@ export const submitValidation = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "submitValidation");
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -112,7 +115,7 @@ export const getPendingValidations = query({
       .query("teamValidations")
       .withIndex("by_validator", (q) => q.eq("validatorUserId", userId))
       .filter((q) => q.eq(q.field("validationStatus"), "pending"))
-      .collect();
+      .take(1000);
 
     return validations;
   },
