@@ -624,3 +624,31 @@ Stage Summary:
 - SPA fallback works for client-side routes
 - Hallmark repo cloned successfully at /home/z/my-project/resources/external-repos/hallmark/
 - To restart preview later: `pkill -f preview-daemon && python3 /home/z/my-project/resources/.zscripts/preview-daemon.py`
+
+---
+Task ID: integrate-hallmark-design-skill
+Agent: main
+Task: Integrate Hallmark design skill (https://github.com/Nutlope/hallmark) into AXIA's UI workflow
+
+Work Log:
+- Explored Hallmark repo structure: skills/hallmark/SKILL.md (558 lines) + 21 themes in site/css/tokens.css (1174 lines) + 4 genres (editorial / modern-minimal / atmospheric / playful) + 21 macrostructures + 57 slop-test gates
+- Inspected AXIA app structure: React 19 + Vite 6 + Tailwind 4 + Convex; main.tsx has route tree with ProtectedRoute wrapper; CollapsibleSidebar has 3 nav variants (expanded / collapsed / mobile)
+- Designed integration approach: SCOPED application (Hallmark themes apply only inside <HallmarkScope> wrapper, NOT globally) so AXIA's Tailwind brand identity (teal/Slate) is preserved for the in-app dashboard
+- Step 1: Copied Hallmark tokens.css (1174 lines) → axia/src/styles/hallmark-tokens.css. Added 30-line integration header. Renamed all `[data-theme="X"]` selectors to `[data-hallmark-theme="X"]` to avoid collision. 21 unique themes verified (specimen, midnight, brutal, garden, atelier, newsprint, terminal, manifesto, almanac, sport, studio, riso, bloom, coral, cobalt, aurora, editorial, carnival, lumen, hum, day).
+- Step 2: Created axia/src/hooks/use-hallmark-theme.tsx (183 lines) — HallmarkThemeProvider context, useHallmarkTheme hook (with safe fallback if provider missing), HallmarkScope wrapper component, HALLMARK_THEMES metadata array (name + label + genre + blurb for all 21 themes). Persists selection to localStorage key 'axia_hallmark_theme'. Multi-tab sync via storage event listener. Default: 'specimen'.
+- Step 3: Created axia/src/components/hallmark/HallmarkThemeCard.tsx (157 lines) — self-contained preview card. Each card uses HallmarkScope with theme override so all 21 cards display their own theme simultaneously. Shows: faux display heading (using var(--font-display)), body text, 8-swatch color palette, faux CTA button, theme name + label.
+- Step 4: Created axia/src/pages/HallmarkThemes.tsx (235 lines) — full settings page using PageLayout. Active-theme banner with live preview, genre filter pills (all / editorial / modern-minimal / atmospheric / playful), responsive grid (2 cols mobile → 4 cols desktop) of HallmarkThemeCard components, info panel explaining how Hallmark works in AXIA, action buttons (preview landing, save preference).
+- Step 5: Wired into main.tsx — imported HallmarkThemes page, HallmarkThemeProvider, and hallmark-tokens.css. Wrapped entire Routes block in <HallmarkThemeProvider>. Added /hallmark-themes route inside ProtectedRoute block (auth-gated). Added 3 nav entries in CollapsibleSidebar.tsx (expanded view, collapsed view, mobile view) with Palette icon in ADMIN section.
+- Step 6: Modified axia/src/pages/Landing.tsx — added theme-indicator pill in header (next to dark mode toggle) showing currently-active Hallmark theme with Palette icon, click navigates to /hallmark-themes. Added Hallmark Showcase Section below FinalCTA that renders using the selected theme's real tokens (background: var(--color-paper), color: var(--color-ink), font-family: var(--font-display), accent: var(--color-accent), etc.) with heading, description, "Browse 21 themes" CTA, and 9-swatch palette row.
+- Step 7: Built successfully — `bunx vite build` transformed 3385 modules (+4 from 3381) in 11.39s. CSS grew from 362KB → 390KB (Hallmark tokens added). Verified served CSS contains `data-hallmark-theme` selectors and served JS bundle contains HallmarkScope/HallmarkThemes references. SPA fallback works for /hallmark-themes route.
+- Committed as 98fd6c6 "feat: integrate Hallmark design skill (21 themes) into AXIA UI workflow" (7 files changed, 1886 insertions, 3 deletions). Pushed to origin/main (04772eb → 98fd6c6).
+
+Stage Summary:
+- Hallmark design skill (MIT, Together AI) fully integrated as a theme-picker system in AXIA
+- New route /hallmark-themes (auth-gated) with grid picker for all 21 themes
+- Sidebar entry added in all 3 views (expanded / collapsed / mobile)
+- Landing page shows current theme in header + live Hallmark Showcase section using real theme tokens
+- AXIA's Tailwind brand identity (teal/Slate) PRESERVED for in-app dashboard — Hallmark themes apply only inside HallmarkScope wrapper
+- Theme selection persists across sessions (localStorage) and syncs across tabs
+- Preview server (PID 5846, PPID 1) serving latest build on port 3000
+- All changes pushed to GitHub at commit 98fd6c6
