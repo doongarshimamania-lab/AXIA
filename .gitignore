@@ -1,8 +1,9 @@
 # ─────────────────────────────────────────────────────────────
 # AXIA — Top-level .gitignore
 # Repo is organized into two top-level folders:
-#   axia/        → production code (has its own .gitignore too)
-#   resources/   → archive, backups, research, screenshots, etc.
+#   axia/        → production-ready code (has its own .gitignore too)
+#   resources/   → everything else (backups, snapshots, research,
+#                  screenshots, scripts, docs) — tracked
 # ─────────────────────────────────────────────────────────────
 
 # Dependencies (anywhere in the repo)
@@ -14,7 +15,7 @@ dist-ssr/
 .next/
 *.tsbuildinfo
 
-# Environment secrets (anywhere)
+# Environment secrets (anywhere — never tracked)
 .env
 .env.local
 .env.*.local
@@ -43,80 +44,34 @@ convex_local_backend.sqlite3
 *.db
 *.sqlite3
 
-# ── resources/-specific ignores ──
-# IM gateway upload mount (system mount, can't be moved, gitignored)
-/upload/
-
-# Z.ai skill library (large, not app code)
-/resources/skills/
-
-# Big binary backups — store in GitHub Releases instead
-/resources/backups/*.tar.gz
-/resources/backups/*.zip
-/resources/backups/timelock-fullcode-*
-
-# Old src backups (archive-only, not for editing)
-/resources/src_backup_*/
-
-# Tool results (transient agent artifacts)
-/resources/tool-results/
-
-# Disk mirror of dist (build artifact)
-/resources/disk/
-
-# Uploads via IM gateway (runtime, not source)
-/resources/upload/
-
-# Large backup ZIPs — too big for git (>100MB GitHub limit).
-# These live in GitHub Releases instead (per rules file backup policy).
-/resources/download/AXIA-COMPLETE-BACKUP-*.zip
-/resources/backups/*.zip
-
-# Screenshots are tracked (small, useful for docs)
-
-# ─── v5.4.0 security-audit cleanup ──────────────────────────────────────
-# The repo should be LEAN: only axia/ production code + small top-level
-# metadata. Everything else is build output, deliverables, multi-agent
-# scratch space, or unrelated projects. Untracked files remain on disk.
-
-# Top-level tool-results (transient agent scratch)
-/tool-results/
-
-# Z.ai skills library (1023 files — not part of AXIA source)
-/skills/
-
-# Deliverables (PDFs, screenshots, audit reports, backup zips).
-# These are produced by audits/scripts and should never be tracked.
-# A 16 MB backup zip was previously tracked — removed in v5.4.0.
-/download/
-
-# Anything under resources/ is archive/backup/scratch — untrack all of it.
-# (Files stay on disk; just not in git.)
-/resources/
-
-# Multi-agent workdir at root (transient)
-/agent-ctx/
-
-# Build/orchestration scripts at root (not app runtime)
+# ─── Workspace orchestration scripts (not app source) ───
 /.zscripts/
 
-# Misc standalone backups at root
-/backups/
-/src_backup_*/
-/timelock-messy-backup/
-/timelock/             # duplicate sub-project — see axia/ for production code
-/disk/                 # build output (was previously tracked)
-/ecc/
-/examples/
+# ─── System mounts — cannot be moved, must be gitignored ───
+# IM gateway upload mount (runtime, not source)
+/upload/
+# Z.ai skills library (1023 files — not AXIA source)
+/skills/
+# Final user-facing deliverables (PDFs, screenshots, audit reports,
+# backup zips). These are produced by audits/scripts and stored for
+# download — never tracked.
+/download/
 
-# Research / planning JSON at root (input data, not source)
-/research_*.json
+# ─── Transient agent scratch (not source) ───
+/resources/tool-results/
 
-# Binary archives anywhere
+# ─── Large binaries (GitHub Releases only, >100 MB) ───
 *.zip
 *.tar.gz
 *.tar.bz2
+# Allow small zips in resources/backups for archival
+!resources/backups/*.zip
+# ...actually no, GitHub refuses >100 MB. Exclude all zips.
+resources/backups/*.zip
 
-# Runtime files
+# ─── Runtime files ───
 *.pid
 *.seed
+
+# ─── Convex auth config (auto-generated, may contain dev keys) ───
+axia/.convex/
