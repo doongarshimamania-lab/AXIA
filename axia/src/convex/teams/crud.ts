@@ -9,13 +9,23 @@ export const getTeams = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    const membership = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace_and_user", (q) =>
-        q.eq("workspaceId", workspaceId).eq("userId", userId)
-      )
-      .first();
-    if (!membership || membership.status !== "active") return [];
+    const workspace = await ctx.db.get(workspaceId);
+    if (!workspace) return [];
+
+    // Owner shortcut: the workspace owner always has full access even if they
+    // don't have a `workspaceMembers` row (this happens when the team workspace
+    // was created by `seedTeamUsers` which picked the owner from `workspaces`
+    // but didn't insert them into `workspaceMembers`).
+    const isOwner = workspace.ownerId === userId;
+    if (!isOwner) {
+      const membership = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace_and_user", (q) =>
+          q.eq("workspaceId", workspaceId).eq("userId", userId)
+        )
+        .first();
+      if (!membership || membership.status !== "active") return [];
+    }
 
     return await ctx.db
       .query("teams")
@@ -157,6 +167,22 @@ export const getTeamMembers = query({
     if (!userId) return [];
     const team = await ctx.db.get(teamId);
     if (!team) return [];
+
+    // Owner shortcut: workspace owner always has access (even without a
+    // workspaceMembers row).
+    const workspace = await ctx.db.get(team.workspaceId);
+    if (!workspace) return [];
+    const isOwner = workspace.ownerId === userId;
+    if (!isOwner) {
+      const membership = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace_and_user", (q) =>
+          q.eq("workspaceId", team.workspaceId).eq("userId", userId)
+        )
+        .first();
+      if (!membership || membership.status !== "active") return [];
+    }
+
     const memberships = await ctx.db
       .query("teamMemberships")
       .withIndex("by_team", (q) => q.eq("teamId", teamId))

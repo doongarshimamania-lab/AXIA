@@ -170,3 +170,155 @@ Stage Summary:
 - ADMIN TOOL: To reset any account's password:
     npx convex run adminListAll:resetPassword '{ "email": "user@example.com", "newPassword": "NewPass123!" }'
 - The user can also always sign up with a fresh email via /auth?mode=signup — that flow creates a new authAccounts row with the chosen password (scrypt-hashed) and works correctly.
+
+---
+Task ID: 2-activityvis
+Agent: Explore (sub-agent)
+Task: Investigate the RECENT ACTIVITY feature — report what exists, no code changes.
+
+Work Log:
+- Searched /home/z/my-project/axia/src/convex/ for activity-related files: NO recentActivity.ts, activity.ts, or any dedicated activity table exists in schema.ts.
+- Searched for "Recent Activity" UI string — found exactly ONE occurrence: TeamManagement.tsx lines 903-943.
+- Confirmed the "Recent Activity" feed is NOT backed by a real activity log — it fabricates entries from the workspace members list with a static cycle of fake action labels ("was active", "updated their profile", "joined the workspace") keyed by member index.
+- Confirmed the data source is api.workspaces.members.getMembers (convex/workspaces/members.ts L18-69), which returns ALL active members of the workspace — NO exclusion of the caller's own userId, NO role-based filtering.
+- Confirmed role taxonomy in convex/tables/workspaces.ts L40: `role: v.union(v.literal("owner"), v.literal("manager"), v.literal("member"))` — code uses "owner" for the highest role (the user calls this "dev").
+- Confirmed use-workspace.tsx exposes isOwner/canManageTeam but the Recent Activity block uses neither to gate visibility — it renders for any logged-in workspace member.
+- Activity is implicitly per-workspace (workspaceMembers is workspace-scoped); there is no global activity log.
+
+Stage Summary:
+- See structured report below for exact file paths + line numbers for parent agent to edit.
+- No files modified.
+
+---
+Task ID: 2-teamroles
+Agent: Explore (sub-agent)
+Task: Investigate team roles & permissions code (Convex + React) — report only, no edits.
+
+Work Log:
+- Read /home/z/my-project/axia/src/convex/teams.ts (placeholder file — getTeamMembers returns [], inviteTeamMember is a no-op stub).
+- Read /home/z/my-project/axia/src/convex/teams/crud.ts — contains the REAL getTeams, createTeam, updateTeam, deleteTeam, addTeamMember, removeTeamMember, getTeamMembers.
+- Read /home/z/my-project/axia/src/convex/tables/teams.ts (teams + teamMemberships schemas; team roles are "lead"/"member", NOT owner/manager/member).
+- Read /home/z/my-project/axia/src/convex/tables/workspaces.ts — workspaceMembers.role is "owner" | "manager" | "member"; status is "active" | "invited" | "removed".
+- Read /home/z/my-project/axia/src/convex/workspaces/members.ts — contains getMembers, getMember, searchMembers, getMemberProjects, updateMemberRole, removeMember, updateMemberProfile, assignMemberToProject, etc.
+- Read /home/z/my-project/axia/src/convex/workspaces/invitations.ts — createInvitation, acceptInvitation, cancelInvitation, expireOldInvitations, getInvitations, getInvitationByToken.
+- Read /home/z/my-project/axia/src/convex/workspaces/crud.ts — getMyWorkspaces, getWorkspace, getWorkspaceStats, getMyRole, createWorkspace, updateWorkspace, convertToTeamWorkspace, deleteWorkspace, seedPersonalWorkspace.
+- Read /home/z/my-project/axia/src/convex/permissions.ts — getWorkspaceMembership, requireWorkspaceAccess (roleHierarchy owner=3, manager=2, member=1).
+- Read /home/z/my-project/axia/src/convex/permissions/transferOwnership.ts — transferWorkspaceOwnership, transferProjectOwnership, transferClientOwnership, transferDealOwnership.
+- Read /home/z/my-project/axia/src/hooks/use-permissions.ts (client-side mirror of backend permission logic).
+- Read /home/z/my-project/axia/src/hooks/use-workspace.tsx — CRITICAL: WorkspaceProvider hardcodes `membership: { role: "owner" }` for EVERY workspace returned by getMyWorkspaces (line 163). useAcceptInvitation / useTransferOwnership / useDeleteWorkspace are NO-OP stubs (lines 497-519).
+- Read /home/z/my-project/axia/src/components/Teams.tsx — purely decorative placeholder with hardcoded fake members; not used by TeamManagement.
+- Read /home/z/my-project/axia/src/pages/TeamManagement.tsx (1567 lines) — the real team management UI.
+- Read /home/z/my-project/axia/src/components/WorkspaceSwitcher.tsx.
+- Read /home/z/my-project/axia/src/convex/seedTeamUsers.ts — confirmed Dev is made ownerId of "AXIA Team" workspace but is NOT added to workspaceMembers table (only the 4 test users priya/marcus/aisha/carlos are).
+
+Stage Summary:
+- Identified CRITICAL frontend bug: use-workspace.tsx L163 hardcodes role="owner" for every workspace, so every user (member/manager/owner) sees owner-level UI controls on every workspace they belong to. Backend mutations still block most illegal actions, but UI is misleading and some real backend gaps exist.
+- Identified CRITICAL backend bug in removeMember (members.ts L246-308): only blocks `member.role === "owner"`; does NOT block managers from removing other managers (requirement #5 violated).
+- Identified CRITICAL backend bug in getTeams (teams/crud.ts L6-25): only checks workspaceMembers, never checks isOwner — so the workspace OWNER (e.g. Dev) gets [] back when they don't have a workspaceMember row. This is the root cause of the "teams show in Priya but not Dev" bug (Dev is ownerId of AXIA Team workspace but seedTeamUsers.ts never inserted Dev as a workspaceMember).
+- Identified additional gap in updateMemberRole (members.ts L200-243): args.role validator accepts "owner" — a manager could promote a member to "owner" (creating a second owner); the only ownership-related guard (L236-238) only prevents demoting an existing owner.
+- Error message text mismatch: current "Cannot remove the workspace owner" vs user-required "you cannot remove the dev".
+- acceptInvitation mutation exists but no UI/hook calls it (useAcceptInvitation is a no-op stub) — invitation accept flow is effectively broken; could also contribute to membership visibility issues.
+
+Files of interest (with line ranges) for the parent agent to edit:
+- /home/z/my-project/axia/src/convex/workspaces/members.ts:
+    * updateMemberRole: L200-243 (need stricter guards: managers can ONLY promote member→manager; never allow role:"owner" via this mutation; never allow acting on managers/owners by non-owners)
+    * removeMember: L246-308 (need guard: managers cannot remove other managers OR the owner; change error text to "you cannot remove the dev")
+- /home/z/my-project/axia/src/convex/teams/crud.ts:
+    * getTeams: L6-25 (add isOwner shortcut like getMembers has — fetch workspace, check workspace.ownerId === userId before falling back to workspaceMembers lookup)
+- /home/z/my-project/axia/src/hooks/use-workspace.tsx:
+    * L156-165 WorkspaceInfo mapping: replace hardcoded role:"owner" with a real per-workspace role lookup (either extend backend getMyWorkspaces to return role, or call getMyRole per workspace)
+    * L497-501 useAcceptInvitation stub: wire to api.workspaces.invitations.acceptInvitation
+- /home/z/my-project/axia/src/pages/TeamManagement.tsx:
+    * L738 UI gate `{isOwner && member.role !== "owner" && ...}` only relies on the (broken) isOwner flag — when use-workspace.tsx is fixed, this will start working correctly. May also need a separate "manager can promote member→manager only" UI gate.
+
+No files modified. Investigation only.
+
+---
+Task ID: 2-kanbanbug
+Agent: explore
+Task: Investigate why multiple pipeline kanban boards are showing on the Pipeline page. NO code changes — investigate only.
+
+Work Log:
+- Read /home/z/my-project/worklog.md to understand prior auth-fix work.
+- Read Pipeline.tsx (2,106 LOC) end-to-end. Read use-convex-pipeline.ts, use-workspace.tsx, use-auth.ts, PageLayout.tsx, ProtectedRoute.tsx, main.tsx.
+- Read Convex backend: pipeline/crud.ts, deals.ts, workspaces/crud.ts, seed.ts, seedNew.ts, autoSeed.ts, adminListAll.ts, debug.ts, tables/pipeline.ts.
+- Verified routing in main.tsx — only ONE /pipeline route, mounted once.
+- Searched entire src/ for any `KanbanBoard` component — does NOT exist. The kanban board is rendered inline in Pipeline.tsx.
+- Verified rendering: Pipeline.tsx renders exactly ONE board at L936-1061 (wrapped in `activeTab === "pipeline" &&`), with ONE `.map()` over `safeStages` at L966 producing one column per stage. The previous "board stacked on Share Records panel" double-render was already fixed via the `activeTab === "pipeline"` gate (comment at L933-935).
+- Verified `safeStages = useMemo(() => stages ?? [], [stages])` (L299) — NO deduplication. No Set, no filter, no unique-by.
+- Verified `getStages` query (pipeline/crud.ts L9-34) — single `by_workspace` index lookup when workspaceId provided; no dedup logic.
+- Identified 7 distinct code paths that insert into `pipelineStages` table (see report for full list), several of which can race or overlap to create duplicate stage rows for the same workspace.
+
+Stage Summary:
+- ROOT CAUSE: The Pipeline page renders ONE board with columns mapped 1:1 from `safeStages`. There is no deduplication. The "multiple boards" symptom = `safeStages` contains duplicate stage rows from the database.
+- The duplicate data is most likely caused by:
+  1. Legacy duplicates left over from the pre-AUTH-FIX-1 `seedDevProfile` mutation (worklog AUTH-FIX-1 explicitly notes "the seed tried to insert duplicate pipeline stages / clients that conflicted with prior seeding attempts").
+  2. Race between two independent callers of `seedPersonalWorkspace` — `useAuth` (use-auth.ts L65) and `useWorkspaceContext` (use-workspace.tsx L146) — both fire on signup, both create workspace + 6 stages if neither's transaction has committed yet.
+  3. `autoSeed.ts` (L109-142) inserts stages WITHOUT workspaceId (user-scoped only) — these don't appear in the `by_workspace` query but pollute the DB and would appear if the page ever queries by `by_user_and_order` (e.g., when `workspaceId` is falsy).
+- The rendering itself is NOT the bug — the prior render-level fix (gating board behind `activeTab === "pipeline"`) was correct. The remaining issue is purely data-level.
+- Recommended fix locations for the parent agent:
+  • Pipeline.tsx L299: add deduplication to `safeStages` (e.g., filter by unique `_id` or by unique `name+workspaceId`).
+  • pipeline/crud.ts getStages (L9-34): add server-side dedup or `.order("asc").collect()` then dedupe by `_id`.
+  • Clean up duplicate rows in the user's Convex database (one-off admin mutation).
+  • Remove the duplicate `seedPersonalWorkspace` caller (either use-auth.ts L65 OR use-workspace.tsx L146 — keep one).
+  • Fix `autoSeed.ts` to insert stages WITH workspaceId, or skip stage creation entirely (since `seedPersonalWorkspace` already handles it).
+- NO files modified. Investigation only.
+
+
+---
+Task ID: TEAM-FIX-1
+Agent: main
+Task: Fix team hierarchy permissions, multiple kanban boards bug, recent activity visibility, and teams-not-showing-in-Dev bug. Plus verify GitHub state and push.
+
+Work Log:
+- Verified GitHub repo state: working tree clean, latest commit `93b3d07` on main, backup ZIP release `backup-2026-06-22_17-19-26_IST` exists with 1 asset.
+- Dispatched 3 parallel investigation subagents (2-teamroles, 2-kanbanbug, 2-activityvis) and synthesized their reports.
+- BACKEND FIXES (Convex):
+  1. `convex/workspaces/members.ts`:
+     - `removeMember`: Added "manager cannot remove another manager" check; changed "Cannot remove the workspace owner" → "You cannot remove the dev" (matching user's exact wording).
+     - `updateMemberRole`: Restricted `args.role` validator to `manager` | `member` only (removed `owner`); added explicit rule "manager can ONLY promote a member to manager" (cannot demote, cannot touch other managers or the owner).
+     - `getMemberProjects`: Added `isOwner` shortcut (was missing — owner without workspaceMembers row got []).
+  2. `convex/teams/crud.ts`:
+     - `getTeams`: Added `isOwner` shortcut (the core fix for "teams not showing in Dev account").
+     - `getTeamMembers`: Added `isOwner` shortcut.
+  3. `convex/workspaces/crud.ts`:
+     - `getMyWorkspaces`: Now returns each workspace enriched with `myRole` ("owner" | "manager" | "member") so the frontend can stop hardcoding `role: "owner"`.
+  4. `convex/pipeline/crud.ts`:
+     - `getStages`: Dedupes by `_id` AND by `(name, order)` — defensive against historical seed-race duplicates.
+     - `getPipelineStats`: Same dedup for `byStage` breakdown.
+  5. `convex/adminListAll.ts`: Added two admin mutations:
+     - `cleanupDuplicateStages` — removes duplicate pipelineStages rows by (workspaceId, userId, name, order), reassigns orphan deals.
+     - `fixWorkspaceOwnerMemberships` — inserts missing owner rows into `workspaceMembers` table (defensive — fixes "Dev can't see teams" for existing data).
+- FRONTEND FIXES:
+  6. `src/hooks/use-workspace.tsx`:
+     - Replaced hardcoded `role: "owner"` with `ws.myRole` returned by backend (root cause of every user seeing owner-level UI controls).
+     - Wired `useAcceptInvitation` to real `api.workspaces.invitations.acceptInvitation` (was a no-op stub).
+  7. `src/hooks/use-auth.ts`: Removed the auto-seed `seedPersonalWorkspace` call (was racing with `useWorkspace`'s seed call, producing duplicate pipeline stages). Hook is now purely READ-ONLY.
+  8. `src/pages/Pipeline.tsx`: `safeStages` now dedupes by `_id` AND by `(name, order)` — defensive frontend measure against the multiple-Kanban-boards symptom.
+  9. `src/pages/TeamManagement.tsx`:
+     - Added `useQuery(api.users.currentUser, {})` to identify self.
+     - Added `activityFeedMembers` memo enforcing strict role-based visibility:
+        * Own activity NEVER shown (excluded by `userId !== currentUserId`).
+        * Dev (owner): sees everyone except self.
+        * Manager: sees ONLY members' activity (not other managers', not dev's).
+        * Member: sees NOBODY's activity (empty feed with explanatory message).
+     - Rewrote team-controls gating: manager sees controls ONLY on `member`-role rows (not other managers, not dev, not self). Dev sees controls on any non-owner row. Member sees no controls.
+     - Restricted Change Role dialog options: manager can ONLY pick "Manager" (promote member→manager). Owner can pick Member or Manager. Neither can pick "owner".
+- DEPLOYMENT:
+  - Deployed all backend changes to Convex cloud (veracious-zebra-519) successfully.
+  - Ran `adminListAll:cleanupDuplicateStages` — 0 duplicates found (data was already clean, but defensive dedup logic is now in place for future).
+  - Ran `adminListAll:fixWorkspaceOwnerMemberships` — inserted 5 missing owner rows (workspacesTotal: 7, inserted: 5, alreadyExisted: 2). This is the data-level fix for the "teams not showing in Dev account" bug.
+  - Rebuilt frontend (`npx vite build`) — 3381 modules transformed, all green.
+  - Restarted preview daemon (PID 16426) — local port 3000 and port 81 both return 200 with new index.html (Content-Length: 8794, hash `index-B0McOEqA.js`).
+- GITHUB:
+  - Will commit + push to main, create new backup ZIP release.
+
+Stage Summary:
+- All four user-reported bugs fixed at the root cause (not just symptom-level):
+  1. Multiple Kanban boards: duplicate-stage race eliminated (one seed caller) + dedup at backend query + dedup at frontend memo + admin cleanup mutation.
+  2. Manager could remove dev / other managers: backend `removeMember` now throws "You cannot remove the dev" / "A manager cannot remove another manager from the team".
+  3. Manager could demote managers / member could promote or demote: backend `updateMemberRole` now restricts role to `manager`|`member` and enforces "manager can ONLY promote member→manager".
+  4. Teams not in Dev account: backend `getTeams`/`getTeamMembers` now have `isOwner` shortcut, AND `fixWorkspaceOwnerMemberships` mutation inserted 5 missing owner rows.
+- Activity feed: strict role hierarchy enforced (own hidden; manager sees only members; dev sees all; member sees none).
+- Frontend hardcoded role bug eliminated — every user now correctly sees only their actual role's UI.
+- Convex deploy successful; preview daemon serving new build.

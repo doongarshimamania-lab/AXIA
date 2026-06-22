@@ -116,10 +116,14 @@ const TEAM_COLORS = [
 ];
 
 export default function TeamManagement() {
-  const { activeWorkspaceId, isTeamMode, isOwner, canManageTeam, activeWorkspace } = useWorkspaceContext();
+  const { activeWorkspaceId, isTeamMode, isOwner, isManager, canManageTeam, activeWorkspace } = useWorkspaceContext();
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
   const hasRealWorkspaceId = activeWorkspaceId && !activeWorkspaceId.startsWith("ws_");
+
+  // Fetch the current user so we can exclude self from the activity feed
+  const currentUser = useQuery(api.users.currentUser, {}) as any;
+  const currentUserId = currentUser?._id ?? null;
 
   const convexMembers = useQuery(
     hasRealWorkspaceId ? api.workspaces.members.getMembers : "skip",
@@ -452,6 +456,28 @@ export default function TeamManagement() {
   const managerCount = activeMembers.filter((m: any) => m.role === "manager").length;
   const memberCount = activeMembers.filter((m: any) => m.role === "member").length;
 
+  // ─── Activity Feed visibility (strict role hierarchy) ────────────────────
+  // Rules:
+  //  - Own activity is NEVER shown to self.
+  //  - Dev (owner) sees everyone's activity (except own).
+  //  - Manager sees ONLY members' activity (not other managers', not dev's).
+  //  - Member sees NOBODY's activity (empty feed).
+  const activityFeedMembers = useMemo(() => {
+    // Exclude self from feed regardless of viewer's role
+    let pool = activeMembers.filter((m: any) => m.userId !== currentUserId);
+
+    if (isOwner) {
+      // Dev sees everyone (except self, already filtered)
+      return pool;
+    }
+    if (isManager) {
+      // Manager sees ONLY members' activity (not other managers', not dev's)
+      return pool.filter((m: any) => m.role === "member");
+    }
+    // Member sees nobody's activity
+    return [];
+  }, [activeMembers, currentUserId, isOwner, isManager]);
+
   const roleIcon = (role: string) => {
     switch (role) {
       case "owner": return <Crown className="w-3.5 h-3.5 text-amber-500" />;
@@ -735,30 +761,45 @@ export default function TeamManagement() {
                             )}
                           </div>
 
-                          {isOwner && member.role !== "owner" && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Change role"
-                                onClick={() => {
-                                  setMemberToChangeRole(member);
-                                  setNewRole(member.role);
-                                }}
-                              >
-                                <Shield className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                                title="Remove member"
-                                onClick={() => setMemberToRemove(member)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
+                          {/* Role-based controls (strict hierarchy):
+                              - Dev (owner): can change role / remove ANY non-owner member (managers and members).
+                              - Manager: can ONLY change role / remove `member`-role users.
+                                        Cannot act on other managers, the dev, or self.
+                              - Member: no controls shown.
+                          */}
+                          {(() => {
+                            const canActOnThisMember =
+                              member.role !== "owner" &&
+                              member.userId !== currentUserId &&
+                              (isOwner || (isManager && member.role === "member"));
+                            if (!canActOnThisMember) return null;
+                            return (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Change role"
+                                  onClick={() => {
+                                    setMemberToChangeRole(member);
+                                    // Manager can only promote member→manager.
+                                    // Owner can pick either member or manager.
+                                    setNewRole(isOwner ? member.role : "manager");
+                                  }}
+                                >
+                                  <Shield className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  title="Remove member"
+                                  onClick={() => setMemberToRemove(member)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -900,20 +941,31 @@ export default function TeamManagement() {
           </TabsContent>
         </Tabs>
 
-        {/* Activity Feed */}
+        {/* Activity Feed — strict role-based visibility
+            - Own activity is NEVER shown to self.
+            - Dev (owner) sees everyone (except self).
+            - Manager sees ONLY members' activity.
+            - Member sees nobody's activity (empty state shown).
+        */}
         <Card className="p-6">
           <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-green-500" />
             Recent Activity
           </h2>
-          {activeMembers.length === 0 ? (
+          {activityFeedMembers.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <Activity className="w-10 w-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">Team activity will appear here as members join and collaborate</p>
+              <p className="text-sm">
+                {isOwner
+                  ? "No team activity yet — invite members to start collaborating."
+                  : isManager
+                    ? "No member activity yet — activity from members you manage will appear here."
+                    : "You don't have access to view team activity. Contact your manager or dev for details."}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {activeMembers.slice(0, 5).map((member: any, i: number) => {
+              {activityFeedMembers.slice(0, 5).map((member: any, i: number) => {
                 const actions = [
                   { action: "was active", target: "", icon: Activity },
                   { action: "updated their profile", target: "", icon: Settings },
@@ -1055,10 +1107,18 @@ export default function TeamManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
+                  {/* Owner can pick Member or Manager. Manager can ONLY pick Manager
+                      (promote member → manager). Neither can pick "owner" — that
+                      requires transferWorkspaceOwnership. */}
+                  {isOwner && <SelectItem value="member">Member</SelectItem>}
                   <SelectItem value="manager">Manager</SelectItem>
                 </SelectContent>
               </Select>
+              {!isOwner && (
+                <p className="text-xs text-muted-foreground">
+                  As a manager, you can only promote this member to manager. Only the dev can demote a member.
+                </p>
+              )}
             </div>
             <DialogFooter className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>Cancel</Button>

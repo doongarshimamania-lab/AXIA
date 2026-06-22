@@ -172,15 +172,21 @@ export const getMemberProjects = query({
     const member = await ctx.db.get(args.memberId);
     if (!member) return [];
 
-    // Verify the caller is in the same workspace
-    const callerMembership = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace_and_user", (q) =>
-        q.eq("workspaceId", member.workspaceId).eq("userId", userId)
-      )
-      .first();
+    // Verify the caller is in the same workspace (or is the workspace owner)
+    const workspace = await ctx.db.get(member.workspaceId);
+    if (!workspace) return [];
 
-    if (!callerMembership || callerMembership.status !== "active") return [];
+    const isOwner = workspace.ownerId === userId;
+    const callerMembership = !isOwner
+      ? await ctx.db
+          .query("workspaceMembers")
+          .withIndex("by_workspace_and_user", (q) =>
+            q.eq("workspaceId", member.workspaceId).eq("userId", userId)
+          )
+          .first()
+      : null;
+
+    if (!isOwner && (!callerMembership || callerMembership.status !== "active")) return [];
 
     // Get all projects in the workspace that include this member
     const projects = await ctx.db
@@ -196,11 +202,21 @@ export const getMemberProjects = query({
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
-/** Update a member's role. Only owners and managers can do this. */
+/** Update a member's role.
+ *
+ * Role hierarchy (strict):
+ *   owner ("dev")  >  manager  >  member
+ *
+ * Rules:
+ *  - Owner (dev) can change anyone's role (except changing owner — must use transferOwnership).
+ *  - Manager can ONLY promote a `member` → `manager`. Cannot touch other managers, the owner, or demote anyone.
+ *  - Member cannot change anyone's role.
+ *  - `args.role` is restricted to `manager` | `member` — creating a new owner requires transferWorkspaceOwnership.
+ */
 export const updateMemberRole = mutation({
   args: {
     memberId: v.id("workspaceMembers"),
-    role: v.union(v.literal("owner"), v.literal("manager"), v.literal("member")),
+    role: v.union(v.literal("manager"), v.literal("member")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -212,7 +228,6 @@ export const updateMemberRole = mutation({
     const workspace = await ctx.db.get(member.workspaceId);
     if (!workspace) throw new Error("Workspace not found");
 
-    // Only owners can change roles, or managers changing members (not other managers)
     const isOwner = workspace.ownerId === userId;
     const callerMembership = !isOwner
       ? await ctx.db
@@ -223,18 +238,26 @@ export const updateMemberRole = mutation({
           .first()
       : null;
 
+    // Rule: members cannot change anyone's role
     if (!isOwner && (!callerMembership || callerMembership.role !== "manager")) {
-      throw new Error("Only owners and managers can update member roles");
+      throw new Error("Only the dev or a manager can update member roles");
     }
 
-    // Managers can't change owner or other managers' roles
-    if (!isOwner && (member.role === "owner" || member.role === "manager")) {
-      throw new Error("Managers cannot change owner or manager roles");
+    // Rule: the owner's role cannot be changed here (requires ownership transfer)
+    if (member.role === "owner") {
+      throw new Error("You cannot change the dev's role — transfer ownership instead");
     }
 
-    // Can't change the owner's role (that requires ownership transfer)
-    if (member.role === "owner" && args.role !== "owner") {
-      throw new Error("Transfer ownership instead of changing the owner's role");
+    // Manager-only rules (below this point, caller is either owner or manager)
+    if (!isOwner) {
+      // Rule: a manager cannot demote or change another manager's role
+      if (member.role === "manager") {
+        throw new Error("A manager cannot change another manager's role");
+      }
+      // Rule: a manager can ONLY promote a member to manager (cannot demote a member)
+      if (member.role === "member" && args.role !== "manager") {
+        throw new Error("A manager can only promote a member to manager");
+      }
     }
 
     await ctx.db.patch(args.memberId, { role: args.role });
@@ -242,7 +265,13 @@ export const updateMemberRole = mutation({
   },
 });
 
-/** Remove a member from the workspace. */
+/** Remove a member from the workspace.
+ *
+ * Role hierarchy (strict):
+ *  - Owner ("dev") can remove any member (managers or members) but never another owner.
+ *  - Manager can remove only `member`-role users. Cannot remove the dev (owner) or another manager.
+ *  - Member cannot remove anyone.
+ */
 export const removeMember = mutation({
   args: { memberId: v.id("workspaceMembers") },
   handler: async (ctx, args) => {
@@ -255,10 +284,11 @@ export const removeMember = mutation({
     const workspace = await ctx.db.get(member.workspaceId);
     if (!workspace) throw new Error("Workspace not found");
 
-    // Cannot remove the owner
-    if (member.role === "owner") throw new Error("Cannot remove the workspace owner");
+    // Rule: the dev (owner) cannot be removed by anyone — only transferred away
+    if (member.role === "owner") {
+      throw new Error("You cannot remove the dev");
+    }
 
-    // Verify the caller has permission
     const isOwner = workspace.ownerId === userId;
     const callerMembership = !isOwner
       ? await ctx.db
@@ -269,8 +299,14 @@ export const removeMember = mutation({
           .first()
       : null;
 
+    // Rule: members cannot remove anyone
     if (!isOwner && (!callerMembership || callerMembership.role !== "manager")) {
-      throw new Error("Only owners and managers can remove members");
+      throw new Error("Only the dev or a manager can remove members");
+    }
+
+    // Rule: a manager cannot remove another manager (only the dev can)
+    if (!isOwner && member.role === "manager") {
+      throw new Error("A manager cannot remove another manager from the team");
     }
 
     // Mark as removed instead of deleting (for audit trail)

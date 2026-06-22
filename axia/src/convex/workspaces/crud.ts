@@ -14,7 +14,11 @@ import { Doc, Id } from "../_generated/dataModel";
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-/** Get all workspaces the current user belongs to (as owner or member). */
+/** Get all workspaces the current user belongs to (as owner or member).
+ *
+ * Returns each workspace enriched with `myRole` ("owner" | "manager" | "member")
+ * so the frontend can correctly enforce role-based UI without hardcoding.
+ */
 export const getMyWorkspaces = query({
   args: {},
   handler: async (ctx) => {
@@ -41,14 +45,31 @@ export const getMyWorkspaces = query({
       memberWorkspaceIds.map((id) => ctx.db.get(id))
     );
 
-    // Combine and deduplicate
+    // Combine and deduplicate. For each workspace, compute the user's role:
+    //  - "owner" if they are the workspace.ownerId
+    //  - otherwise their membership.role
+    const roleByWorkspace = new Map<string, "owner" | "manager" | "member">();
+    for (const m of memberships) {
+      if (m.status === "active") {
+        roleByWorkspace.set(m.workspaceId, m.role as any);
+      }
+    }
+    for (const ws of owned) {
+      roleByWorkspace.set(ws._id, "owner");
+    }
+
     const all = [...owned, ...memberWorkspaces.filter(Boolean)] as Doc<"workspaces">[];
     const seen = new Set<string>();
-    return all.filter((w) => {
-      if (seen.has(w._id)) return false;
-      seen.add(w._id);
-      return true;
-    });
+    return all
+      .filter((w) => {
+        if (seen.has(w._id)) return false;
+        seen.add(w._id);
+        return true;
+      })
+      .map((w) => ({
+        ...w,
+        myRole: roleByWorkspace.get(w._id) ?? "member",
+      }));
   },
 });
 

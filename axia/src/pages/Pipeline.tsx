@@ -296,7 +296,24 @@ export default function Pipeline() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Derived State ──
-  const safeStages = useMemo(() => stages ?? [], [stages]);
+  // Dedup stages by _id AND by (name+order) — defensive. The backend
+  // `getStages` query already dedupes, but historical duplicate rows in
+  // the DB + the live-query cache can momentarily show duplicates during
+  // refetch. This guarantees the rendered Kanban board has exactly one
+  // column per stage.
+  const safeStages = useMemo(() => {
+    const raw = stages ?? [];
+    const seenIds = new Set<string>();
+    const seenKeys = new Set<string>();
+    return raw.filter((s: any) => {
+      if (seenIds.has(s._id)) return false;
+      seenIds.add(s._id);
+      const key = `${s.name}|${s.order}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+  }, [stages]);
   const safeDeals = useMemo(() => deals ?? [], [deals]);
   const safeStats = useMemo(
     () => {

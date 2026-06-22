@@ -18,18 +18,42 @@ export const getStages = query({
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];
 
-      return await ctx.db
+      const stages = await ctx.db
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
         .order("asc")
         .collect();
+
+      // Dedup by _id (defensive — historical seed races could create dupes)
+      const seen = new Set<string>();
+      const unique = stages.filter((s) => {
+        if (seen.has(s._id)) return false;
+        seen.add(s._id);
+        return true;
+      });
+      // Further dedup by name+order (keep the oldest by _creationTime) — this
+      // handles the case where two seed mutations created duplicate stages
+      // with different _ids but the same name. Keeps the first occurrence
+      // (already sorted by _creationTime asc through the index).
+      const byName = new Map<string, typeof unique[number]>();
+      for (const s of unique) {
+        const key = `${s.name}|${s.order}`;
+        if (!byName.has(key)) byName.set(key, s);
+      }
+      return Array.from(byName.values()).sort((a, b) => a.order - b.order);
     }
 
-    return await ctx.db
+    const stages = await ctx.db
       .query("pipelineStages")
       .withIndex("by_user_and_order", (q) => q.eq("userId", userId))
       .order("asc")
       .collect();
+    const seen = new Set<string>();
+    return stages.filter((s) => {
+      if (seen.has(s._id)) return false;
+      seen.add(s._id);
+      return true;
+    });
   },
 });
 
@@ -90,6 +114,17 @@ export const getPipelineStats = query({
         .query("pipelineStages")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
         .collect();
+      // Dedupe stages so the byStage breakdown doesn't show duplicate columns
+      const seenStageIds = new Set<string>();
+      const seenStageKeys = new Set<string>();
+      stages = stages.filter((s) => {
+        if (seenStageIds.has(s._id)) return false;
+        seenStageIds.add(s._id);
+        const key = `${s.name}|${s.order}`;
+        if (seenStageKeys.has(key)) return false;
+        seenStageKeys.add(key);
+        return true;
+      });
     } else {
       deals = await ctx.db
         .query("deals")

@@ -152,7 +152,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     });
   }, [convexWorkspaces, hasSeedApi, seedPersonalWorkspace]);
 
-  // Build WorkspaceInfo[] from Convex data
+  // Build WorkspaceInfo[] from Convex data — use real `myRole` returned
+  // by `getMyWorkspaces` (was previously hardcoded to "owner" for every
+  // workspace, which gave every user owner-level UI controls).
   const workspaces: WorkspaceInfo[] = useMemo(() => {
     if (!convexWorkspaces || convexWorkspaces.length === 0) return [];
     return convexWorkspaces.map((ws: any) => ({
@@ -160,7 +162,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       name: ws.name || "My Workspace",
       type: (ws.type || "personal") as WorkspaceType,
       description: ws.description,
-      membership: { role: "owner" as WorkspaceRole }, // user is always at least a member
+      membership: { role: (ws.myRole ?? "member") as WorkspaceRole },
     }));
   }, [convexWorkspaces]);
 
@@ -495,8 +497,21 @@ export function useUpdateWorkspace() {
 }
 
 export function useAcceptInvitation() {
-  return async (_args: any) => {
-    return { success: true };
+  const workspacesApi = (api as any).workspaces;
+  const hasAcceptApi = !!(workspacesApi?.invitations?.acceptInvitation);
+  const acceptMutation = useMutation(
+    hasAcceptApi ? workspacesApi.invitations.acceptInvitation : null
+  );
+  return async (args: { token: string }) => {
+    if (!hasAcceptApi || !acceptMutation || !args.token) {
+      return { success: false, error: "Invitation acceptance is unavailable." };
+    }
+    try {
+      await acceptMutation({ token: args.token });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   };
 }
 
