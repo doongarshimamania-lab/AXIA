@@ -104,6 +104,8 @@ convex_local_backend.sqlite3
 /backups/
 /src_backup_*/
 /timelock-messy-backup/
+/timelock/             # duplicate sub-project — see axia/ for production code
+/disk/                 # build output (was previously tracked)
 /ecc/
 /examples/
 
