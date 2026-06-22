@@ -1,0 +1,1027 @@
+     1→import { useState, useMemo } from "react";
+     2→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+     3→import { api } from "@/convex/_generated/api";
+     4→import type { Id } from "@/convex/_generated/dataModel";
+     5→import { useNavigate } from "react-router";
+     6→import { motion, AnimatePresence } from "framer-motion";
+     7→import { toast } from "sonner";
+     8→import { useWorkspaceContext } from "@/hooks/use-workspace";
+     9→import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions";
+    10→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    11→import { Button } from "@/components/ui/button";
+    12→import { Badge } from "@/components/ui/badge";
+    13→import { Input } from "@/components/ui/input";
+    14→import {
+    15→  Dialog,
+    16→  DialogContent,
+    17→  DialogHeader,
+    18→  DialogTitle,
+    19→  DialogDescription,
+    20→  DialogFooter,
+    21→} from "@/components/ui/dialog";
+    22→import {
+    23→  DropdownMenu,
+    24→  DropdownMenuContent,
+    25→  DropdownMenuItem,
+    26→  DropdownMenuTrigger,
+    27→} from "@/components/ui/dropdown-menu";
+    28→import {
+    29→  FileText,
+    30→  Plus,
+    31→  Search,
+    32→  Send,
+    33→  Copy,
+    34→  Trash2,
+    35→  Eye,
+    36→  MoreVertical,
+    37→  DollarSign,
+    38→  CheckCircle2,
+    39→  Clock,
+    40→  FilePenLine,
+    41→  AlertCircle,
+    42→  Sparkles,
+    43→  TrendingUp,
+    44→  Mail,
+    45→  Loader2,
+    46→  Briefcase,
+    47→  ShieldCheck,
+    48→  Share2,
+    49→} from "lucide-react";
+    50→import { ShareDialog } from "@/components/ShareDialog";
+    51→import { Skeleton } from "@/components/ui/skeleton";
+    52→import { PageLayout } from "@/components/design-system/PageLayout";
+    53→import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
+    54→import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
+    55→
+    56→
+    57→type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
+    58→
+    59→interface ProposalSection {
+    60→  id: string;
+    61→  type: "heading" | "text" | "pricing" | "terms" | "milestone" | "divider";
+    62→  content: string;
+    63→  metadata?: any;
+    64→}
+    65→
+    66→interface Proposal {
+    67→  _id: string;
+    68→  userId: string;
+    69→  title: string;
+    70→  status: ProposalStatus;
+    71→  clientName?: string;
+    72→  clientEmail?: string;
+    73→  totalValue: number;
+    74→  currency?: string;
+    75→  sections: ProposalSection[];
+    76→  sentAt?: number;
+    77→  viewedAt?: number;
+    78→  signedAt?: number;
+    79→  validUntil?: number;
+    80→  notes?: string;
+    81→  createdAt: number;
+    82→  updatedAt: number;
+    83→}
+    84→
+    85→interface FollowUp {
+    86→  _id: string;
+    87→  dayNumber: number;
+    88→  subject: string;
+    89→  status: "scheduled" | "sent" | "skipped" | "cancelled";
+    90→  scheduledAt: number;
+    91→}
+    92→
+    93→const statusConfig: Record<
+    94→  ProposalStatus,
+    95→  { label: string; className: string; icon: React.ElementType }
+    96→> = {
+    97→  draft: {
+    98→    label: "Draft",
+    99→    className: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/25 hover:bg-slate-500/25",
+   100→    icon: FilePenLine,
+   101→  },
+   102→  sent: {
+   103→    label: "Sent",
+   104→    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/25",
+   105→    icon: Send,
+   106→  },
+   107→  viewed: {
+   108→    label: "Viewed",
+   109→    className: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25 hover:bg-amber-500/25",
+   110→    icon: Eye,
+   111→  },
+   112→  signed: {
+   113→    label: "Signed",
+   114→    className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25",
+   115→    icon: CheckCircle2,
+   116→  },
+   117→  declined: {
+   118→    label: "Declined",
+   119→    className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25 hover:bg-red-500/25",
+   120→    icon: AlertCircle,
+   121→  },
+   122→  expired: {
+   123→    label: "Expired",
+   124→    className: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/25 hover:bg-orange-500/25",
+   125→    icon: Clock,
+   126→  },
+   127→};
+   128→
+   129→const filterTabs: { key: "all" | ProposalStatus; label: string }[] = [
+   130→  { key: "all", label: "All" },
+   131→  { key: "draft", label: "Draft" },
+   132→  { key: "sent", label: "Sent" },
+   133→  { key: "viewed", label: "Viewed" },
+   134→  { key: "signed", label: "Signed" },
+   135→  { key: "declined", label: "Declined" },
+   136→];
+   137→
+   138→// ─── Component ───────────────────────────────────────────────────────────────
+   139→
+   140→export default function Proposals() {
+   141→  const navigate = useNavigate();
+   142→
+   143→  // ── Workspace Context ──
+   144→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+   145→  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+   146→
+   147→  // ── Permissions ──
+   148→  const { canDeleteRecords, canShareRecords } = useWorkspacePermissions();
+   149→
+   150→  const [activeFilter, setActiveFilter] = useState<"all" | ProposalStatus>("all");
+   151→  const [searchQuery, setSearchQuery] = useState("");
+   152→  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+   153→  const [isSeeding, setIsSeeding] = useState(false);
+   154→  const [showShareDialog, setShowShareDialog] = useState(false);
+   155→  const [shareProposalId, setShareProposalId] = useState<string | null>(null);
+   156→  const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+   157→
+   158→  // ── Phase 1: Manual send dialog state ──
+   159→  // When the user clicks "Mark as sent" or "Log another send", we open the
+   160→  // ManualSendDialog with the target proposal's context.
+   161→  const [manualSendProposal, setManualSendProposal] = useState<{
+   162→    id: string;
+   163→    title: string;
+   164→    defaultRecipient?: string;
+   165→  } | null>(null);
+   166→
+   167→  // ── Convex mutations for sharing ──
+   168→  const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
+   169→  const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
+   170→
+   171→  // Convex queries
+   172→  const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : "skip") as Proposal[] | undefined;
+   173→  const convexStats = useQuery(api.proposals.crud.getProposalStats, workspaceId ? { workspaceId } : "skip") as {
+   174→    total: number;
+   175→    sent: number;
+   176→    signed: number;
+   177→    draft: number;
+   178→    signatureRate: number;
+   179→    totalValue: number;
+   180→  } | undefined;
+   181→
+   182→  // Convex mutations
+   183→  const sendProposal = useMutation(api.proposals.crud.sendProposal);
+   184→  const duplicateProposal = useMutation(api.proposals.crud.duplicateProposal);
+   185→  const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
+   186→  const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
+   187→
+   188→  // Mutations for Convert-to-Project flow
+   189→  const createClientMutation = useMutation(api.clients.crud.createClient);
+   190→  const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
+   191→  const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
+   192→  const updateProposalMutation = useMutation(api.proposals.crud.updateProposal);
+   193→
+   194→  // Fetch pipeline stages (to find "Won" stage for deal conversion)
+   195→  const pipelineStages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as { _id: string; name: string }[] | undefined;
+   196→
+   197→  // Fetch existing clients (to check if client already exists)
+   198→  const existingClients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as { _id: string; clientName: string; contactEmail?: string }[] | undefined;
+   199→
+   200→  // Filter counts (from all proposals for the tab badges)
+   201→  const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
+   202→
+   203→  const { isDisconnected } = useConvexConnectionState();
+   204→  const isLoading = convexProposals === undefined || convexStats === undefined;
+   205→  const timedOut = useQueryTimeout(isLoading, 3000);
+   206→  const showLoading = isLoading && !timedOut && !isDisconnected;
+   207→
+   208→  // Use Convex data only
+   209→  const proposals = useMemo(() => {
+   210→    return convexProposals ?? [];
+   211→  }, [convexProposals]);
+   212→
+   213→  const stats = useMemo(() => {
+   214→    return convexStats ?? { total: 0, sent: 0, signed: 0, draft: 0, signatureRate: 0, totalValue: 0 };
+   215→  }, [convexStats]);
+   216→
+   217→  const allProposals = useMemo(() => {
+   218→    return convexAllProposals ?? [];
+   219→  }, [convexAllProposals]);
+   220→
+   221→  const filterCounts = useMemo(() => {
+   222→    const counts: Record<string, number> = { all: allProposals.length };
+   223→    for (const p of allProposals) {
+   224→      counts[p.status] = (counts[p.status] || 0) + 1;
+   225→    }
+   226→    return counts;
+   227→  }, [allProposals]);
+   228→
+   229→  // Filtered + searched proposals
+   230→  const filteredProposals = useMemo(() => {
+   231→    if (!proposals) return [];
+   232→    return proposals.filter((p) => {
+   233→      if (searchQuery === "") return true;
+   234→      const q = searchQuery.toLowerCase();
+   235→      return (
+   236→        p.title.toLowerCase().includes(q) ||
+   237→        (p.clientName && p.clientName.toLowerCase().includes(q))
+   238→      );
+   239→    });
+   240→  }, [proposals, searchQuery]);
+   241→
+   242→  const formatCurrency = (amount: number) =>
+   243→    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+   244→
+   245→  const formatDate = (timestamp: number) => {
+   246→    const d = new Date(timestamp);
+   247→    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+   248→  };
+   249→
+   250→  const handleSeed = async () => {
+   251→    setIsSeeding(true);
+   252→    try {
+   253→      const result = await seedMockProposals({});
+   254→      if (result && typeof result === "object" && "seeded" in result) {
+   255→        if ((result as any).seeded) {
+   256→          toast.success("Mock proposals seeded!", {
+   257→            description: `${(result as any).count} proposals created.`,
+   258→          });
+   259→        } else {
+   260→          toast.info("Proposals already exist", {
+   261→            description: `${(result as any).count} proposals found.`,
+   262→          });
+   263→        }
+   264→      }
+   265→    } catch (err: any) {
+   266→      toast.error("Failed to seed proposals", { description: err.message });
+   267→    } finally {
+   268→      setIsSeeding(false);
+   269→    }
+   270→  };
+   271→
+   272→  const handleSend = async (proposalId: string) => {
+   273→    try {
+   274→      await sendProposal({ proposalId: proposalId as any });
+   275→      toast.success("Proposal sent!", {
+   276→        description: "Follow-ups have been scheduled automatically.",
+   277→      });
+   278→    } catch (err: any) {
+   279→      toast.error("Failed to send proposal", { description: err.message });
+   280→    }
+   281→  };
+   282→
+   283→  // Phase 1: open the ManualSendDialog when the user clicks "Mark as sent"
+   284→  // or "Log another send". The dialog collects channel + recipient + notes
+   285→  // and calls the logProposalManualSend mutation which atomically flips the
+   286→  // status, inserts an audit log row, schedules follow-ups, and dismisses
+   287→  // any triggering notification.
+   288→  const handleOpenManualSend = (proposal: Proposal) => {
+   289→    setManualSendProposal({
+   290→      id: proposal._id,
+   291→      title: proposal.title,
+   292→      defaultRecipient: proposal.clientEmail || proposal.clientName || "",
+   293→    });
+   294→  };
+   295→
+   296→  const handleDuplicate = async (proposalId: string) => {
+   297→    try {
+   298→      const newId = await duplicateProposal({ proposalId: proposalId as any });
+   299→      toast.success("Proposal duplicated!", {
+   300→        description: "A draft copy has been created.",
+   301→      });
+   302→    } catch (err: any) {
+   303→      toast.error("Failed to duplicate proposal", { description: err.message });
+   304→    }
+   305→  };
+   306→
+   307→  const handleDelete = async (proposalId: string) => {
+   308→    try {
+   309→      await deleteProposal({ proposalId: proposalId as any });
+   310→      setDeleteDialogId(null);
+   311→      toast.success("Proposal deleted");
+   312→    } catch (err: any) {
+   313→      toast.error("Failed to delete proposal", { description: err.message });
+   314→    }
+   315→  };
+   316→
+   317→  const handleConvertToProject = async (proposal: Proposal) => {
+   318→    try {
+   319→      // Step 1: Find or create the client
+   320→      const clientName = proposal.clientName || "Unknown Client";
+   321→      const clientEmail = proposal.clientEmail;
+   322→      let clientId: string | undefined;
+   323→
+   324→      // Check if a client with this name already exists
+   325→      const existingClient = existingClients?.find(
+   326→        (c) => c.clientName.toLowerCase() === clientName.toLowerCase()
+   327→      );
+   328→
+   329→      if (existingClient) {
+   330→        clientId = existingClient._id;
+   331→      } else {
+   332→        // Create a new client
+   333→        const newClientId = await createClientMutation({
+   334→          clientName,
+   335→          platform: "direct" as const,
+   336→          hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+   337→          contractType: "hourly" as const,
+   338→          contactEmail: clientEmail,
+   339→          contactName: clientName,
+   340→          workspaceId,
+   341→          notes: `Created from proposal: ${proposal.title}`,
+   342→        });
+   343→        clientId = newClientId as unknown as string;
+   344→      }
+   345→
+   346→      if (!clientId) {
+   347→        throw new Error("Failed to resolve client ID");
+   348→      }
+   349→
+   350→      // Step 2: Create the project
+   351→      await addProjectMutation({
+   352→        projectName: proposal.title,
+   353→        clientId: clientId as any,
+   354→        hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
+   355→        projectType: "ongoing" as const,
+   356→        protectionLevel: "enhanced" as const,
+   357→        workspaceId,
+   358→      });
+   359→
+   360→      // Step 3: If proposal has a dealId, move the deal to "Won" stage
+   361→      const dealId = (proposal as any).dealId;
+   362→      if (dealId && pipelineStages) {
+   363→        const wonStage = pipelineStages.find(
+   364→          (s) => s.name.toLowerCase() === "won"
+   365→        );
+   366→        if (wonStage) {
+   367→          await moveDealMutation({
+   368→            dealId: dealId as any,
+   369→            stageId: wonStage._id as any,
+   370→          });
+   371→        }
+   372→      }
+   373→
+   374→      // Step 4: Update proposal notes to indicate conversion
+   375→      const existingNotes = proposal.notes || "";
+   376→      await updateProposalMutation({
+   377→        proposalId: proposal._id as any,
+   378→        notes: `${existingNotes ? existingNotes + "\n" : ""}[Converted to project — ${new Date().toLocaleDateString()}]`,
+   379→      });
+   380→
+   381→      toast.success("Project created!", {
+   382→        description: `"${proposal.title}" has been converted to a project.`,
+   383→      });
+   384→    } catch (err: any) {
+   385→      toast.error("Failed to convert to project", { description: err.message });
+   386→    }
+   387→  };
+   388→
+   389→  return (
+   390→    <motion.div
+   391→      className="flex-1 min-h-screen bg-background text-foreground transition-colors"
+   392→      initial={{ opacity: 0 }}
+   393→      animate={{ opacity: 1 }}
+   394→      transition={{ duration: 0.5 }}
+   395→    >
+   396→      <PageLayout wide>
+   397→        {/* Header */}
+   398→        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+   399→          <div>
+   400→            <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+   401→              Proposals
+   402→            </h1>
+   403→            <p className="text-[16px] text-muted-foreground">
+   404→              Create, send, and track proposals with automated follow-ups
+   405→            </p>
+   406→          </div>
+   407→          <div className="flex items-center gap-2">
+   408→            <Button
+   409→              variant="outline"
+   410→              size="sm"
+   411→              className="gap-2 text-muted-foreground"
+   412→              onClick={handleSeed}
+   413→              disabled={isSeeding}
+   414→            >
+   415→              {isSeeding ? (
+   416→                <Loader2 className="h-4 w-4 animate-spin" />
+   417→              ) : (
+   418→                <Sparkles className="h-4 w-4" />
+   419→              )}
+   420→              Seed Data
+   421→            </Button>
+   422→            <Button
+   423→              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+   424→              onClick={() => navigate("/proposals/new")}
+   425→            >
+   426→              <Plus className="h-4 w-4" />
+   427→              Create Proposal
+   428→            </Button>
+   429→          </div>
+   430→        </div>
+   431→
+   432→        {/* Loading State */}
+   433→        {showLoading ? (
+   434→          <div className="space-y-6">
+   435→            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+   436→              {[1, 2, 3, 4, 5, 6].map((i) => (
+   437→                <Card key={i}>
+   438→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+   439→                    <Skeleton className="h-4 w-16" />
+   440→                    <Skeleton className="h-4 w-4" />
+   441→                  </CardHeader>
+   442→                  <CardContent className="px-4 pb-4">
+   443→                    <Skeleton className="h-6 w-12 mb-1" />
+   444→                  </CardContent>
+   445→                </Card>
+   446→              ))}
+   447→            </div>
+   448→            <Skeleton className="h-10 rounded-lg" />
+   449→            <div className="space-y-3">
+   450→              {[1, 2, 3].map((i) => (
+   451→                <Skeleton key={i} className="h-[100px] rounded-xl" />
+   452→              ))}
+   453→            </div>
+   454→          </div>
+   455→        ) : (
+   456→          <>
+   457→        {/* Stats Bar */}
+   458→        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+   459→          {[
+   460→            {
+   461→              title: "Total",
+   462→              value: stats?.total ?? 0,
+   463→              icon: FileText,
+   464→              color: "text-[#8B5CF6]",
+   465→              bgColor: "bg-[#8B5CF6]/10",
+   466→              format: (v: number) => String(v),
+   467→            },
+   468→            {
+   469→              title: "Sent",
+   470→              value: stats?.sent ?? 0,
+   471→              icon: Send,
+   472→              color: "text-blue-600",
+   473→              bgColor: "bg-blue-500/10",
+   474→              format: (v: number) => String(v),
+   475→            },
+   476→            {
+   477→              title: "Signed",
+   478→              value: stats?.signed ?? 0,
+   479→              icon: CheckCircle2,
+   480→              color: "text-emerald-600",
+   481→              bgColor: "bg-emerald-500/10",
+   482→              format: (v: number) => String(v),
+   483→            },
+   484→            {
+   485→              title: "Draft",
+   486→              value: stats?.draft ?? 0,
+   487→              icon: FilePenLine,
+   488→              color: "text-slate-600 dark:text-slate-400",
+   489→              bgColor: "bg-slate-500/10",
+   490→              format: (v: number) => String(v),
+   491→            },
+   492→            {
+   493→              title: "Signature Rate",
+   494→              value: stats?.signatureRate ?? 0,
+   495→              icon: TrendingUp,
+   496→              color: "text-amber-600",
+   497→              bgColor: "bg-amber-500/10",
+   498→              format: (v: number) => `${v}%`,
+   499→            },
+   500→            {
+   501→              title: "Total Value",
+   502→              value: stats?.totalValue ?? 0,
+   503→              icon: DollarSign,
+   504→              color: "text-emerald-600",
+   505→              bgColor: "bg-emerald-500/10",
+   506→              format: (v: number) => formatCurrency(v),
+   507→            },
+   508→          ].map((stat, idx) => (
+   509→            <motion.div
+   510→              key={stat.title}
+   511→              initial={{ opacity: 0, y: 20 }}
+   512→              animate={{ opacity: 1, y: 0 }}
+   513→              transition={{ duration: 0.4, delay: idx * 0.05 }}
+   514→            >
+   515→              <Card>
+   516→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 px-4 pt-4">
+   517→                  <CardTitle className="text-[12px] font-medium text-muted-foreground">
+   518→                    {stat.title}
+   519→                  </CardTitle>
+   520→                  <div className={`h-7 w-7 rounded-md ${stat.bgColor} flex items-center justify-center`}>
+   521→                    <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
+   522→                  </div>
+   523→                </CardHeader>
+   524→                <CardContent className="px-4 pb-3">
+   525→                  <div className="text-[20px] font-bold text-foreground">
+   526→                    {stat.format(stat.value)}
+   527→                  </div>
+   528→                </CardContent>
+   529→              </Card>
+   530→            </motion.div>
+   531→          ))}
+   532→        </div>
+   533→
+   534→        {/* Action Bar: Search */}
+   535→        <div className="flex items-center gap-3 mb-4">
+   536→          <div className="relative flex-1 max-w-sm">
+   537→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   538→            <Input
+   539→              placeholder="Search by title or client..."
+   540→              value={searchQuery}
+   541→              onChange={(e) => setSearchQuery(e.target.value)}
+   542→              className="pl-9"
+   543→            />
+   544→          </div>
+   545→        </div>
+   546→
+   547→        {/* Filter Tabs */}
+   548→        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+   549→          {filterTabs.map((tab) => {
+   550→            const isActive = activeFilter === tab.key;
+   551→            return (
+   552→              <button
+   553→                key={tab.key}
+   554→                onClick={() => setActiveFilter(tab.key)}
+   555→                className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
+   556→                  isActive
+   557→                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+   558→                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+   559→                }`}
+   560→              >
+   561→                <span>{tab.label}</span>
+   562→                <span
+   563→                  className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+   564→                    isActive
+   565→                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+   566→                      : "bg-muted text-muted-foreground"
+   567→                  }`}
+   568→                >
+   569→                  {filterCounts[tab.key] ?? 0}
+   570→                </span>
+   571→                <div
+   572→                  className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+   573→                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+   574→                  }`}
+   575→                />
+   576→              </button>
+   577→            );
+   578→          })}
+   579→        </div>
+   580→
+   581→        {/* Proposal Cards Grid */}
+   582→        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+   583→          <AnimatePresence mode="popLayout">
+   584→            {filteredProposals.length === 0 ? (
+   585→              <motion.div
+   586→                initial={{ opacity: 0 }}
+   587→                animate={{ opacity: 1 }}
+   588→                exit={{ opacity: 0 }}
+   589→                className="col-span-full"
+   590→              >
+   591→                <Card>
+   592→                  <CardContent className="py-16">
+   593→                    <div className="text-center text-muted-foreground">
+   594→                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-40" />
+   595→                      <p className="text-[16px] font-medium mb-1">No proposals found</p>
+   596→                      <p className="text-[14px] mb-4">
+   597→                        {searchQuery
+   598→                          ? "Try adjusting your search terms"
+   599→                          : "Create your first proposal or seed sample data"}
+   600→                      </p>
+   601→                      {!searchQuery && (
+   602→                        <div className="flex items-center justify-center gap-3">
+   603→                          <Button
+   604→                            variant="outline"
+   605→                            className="gap-2"
+   606→                            onClick={handleSeed}
+   607→                            disabled={isSeeding}
+   608→                          >
+   609→                            <Sparkles className="h-4 w-4" />
+   610→                            Seed Sample Data
+   611→                          </Button>
+   612→                          <Button
+   613→                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+   614→                            onClick={() => navigate("/proposals/new")}
+   615→                          >
+   616→                            <Plus className="h-4 w-4" />
+   617→                            Create Proposal
+   618→                          </Button>
+   619→                        </div>
+   620→                      )}
+   621→                    </div>
+   622→                  </CardContent>
+   623→                </Card>
+   624→              </motion.div>
+   625→            ) : (
+   626→              filteredProposals.map((proposal, idx) => (
+   627→                <ProposalCard
+   628→                  key={proposal._id}
+   629→                  proposal={proposal}
+   630→                  idx={idx}
+   631→                  isMock={false}
+   632→                  formatCurrency={formatCurrency}
+   633→                  formatDate={formatDate}
+   634→                  onSend={handleSend}
+   635→                  onMarkAsSent={() => handleOpenManualSend(proposal)}
+   636→                  onDuplicate={handleDuplicate}
+   637→                  onDelete={canDeleteRecords ? setDeleteDialogId : () => {}}
+   638→                  onView={() => navigate(`/proposals/new?edit=${proposal._id}`)}
+   639→                  onShare={canShareRecords ? (id: string) => {
+   640→                    const p = proposals.find((p: any) => p._id === id);
+   641→                    if (canShareRecords) {
+   642→                      setSharingRecord({
+   643→                        id,
+   644→                        type: "proposal",
+   645→                        sharing: (p as any)?.sharing || [],
+   646→                      });
+   647→                      setShareProposalId(id);
+   648→                      setShowShareDialog(true);
+   649→                    }
+   650→                  } : () => {}}
+   651→                  canDelete={canDeleteRecords}
+   652→                  canShare={canShareRecords}
+   653→                  onConvertToProject={handleConvertToProject}
+   654→                />
+   655→              ))
+   656→            )}
+   657→          </AnimatePresence>
+   658→        </div>
+   659→        </>
+   660→        )}
+   661→      </PageLayout>
+   662→
+   663→      {/* Delete Confirmation Dialog */}
+   664→      <Dialog open={!!deleteDialogId} onOpenChange={() => setDeleteDialogId(null)}>
+   665→        <DialogContent className="sm:max-w-md">
+   666→          <DialogHeader>
+   667→            <DialogTitle>Delete Proposal</DialogTitle>
+   668→            <DialogDescription>
+   669→              Are you sure you want to delete this proposal? This action cannot be undone. All associated follow-ups will also be removed.
+   670→            </DialogDescription>
+   671→          </DialogHeader>
+   672→          <DialogFooter className="gap-2">
+   673→            <Button variant="outline" onClick={() => setDeleteDialogId(null)}>
+   674→              Cancel
+   675→            </Button>
+   676→            <Button
+   677→              variant="destructive"
+   678→              onClick={() => deleteDialogId && handleDelete(deleteDialogId)}
+   679→            >
+   680→              Delete
+   681→            </Button>
+   682→          </DialogFooter>
+   683→        </DialogContent>
+   684→      </Dialog>
+   685→
+   686→      {/* Share Dialog */}
+   687→      <ShareDialog
+   688→        open={showShareDialog}
+   689→        onOpenChange={setShowShareDialog}
+   690→        recordId={sharingRecord?.id || shareProposalId || ""}
+   691→        recordType={sharingRecord?.type || "proposal"}
+   692→        currentSharing={sharingRecord?.sharing || []}
+   693→        onShare={async (args) => {
+   694→          try {
+   695→            if (shareRecordMutation) {
+   696→              await shareRecordMutation({
+   697→                recordId: sharingRecord?.id || shareProposalId,
+   698→                recordType: sharingRecord?.type || "proposal",
+   699→                ...args,
+   700→              });
+   701→            }
+   702→            toast.success("Record shared successfully");
+   703→          } catch (err: any) {
+   704→            toast.error(err?.message || "Failed to share record");
+   705→          }
+   706→        }}
+   707→        onUnshare={async (args) => {
+   708→          try {
+   709→            if (unshareRecordMutation) {
+   710→              await unshareRecordMutation({
+   711→                recordId: sharingRecord?.id || shareProposalId,
+   712→                recordType: sharingRecord?.type || "proposal",
+   713→                ...args,
+   714→              });
+   715→            }
+   716→            toast.success("Access removed");
+   717→          } catch (err: any) {
+   718→            toast.error(err?.message || "Failed to remove access");
+   719→          }
+   720→        }}
+   721→      />
+   722→
+   723→      {/* Phase 1: Manual Send Dialog — opens when user clicks "Mark as sent" or "Log another send" */}
+   724→      <ManualSendDialog
+   725→        open={!!manualSendProposal}
+   726→        onOpenChange={(open) => {
+   727→          if (!open) setManualSendProposal(null);
+   728→        }}
+   729→        entityType="proposal"
+   730→        entityId={manualSendProposal?.id ?? ""}
+   731→        entityTitle={manualSendProposal?.title ?? ""}
+   732→        defaultRecipient={manualSendProposal?.defaultRecipient}
+   733→        onSuccess={() => {
+   734→          toast.success("Send logged", {
+   735→            description: "Status updated, follow-ups scheduled, audit trail recorded.",
+   736→          });
+   737→        }}
+   738→      />
+   739→    </motion.div>
+   740→  );
+   741→}
+   742→
+   743→// ─── Proposal Card Component ──────────────────────────────────────────────────
+   744→
+   745→function ProposalCard({
+   746→  proposal,
+   747→  idx,
+   748→  isMock,
+   749→  formatCurrency,
+   750→  formatDate,
+   751→  onSend,
+   752→  onMarkAsSent,
+   753→  onDuplicate,
+   754→  onDelete,
+   755→  onView,
+   756→  onShare,
+   757→  onConvertToProject,
+   758→  canDelete,
+   759→  canShare,
+   760→}: {
+   761→  proposal: Proposal;
+   762→  idx: number;
+   763→  isMock: boolean;
+   764→  formatCurrency: (a: number) => string;
+   765→  formatDate: (t: number) => string;
+   766→  onSend: (id: string) => void;
+   767→  onMarkAsSent?: () => void;
+   768→  onDuplicate: (id: string) => void;
+   769→  onDelete: (id: string) => void;
+   770→  onView: () => void;
+   771→  onShare?: (id: string) => void;
+   772→  onConvertToProject?: (proposal: Proposal) => void;
+   773→  canDelete?: boolean;
+   774→  canShare?: boolean;
+   775→}) {
+   776→  const navigate = useNavigate();
+   777→  const config = statusConfig[proposal.status];
+   778→  const StatusIcon = config.icon;
+   779→
+   780→  // Fetch follow-ups for this proposal — skip when using mock data
+   781→  // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
+   782→  // and would cause useQuery to throw a server validation error.
+   783→  const followUps = useQuery(
+   784→    api.proposals.crud.getFollowUps,
+   785→    isMock ? "skip" : { proposalId: proposal._id as any }
+   786→  ) as FollowUp[] | undefined;
+   787→
+   788→  const scheduledFollowUps = useMemo(
+   789→    () => (followUps ? followUps.filter((f) => f.status === "scheduled") : []),
+   790→    [followUps]
+   791→  );
+   792→
+   793→  return (
+   794→    <motion.div
+   795→      initial={{ opacity: 0, y: 15 }}
+   796→      animate={{ opacity: 1, y: 0 }}
+   797→      exit={{ opacity: 0, scale: 0.95 }}
+   798→      transition={{ duration: 0.3, delay: idx * 0.04 }}
+   799→      layout
+   800→    >
+   801→      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden h-full flex flex-col">
+   802→        <CardContent className="p-5 flex flex-col flex-1">
+   803→          {/* Top Row: Status + Actions */}
+   804→          <div className="flex items-start justify-between mb-3">
+   805→            <Badge
+   806→              variant="outline"
+   807→              className={`text-[11px] px-2.5 py-0.5 h-6 font-medium ${config.className}`}
+   808→            >
+   809→              <StatusIcon className="h-3 w-3 mr-1" />
+   810→              {config.label}
+   811→            </Badge>
+   812→            <DropdownMenu>
+   813→              <DropdownMenuTrigger asChild>
+   814→                <Button
+   815→                  variant="ghost"
+   816→                  size="sm"
+   817→                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+   818→                >
+   819→                  <MoreVertical className="h-4 w-4" />
+   820→                </Button>
+   821→              </DropdownMenuTrigger>
+   822→              <DropdownMenuContent align="end" className="w-44">
+   823→                {proposal.status === "draft" && (
+   824→                  <DropdownMenuItem
+   825→                    onClick={() => onSend(proposal._id)}
+   826→                    className="gap-2 cursor-pointer"
+   827→                  >
+   828→                    <Send className="h-3.5 w-3.5" />
+   829→                    Send Proposal
+   830→                  </DropdownMenuItem>
+   831→                )}
+   832→                <DropdownMenuItem onClick={onView} className="gap-2 cursor-pointer">
+   833→                  <Eye className="h-3.5 w-3.5" />
+   834→                  {proposal.status === "draft" ? "Edit" : "View"}
+   835→                </DropdownMenuItem>
+   836→                <DropdownMenuItem
+   837→                  onClick={() => onDuplicate(proposal._id)}
+   838→                  className="gap-2 cursor-pointer"
+   839→                >
+   840→                  <Copy className="h-3.5 w-3.5" />
+   841→                  Duplicate
+   842→                </DropdownMenuItem>
+   843→                {canShare && (
+   844→                  <DropdownMenuItem
+   845→                    onClick={() => onShare?.(proposal._id)}
+   846→                    className="gap-2 cursor-pointer"
+   847→                  >
+   848→                    <Share2 className="h-3.5 w-3.5" />
+   849→                    Share
+   850→                  </DropdownMenuItem>
+   851→                )}
+   852→                {canDelete && (
+   853→                  <DropdownMenuItem
+   854→                    onClick={() => onDelete(proposal._id)}
+   855→                    className="gap-2 cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+   856→                  >
+   857→                    <Trash2 className="h-3.5 w-3.5" />
+   858→                    Delete
+   859→                  </DropdownMenuItem>
+   860→                )}
+   861→              </DropdownMenuContent>
+   862→            </DropdownMenu>
+   863→          </div>
+   864→
+   865→          {/* Title */}
+   866→          <h3
+   867→            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#8B5CF6] transition-colors"
+   868→            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+   869→            onClick={onView}
+   870→          >
+   871→            {proposal.title}
+   872→          </h3>
+   873→
+   874→          {/* Client */}
+   875→          {proposal.clientName && (
+   876→            <p className="text-[13px] text-muted-foreground mb-3 flex items-center gap-1.5">
+   877→              <Mail className="h-3 w-3" />
+   878→              {proposal.clientName}
+   879→            </p>
+   880→          )}
+   881→
+   882→          {/* Value */}
+   883→          <div className="flex items-baseline gap-1.5 mb-3">
+   884→            <span className="text-[22px] font-bold text-foreground">
+   885→              {formatCurrency(proposal.totalValue)}
+   886→            </span>
+   887→            {proposal.currency && proposal.currency !== "USD" && (
+   888→              <span className="text-[12px] text-muted-foreground">{proposal.currency}</span>
+   889→            )}
+   890→          </div>
+   891→
+   892→          {/* Dates Row */}
+   893→          <div className="flex items-center gap-3 text-[12px] text-muted-foreground mb-3">
+   894→            {proposal.sentAt && (
+   895→              <span className="flex items-center gap-1">
+   896→                <Send className="h-3 w-3" />
+   897→                Sent {formatDate(proposal.sentAt)}
+   898→              </span>
+   899→            )}
+   900→            {proposal.viewedAt && (
+   901→              <span className="flex items-center gap-1">
+   902→                <Eye className="h-3 w-3" />
+   903→                Viewed
+   904→              </span>
+   905→            )}
+   906→            {proposal.signedAt && (
+   907→              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+   908→                <CheckCircle2 className="h-3 w-3" />
+   909→                Signed {formatDate(proposal.signedAt)}
+   910→              </span>
+   911→            )}
+   912→          </div>
+   913→
+   914→          {/* Follow-up Badge */}
+   915→          {scheduledFollowUps.length > 0 && (
+   916→            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
+   917→              <Clock className="h-3 w-3" />
+   918→              <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
+   919→            </div>
+   920→          )}
+   921→
+   922→          {/* Quick Actions for Draft — Phase 1 manual-send workflow */}
+   923→          {proposal.status === "draft" && (
+   924→            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
+   925→              <Button
+   926→                size="sm"
+   927→                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+   928→                onClick={(e) => {
+   929→                  e.stopPropagation();
+   930→                  onMarkAsSent?.();
+   931→                }}
+   932→              >
+   933→                <Send className="h-3 w-3" />
+   934→                Mark as sent
+   935→              </Button>
+   936→              <Button
+   937→                size="sm"
+   938→                variant="outline"
+   939→                className="gap-1.5 h-8 text-[12px]"
+   940→                onClick={(e) => {
+   941→                  e.stopPropagation();
+   942→                  onSend(proposal._id);
+   943→                }}
+   944→                title="Generate a shareable public link"
+   945→              >
+   946→                <Share2 className="h-3 w-3" />
+   947→                Share link
+   948→              </Button>
+   949→              <DownloadPDFButton
+   950→                document={proposal as any}
+   951→                type="proposal"
+   952→                variant="outline"
+   953→                size="sm"
+   954→                className="h-8 text-[12px] gap-1.5"
+   955→                label="Download PDF"
+   956→              />
+   957→            </div>
+   958→          )}
+   959→
+   960→          {/* Quick Actions for Sent / Viewed — Log another send + Download PDF */}
+   961→          {(proposal.status === "sent" || proposal.status === "viewed") && (
+   962→            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
+   963→              <Button
+   964→                size="sm"
+   965→                variant="outline"
+   966→                className="gap-1.5 h-8 text-[12px]"
+   967→                onClick={(e) => {
+   968→                  e.stopPropagation();
+   969→                  onMarkAsSent?.();
+   970→                }}
+   971→              >
+   972→                <Send className="h-3 w-3" />
+   973→                Log another send
+   974→              </Button>
+   975→              <DownloadPDFButton
+   976→                document={proposal as any}
+   977→                type="proposal"
+   978→                variant="outline"
+   979→                size="sm"
+   980→                className="h-8 text-[12px] gap-1.5"
+   981→                label="Download PDF"
+   982→              />
+   983→            </div>
+   984→          )}
+   985→
+   986→          {/* Quick Actions for Signed — Convert to Project + Define Scope + Download PDF */}
+   987→          {proposal.status === "signed" && (
+   988→            <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
+   989→              <Button
+   990→                size="sm"
+   991→                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+   992→                onClick={(e) => {
+   993→                  e.stopPropagation();
+   994→                  onConvertToProject?.(proposal);
+   995→                }}
+   996→              >
+   997→                <Briefcase className="h-3 w-3" />
+   998→                Convert to Project
+   999→              </Button>
+  1000→              <Button
+  1001→                size="sm"
+  1002→                variant="outline"
+  1003→                className="gap-1.5 h-8 text-[12px]"
+  1004→                onClick={(e) => {
+  1005→                  e.stopPropagation();
+  1006→                  navigate(`/scope?proposalId=${proposal._id}`);
+  1007→                }}
+  1008→              >
+  1009→                <ShieldCheck className="h-3 w-3" />
+  1010→                Define Scope
+  1011→              </Button>
+  1012→              <DownloadPDFButton
+  1013→                document={proposal as any}
+  1014→                type="proposal"
+  1015→                variant="outline"
+  1016→                size="sm"
+  1017→                className="h-8 text-[12px] gap-1.5"
+  1018→                label="Download PDF"
+  1019→              />
+  1020→            </div>
+  1021→          )}
+  1022→        </CardContent>
+  1023→      </Card>
+  1024→    </motion.div>
+  1025→  );
+  1026→}
+  1027→

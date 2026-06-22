@@ -1,0 +1,1568 @@
+     1→     1→import { useState, useMemo } from "react";
+     2→     2→import { Card } from "@/components/ui/card";
+     3→     3→import { Button } from "@/components/ui/button";
+     4→     4→import { Input } from "@/components/ui/input";
+     5→     5→import { Label } from "@/components/ui/label";
+     6→     6→import { Textarea } from "@/components/ui/textarea";
+     7→     7→import { Badge } from "@/components/ui/badge";
+     8→     8→import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+     9→     9→import { Progress } from "@/components/ui/progress";
+    10→    10→import { Skeleton } from "@/components/ui/skeleton";
+    11→    11→import {
+    12→    12→  Dialog,
+    13→    13→  DialogContent,
+    14→    14→  DialogDescription,
+    15→    15→  DialogFooter,
+    16→    16→  DialogHeader,
+    17→    17→  DialogTitle,
+    18→    18→} from "@/components/ui/dialog";
+    19→    19→import {
+    20→    20→  AlertDialog,
+    21→    21→  AlertDialogAction,
+    22→    22→  AlertDialogCancel,
+    23→    23→  AlertDialogContent,
+    24→    24→  AlertDialogDescription,
+    25→    25→  AlertDialogFooter,
+    26→    26→  AlertDialogHeader,
+    27→    27→  AlertDialogTitle,
+    28→    28→} from "@/components/ui/alert-dialog";
+    29→    29→import {
+    30→    30→  Select,
+    31→    31→  SelectContent,
+    32→    32→  SelectItem,
+    33→    33→  SelectTrigger,
+    34→    34→  SelectValue,
+    35→    35→} from "@/components/ui/select";
+    36→    36→import {
+    37→    37→  Tabs,
+    38→    38→  TabsContent,
+    39→    39→  TabsList,
+    40→    40→  TabsTrigger,
+    41→    41→} from "@/components/ui/tabs";
+    42→    42→import {
+    43→    43→  Users, UserPlus, Shield, Crown, Eye,
+    44→    44→  Trash2, Mail, Clock, CheckCircle, Loader2,
+    45→    45→  Building2, Settings, Sparkles, Activity,
+    46→    46→  DollarSign, Timer, X, Briefcase, Info,
+    47→    47→  Plus, Pencil, Palette, ChevronUp, ChevronDown,
+    48→    48→} from "lucide-react";
+    49→    49→import { toast } from "sonner";
+    50→    50→import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+    51→    51→import { api } from "@/convex/_generated/api";
+    52→    52→import {
+    53→    53→  useWorkspaceContext,
+    54→    54→} from "@/hooks/use-workspace";
+    55→    55→import { PageLayout } from "@/components/design-system/PageLayout";
+    56→    56→
+    57→    57→// ─── Demo Mode Banner ────────────────────────────────────────
+    58→    58→function DemoModeBanner() {
+    59→    59→  return (
+    60→    60→    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 mb-6">
+    61→    61→      <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+    62→    62→      <p className="text-sm text-amber-700 dark:text-amber-300">
+    63→    63→        <span className="font-medium">Demo Mode</span> — Sign in to manage your real team. 
+    64→    64→        Showing sample team data for preview.
+    65→    65→      </p>
+    66→    66→    </div>
+    67→    67→  );
+    68→    68→}
+    69→    69→
+    70→    70→// ─── Loading Skeletons ───────────────────────────────────────
+    71→    71→
+    72→    72→function StatsSkeleton() {
+    73→    73→  return (
+    74→    74→    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    75→    75→      {[0, 1, 2, 3, 4, 5].map((i) => (
+    76→    76→        <Card key={i} className="p-5">
+    77→    77→          <div className="flex items-center gap-3">
+    78→    78→            <Skeleton className="h-10 w-10 rounded-lg" />
+    79→    79→            <div className="space-y-1">
+    80→    80→              <Skeleton className="h-3 w-16" />
+    81→    81→              <Skeleton className="h-7 w-10" />
+    82→    82→            </div>
+    83→    83→          </div>
+    84→    84→        </Card>
+    85→    85→      ))}
+    86→    86→    </div>
+    87→    87→  );
+    88→    88→}
+    89→    89→
+    90→    90→function MembersSkeleton() {
+    91→    91→  return (
+    92→    92→    <Card className="p-6">
+    93→    93→      <div className="space-y-3">
+    94→    94→        {[0, 1, 2, 3].map((i) => (
+    95→    95→          <div key={i} className="flex items-center gap-4 p-4">
+    96→    96→            <Skeleton className="h-11 w-11 rounded-full" />
+    97→    97→            <div className="flex-1 space-y-2">
+    98→    98→              <Skeleton className="h-4 w-32" />
+    99→    99→              <Skeleton className="h-3 w-48" />
+   100→   100→            </div>
+   101→   101→            <div className="hidden md:flex items-center gap-4">
+   102→   102→              <Skeleton className="h-3 w-20" />
+   103→   103→              <Skeleton className="h-3 w-16" />
+   104→   104→            </div>
+   105→   105→          </div>
+   106→   106→        ))}
+   107→   107→      </div>
+   108→   108→    </Card>
+   109→   109→  );
+   110→   110→}
+   111→   111→
+   112→   112→// ─── Team Color Options ──────────────────────────────────────
+   113→   113→const TEAM_COLORS = [
+   114→   114→  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+   115→   115→  "#EC4899", "#6366F1", "#14B8A6", "#F97316", "#06B6D4",
+   116→   116→];
+   117→   117→
+   118→   118→export default function TeamManagement() {
+   119→   119→  const { activeWorkspaceId, isTeamMode, isOwner, canManageTeam, activeWorkspace } = useWorkspaceContext();
+   120→   120→
+   121→   121→  // ─── Convex Queries ────────────────────────────────────────────────────────
+   122→   122→  const hasRealWorkspaceId = activeWorkspaceId && !activeWorkspaceId.startsWith("ws_");
+   123→   123→
+   124→   124→  const convexMembers = useQuery(
+   125→   125→    hasRealWorkspaceId ? api.workspaces.members.getMembers : "skip",
+   126→   126→    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
+   127→   127→  ) as any[] | undefined;
+   128→   128→
+   129→   129→  const convexStats = useQuery(
+   130→   130→    hasRealWorkspaceId ? api.workspaces.crud.getWorkspaceStats : "skip",
+   131→   131→    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
+   132→   132→  ) as any | undefined;
+   133→   133→
+   134→   134→  const convexInvitations = useQuery(
+   135→   135→    hasRealWorkspaceId ? api.workspaces.invitations.getInvitations : "skip",
+   136→   136→    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any, status: "pending" as const } : "skip"
+   137→   137→  ) as any[] | undefined;
+   138→   138→
+   139→   139→  // ─── Teams queries ─────────────────────────────────────────────────────────
+   140→   140→  const convexTeams = useQuery(
+   141→   141→    hasRealWorkspaceId ? api.teams.crud.getTeams : "skip",
+   142→   142→    hasRealWorkspaceId ? { workspaceId: activeWorkspaceId as any } : "skip"
+   143→   143→  ) as any[] | undefined;
+   144→   144→
+   145→   145→  // ─── Mutations ─────────────────────────────────────────────────────────────
+   146→   146→  const inviteMemberMutation = useMutation(api.workspaces.invitations.createInvitation);
+   147→   147→  const removeMemberMutation = useMutation(api.workspaces.members.removeMember);
+   148→   148→  const updateRoleMutation = useMutation(api.workspaces.members.updateMemberRole);
+   149→   149→  const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
+   150→   150→
+   151→   151→  // Team mutations
+   152→   152→  const createTeamMutation = useMutation(api.teams.crud.createTeam);
+   153→   153→  const updateTeamMutation = useMutation(api.teams.crud.updateTeam);
+   154→   154→  const deleteTeamMutation = useMutation(api.teams.crud.deleteTeam);
+   155→   155→  const addTeamMemberMutation = useMutation(api.teams.crud.addTeamMember);
+   156→   156→  const removeTeamMemberMutation = useMutation(api.teams.crud.removeTeamMember);
+   157→   157→
+   158→   158→  // ─── State ─────────────────────────────────────────────────────────────────
+   159→   159→  const [activeTab, setActiveTab] = useState<string>("members");
+   160→   160→
+   161→   161→  // Invite dialog
+   162→   162→  const [showInviteDialog, setShowInviteDialog] = useState(false);
+   163→   163→  const [inviteEmail, setInviteEmail] = useState("");
+   164→   164→  const [inviteRole, setInviteRole] = useState<"manager" | "member">("member");
+   165→   165→  const [inviteMessage, setInviteMessage] = useState("");
+   166→   166→  const [isInviting, setIsInviting] = useState(false);
+   167→   167→
+   168→   168→  // Remove/change role
+   169→   169→  const [memberToRemove, setMemberToRemove] = useState<any>(null);
+   170→   170→  const [memberToChangeRole, setMemberToChangeRole] = useState<any>(null);
+   171→   171→  const [newRole, setNewRole] = useState<"manager" | "member">("member");
+   172→   172→
+   173→   173→  // Team CRUD state
+   174→   174→  const [showCreateTeamDialog, setShowCreateTeamDialog] = useState(false);
+   175→   175→  const [teamName, setTeamName] = useState("");
+   176→   176→  const [teamColor, setTeamColor] = useState(TEAM_COLORS[0]);
+   177→   177→  const [teamDescription, setTeamDescription] = useState("");
+   178→   178→  const [teamIsCrossTeam, setTeamIsCrossTeam] = useState(false);
+   179→   179→  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+   180→   180→
+   181→   181→  // Edit team
+   182→   182→  const [editingTeam, setEditingTeam] = useState<any>(null);
+   183→   183→  const [editTeamName, setEditTeamName] = useState("");
+   184→   184→  const [editTeamColor, setEditTeamColor] = useState("");
+   185→   185→  const [editTeamDescription, setEditTeamDescription] = useState("");
+   186→   186→  const [isUpdatingTeam, setIsUpdatingTeam] = useState(false);
+   187→   187→
+   188→   188→  // Delete team
+   189→   189→  const [teamToDelete, setTeamToDelete] = useState<any>(null);
+   190→   190→  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+   191→   191→
+   192→   192→  // Add member to team
+   193→   193→  const [teamToAddMember, setTeamToAddMember] = useState<any>(null);
+   194→   194→  const [addMemberUserId, setAddMemberUserId] = useState("");
+   195→   195→  const [addMemberRole, setAddMemberRole] = useState<"lead" | "member">("member");
+   196→   196→  const [isAddingTeamMember, setIsAddingTeamMember] = useState(false);
+   197→   197→
+   198→   198→  // Remove member from team
+   199→   199→  const [teamMemberToRemove, setTeamMemberToRemove] = useState<any>(null);
+   200→   200→  const [teamMemberRemoveTeamId, setTeamMemberRemoveTeamId] = useState<string>("");
+   201→   201→
+   202→   202→  // ─── Map Convex data to UI shape ───────────────────────────────────────────
+   203→   203→  const members = useMemo(() => {
+   204→   204→    if (convexMembers && convexMembers.length > 0) {
+   205→   205→      return convexMembers.map((m: any) => ({
+   206→   206→        _id: m._id,
+   207→   207→        userId: m.userId,
+   208→   208→        name: m.userName ?? m.userEmail ?? "Unknown",
+   209→   209→        displayName: m.userName ?? m.userEmail ?? "Unknown",
+   210→   210→        email: m.userEmail ?? "",
+   211→   211→        image: m.userImage ?? "",
+   212→   212→        role: m.role,
+   213→   213→        status: m.status,
+   214→   214→        joinedAt: m.joinedAt,
+   215→   215→        lastActiveAt: m.lastActiveAt ?? null,
+   216→   216→        projectsAssigned: 0,
+   217→   217→        hoursThisWeek: 0,
+   218→   218→      }));
+   219→   219→    }
+   220→   220→    return [];
+   221→   221→  }, [convexMembers]);
+   222→   222→
+   223→   223→  const teams = useMemo(() => {
+   224→   224→    if (convexTeams && convexTeams.length > 0) {
+   225→   225→      return convexTeams;
+   226→   226→    }
+   227→   227→    return [];
+   228→   228→  }, [convexTeams]);
+   229→   229→
+   230→   230→  const stats = useMemo(() => {
+   231→   231→    if (convexStats) {
+   232→   232→      return {
+   233→   233→        memberCount: convexStats.memberCount ?? 0,
+   234→   234→        clientCount: convexStats.clientCount ?? 0,
+   235→   235→        activeProjectCount: convexStats.activeProjectCount ?? 0,
+   236→   236→        pendingInvoiceCount: 0,
+   237→   237→        totalRevenue: 0,
+   238→   238→        totalHoursThisWeek: 0,
+   239→   239→        protectionScore: 0,
+   240→   240→      };
+   241→   241→    }
+   242→   242→    return null;
+   243→   243→  }, [convexStats]);
+   244→   244→
+   245→   245→  const invitations = useMemo(() => {
+   246→   246→    if (convexInvitations && convexInvitations.length > 0) {
+   247→   247→      return convexInvitations.map((inv: any) => ({
+   248→   248→        _id: inv._id,
+   249→   249→        name: inv.email,
+   250→   250→        displayName: inv.email,
+   251→   251→        email: inv.email,
+   252→   252→        role: inv.role,
+   253→   253→        invitedAt: inv.createdAt,
+   254→   254→        invitedBy: inv.inviterName,
+   255→   255→      }));
+   256→   256→    }
+   257→   257→    return [];
+   258→   258→  }, [convexInvitations]);
+   259→   259→
+   260→   260→  const { isDisconnected } = useConvexConnectionState();
+   261→   261→  const isLoading = hasRealWorkspaceId && (convexMembers === undefined);
+   262→   262→  const isDemoMode = !hasRealWorkspaceId;
+   263→   263→  const loadingTimedOut = useQueryTimeout(isLoading, 3000);
+   264→   264→  const showLoading = isLoading && !loadingTimedOut && !isDisconnected;
+   265→   265→
+   266→   266→  // ─── Handlers ──────────────────────────────────────────────────────────────
+   267→   267→  const handleInvite = async () => {
+   268→   268→    if (!inviteEmail.trim() || !activeWorkspaceId) return;
+   269→   269→    setIsInviting(true);
+   270→   270→    try {
+   271→   271→      if (hasRealWorkspaceId) {
+   272→   272→        await inviteMemberMutation({
+   273→   273→          workspaceId: activeWorkspaceId as any,
+   274→   274→          email: inviteEmail.trim(),
+   275→   275→          role: inviteRole,
+   276→   276→        });
+   277→   277→      }
+   278→   278→      toast.success(`Invitation sent to ${inviteEmail}`);
+   279→   279→      setInviteEmail("");
+   280→   280→      setInviteMessage("");
+   281→   281→      setShowInviteDialog(false);
+   282→   282→    } catch (e: any) {
+   283→   283→      toast.error(e.message || "Failed to send invitation");
+   284→   284→    } finally {
+   285→   285→      setIsInviting(false);
+   286→   286→    }
+   287→   287→  };
+   288→   288→
+   289→   289→  const handleRemoveMember = async () => {
+   290→   290→    if (!memberToRemove) return;
+   291→   291→    try {
+   292→   292→      await removeMemberMutation({ memberId: memberToRemove._id });
+   293→   293→      toast.success(`${memberToRemove.name} removed from workspace`);
+   294→   294→      setMemberToRemove(null);
+   295→   295→    } catch (e: any) {
+   296→   296→      toast.error(e.message || "Failed to remove member");
+   297→   297→    }
+   298→   298→  };
+   299→   299→
+   300→   300→  const handleChangeRole = async () => {
+   301→   301→    if (!memberToChangeRole) return;
+   302→   302→    try {
+   303→   303→      await updateRoleMutation({ memberId: memberToChangeRole._id, role: newRole });
+   304→   304→      toast.success(`Role updated to ${newRole}`);
+   305→   305→      setMemberToChangeRole(null);
+   306→   306→    } catch (e: any) {
+   307→   307→      toast.error(e.message || "Failed to update role");
+   308→   308→    }
+   309→   309→  };
+   310→   310→
+   311→   311→  const handleCancelInvitation = async (invitation: any) => {
+   312→   312→    try {
+   313→   313→      await cancelInvitationMutation({ invitationId: invitation._id });
+   314→   314→      toast.success(`Invitation to ${invitation.email || invitation.name} cancelled`);
+   315→   315→    } catch (e: any) {
+   316→   316→      toast.error(e.message || "Failed to cancel invitation");
+   317→   317→    }
+   318→   318→  };
+   319→   319→
+   320→   320→  // ─── Team CRUD Handlers ────────────────────────────────────────────────────
+   321→   321→  const handleCreateTeam = async () => {
+   322→   322→    if (!teamName.trim()) {
+   323→   323→      toast.error("Team name is required");
+   324→   324→      return;
+   325→   325→    }
+   326→   326→    if (!activeWorkspaceId || !hasRealWorkspaceId) {
+   327→   327→      toast.error("No workspace selected. Please select a workspace first.");
+   328→   328→      return;
+   329→   329→    }
+   330→   330→    setIsCreatingTeam(true);
+   331→   331→    try {
+   332→   332→      const result = await createTeamMutation({
+   333→   333→        workspaceId: activeWorkspaceId as any,
+   334→   334→        name: teamName.trim(),
+   335→   335→        color: teamColor,
+   336→   336→        description: teamDescription.trim() || undefined,
+   337→   337→        isCrossTeam: teamIsCrossTeam || undefined,
+   338→   338→      });
+   339→   339→      // Defensive: safe-convex-react useMutation no-ops (returns undefined)
+   340→   340→      // when the mutation reference is null/undefined. If we got undefined
+   341→   341→      // back, the team was NOT actually created — surface that to the user
+   342→   342→      // instead of falsely claiming success.
+   343→   343→      if (result === undefined) {
+   344→   344→        toast.error(
+   345→   345→          "Team could not be created — the backend function is unavailable. Please refresh the page and try again."
+   346→   346→        );
+   347→   347→        return;
+   348→   348→      }
+   349→   349→      toast.success(`Team "${teamName}" created!`);
+   350→   350→      // Switch to the Teams tab so the user immediately sees the new team
+   351→   351→      // (previously the user stayed on whatever tab they were on and the
+   352→   352→      // count appeared not to update, even though the team was created).
+   353→   353→      setActiveTab("teams");
+   354→   354→      setShowCreateTeamDialog(false);
+   355→   355→      setTeamName("");
+   356→   356→      setTeamColor(TEAM_COLORS[0]);
+   357→   357→      setTeamDescription("");
+   358→   358→      setTeamIsCrossTeam(false);
+   359→   359→    } catch (e: any) {
+   360→   360→      console.error("[TeamManagement] createTeam failed:", e);
+   361→   361→      toast.error(e?.message || "Failed to create team", {
+   362→   362→        description: e?.data?.message || undefined,
+   363→   363→      });
+   364→   364→    } finally {
+   365→   365→      setIsCreatingTeam(false);
+   366→   366→    }
+   367→   367→  };
+   368→   368→
+   369→   369→  const handleUpdateTeam = async () => {
+   370→   370→    if (!editingTeam) return;
+   371→   371→    setIsUpdatingTeam(true);
+   372→   372→    try {
+   373→   373→      if (updateTeamMutation) {
+   374→   374→        await updateTeamMutation({
+   375→   375→          teamId: editingTeam._id,
+   376→   376→          name: editTeamName.trim() || undefined,
+   377→   377→          color: editTeamColor || undefined,
+   378→   378→          description: editTeamDescription.trim() || undefined,
+   379→   379→        });
+   380→   380→      }
+   381→   381→      toast.success("Team updated!");
+   382→   382→      setEditingTeam(null);
+   383→   383→    } catch (e: any) {
+   384→   384→      toast.error(e.message || "Failed to update team");
+   385→   385→    } finally {
+   386→   386→      setIsUpdatingTeam(false);
+   387→   387→    }
+   388→   388→  };
+   389→   389→
+   390→   390→  const handleDeleteTeam = async () => {
+   391→   391→    if (!teamToDelete) return;
+   392→   392→    setIsDeletingTeam(true);
+   393→   393→    try {
+   394→   394→      if (deleteTeamMutation) {
+   395→   395→        await deleteTeamMutation({ teamId: teamToDelete._id });
+   396→   396→      }
+   397→   397→      toast.success(`Team "${teamToDelete.name}" deleted`);
+   398→   398→      setTeamToDelete(null);
+   399→   399→    } catch (e: any) {
+   400→   400→      toast.error(e.message || "Failed to delete team");
+   401→   401→    } finally {
+   402→   402→      setIsDeletingTeam(false);
+   403→   403→    }
+   404→   404→  };
+   405→   405→
+   406→   406→  const handleAddTeamMember = async () => {
+   407→   407→    if (!teamToAddMember || !addMemberUserId) return;
+   408→   408→    setIsAddingTeamMember(true);
+   409→   409→    try {
+   410→   410→      if (addTeamMemberMutation) {
+   411→   411→        await addTeamMemberMutation({
+   412→   412→          teamId: teamToAddMember._id,
+   413→   413→          userId: addMemberUserId as any,
+   414→   414→          role: addMemberRole,
+   415→   415→        });
+   416→   416→      }
+   417→   417→      toast.success("Member added to team!");
+   418→   418→      setTeamToAddMember(null);
+   419→   419→      setAddMemberUserId("");
+   420→   420→      setAddMemberRole("member");
+   421→   421→    } catch (e: any) {
+   422→   422→      toast.error(e.message || "Failed to add member to team");
+   423→   423→    } finally {
+   424→   424→      setIsAddingTeamMember(false);
+   425→   425→    }
+   426→   426→  };
+   427→   427→
+   428→   428→  const handleRemoveTeamMember = async () => {
+   429→   429→    if (!teamMemberToRemove || !teamMemberRemoveTeamId) return;
+   430→   430→    try {
+   431→   431→      if (removeTeamMemberMutation) {
+   432→   432→        await removeTeamMemberMutation({
+   433→   433→          teamId: teamMemberRemoveTeamId as any,
+   434→   434→          userId: teamMemberToRemove.userId as any,
+   435→   435→        });
+   436→   436→      }
+   437→   437→      toast.success("Member removed from team");
+   438→   438→      setTeamMemberToRemove(null);
+   439→   439→      setTeamMemberRemoveTeamId("");
+   440→   440→    } catch (e: any) {
+   441→   441→      toast.error(e.message || "Failed to remove member from team");
+   442→   442→    }
+   443→   443→  };
+   444→   444→
+   445→   445→  // ─── Not in team mode: Show upgrade prompt ────────────────
+   446→   446→  if (!isTeamMode) {
+   447→   447→    return <SoloModePrompt />;
+   448→   448→  }
+   449→   449→
+   450→   450→  const activeMembers = members.filter((m: any) => m.status === "active");
+   451→   451→  const ownerCount = activeMembers.filter((m: any) => m.role === "owner").length;
+   452→   452→  const managerCount = activeMembers.filter((m: any) => m.role === "manager").length;
+   453→   453→  const memberCount = activeMembers.filter((m: any) => m.role === "member").length;
+   454→   454→
+   455→   455→  const roleIcon = (role: string) => {
+   456→   456→    switch (role) {
+   457→   457→      case "owner": return <Crown className="w-3.5 h-3.5 text-amber-500" />;
+   458→   458→      case "manager": return <Shield className="w-3.5 h-3.5 text-blue-500" />;
+   459→   459→      case "lead": return <Shield className="w-3.5 h-3.5 text-emerald-500" />;
+   460→   460→      case "member": return <Eye className="w-3.5 h-3.5 text-gray-500" />;
+   461→   461→      default: return null;
+   462→   462→    }
+   463→   463→  };
+   464→   464→
+   465→   465→  const roleBadge = (role: string) => {
+   466→   466→    const variants: Record<string, any> = {
+   467→   467→      owner: { className: "bg-amber-500/10 text-amber-600 border-amber-500/20", label: "Owner" },
+   468→   468→      manager: { className: "bg-blue-500/10 text-blue-600 border-blue-500/20", label: "Manager" },
+   469→   469→      lead: { className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Lead" },
+   470→   470→      member: { className: "bg-gray-500/10 text-gray-600 border-gray-500/20", label: "Member" },
+   471→   471→    };
+   472→   472→    const v = variants[role] || variants.member;
+   473→   473→    return (
+   474→   474→      <Badge variant="outline" className={`gap-1 ${v.className}`}>
+   475→   475→        {roleIcon(role)}
+   476→   476→        {v.label}
+   477→   477→      </Badge>
+   478→   478→    );
+   479→   479→  };
+   480→   480→
+   481→   481→  const formatLastActive = (timestamp: number | null) => {
+   482→   482→    if (!timestamp) return "Never";
+   483→   483→    const diffMs = Date.now() - timestamp;
+   484→   484→    const diffMins = Math.floor(diffMs / 60000);
+   485→   485→    if (diffMins < 5) return "Just now";
+   486→   486→    if (diffMins < 60) return `${diffMins}m ago`;
+   487→   487→    const diffHours = Math.floor(diffMins / 60);
+   488→   488→    if (diffHours < 24) return `${diffHours}h ago`;
+   489→   489→    const diffDays = Math.floor(diffHours / 24);
+   490→   490→    return `${diffDays}d ago`;
+   491→   491→  };
+   492→   492→
+   493→   493→  const formatJoined = (timestamp: number | null) => {
+   494→   494→    if (!timestamp) return "";
+   495→   495→    const diffMs = Date.now() - timestamp;
+   496→   496→    const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+   497→   497→    if (diffDays < 1) return "Joined today";
+   498→   498→    if (diffDays < 30) return `Joined ${diffDays}d ago`;
+   499→   499→    const diffMonths = Math.floor(diffDays / 30);
+   500→   500→    return `Joined ${diffMonths}mo ago`;
+   501→   501→  };
+   502→   502→
+   503→   503→  return (
+   504→   504→    <PageLayout>
+   505→   505→      <div className="w-full space-y-6">
+   506→   506→        {/* Header */}
+   507→   507→        <div className="flex items-center justify-between">
+   508→   508→          <div>
+   509→   509→            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+   510→   510→              <Building2 className="w-8 h-8 text-purple-500" />
+   511→   511→              {activeWorkspace?.name || "Team Workspace"}
+   512→   512→            </h1>
+   513→   513→            <p className="text-muted-foreground">
+   514→   514→              Manage your team members, teams, and invitations
+   515→   515→            </p>
+   516→   516→          </div>
+   517→   517→          {canManageTeam && (
+   518→   518→            <div className="flex gap-2">
+   519→   519→              <Button className="gap-2" onClick={() => setShowInviteDialog(true)}>
+   520→   520→                <UserPlus className="w-4 h-4" />
+   521→   521→                Invite Member
+   522→   522→              </Button>
+   523→   523→            </div>
+   524→   524→          )}
+   525→   525→        </div>
+   526→   526→
+   527→   527→        {/* Demo Mode Banner */}
+   528→   528→        {isDemoMode && <DemoModeBanner />}
+   529→   529→
+   530→   530→        {/* Loading / Error State */}
+   531→   531→        {showLoading ? (
+   532→   532→          <StatsSkeleton />
+   533→   533→        ) : (
+   534→   534→          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+   535→   535→            <Card className="p-5">
+   536→   536→              <div className="flex items-center gap-3">
+   537→   537→                <div className="p-2.5 bg-purple-500/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
+   538→   538→                <div>
+   539→   539→                  <p className="text-sm text-muted-foreground">Members</p>
+   540→   540→                  <p className="text-2xl font-bold">{stats?.memberCount ?? activeMembers.length}</p>
+   541→   541→                </div>
+   542→   542→              </div>
+   543→   543→            </Card>
+   544→   544→            <Card className="p-5">
+   545→   545→              <div className="flex items-center gap-3">
+   546→   546→                <div className="p-2.5 bg-emerald-500/10 rounded-lg"><Shield className="w-5 h-5 text-emerald-500" /></div>
+   547→   547→                <div>
+   548→   548→                  <p className="text-sm text-muted-foreground">Teams</p>
+   549→   549→                  <p className="text-2xl font-bold">{teams.length}</p>
+   550→   550→                </div>
+   551→   551→              </div>
+   552→   552→            </Card>
+   553→   553→            <Card className="p-5">
+   554→   554→              <div className="flex items-center gap-3">
+   555→   555→                <div className="p-2.5 bg-blue-500/10 rounded-lg"><Building2 className="w-5 h-5 text-blue-500" /></div>
+   556→   556→                <div>
+   557→   557→                  <p className="text-sm text-muted-foreground">Clients</p>
+   558→   558→                  <p className="text-2xl font-bold">{stats?.clientCount ?? 0}</p>
+   559→   559→                </div>
+   560→   560→              </div>
+   561→   561→            </Card>
+   562→   562→            <Card className="p-5">
+   563→   563→              <div className="flex items-center gap-3">
+   564→   564→                <div className="p-2.5 bg-green-500/10 rounded-lg"><CheckCircle className="w-5 h-5 text-green-500" /></div>
+   565→   565→                <div>
+   566→   566→                  <p className="text-sm text-muted-foreground">Active Projects</p>
+   567→   567→                  <p className="text-2xl font-bold">{stats?.activeProjectCount ?? 0}</p>
+   568→   568→                </div>
+   569→   569→              </div>
+   570→   570→            </Card>
+   571→   571→            <Card className="p-5">
+   572→   572→              <div className="flex items-center gap-3">
+   573→   573→                <div className="p-2.5 bg-amber-500/10 rounded-lg"><Mail className="w-5 h-5 text-amber-500" /></div>
+   574→   574→                <div>
+   575→   575→                  <p className="text-sm text-muted-foreground">Pending Invites</p>
+   576→   576→                  <p className="text-2xl font-bold">{invitations.length}</p>
+   577→   577→                </div>
+   578→   578→              </div>
+   579→   579→            </Card>
+   580→   580→            <Card className="p-5">
+   581→   581→              <div className="flex items-center gap-3">
+   582→   582→                <div className="p-2.5 bg-violet-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-violet-500" /></div>
+   583→   583→                <div>
+   584→   584→                  <p className="text-sm text-muted-foreground">Revenue</p>
+   585→   585→                  <p className="text-2xl font-bold">${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k</p>
+   586→   586→                </div>
+   587→   587→              </div>
+   588→   588→            </Card>
+   589→   589→          </div>
+   590→   590→        )}
+   591→   591→
+   592→   592→        {/* Protection Score */}
+   593→   593→        {(stats?.protectionScore ?? 0) > 0 && (
+   594→   594→          <Card className="p-6">
+   595→   595→            <div className="flex items-center justify-between mb-3">
+   596→   596→              <div className="flex items-center gap-2">
+   597→   597→                <Shield className="w-5 h-5 text-purple-500" />
+   598→   598→                <h2 className="text-lg font-bold">Team Protection Score</h2>
+   599→   599→              </div>
+   600→   600→              <span className="text-2xl font-bold text-purple-600">{stats?.protectionScore ?? 0}%</span>
+   601→   601→            </div>
+   602→   602→            <Progress value={stats?.protectionScore ?? 0} className="h-3" />
+   603→   603→            <p className="text-sm text-muted-foreground mt-2">
+   604→   604→              Based on evidence collection compliance, dispute success rate, and team activity across all platforms.
+   605→   605→            </p>
+   606→   606→          </Card>
+   607→   607→        )}
+   608→   608→
+   609→   609→        {/* Role Breakdown */}
+   610→   610→        <div className="grid grid-cols-3 gap-4">
+   611→   611→          <Card className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30">
+   612→   612→            <div className="flex items-center gap-2 mb-1">
+   613→   613→              <Crown className="w-4 h-4 text-amber-500" />
+   614→   614→              <span className="font-semibold text-sm">Owners</span>
+   615→   615→            </div>
+   616→   616→            <p className="text-3xl font-bold text-amber-600">{ownerCount}</p>
+   617→   617→            <p className="text-xs text-muted-foreground mt-1">Full access + billing</p>
+   618→   618→          </Card>
+   619→   619→          <Card className="p-4 bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-800/30">
+   620→   620→            <div className="flex items-center gap-2 mb-1">
+   621→   621→              <Shield className="w-4 h-4 text-blue-500" />
+   622→   622→              <span className="font-semibold text-sm">Managers</span>
+   623→   623→            </div>
+   624→   624→            <p className="text-3xl font-bold text-blue-600">{managerCount}</p>
+   625→   625→            <p className="text-xs text-muted-foreground mt-1">Manage team + projects</p>
+   626→   626→          </Card>
+   627→   627→          <Card className="p-4 bg-gray-50/50 dark:bg-gray-950/20 border-gray-200/50 dark:border-gray-800/30">
+   628→   628→            <div className="flex items-center gap-2 mb-1">
+   629→   629→              <Eye className="w-4 h-4 text-gray-500" />
+   630→   630→              <span className="font-semibold text-sm">Members</span>
+   631→   631→            </div>
+   632→   632→            <p className="text-3xl font-bold text-gray-600">{memberCount}</p>
+   633→   633→            <p className="text-xs text-muted-foreground mt-1">Track time + submit work</p>
+   634→   634→          </Card>
+   635→   635→        </div>
+   636→   636→
+   637→   637→        {/* Tabs: Members / Teams */}
+   638→   638→        <Tabs value={activeTab} onValueChange={setActiveTab}>
+   639→   639→          <TabsList>
+   640→   640→            <TabsTrigger value="members" className="gap-1.5">
+   641→   641→              <Users className="w-4 h-4" />
+   642→   642→              Members
+   643→   643→            </TabsTrigger>
+   644→   644→            <TabsTrigger value="teams" className="gap-1.5">
+   645→   645→              <Shield className="w-4 h-4" />
+   646→   646→              Teams
+   647→   647→            </TabsTrigger>
+   648→   648→          </TabsList>
+   649→   649→
+   650→   650→          {/* ─── Members Tab ──────────────────────────────────────────────────── */}
+   651→   651→          <TabsContent value="members" className="space-y-6 mt-4">
+   652→   652→            {showLoading ? (
+   653→   653→              <MembersSkeleton />
+   654→   654→            ) : (
+   655→   655→              <Card className="p-6">
+   656→   656→                <div className="flex items-center justify-between mb-4">
+   657→   657→                  <h2 className="text-xl font-bold flex items-center gap-2">
+   658→   658→                    <Users className="w-5 h-5 text-purple-500" />
+   659→   659→                    Active Members
+   660→   660→                  </h2>
+   661→   661→                  <Badge variant="outline" className="text-xs">{activeMembers.length} seats</Badge>
+   662→   662→                </div>
+   663→   663→
+   664→   664→                {activeMembers.length === 0 ? (
+   665→   665→                  <div className="text-center py-12">
+   666→   666→                    <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+   667→   667→                    <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
+   668→   668→                    <p className="text-muted-foreground mb-4">
+   669→   669→                      Invite your colleagues to start collaborating
+   670→   670→                    </p>
+   671→   671→                    {canManageTeam && (
+   672→   672→                      <Button onClick={() => setShowInviteDialog(true)}>
+   673→   673→                        <UserPlus className="w-4 h-4 mr-2" />
+   674→   674→                        Invite First Member
+   675→   675→                      </Button>
+   676→   676→                    )}
+   677→   677→                  </div>
+   678→   678→                ) : (
+   679→   679→                  <div className="space-y-3">
+   680→   680→                    {activeMembers.map((member: any) => (
+   681→   681→                      <div
+   682→   682→                        key={member._id}
+   683→   683→                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition"
+   684→   684→                      >
+   685→   685→                        <div className="flex items-center gap-4">
+   686→   686→                          <div className="relative">
+   687→   687→                            <Avatar className="w-11 h-11">
+   688→   688→                              <AvatarFallback className="bg-primary/10 text-sm font-semibold">
+   689→   689→                                {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+   690→   690→                              </AvatarFallback>
+   691→   691→                            </Avatar>
+   692→   692→                            {(Date.now() - (member.lastActiveAt || 0)) < 30 * 60 * 1000 && (
+   693→   693→                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-background" />
+   694→   694→                            )}
+   695→   695→                          </div>
+   696→   696→                          <div>
+   697→   697→                            <div className="font-medium flex items-center gap-2">
+   698→   698→                              {member.displayName || member.name}
+   699→   699→                              {roleBadge(member.role)}
+   700→   700→                            </div>
+   701→   701→                            <div className="text-sm text-muted-foreground flex items-center gap-3">
+   702→   702→                              <span>{member.email}</span>
+   703→   703→                              {member.lastActiveAt && (
+   704→   704→                                <>
+   705→   705→                                  <span className="text-border">|</span>
+   706→   706→                                  <span className="flex items-center gap-1">
+   707→   707→                                    <Activity className="w-3 h-3" />
+   708→   708→                                    {formatLastActive(member.lastActiveAt)}
+   709→   709→                                  </span>
+   710→   710→                                </>
+   711→   711→                              )}
+   712→   712→                              {member.joinedAt && (
+   713→   713→                                <>
+   714→   714→                                  <span className="text-border">|</span>
+   715→   715→                                  <span>{formatJoined(member.joinedAt)}</span>
+   716→   716→                                </>
+   717→   717→                              )}
+   718→   718→                            </div>
+   719→   719→                          </div>
+   720→   720→                        </div>
+   721→   721→
+   722→   722→                        <div className="flex items-center gap-4">
+   723→   723→                          <div className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
+   724→   724→                            {member.projectsAssigned > 0 && (
+   725→   725→                              <span className="flex items-center gap-1">
+   726→   726→                                <Briefcase className="w-3.5 h-3.5" />
+   727→   727→                                {member.projectsAssigned} projects
+   728→   728→                              </span>
+   729→   729→                            )}
+   730→   730→                            {member.hoursThisWeek > 0 && (
+   731→   731→                              <span className="flex items-center gap-1">
+   732→   732→                                <Timer className="w-3.5 h-3.5" />
+   733→   733→                                {member.hoursThisWeek}h/week
+   734→   734→                              </span>
+   735→   735→                            )}
+   736→   736→                          </div>
+   737→   737→
+   738→   738→                          {isOwner && member.role !== "owner" && (
+   739→   739→                            <div className="flex items-center gap-1">
+   740→   740→                              <Button
+   741→   741→                                variant="ghost"
+   742→   742→                                size="sm"
+   743→   743→                                title="Change role"
+   744→   744→                                onClick={() => {
+   745→   745→                                  setMemberToChangeRole(member);
+   746→   746→                                  setNewRole(member.role);
+   747→   747→                                }}
+   748→   748→                              >
+   749→   749→                                <Shield className="w-4 h-4" />
+   750→   750→                              </Button>
+   751→   751→                              <Button
+   752→   752→                                variant="ghost"
+   753→   753→                                size="sm"
+   754→   754→                                className="text-destructive hover:text-destructive"
+   755→   755→                                title="Remove member"
+   756→   756→                                onClick={() => setMemberToRemove(member)}
+   757→   757→                              >
+   758→   758→                                <Trash2 className="w-4 h-4" />
+   759→   759→                              </Button>
+   760→   760→                            </div>
+   761→   761→                          )}
+   762→   762→                        </div>
+   763→   763→                      </div>
+   764→   764→                    ))}
+   765→   765→                  </div>
+   766→   766→                )}
+   767→   767→              </Card>
+   768→   768→            )}
+   769→   769→
+   770→   770→            {/* Pending Invitations */}
+   771→   771→            {invitations.length > 0 && (
+   772→   772→              <Card className="p-6 border-amber-200/50 dark:border-amber-800/30">
+   773→   773→                <div className="flex items-center justify-between mb-4">
+   774→   774→                  <h2 className="text-xl font-bold flex items-center gap-2">
+   775→   775→                    <Mail className="w-5 h-5 text-amber-500" />
+   776→   776→                    Pending Invitations
+   777→   777→                  </h2>
+   778→   778→                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+   779→   779→                    {invitations.length} pending
+   780→   780→                  </Badge>
+   781→   781→                </div>
+   782→   782→                <div className="space-y-3">
+   783→   783→                  {invitations.map((inv: any) => (
+   784→   784→                    <div
+   785→   785→                      key={inv._id}
+   786→   786→                      className="flex items-center justify-between p-4 border border-amber-200/50 dark:border-amber-800/30 rounded-lg bg-amber-50/30 dark:bg-amber-950/10"
+   787→   787→                    >
+   788→   788→                      <div className="flex items-center gap-4">
+   789→   789→                        <Avatar className="w-11 h-11 opacity-70">
+   790→   790→                          <AvatarFallback className="bg-amber-100 dark:bg-amber-900/30 text-sm font-semibold text-amber-600">
+   791→   791→                            {inv.name?.split("@")[0]?.charAt(0).toUpperCase() ?? "?"}
+   792→   792→                          </AvatarFallback>
+   793→   793→                        </Avatar>
+   794→   794→                        <div>
+   795→   795→                          <div className="font-medium flex items-center gap-2">
+   796→   796→                            {inv.email || inv.name}
+   797→   797→                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+   798→   798→                              <Clock className="w-3 h-3 mr-1" />
+   799→   799→                              Pending
+   800→   800→                            </Badge>
+   801→   801→                            {roleBadge(inv.role)}
+   802→   802→                          </div>
+   803→   803→                          <div className="text-sm text-muted-foreground flex items-center gap-3">
+   804→   804→                            <span>{inv.email}</span>
+   805→   805→                            {inv.invitedAt && (
+   806→   806→                              <>
+   807→   807→                                <span className="text-border">|</span>
+   808→   808→                                <span>Invited {formatLastActive(inv.invitedAt)}</span>
+   809→   809→                              </>
+   810→   810→                            )}
+   811→   811→                          </div>
+   812→   812→                        </div>
+   813→   813→                      </div>
+   814→   814→
+   815→   815→                      <div className="flex items-center gap-2">
+   816→   816→                        <Button
+   817→   817→                          variant="ghost"
+   818→   818→                          size="sm"
+   819→   819→                          className="text-amber-600 hover:text-amber-700"
+   820→   820→                          title="Resend invitation"
+   821→   821→                          onClick={() => toast.success(`Invitation resent to ${inv.email}`)}
+   822→   822→                        >
+   823→   823→                          <Mail className="w-4 h-4" />
+   824→   824→                        </Button>
+   825→   825→                        <Button
+   826→   826→                          variant="ghost"
+   827→   827→                          size="sm"
+   828→   828→                          className="text-destructive hover:text-destructive"
+   829→   829→                          title="Cancel invitation"
+   830→   830→                          onClick={() => handleCancelInvitation(inv)}
+   831→   831→                        >
+   832→   832→                          <X className="w-4 h-4" />
+   833→   833→                        </Button>
+   834→   834→                      </div>
+   835→   835→                    </div>
+   836→   836→                  ))}
+   837→   837→                </div>
+   838→   838→              </Card>
+   839→   839→            )}
+   840→   840→          </TabsContent>
+   841→   841→
+   842→   842→          {/* ─── Teams Tab ────────────────────────────────────────────────────── */}
+   843→   843→          <TabsContent value="teams" className="space-y-6 mt-4">
+   844→   844→            <div className="flex items-center justify-between">
+   845→   845→              <h2 className="text-xl font-bold flex items-center gap-2">
+   846→   846→                <Shield className="w-5 h-5 text-emerald-500" />
+   847→   847→                Teams
+   848→   848→              </h2>
+   849→   849→              {canManageTeam && (
+   850→   850→                <Button
+   851→   851→                  className="gap-2"
+   852→   852→                  onClick={() => setShowCreateTeamDialog(true)}
+   853→   853→                >
+   854→   854→                  <Plus className="w-4 h-4" />
+   855→   855→                  Create Team
+   856→   856→                </Button>
+   857→   857→              )}
+   858→   858→            </div>
+   859→   859→
+   860→   860→            {teams.length === 0 ? (
+   861→   861→              <Card className="p-8">
+   862→   862→                <div className="text-center">
+   863→   863→                  <Shield className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+   864→   864→                  <h3 className="text-lg font-semibold mb-2">No teams yet</h3>
+   865→   865→                  <p className="text-muted-foreground mb-4">
+   866→   866→                    Create teams to organize your workspace members and control record access
+   867→   867→                  </p>
+   868→   868→                  {canManageTeam && (
+   869→   869→                    <Button onClick={() => setShowCreateTeamDialog(true)}>
+   870→   870→                      <Plus className="w-4 h-4 mr-2" />
+   871→   871→                      Create First Team
+   872→   872→                    </Button>
+   873→   873→                  )}
+   874→   874→                </div>
+   875→   875→              </Card>
+   876→   876→            ) : (
+   877→   877→              <div className="space-y-4">
+   878→   878→                {teams.map((team: any) => (
+   879→   879→                  <TeamCard
+   880→   880→                    key={team._id}
+   881→   881→                    team={team}
+   882→   882→                    members={members}
+   883→   883→                    canManage={canManageTeam}
+   884→   884→                    onEdit={(t: any) => {
+   885→   885→                      setEditingTeam(t);
+   886→   886→                      setEditTeamName(t.name);
+   887→   887→                      setEditTeamColor(t.color);
+   888→   888→                      setEditTeamDescription(t.description || "");
+   889→   889→                    }}
+   890→   890→                    onDelete={(t: any) => setTeamToDelete(t)}
+   891→   891→                    onAddMember={(t: any) => setTeamToAddMember(t)}
+   892→   892→                    onRemoveMember={(member: any) => {
+   893→   893→                      setTeamMemberToRemove(member);
+   894→   894→                      setTeamMemberRemoveTeamId(team._id);
+   895→   895→                    }}
+   896→   896→                  />
+   897→   897→                ))}
+   898→   898→              </div>
+   899→   899→            )}
+   900→   900→          </TabsContent>
+   901→   901→        </Tabs>
+   902→   902→
+   903→   903→        {/* Activity Feed */}
+   904→   904→        <Card className="p-6">
+   905→   905→          <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+   906→   906→            <Activity className="w-5 h-5 text-green-500" />
+   907→   907→            Recent Activity
+   908→   908→          </h2>
+   909→   909→          {activeMembers.length === 0 ? (
+   910→   910→            <div className="text-center py-6 text-muted-foreground">
+   911→   911→              <Activity className="w-10 w-10 mx-auto mb-2 opacity-40" />
+   912→   912→              <p className="text-sm">Team activity will appear here as members join and collaborate</p>
+   913→   913→            </div>
+   914→   914→          ) : (
+   915→   915→            <div className="space-y-4">
+   916→   916→              {activeMembers.slice(0, 5).map((member: any, i: number) => {
+   917→   917→                const actions = [
+   918→   918→                  { action: "was active", target: "", icon: Activity },
+   919→   919→                  { action: "updated their profile", target: "", icon: Settings },
+   920→   920→                  { action: "joined the workspace", target: "", icon: Users },
+   921→   921→                ];
+   922→   922→                const act = actions[i % actions.length];
+   923→   923→                return (
+   924→   924→                  <div key={member._id} className="flex items-start gap-3">
+   925→   925→                    <div className="p-2 bg-muted rounded-lg mt-0.5">
+   926→   926→                      <act.icon className="w-4 h-4 text-muted-foreground" />
+   927→   927→                    </div>
+   928→   928→                    <div className="flex-1">
+   929→   929→                      <p className="text-sm">
+   930→   930→                        <span className="font-medium">{member.displayName || member.name}</span>{" "}
+   931→   931→                        {act.action}{" "}
+   932→   932→                        {act.target && <span className="font-medium">{act.target}</span>}
+   933→   933→                      </p>
+   934→   934→                      <p className="text-xs text-muted-foreground">
+   935→   935→                        {member.lastActiveAt ? formatLastActive(member.lastActiveAt) : formatJoined(member.joinedAt)}
+   936→   936→                      </p>
+   937→   937→                    </div>
+   938→   938→                  </div>
+   939→   939→                );
+   940→   940→              })}
+   941→   941→            </div>
+   942→   942→          )}
+   943→   943→        </Card>
+   944→   944→
+   945→   945→        {/* ─── Invite Dialog ──────────────────────────────────────────────────── */}
+   946→   946→        <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+   947→   947→          <DialogContent className="sm:max-w-md overflow-hidden">
+   948→   948→            <DialogHeader>
+   949→   949→              <DialogTitle className="flex items-center gap-2 min-w-0">
+   950→   950→                <UserPlus className="w-5 h-5 shrink-0" />
+   951→   951→                <span className="truncate">Invite Team Member</span>
+   952→   952→              </DialogTitle>
+   953→   953→              <DialogDescription className="break-words">
+   954→   954→                Send an invitation to join your workspace.
+   955→   955→              </DialogDescription>
+   956→   956→            </DialogHeader>
+   957→   957→
+   958→   958→            <div className="space-y-4 py-4">
+   959→   959→              <div className="space-y-2">
+   960→   960→                <Label htmlFor="invite-email">Email Address *</Label>
+   961→   961→                <Input
+   962→   962→                  id="invite-email"
+   963→   963→                  type="email"
+   964→   964→                  placeholder="colleague@company.com"
+   965→   965→                  value={inviteEmail}
+   966→   966→                  onChange={(e) => setInviteEmail(e.target.value)}
+   967→   967→                />
+   968→   968→              </div>
+   969→   969→
+   970→   970→              <div className="space-y-2">
+   971→   971→                <Label>Role</Label>
+   972→   972→                <Select value={inviteRole} onValueChange={(v: any) => setInviteRole(v)}>
+   973→   973→                  <SelectTrigger className="w-full">
+   974→   974→                    <SelectValue />
+   975→   975→                  </SelectTrigger>
+   976→   976→                  <SelectContent>
+   977→   977→                    <SelectItem value="member">
+   978→   978→                      <div className="flex items-center gap-2">
+   979→   979→                        <Eye className="w-4 h-4 text-gray-500" />
+   980→   980→                        <div>
+   981→   981→                          <div className="font-medium">Member</div>
+   982→   982→                          <div className="text-xs text-muted-foreground">Track time, submit work, view assigned projects</div>
+   983→   983→                        </div>
+   984→   984→                      </div>
+   985→   985→                    </SelectItem>
+   986→   986→                    <SelectItem value="manager">
+   987→   987→                      <div className="flex items-center gap-2">
+   988→   988→                        <Shield className="w-4 h-4 text-blue-500" />
+   989→   989→                        <div>
+   990→   990→                          <div className="font-medium">Manager</div>
+   991→   991→                          <div className="text-xs text-muted-foreground">View all projects, manage assignments, approve time logs</div>
+   992→   992→                        </div>
+   993→   993→                      </div>
+   994→   994→                    </SelectItem>
+   995→   995→                  </SelectContent>
+   996→   996→                </Select>
+   997→   997→              </div>
+   998→   998→
+   999→   999→              <div className="space-y-2">
+  1000→  1000→                <Label htmlFor="invite-msg">Personal Message (optional)</Label>
+  1001→  1001→                <Textarea
+  1002→  1002→                  id="invite-msg"
+  1003→  1003→                  placeholder="Hey! Join our team workspace on Axia..."
+  1004→  1004→                  value={inviteMessage}
+  1005→  1005→                  onChange={(e) => setInviteMessage(e.target.value)}
+  1006→  1006→                  rows={3}
+  1007→  1007→                />
+  1008→  1008→              </div>
+  1009→  1009→            </div>
+  1010→  1010→
+  1011→  1011→            <DialogFooter className="flex justify-end gap-2">
+  1012→  1012→              <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
+  1013→  1013→              <Button onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
+  1014→  1014→                {isInviting ? (
+  1015→  1015→                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</>
+  1016→  1016→                ) : (
+  1017→  1017→                  <><Mail className="w-4 h-4 mr-2" />Send Invitation</>
+  1018→  1018→                )}
+  1019→  1019→              </Button>
+  1020→  1020→            </DialogFooter>
+  1021→  1021→          </DialogContent>
+  1022→  1022→        </Dialog>
+  1023→  1023→
+  1024→  1024→        {/* ─── Remove Member Confirmation ─────────────────────────────────────── */}
+  1025→  1025→        <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+  1026→  1026→          <AlertDialogContent>
+  1027→  1027→            <AlertDialogHeader>
+  1028→  1028→              <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+  1029→  1029→              <AlertDialogDescription>
+  1030→  1030→                Are you sure you want to remove {memberToRemove?.name} from this workspace? 
+  1031→  1031→                They will lose access to all projects, clients, and data in this workspace.
+  1032→  1032→              </AlertDialogDescription>
+  1033→  1033→            </AlertDialogHeader>
+  1034→  1034→            <AlertDialogFooter>
+  1035→  1035→              <AlertDialogCancel>Cancel</AlertDialogCancel>
+  1036→  1036→              <AlertDialogAction onClick={handleRemoveMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+  1037→  1037→                Remove
+  1038→  1038→              </AlertDialogAction>
+  1039→  1039→            </AlertDialogFooter>
+  1040→  1040→          </AlertDialogContent>
+  1041→  1041→        </AlertDialog>
+  1042→  1042→
+  1043→  1043→        {/* ─── Change Role Dialog ─────────────────────────────────────────────── */}
+  1044→  1044→        <Dialog open={!!memberToChangeRole} onOpenChange={() => setMemberToChangeRole(null)}>
+  1045→  1045→          <DialogContent className="sm:max-w-md overflow-hidden">
+  1046→  1046→            <DialogHeader>
+  1047→  1047→              <DialogTitle>Change Role</DialogTitle>
+  1048→  1048→              <DialogDescription className="break-words">
+  1049→  1049→                Change {memberToChangeRole?.name}'s role in this workspace.
+  1050→  1050→              </DialogDescription>
+  1051→  1051→            </DialogHeader>
+  1052→  1052→            <div className="space-y-4 py-4">
+  1053→  1053→              <Select value={newRole} onValueChange={(v: any) => setNewRole(v)}>
+  1054→  1054→                <SelectTrigger className="w-full">
+  1055→  1055→                  <SelectValue />
+  1056→  1056→                </SelectTrigger>
+  1057→  1057→                <SelectContent>
+  1058→  1058→                  <SelectItem value="member">Member</SelectItem>
+  1059→  1059→                  <SelectItem value="manager">Manager</SelectItem>
+  1060→  1060→                </SelectContent>
+  1061→  1061→              </Select>
+  1062→  1062→            </div>
+  1063→  1063→            <DialogFooter className="flex justify-end gap-2">
+  1064→  1064→              <Button variant="outline" onClick={() => setMemberToChangeRole(null)}>Cancel</Button>
+  1065→  1065→              <Button onClick={handleChangeRole}>Update Role</Button>
+  1066→  1066→            </DialogFooter>
+  1067→  1067→          </DialogContent>
+  1068→  1068→        </Dialog>
+  1069→  1069→
+  1070→  1070→        {/* ─── Create Team Dialog ─────────────────────────────────────────────── */}
+  1071→  1071→        <Dialog open={showCreateTeamDialog} onOpenChange={setShowCreateTeamDialog}>
+  1072→  1072→          <DialogContent className="sm:max-w-md overflow-hidden">
+  1073→  1073→            <DialogHeader>
+  1074→  1074→              <DialogTitle className="flex items-center gap-2 min-w-0">
+  1075→  1075→                <Plus className="w-5 h-5 shrink-0" />
+  1076→  1076→                <span className="truncate">Create Team</span>
+  1077→  1077→              </DialogTitle>
+  1078→  1078→              <DialogDescription className="break-words">
+  1079→  1079→                Create a team to organize members and control access to records.
+  1080→  1080→              </DialogDescription>
+  1081→  1081→            </DialogHeader>
+  1082→  1082→            <div className="space-y-4 py-4">
+  1083→  1083→              <div className="space-y-2">
+  1084→  1084→                <Label htmlFor="team-name">Team Name *</Label>
+  1085→  1085→                <Input
+  1086→  1086→                  id="team-name"
+  1087→  1087→                  placeholder="e.g. Engineering, Design, Management"
+  1088→  1088→                  value={teamName}
+  1089→  1089→                  onChange={(e) => setTeamName(e.target.value)}
+  1090→  1090→                />
+  1091→  1091→              </div>
+  1092→  1092→              <div className="space-y-2">
+  1093→  1093→                <Label>Team Color</Label>
+  1094→  1094→                <div className="flex flex-wrap gap-2">
+  1095→  1095→                  {TEAM_COLORS.map((color) => (
+  1096→  1096→                    <button
+  1097→  1097→                      key={color}
+  1098→  1098→                      className={`w-8 h-8 rounded-full border-2 transition-transform ${
+  1099→  1099→                        teamColor === color ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+  1100→  1100→                      }`}
+  1101→  1101→                      style={{ backgroundColor: color }}
+  1102→  1102→                      onClick={() => setTeamColor(color)}
+  1103→  1103→                    />
+  1104→  1104→                  ))}
+  1105→  1105→                </div>
+  1106→  1106→              </div>
+  1107→  1107→              <div className="space-y-2">
+  1108→  1108→                <Label htmlFor="team-desc">Description</Label>
+  1109→  1109→                <Textarea
+  1110→  1110→                  id="team-desc"
+  1111→  1111→                  placeholder="What does this team do?"
+  1112→  1112→                  value={teamDescription}
+  1113→  1113→                  onChange={(e) => setTeamDescription(e.target.value)}
+  1114→  1114→                  rows={2}
+  1115→  1115→                />
+  1116→  1116→              </div>
+  1117→  1117→              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+  1118→  1118→                <input
+  1119→  1119→                  type="checkbox"
+  1120→  1120→                  id="cross-team"
+  1121→  1121→                  checked={teamIsCrossTeam}
+  1122→  1122→                  onChange={(e) => setTeamIsCrossTeam(e.target.checked)}
+  1123→  1123→                  className="rounded"
+  1124→  1124→                />
+  1125→  1125→                <div>
+  1126→  1126→                  <Label htmlFor="cross-team" className="text-sm font-medium cursor-pointer">
+  1127→  1127→                    Cross-team (Management)
+  1128→  1128→                  </Label>
+  1129→  1129→                  <p className="text-xs text-muted-foreground">
+  1130→  1130→                    Members can see all records across all teams in this workspace
+  1131→  1131→                  </p>
+  1132→  1132→                </div>
+  1133→  1133→              </div>
+  1134→  1134→            </div>
+  1135→  1135→            <DialogFooter className="flex justify-end gap-2">
+  1136→  1136→              <Button variant="outline" onClick={() => setShowCreateTeamDialog(false)}>Cancel</Button>
+  1137→  1137→              <Button onClick={handleCreateTeam} disabled={isCreatingTeam || !teamName.trim()}>
+  1138→  1138→                {isCreatingTeam ? (
+  1139→  1139→                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</>
+  1140→  1140→                ) : (
+  1141→  1141→                  "Create Team"
+  1142→  1142→                )}
+  1143→  1143→              </Button>
+  1144→  1144→            </DialogFooter>
+  1145→  1145→          </DialogContent>
+  1146→  1146→        </Dialog>
+  1147→  1147→
+  1148→  1148→        {/* ─── Edit Team Dialog ───────────────────────────────────────────────── */}
+  1149→  1149→        <Dialog open={!!editingTeam} onOpenChange={() => setEditingTeam(null)}>
+  1150→  1150→          <DialogContent className="sm:max-w-md overflow-hidden">
+  1151→  1151→            <DialogHeader>
+  1152→  1152→              <DialogTitle className="flex items-center gap-2 min-w-0">
+  1153→  1153→                <Pencil className="w-5 h-5 shrink-0" />
+  1154→  1154→                <span className="truncate">Edit Team</span>
+  1155→  1155→              </DialogTitle>
+  1156→  1156→              <DialogDescription className="break-words">
+  1157→  1157→                Update team details for "{editingTeam?.name}"
+  1158→  1158→              </DialogDescription>
+  1159→  1159→            </DialogHeader>
+  1160→  1160→            <div className="space-y-4 py-4">
+  1161→  1161→              <div className="space-y-2">
+  1162→  1162→                <Label htmlFor="edit-team-name">Team Name</Label>
+  1163→  1163→                <Input
+  1164→  1164→                  id="edit-team-name"
+  1165→  1165→                  value={editTeamName}
+  1166→  1166→                  onChange={(e) => setEditTeamName(e.target.value)}
+  1167→  1167→                />
+  1168→  1168→              </div>
+  1169→  1169→              <div className="space-y-2">
+  1170→  1170→                <Label>Team Color</Label>
+  1171→  1171→                <div className="flex flex-wrap gap-2">
+  1172→  1172→                  {TEAM_COLORS.map((color) => (
+  1173→  1173→                    <button
+  1174→  1174→                      key={color}
+  1175→  1175→                      className={`w-8 h-8 rounded-full border-2 transition-transform ${
+  1176→  1176→                        editTeamColor === color ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+  1177→  1177→                      }`}
+  1178→  1178→                      style={{ backgroundColor: color }}
+  1179→  1179→                      onClick={() => setEditTeamColor(color)}
+  1180→  1180→                    />
+  1181→  1181→                  ))}
+  1182→  1182→                </div>
+  1183→  1183→              </div>
+  1184→  1184→              <div className="space-y-2">
+  1185→  1185→                <Label htmlFor="edit-team-desc">Description</Label>
+  1186→  1186→                <Textarea
+  1187→  1187→                  id="edit-team-desc"
+  1188→  1188→                  value={editTeamDescription}
+  1189→  1189→                  onChange={(e) => setEditTeamDescription(e.target.value)}
+  1190→  1190→                  rows={2}
+  1191→  1191→                />
+  1192→  1192→              </div>
+  1193→  1193→            </div>
+  1194→  1194→            <DialogFooter className="flex justify-end gap-2">
+  1195→  1195→              <Button variant="outline" onClick={() => setEditingTeam(null)}>Cancel</Button>
+  1196→  1196→              <Button onClick={handleUpdateTeam} disabled={isUpdatingTeam}>
+  1197→  1197→                {isUpdatingTeam ? (
+  1198→  1198→                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Updating...</>
+  1199→  1199→                ) : (
+  1200→  1200→                  "Update Team"
+  1201→  1201→                )}
+  1202→  1202→              </Button>
+  1203→  1203→            </DialogFooter>
+  1204→  1204→          </DialogContent>
+  1205→  1205→        </Dialog>
+  1206→  1206→
+  1207→  1207→        {/* ─── Delete Team Confirmation ───────────────────────────────────────── */}
+  1208→  1208→        <AlertDialog open={!!teamToDelete} onOpenChange={() => setTeamToDelete(null)}>
+  1209→  1209→          <AlertDialogContent>
+  1210→  1210→            <AlertDialogHeader>
+  1211→  1211→              <AlertDialogTitle>Delete Team</AlertDialogTitle>
+  1212→  1212→              <AlertDialogDescription>
+  1213→  1213→                Are you sure you want to delete the "{teamToDelete?.name}" team? 
+  1214→  1214→                All team memberships will be removed. Records assigned to this team will become unassigned.
+  1215→  1215→              </AlertDialogDescription>
+  1216→  1216→            </AlertDialogHeader>
+  1217→  1217→            <AlertDialogFooter>
+  1218→  1218→              <AlertDialogCancel>Cancel</AlertDialogCancel>
+  1219→  1219→              <AlertDialogAction
+  1220→  1220→                onClick={handleDeleteTeam}
+  1221→  1221→                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+  1222→  1222→                disabled={isDeletingTeam}
+  1223→  1223→              >
+  1224→  1224→                {isDeletingTeam ? "Deleting..." : "Delete Team"}
+  1225→  1225→              </AlertDialogAction>
+  1226→  1226→            </AlertDialogFooter>
+  1227→  1227→          </AlertDialogContent>
+  1228→  1228→        </AlertDialog>
+  1229→  1229→
+  1230→  1230→        {/* ─── Add Member to Team Dialog ──────────────────────────────────────── */}
+  1231→  1231→        <Dialog open={!!teamToAddMember} onOpenChange={() => setTeamToAddMember(null)}>
+  1232→  1232→          <DialogContent className="sm:max-w-md overflow-hidden">
+  1233→  1233→            <DialogHeader>
+  1234→  1234→              <DialogTitle className="flex items-center gap-2 min-w-0">
+  1235→  1235→                <UserPlus className="w-5 h-5 shrink-0" />
+  1236→  1236→                <span className="truncate">Add Member to {teamToAddMember?.name}</span>
+  1237→  1237→              </DialogTitle>
+  1238→  1238→              <DialogDescription className="break-words">
+  1239→  1239→                Select a workspace member to add to this team.
+  1240→  1240→              </DialogDescription>
+  1241→  1241→            </DialogHeader>
+  1242→  1242→            <div className="space-y-4 py-4">
+  1243→  1243→              <div className="space-y-2">
+  1244→  1244→                <Label>Select Member</Label>
+  1245→  1245→                <Select value={addMemberUserId} onValueChange={setAddMemberUserId}>
+  1246→  1246→                  <SelectTrigger className="w-full">
+  1247→  1247→                    <SelectValue placeholder="Choose a member..." />
+  1248→  1248→                  </SelectTrigger>
+  1249→  1249→                  <SelectContent>
+  1250→  1250→                    {activeMembers.map((member: any) => (
+  1251→  1251→                      <SelectItem key={member.userId} value={member.userId}>
+  1252→  1252→                        <div className="flex items-center gap-2">
+  1253→  1253→                          <Avatar className="w-5 h-5">
+  1254→  1254→                            <AvatarFallback className="text-[9px]">
+  1255→  1255→                              {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+  1256→  1256→                            </AvatarFallback>
+  1257→  1257→                          </Avatar>
+  1258→  1258→                          {member.displayName || member.name}
+  1259→  1259→                        </div>
+  1260→  1260→                      </SelectItem>
+  1261→  1261→                    ))}
+  1262→  1262→                  </SelectContent>
+  1263→  1263→                </Select>
+  1264→  1264→              </div>
+  1265→  1265→              <div className="space-y-2">
+  1266→  1266→                <Label>Team Role</Label>
+  1267→  1267→                <Select value={addMemberRole} onValueChange={(v: any) => setAddMemberRole(v)}>
+  1268→  1268→                  <SelectTrigger className="w-full">
+  1269→  1269→                    <SelectValue />
+  1270→  1270→                  </SelectTrigger>
+  1271→  1271→                  <SelectContent>
+  1272→  1272→                    <SelectItem value="member">
+  1273→  1273→                      <div className="flex items-center gap-2">
+  1274→  1274→                        <Eye className="w-4 h-4 text-gray-500" />
+  1275→  1275→                        <span>Member</span>
+  1276→  1276→                      </div>
+  1277→  1277→                    </SelectItem>
+  1278→  1278→                    <SelectItem value="lead">
+  1279→  1279→                      <div className="flex items-center gap-2">
+  1280→  1280→                        <Shield className="w-4 h-4 text-emerald-500" />
+  1281→  1281→                        <span>Lead</span>
+  1282→  1282→                      </div>
+  1283→  1283→                    </SelectItem>
+  1284→  1284→                  </SelectContent>
+  1285→  1285→                </Select>
+  1286→  1286→              </div>
+  1287→  1287→            </div>
+  1288→  1288→            <DialogFooter className="flex justify-end gap-2">
+  1289→  1289→              <Button variant="outline" onClick={() => setTeamToAddMember(null)}>Cancel</Button>
+  1290→  1290→              <Button onClick={handleAddTeamMember} disabled={isAddingTeamMember || !addMemberUserId}>
+  1291→  1291→                {isAddingTeamMember ? (
+  1292→  1292→                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Adding...</>
+  1293→  1293→                ) : (
+  1294→  1294→                  "Add to Team"
+  1295→  1295→                )}
+  1296→  1296→              </Button>
+  1297→  1297→            </DialogFooter>
+  1298→  1298→          </DialogContent>
+  1299→  1299→        </Dialog>
+  1300→  1300→
+  1301→  1301→        {/* ─── Remove Team Member Confirmation ────────────────────────────────── */}
+  1302→  1302→        <AlertDialog open={!!teamMemberToRemove} onOpenChange={() => setTeamMemberToRemove(null)}>
+  1303→  1303→          <AlertDialogContent>
+  1304→  1304→            <AlertDialogHeader>
+  1305→  1305→              <AlertDialogTitle>Remove from Team</AlertDialogTitle>
+  1306→  1306→              <AlertDialogDescription>
+  1307→  1307→                Are you sure you want to remove {teamMemberToRemove?.userName ?? teamMemberToRemove?.name ?? "this member"} from this team? 
+  1308→  1308→                They will remain a workspace member but lose team-level access.
+  1309→  1309→              </AlertDialogDescription>
+  1310→  1310→            </AlertDialogHeader>
+  1311→  1311→            <AlertDialogFooter>
+  1312→  1312→              <AlertDialogCancel>Cancel</AlertDialogCancel>
+  1313→  1313→              <AlertDialogAction onClick={handleRemoveTeamMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+  1314→  1314→                Remove
+  1315→  1315→              </AlertDialogAction>
+  1316→  1316→            </AlertDialogFooter>
+  1317→  1317→          </AlertDialogContent>
+  1318→  1318→        </AlertDialog>
+  1319→  1319→      </div>
+  1320→  1320→    </PageLayout>
+  1321→  1321→  );
+  1322→  1322→}
+  1323→  1323→
+  1324→  1324→// ─── Team Card Component ──────────────────────────────────────
+  1325→  1325→function TeamCard({
+  1326→  1326→  team,
+  1327→  1327→  members,
+  1328→  1328→  canManage,
+  1329→  1329→  onEdit,
+  1330→  1330→  onDelete,
+  1331→  1331→  onAddMember,
+  1332→  1332→  onRemoveMember,
+  1333→  1333→}: {
+  1334→  1334→  team: any;
+  1335→  1335→  members: any[];
+  1336→  1336→  canManage: boolean;
+  1337→  1337→  onEdit: (team: any) => void;
+  1338→  1338→  onDelete: (team: any) => void;
+  1339→  1339→  onAddMember: (team: any) => void;
+  1340→  1340→  onRemoveMember: (member: any) => void;
+  1341→  1341→}) {
+  1342→  1342→  const [expanded, setExpanded] = useState(false);
+  1343→  1343→
+  1344→  1344→  // Fetch team members
+  1345→  1345→  const teamMembers = useQuery(
+  1346→  1346→    api.teams.crud.getTeamMembers,
+  1347→  1347→    { teamId: team._id }
+  1348→  1348→  ) as any[] | undefined;
+  1349→  1349→
+  1350→  1350→  const activeTeamMembers = teamMembers?.filter((m: any) => true) ?? [];
+  1351→  1351→  const leadCount = activeTeamMembers.filter((m: any) => m.role === "lead").length;
+  1352→  1352→  const teamMemberCount = activeTeamMembers.filter((m: any) => m.role === "member").length;
+  1353→  1353→
+  1354→  1354→  return (
+  1355→  1355→    <Card className="p-0 overflow-hidden">
+  1356→  1356→      {/* Header */}
+  1357→  1357→      <div
+  1358→  1358→        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition"
+  1359→  1359→        onClick={() => setExpanded(!expanded)}
+  1360→  1360→      >
+  1361→  1361→        <div className="flex items-center gap-3">
+  1362→  1362→          <div
+  1363→  1363→            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+  1364→  1364→            style={{ backgroundColor: team.color || "#8B5CF6" }}
+  1365→  1365→          >
+  1366→  1366→            {team.name.charAt(0).toUpperCase()}
+  1367→  1367→          </div>
+  1368→  1368→          <div>
+  1369→  1369→            <div className="font-semibold flex items-center gap-2">
+  1370→  1370→              {team.name}
+  1371→  1371→              {team.isCrossTeam && (
+  1372→  1372→                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-500/10 text-purple-600 border-purple-500/20">
+  1373→  1373→                  Cross-team
+  1374→  1374→                </Badge>
+  1375→  1375→              )}
+  1376→  1376→            </div>
+  1377→  1377→            <div className="text-sm text-muted-foreground">
+  1378→  1378→              {activeTeamMembers.length} member{activeTeamMembers.length !== 1 ? "s" : ""}
+  1379→  1379→              {leadCount > 0 && ` · ${leadCount} lead${leadCount !== 1 ? "s" : ""}`}
+  1380→  1380→            </div>
+  1381→  1381→          </div>
+  1382→  1382→        </div>
+  1383→  1383→        <div className="flex items-center gap-2">
+  1384→  1384→          {canManage && (
+  1385→  1385→            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+  1386→  1386→              <Button
+  1387→  1387→                variant="ghost"
+  1388→  1388→                size="sm"
+  1389→  1389→                title="Edit team"
+  1390→  1390→                onClick={() => onEdit(team)}
+  1391→  1391→              >
+  1392→  1392→                <Pencil className="w-4 h-4" />
+  1393→  1393→              </Button>
+  1394→  1394→              <Button
+  1395→  1395→                variant="ghost"
+  1396→  1396→                size="sm"
+  1397→  1397→                className="text-destructive hover:text-destructive"
+  1398→  1398→                title="Delete team"
+  1399→  1399→                onClick={() => onDelete(team)}
+  1400→  1400→              >
+  1401→  1401→                <Trash2 className="w-4 h-4" />
+  1402→  1402→              </Button>
+  1403→  1403→            </div>
+  1404→  1404→          )}
+  1405→  1405→          <Button variant="ghost" size="sm" className="p-1">
+  1406→  1406→            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+  1407→  1407→          </Button>
+  1408→  1408→        </div>
+  1409→  1409→      </div>
+  1410→  1410→
+  1411→  1411→      {/* Description */}
+  1412→  1412→      {team.description && (
+  1413→  1413→        <div className="px-4 pb-2 text-sm text-muted-foreground">
+  1414→  1414→          {team.description}
+  1415→  1415→        </div>
+  1416→  1416→      )}
+  1417→  1417→
+  1418→  1418→      {/* Expanded: Members */}
+  1419→  1419→      {expanded && (
+  1420→  1420→        <div className="border-t border-border p-4 space-y-3">
+  1421→  1421→          <div className="flex items-center justify-between mb-2">
+  1422→  1422→            <span className="text-sm font-medium text-muted-foreground">Team Members</span>
+  1423→  1423→            {canManage && (
+  1424→  1424→              <Button
+  1425→  1425→                variant="outline"
+  1426→  1426→                size="sm"
+  1427→  1427→                className="gap-1.5 h-7 text-xs"
+  1428→  1428→                onClick={() => onAddMember(team)}
+  1429→  1429→              >
+  1430→  1430→                <UserPlus className="w-3 h-3" />
+  1431→  1431→                Add
+  1432→  1432→              </Button>
+  1433→  1433→            )}
+  1434→  1434→          </div>
+  1435→  1435→          {activeTeamMembers.length === 0 ? (
+  1436→  1436→            <p className="text-sm text-muted-foreground text-center py-4">
+  1437→  1437→              No members in this team yet
+  1438→  1438→            </p>
+  1439→  1439→          ) : (
+  1440→  1440→            <div className="space-y-2">
+  1441→  1441→              {activeTeamMembers.map((member: any) => (
+  1442→  1442→                <div
+  1443→  1443→                  key={member._id}
+  1444→  1444→                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition"
+  1445→  1445→                >
+  1446→  1446→                  <div className="flex items-center gap-2.5">
+  1447→  1447→                    <Avatar className="w-8 h-8">
+  1448→  1448→                      <AvatarFallback className="text-xs bg-primary/10">
+  1449→  1449→                        {(member.userName ?? "U").split(" ").map((n: string) => n[0]).join("")}
+  1450→  1450→                      </AvatarFallback>
+  1451→  1451→                    </Avatar>
+  1452→  1452→                    <div>
+  1453→  1453→                      <div className="text-sm font-medium flex items-center gap-1.5">
+  1454→  1454→                        {member.userName ?? member.userEmail ?? "Unknown"}
+  1455→  1455→                        <Badge
+  1456→  1456→                          variant="outline"
+  1457→  1457→                          className={`text-[10px] px-1 py-0 h-4 ${
+  1458→  1458→                            member.role === "lead"
+  1459→  1459→                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+  1460→  1460→                              : "bg-gray-500/10 text-gray-600 border-gray-500/20"
+  1461→  1461→                          }`}
+  1462→  1462→                        >
+  1463→  1463→                          {member.role}
+  1464→  1464→                        </Badge>
+  1465→  1465→                      </div>
+  1466→  1466→                      <div className="text-xs text-muted-foreground">{member.userEmail}</div>
+  1467→  1467→                    </div>
+  1468→  1468→                  </div>
+  1469→  1469→                  {canManage && (
+  1470→  1470→                    <Button
+  1471→  1471→                      variant="ghost"
+  1472→  1472→                      size="sm"
+  1473→  1473→                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+  1474→  1474→                      onClick={() => onRemoveMember(member)}
+  1475→  1475→                    >
+  1476→  1476→                      <X className="w-3.5 h-3.5" />
+  1477→  1477→                    </Button>
+  1478→  1478→                  )}
+  1479→  1479→                </div>
+  1480→  1480→              ))}
+  1481→  1481→            </div>
+  1482→  1482→          )}
+  1483→  1483→        </div>
+  1484→  1484→      )}
+  1485→  1485→    </Card>
+  1486→  1486→  );
+  1487→  1487→}
+  1488→  1488→
+  1489→  1489→// ─── Solo Mode Prompt ─────────────────────────────────────────
+  1490→  1490→function SoloModePrompt() {
+  1491→  1491→  const { isOwner, upgradeToTeam } = useWorkspaceContext();
+  1492→  1492→  const [isUpgrading, setIsUpgrading] = useState(false);
+  1493→  1493→
+  1494→  1494→  const handleUpgrade = async () => {
+  1495→  1495→    setIsUpgrading(true);
+  1496→  1496→    try {
+  1497→  1497→      upgradeToTeam();
+  1498→  1498→      toast.success("Upgraded to team workspace!");
+  1499→  1499→    } catch (e: any) {
+  1500→  1500→      toast.error(e.message || "Failed to upgrade");
+  1501→  1501→    } finally {
+  1502→  1502→      setIsUpgrading(false);
+  1503→  1503→    }
+  1504→  1504→  };
+  1505→  1505→
+  1506→  1506→  return (
+  1507→  1507→    <PageLayout>
+  1508→  1508→      <div className="max-w-4xl">
+  1509→  1509→        <div className="mb-8">
+  1510→  1510→          <h1 className="text-3xl font-bold text-foreground mb-2">Teams Workspace</h1>
+  1511→  1511→          <p className="text-muted-foreground">
+  1512→  1512→            Collaborate with your team and manage projects together
+  1513→  1513→          </p>
+  1514→  1514→        </div>
+  1515→  1515→
+  1516→  1516→        <Card className="p-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800">
+  1517→  1517→          <div className="text-center max-w-md mx-auto">
+  1518→  1518→            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+  1519→  1519→              <Building2 className="w-8 h-8 text-purple-500" />
+  1520→  1520→            </div>
+  1521→  1521→            <h2 className="text-2xl font-bold mb-3">Upgrade to Team Workspace</h2>
+  1522→  1522→            <p className="text-muted-foreground mb-6">
+  1523→  1523→              You're currently in solo mode. Upgrade to a team workspace to invite members, 
+  1524→  1524→              manage roles, and collaborate on projects together.
+  1525→  1525→            </p>
+  1526→  1526→
+  1527→  1527→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-left">
+  1528→  1528→              <div className="p-3 bg-white/50 dark:bg-white/5 rounded-lg">
+  1529→  1529→                <Users className="w-5 h-5 text-purple-500 mb-2" />
+  1530→  1530→                <div className="text-sm font-medium">Multi-User</div>
+  1531→  1531→                <div className="text-xs text-muted-foreground">Add team members with role-based access</div>
+  1532→  1532→              </div>
+  1533→  1533→              <div className="p-3 bg-white/50 dark:bg-white/5 rounded-lg">
+  1534→  1534→                <Shield className="w-5 h-5 text-blue-500 mb-2" />
+  1535→  1535→                <div className="text-sm font-medium">3 Roles</div>
+  1536→  1536→                <div className="text-xs text-muted-foreground">Owner, Manager, Member permissions</div>
+  1537→  1537→              </div>
+  1538→  1538→              <div className="p-3 bg-white/50 dark:bg-white/5 rounded-lg">
+  1539→  1539→                <Eye className="w-5 h-5 text-green-500 mb-2" />
+  1540→  1540→                <div className="text-sm font-medium">Client Portal</div>
+  1541→  1541→                <div className="text-xs text-muted-foreground">Share verified work with clients</div>
+  1542→  1542→              </div>
+  1543→  1543→            </div>
+  1544→  1544→
+  1545→  1545→            {isOwner ? (
+  1546→  1546→              <Button size="lg" className="gap-2" onClick={handleUpgrade} disabled={isUpgrading}>
+  1547→  1547→                {isUpgrading ? (
+  1548→  1548→                  <><Loader2 className="w-4 h-4 animate-spin" />Upgrading...</>
+  1549→  1549→                ) : (
+  1550→  1550→                  <><Sparkles className="w-4 h-4" />Upgrade to Team</>
+  1551→  1551→                )}
+  1552→  1552→              </Button>
+  1553→  1553→            ) : (
+  1554→  1554→              <p className="text-sm text-muted-foreground">
+  1555→  1555→                Ask the workspace owner to upgrade to a team workspace.
+  1556→  1556→              </p>
+  1557→  1557→            )}
+  1558→  1558→
+  1559→  1559→            <p className="text-xs text-muted-foreground mt-4">
+  1560→  1560→              Your existing data stays intact. You can switch between solo and team modes anytime.
+  1561→  1561→            </p>
+  1562→  1562→          </div>
+  1563→  1563→        </Card>
+  1564→  1564→      </div>
+  1565→  1565→    </PageLayout>
+  1566→  1566→  );
+  1567→  1567→}
+  1568→  1568→

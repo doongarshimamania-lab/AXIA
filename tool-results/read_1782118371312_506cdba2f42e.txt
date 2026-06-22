@@ -1,0 +1,555 @@
+   500→            </div>
+   501→
+   502→            {/* Main Content Tabs */}
+   503→            <Tabs defaultValue="overview" className="space-y-6">
+   504→              <TabsList className="bg-muted/60">
+   505→                <TabsTrigger value="overview">Overview</TabsTrigger>
+   506→                <TabsTrigger value="timeline">Payment Timeline</TabsTrigger>
+   507→                <TabsTrigger value="alerts">Late Alerts</TabsTrigger>
+   508→                <TabsTrigger value="risk">Risk Analysis</TabsTrigger>
+   509→                {isPro && <TabsTrigger value="predictions">Predictions</TabsTrigger>}
+   510→              </TabsList>
+   511→
+   512→              {/* ── Overview Tab ── */}
+   513→              <TabsContent value="overview" className="space-y-6">
+   514→                {/* Platform Breakdown */}
+   515→                <Card>
+   516→                  <CardHeader>
+   517→                    <div className="flex items-center justify-between">
+   518→                      <div>
+   519→                        <CardTitle className="text-lg">Platform Breakdown</CardTitle>
+   520→                        <CardDescription>Payment patterns by platform</CardDescription>
+   521→                      </div>
+   522→                      <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+   523→                        <SelectTrigger className="w-[160px]">
+   524→                          <SelectValue placeholder="All Platforms" />
+   525→                        </SelectTrigger>
+   526→                        <SelectContent>
+   527→                          <SelectItem value="all">All Platforms</SelectItem>
+   528→                          {availablePlatforms.map((p) => {
+   529→                            const meta = platformMeta[p];
+   530→                            return (
+   531→                              <SelectItem key={p} value={p}>
+   532→                                {meta?.label ?? p.charAt(0).toUpperCase() + p.slice(1)}
+   533→                              </SelectItem>
+   534→                            );
+   535→                          })}
+   536→                        </SelectContent>
+   537→                      </Select>
+   538→                    </div>
+   539→                  </CardHeader>
+   540→                  <CardContent>
+   541→                    {platformBreakdown.length === 0 ? (
+   542→                      <div className="text-center py-8 text-muted-foreground">
+   543→                        <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   544→                        <p className="text-sm">No platform data yet. Create invoices with clients to see breakdowns.</p>
+   545→                      </div>
+   546→                    ) : (
+   547→                      <div className="space-y-4">
+   548→                        {platformBreakdown
+   549→                          .filter((p) => selectedPlatform === "all" || p.id === selectedPlatform)
+   550→                          .map((platform) => {
+   551→                            const meta = platformMeta[platform.id] ?? {
+   552→                              label: platform.id.charAt(0).toUpperCase() + platform.id.slice(1),
+   553→                              color: "text-gray-600",
+   554→                              bg: "bg-gray-500",
+   555→                            };
+   556→                            return (
+   557→                              <motion.div
+   558→                                key={platform.id}
+   559→                                initial={{ opacity: 0, x: -10 }}
+   560→                                animate={{ opacity: 1, x: 0 }}
+   561→                                className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+   562→                              >
+   563→                                <div className="flex items-center justify-between mb-3">
+   564→                                  <div className="flex items-center gap-3">
+   565→                                    <div className={`h-3 w-3 rounded-full ${meta.bg}`} />
+   566→                                    <span className="font-semibold text-foreground">{meta.label}</span>
+   567→                                    <Badge variant="outline" className="text-xs">
+   568→                                      {platform.paymentCount} payments
+   569→                                    </Badge>
+   570→                                  </div>
+   571→                                  <div className="flex items-center gap-1.5">
+   572→                                    {platform.trend >= 0 ? (
+   573→                                      <>
+   574→                                        <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+   575→                                        <span className="text-xs text-emerald-600 font-medium">+{platform.trend}%</span>
+   576→                                      </>
+   577→                                    ) : (
+   578→                                      <>
+   579→                                        <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+   580→                                        <span className="text-xs text-red-600 font-medium">{platform.trend}%</span>
+   581→                                      </>
+   582→                                    )}
+   583→                                  </div>
+   584→                                </div>
+   585→
+   586→                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+   587→                                  <div>
+   588→                                    <p className="text-xs text-muted-foreground mb-0.5">Total Earned</p>
+   589→                                    <p className="text-sm font-bold text-foreground">{formatCurrency(platform.totalEarned)}</p>
+   590→                                  </div>
+   591→                                  <div>
+   592→                                    <p className="text-xs text-muted-foreground mb-0.5">Avg Payment Time</p>
+   593→                                    <p className="text-sm font-bold text-foreground">{platform.avgPaymentDays} days</p>
+   594→                                  </div>
+   595→                                  <div>
+   596→                                    <p className="text-xs text-muted-foreground mb-0.5">On-Time Rate</p>
+   597→                                    <div className="flex items-center gap-2">
+   598→                                      <p className="text-sm font-bold text-foreground">{platform.onTimeRate}%</p>
+   599→                                      <Progress value={platform.onTimeRate} className="flex-1 h-1.5" />
+   600→                                    </div>
+   601→                                  </div>
+   602→                                  <div>
+   603→                                    <p className="text-xs text-muted-foreground mb-0.5">At-Risk</p>
+   604→                                    <p className={`text-sm font-bold ${platform.atRiskAmount > 1000 ? "text-red-600" : "text-amber-600"}`}>
+   605→                                      {formatCurrency(platform.atRiskAmount)}
+   606→                                    </p>
+   607→                                  </div>
+   608→                                </div>
+   609→                              </motion.div>
+   610→                            );
+   611→                          })}
+   612→                      </div>
+   613→                    )}
+   614→                  </CardContent>
+   615→                </Card>
+   616→
+   617→                {/* Monthly Trend Chart */}
+   618→                <Card>
+   619→                  <CardHeader>
+   620→                    <div className="flex items-center justify-between">
+   621→                      <div>
+   622→                        <CardTitle className="text-lg">Monthly Trend</CardTitle>
+   623→                        <CardDescription>Earnings and overdue amounts over the past 12 months</CardDescription>
+   624→                      </div>
+   625→                      <Button variant="outline" size="sm" onClick={handleExportReport}>
+   626→                        <BarChart3 className="h-4 w-4 mr-1.5" />
+   627→                        Export
+   628→                      </Button>
+   629→                    </div>
+   630→                  </CardHeader>
+   631→                  <CardContent>
+   632→                    {monthlyTrend.length === 0 || monthlyTrend.every((m) => m.earned === 0 && m.late === 0) ? (
+   633→                      <div className="text-center py-8 text-muted-foreground">
+   634→                        <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   635→                        <p className="text-sm">No trend data yet. Paid and overdue invoices will populate the chart.</p>
+   636→                      </div>
+   637→                    ) : (
+   638→                      <>
+   639→                        {/* Legend */}
+   640→                        <div className="flex items-center gap-6 mb-4">
+   641→                          <div className="flex items-center gap-2">
+   642→                            <div className="h-3 w-3 rounded-sm bg-emerald-500" />
+   643→                            <span className="text-xs text-muted-foreground">Earned</span>
+   644→                          </div>
+   645→                          <div className="flex items-center gap-2">
+   646→                            <div className="h-3 w-3 rounded-sm bg-red-400" />
+   647→                            <span className="text-xs text-muted-foreground">Overdue</span>
+   648→                          </div>
+   649→                        </div>
+   650→
+   651→                        {/* Bar Chart */}
+   652→                        <div className="flex items-end gap-2 h-56">
+   653→                          {monthlyTrend.map((m, i) => {
+   654→                            const earnedHeight = (m.earned / maxEarned) * 100;
+   655→                            const lateHeight = (m.late / maxEarned) * 100;
+   656→                            return (
+   657→                              <div
+   658→                                key={m.key}
+   659→                                className="flex-1 flex flex-col items-center gap-1 group relative"
+   660→                              >
+   661→                                {/* Tooltip */}
+   662→                                <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+   663→                                  <p className="text-xs font-semibold text-foreground">{m.month}</p>
+   664→                                  <p className="text-xs text-emerald-600">Earned: {formatCurrency(m.earned)}</p>
+   665→                                  <p className="text-xs text-red-500">Overdue: {formatCurrency(m.late)}</p>
+   666→                                </div>
+   667→
+   668→                                <div className="flex items-end gap-0.5 w-full h-44">
+   669→                                  <div className="flex-1 relative">
+   670→                                    <motion.div
+   671→                                      className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-emerald-500/80 hover:bg-emerald-500 transition-colors"
+   672→                                      initial={{ height: 0 }}
+   673→                                      animate={{ height: `${earnedHeight}%` }}
+   674→                                      transition={{ duration: 0.6, delay: 0.03 * i }}
+   675→                                    />
+   676→                                  </div>
+   677→                                  <div className="w-1/4 relative">
+   678→                                    <motion.div
+   679→                                      className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-red-400/70 hover:bg-red-400 transition-colors"
+   680→                                      initial={{ height: 0 }}
+   681→                                      animate={{ height: `${lateHeight}%` }}
+   682→                                      transition={{ duration: 0.6, delay: 0.03 * i }}
+   683→                                    />
+   684→                                  </div>
+   685→                                </div>
+   686→
+   687→                                <span className="text-[10px] text-muted-foreground mt-1">{m.month}</span>
+   688→                              </div>
+   689→                            );
+   690→                          })}
+   691→                        </div>
+   692→                      </>
+   693→                    )}
+   694→                  </CardContent>
+   695→                </Card>
+   696→
+   697→                {/* Pro Upsell Banner */}
+   698→                {!isPro && (
+   699→                  <Card className="border-dashed border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20">
+   700→                    <CardContent className="p-6">
+   701→                      <div className="flex items-start gap-4">
+   702→                        <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+   703→                          <Lock className="h-5 w-5 text-amber-600" />
+   704→                        </div>
+   705→                        <div className="flex-1">
+   706→                          <h3 className="font-semibold text-foreground mb-1">Unlock Advanced Payment Analytics</h3>
+   707→                          <p className="text-sm text-muted-foreground mb-3">
+   708→                            Get AI-powered predictions, cash flow forecasting, risk alerts, and personalized recommendations to protect your professional income.
+   709→                          </p>
+   710→                          <div className="flex flex-wrap gap-2 mb-4">
+   711→                            {["Next-month earnings prediction", "Cash flow forecast", "Smart risk recommendations", "Seasonality analysis"].map((feature) => (
+   712→                              <Badge key={feature} variant="secondary" className="text-xs">
+   713→                                <Zap className="h-3 w-3 mr-1 text-amber-500" />
+   714→                                {feature}
+   715→                              </Badge>
+   716→                            ))}
+   717→                          </div>
+   718→                          <Button
+   719→                            className="bg-amber-600 hover:bg-amber-700 text-white"
+   720→                            onClick={() => toast.info("Upgrade to Pro to unlock predictions and advanced analytics")}
+   721→                          >
+   722→                            <Shield className="h-4 w-4 mr-1.5" />
+   723→                            Upgrade to Pro
+   724→                          </Button>
+   725→                        </div>
+   726→                      </div>
+   727→                    </CardContent>
+   728→                  </Card>
+   729→                )}
+   730→              </TabsContent>
+   731→
+   732→              {/* ── Payment Timeline Tab ── */}
+   733→              <TabsContent value="timeline" className="space-y-4">
+   734→                <Card>
+   735→                  <CardHeader>
+   736→                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+   737→                      <div>
+   738→                        <CardTitle className="text-lg">Recent Payments</CardTitle>
+   739→                        <CardDescription>Track all incoming payments with dates, amounts, and status</CardDescription>
+   740→                      </div>
+   741→                      <div className="flex items-center gap-2 w-full sm:w-auto">
+   742→                        <div className="relative flex-1 sm:w-60">
+   743→                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   744→                          <Input
+   745→                            placeholder="Search client or project..."
+   746→                            value={searchQuery}
+   747→                            onChange={(e) => setSearchQuery(e.target.value)}
+   748→                            className="pl-9"
+   749→                          />
+   750→                        </div>
+   751→                        <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+   752→                          <SelectTrigger className="w-[140px] h-9">
+   753→                            <SelectValue placeholder="Platform" />
+   754→                          </SelectTrigger>
+   755→                          <SelectContent>
+   756→                            <SelectItem value="all">All Platforms</SelectItem>
+   757→                            {availablePlatforms.map((p) => {
+   758→                              const meta = platformMeta[p];
+   759→                              return (
+   760→                                <SelectItem key={p} value={p}>
+   761→                                  {meta?.label ?? p.charAt(0).toUpperCase() + p.slice(1)}
+   762→                                </SelectItem>
+   763→                              );
+   764→                            })}
+   765→                          </SelectContent>
+   766→                        </Select>
+   767→                      </div>
+   768→                    </div>
+   769→                  </CardHeader>
+   770→                  <CardContent>
+   771→                    {filteredPayments.length === 0 ? (
+   772→                      <div className="text-center py-8 text-muted-foreground">
+   773→                        <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   774→                        <p className="text-sm">No payments match your filters</p>
+   775→                      </div>
+   776→                    ) : (
+   777→                      <div className="space-y-0 max-h-96 overflow-y-auto">
+   778→                        {filteredPayments.map((payment, idx) => {
+   779→                          const meta = platformMeta[payment.platform] ?? {
+   780→                            label: payment.platform,
+   781→                            bg: "bg-gray-500",
+   782→                          };
+   783→                          const statusConfig = {
+   784→                            on_time: { badge: "secondary" as const, label: "On Time", icon: CheckCircle2, iconColor: "text-emerald-500" },
+   785→                            late: { badge: "destructive" as const, label: `${payment.daysLate}d Late`, icon: AlertTriangle, iconColor: "text-red-500" },
+   786→                            early: { badge: "secondary" as const, label: "Early", icon: CheckCircle2, iconColor: "text-emerald-600" },
+   787→                          };
+   788→                          const status = statusConfig[payment.status];
+   789→                          const StatusIcon = status.icon;
+   790→
+   791→                          return (
+   792→                            <motion.div
+   793→                              key={payment.id}
+   794→                              initial={{ opacity: 0, y: 10 }}
+   795→                              animate={{ opacity: 1, y: 0 }}
+   796→                              transition={{ delay: idx * 0.04 }}
+   797→                            >
+   798→                              <div className="flex items-center gap-4 py-3 hover:bg-muted/30 rounded-lg px-2 transition-colors">
+   799→                                <div className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+   800→                                  payment.status === "late" ? "bg-red-100 dark:bg-red-950/40" : "bg-emerald-100 dark:bg-emerald-950/40"
+   801→                                }`}>
+   802→                                  <StatusIcon className={`h-4 w-4 ${status.iconColor}`} />
+   803→                                </div>
+   804→                                <div className="flex-1 min-w-0">
+   805→                                  <div className="flex items-center gap-2 mb-0.5">
+   806→                                    <p className="text-sm font-semibold text-foreground truncate">{payment.client}</p>
+   807→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} title={meta.label} />
+   808→                                  </div>
+   809→                                  <p className="text-xs text-muted-foreground truncate">
+   810→                                    {payment.project} · Due {payment.dueDate}
+   811→                                  </p>
+   812→                                </div>
+   813→                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+   814→                                  <p className="text-sm font-bold text-foreground">{formatCurrency(payment.amount)}</p>
+   815→                                  <Badge variant={status.badge} className="text-[10px] h-5">{status.label}</Badge>
+   816→                                </div>
+   817→                              </div>
+   818→                              {idx < filteredPayments.length - 1 && <Separator />}
+   819→                            </motion.div>
+   820→                          );
+   821→                        })}
+   822→                      </div>
+   823→                    )}
+   824→                  </CardContent>
+   825→                </Card>
+   826→              </TabsContent>
+   827→
+   828→              {/* ── Late Alerts Tab ── */}
+   829→              <TabsContent value="alerts" className="space-y-4">
+   830→                <Card>
+   831→                  <CardHeader>
+   832→                    <div className="flex items-center justify-between">
+   833→                      <div>
+   834→                        <CardTitle className="text-lg flex items-center gap-2">
+   835→                          <AlertTriangle className="h-5 w-5 text-red-500" />
+   836→                          Late Payment Alerts
+   837→                        </CardTitle>
+   838→                        <CardDescription>Active alerts for overdue payments requiring your attention</CardDescription>
+   839→                      </div>
+   840→                      <Badge variant="destructive" className="text-xs">{latePaymentAlerts.length} Active</Badge>
+   841→                    </div>
+   842→                  </CardHeader>
+   843→                  <CardContent>
+   844→                    {latePaymentAlerts.length === 0 ? (
+   845→                      <div className="text-center py-8 text-muted-foreground">
+   846→                        <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-emerald-500" />
+   847→                        <p className="text-sm font-medium text-emerald-600">All Clear!</p>
+   848→                        <p className="text-xs text-muted-foreground mt-1">No overdue payments right now</p>
+   849→                      </div>
+   850→                    ) : (
+   851→                      <div className="space-y-3">
+   852→                        {latePaymentAlerts.map((alert, idx) => {
+   853→                          const meta = platformMeta[alert.platform] ?? { label: alert.platform, bg: "bg-gray-500" };
+   854→                          const isCritical = alert.severity === "critical";
+   855→
+   856→                          return (
+   857→                            <motion.div
+   858→                              key={alert.id}
+   859→                              initial={{ opacity: 0, x: -10 }}
+   860→                              animate={{ opacity: 1, x: 0 }}
+   861→                              transition={{ delay: idx * 0.08 }}
+   862→                              className={`rounded-lg border p-4 transition-colors ${
+   863→                                isCritical
+   864→                                  ? "border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20"
+   865→                                  : "border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+   866→                              }`}
+   867→                            >
+   868→                              <div className="flex items-start gap-3">
+   869→                                <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+   870→                                  isCritical ? "bg-red-100 dark:bg-red-900/40" : "bg-amber-100 dark:bg-amber-900/40"
+   871→                                }`}>
+   872→                                  <AlertTriangle className={`h-4 w-4 ${isCritical ? "text-red-600" : "text-amber-600"}`} />
+   873→                                </div>
+   874→                                <div className="flex-1 min-w-0">
+   875→                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+   876→                                    <span className="text-sm font-semibold text-foreground">{alert.client}</span>
+   877→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} />
+   878→                                    <Badge variant={isCritical ? "destructive" : "secondary"} className="text-[10px] h-5">
+   879→                                      {isCritical ? "Critical" : "Warning"}
+   880→                                    </Badge>
+   881→                                    <Badge variant="outline" className="text-[10px] h-5">{alert.daysOverdue}d overdue</Badge>
+   882→                                  </div>
+   883→                                  <p className="text-xs text-muted-foreground mb-2">{alert.message}</p>
+   884→                                  <div className="flex items-center gap-2">
+   885→                                    <span className="text-sm font-bold text-red-600">{formatCurrency(alert.amount)}</span>
+   886→                                    <span className="text-xs text-muted-foreground">at risk</span>
+   887→                                  </div>
+   888→                                </div>
+   889→                                <div className="flex flex-col gap-1.5 flex-shrink-0">
+   890→                                  <Button
+   891→                                    size="sm"
+   892→                                    variant={isCritical ? "default" : "outline"}
+   893→                                    className={`text-xs h-7 ${
+   894→                                      isCritical
+   895→                                        ? "bg-red-600 hover:bg-red-700 text-white"
+   896→                                        : "border-amber-400 text-amber-700 hover:bg-amber-50"
+   897→                                    }`}
+   898→                                    onClick={() => handleAlertAction(alert.id, "Send Reminder")}
+   899→                                  >
+   900→                                    <Timer className="h-3 w-3 mr-1" />
+   901→                                    Send Reminder
+   902→                                  </Button>
+   903→                                  {isPro && (
+   904→                                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleAlertAction(alert.id, "Escalate")}>
+   905→                                      <Shield className="h-3 w-3 mr-1" />
+   906→                                      Escalate
+   907→                                    </Button>
+   908→                                  )}
+   909→                                </div>
+   910→                              </div>
+   911→                            </motion.div>
+   912→                          );
+   913→                        })}
+   914→                      </div>
+   915→                    )}
+   916→                  </CardContent>
+   917→                </Card>
+   918→
+   919→                {/* Late Payment Summary */}
+   920→                <Card>
+   921→                  <CardHeader>
+   922→                    <CardTitle className="text-lg">Late Payment Impact</CardTitle>
+   923→                  </CardHeader>
+   924→                  <CardContent>
+   925→                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   926→                      <div className="text-center p-4 rounded-lg bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+   927→                        <p className="text-2xl font-bold text-red-600">
+   928→                          {formatCurrency(latePaymentAlerts.reduce((s, a) => s + a.amount, 0))}
+   929→                        </p>
+   930→                        <p className="text-xs text-muted-foreground mt-1">Total Overdue Amount</p>
+   931→                      </div>
+   932→                      <div className="text-center p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+   933→                        <p className="text-2xl font-bold text-amber-600">
+   934→                          {latePaymentAlerts.length > 0
+   935→                            ? (latePaymentAlerts.reduce((s, a) => s + a.daysOverdue, 0) / latePaymentAlerts.length).toFixed(0)
+   936→                            : 0}d
+   937→                        </p>
+   938→                        <p className="text-xs text-muted-foreground mt-1">Average Days Overdue</p>
+   939→                      </div>
+   940→                      <div className="text-center p-4 rounded-lg bg-muted/50 border border-border">
+   941→                        <p className="text-2xl font-bold text-foreground">
+   942→                          {latePaymentAlerts.filter((a) => a.severity === "critical").length}
+   943→                        </p>
+   944→                        <p className="text-xs text-muted-foreground mt-1">Critical Alerts</p>
+   945→                      </div>
+   946→                    </div>
+   947→                  </CardContent>
+   948→                </Card>
+   949→              </TabsContent>
+   950→
+   951→              {/* ── Risk Analysis Tab ── */}
+   952→              <TabsContent value="risk" className="space-y-4">
+   953→                <Card>
+   954→                  <CardHeader>
+   955→                    <div className="flex items-center justify-between">
+   956→                      <div>
+   957→                        <CardTitle className="text-lg flex items-center gap-2">
+   958→                          <Users className="h-5 w-5 text-amber-500" />
+   959→                          Client Risk Analysis
+   960→                        </CardTitle>
+   961→                        <CardDescription>Clients ranked by payment risk score based on invoice history</CardDescription>
+   962→                      </div>
+   963→                    </div>
+   964→                  </CardHeader>
+   965→                  <CardContent>
+   966→                    {riskClients.length === 0 ? (
+   967→                      <div className="text-center py-8 text-muted-foreground">
+   968→                        <Users className="h-10 w-10 mx-auto mb-3 opacity-40" />
+   969→                        <p className="text-sm">No client risk data yet. Add clients and create invoices to see risk analysis.</p>
+   970→                      </div>
+   971→                    ) : (
+   972→                      <div className="space-y-3">
+   973→                        {riskClients.map((client, idx) => {
+   974→                          const meta = platformMeta[client.platform] ?? {
+   975→                            label: client.platform,
+   976→                            color: "text-gray-600",
+   977→                            bg: "bg-gray-500",
+   978→                          };
+   979→                          const riskColor = client.riskScore >= 70 ? "text-red-600" : client.riskScore >= 40 ? "text-amber-600" : "text-emerald-600";
+   980→                          const riskBg = client.riskScore >= 70 ? "bg-red-100 dark:bg-red-950/40" : client.riskScore >= 40 ? "bg-amber-100 dark:bg-amber-950/40" : "bg-emerald-100 dark:bg-emerald-950/40";
+   981→
+   982→                          return (
+   983→                            <motion.div
+   984→                              key={client.client}
+   985→                              initial={{ opacity: 0, x: -10 }}
+   986→                              animate={{ opacity: 1, x: 0 }}
+   987→                              transition={{ delay: idx * 0.08 }}
+   988→                              className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+   989→                            >
+   990→                              <div className="flex items-center gap-4">
+   991→                                <div className={`h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0 ${riskBg}`}>
+   992→                                  <span className={`text-sm font-bold ${riskColor}`}>{client.riskScore}</span>
+   993→                                </div>
+   994→                                <div className="flex-1 min-w-0">
+   995→                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+   996→                                    <span className="text-sm font-semibold text-foreground">{client.client}</span>
+   997→                                    <div className={`h-2 w-2 rounded-full ${meta.bg}`} />
+   998→                                    <Badge variant={client.riskScore >= 70 ? "destructive" : client.riskScore >= 40 ? "secondary" : "outline"} className="text-[10px] h-5">
+   999→                                      {client.riskScore >= 70 ? "High Risk" : client.riskScore >= 40 ? "Medium Risk" : "Low Risk"}
+  1000→                                    </Badge>
+  1001→                                    <Badge variant="outline" className="text-[10px] h-5">
+  1002→                                      {client.trend === "worsening" ? "↓ Worsening" : client.trend === "improving" ? "↑ Improving" : "→ Stable"}
+  1003→                                    </Badge>
+  1004→                                  </div>
+  1005→                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+  1006→                                    <span>Total: {formatCurrency(client.totalInvoiced)}</span>
+  1007→                                    <span>Late: {client.latePayments}/{client.totalPayments}</span>
+  1008→                                    <span>Avg delay: {client.avgDaysLate.toFixed(1)}d</span>
+  1009→                                    <span>Last: {client.lastPaymentStatus === "late" ? "❌ Late" : "✓ On time"}</span>
+  1010→                                  </div>
+  1011→                                  <div className="flex items-center gap-2 mt-2">
+  1012→                                    <Progress value={client.riskScore} className="flex-1 h-1.5" />
+  1013→                                    <span className={`text-xs font-medium ${riskColor}`}>{client.riskScore}%</span>
+  1014→                                  </div>
+  1015→                                </div>
+  1016→                              </div>
+  1017→                            </motion.div>
+  1018→                          );
+  1019→                        })}
+  1020→                      </div>
+  1021→                    )}
+  1022→                  </CardContent>
+  1023→                </Card>
+  1024→              </TabsContent>
+  1025→
+  1026→              {/* ── Predictions Tab (Pro only) ── */}
+  1027→              {isPro && (
+  1028→                <TabsContent value="predictions" className="space-y-4">
+  1029→                  <Card>
+  1030→                    <CardHeader>
+  1031→                      <CardTitle className="text-lg flex items-center gap-2">
+  1032→                        <TrendingUp className="h-5 w-5 text-emerald-500" />
+  1033→                        Predictive Analytics
+  1034→                      </CardTitle>
+  1035→                      <CardDescription>AI-powered predictions based on your payment history</CardDescription>
+  1036→                    </CardHeader>
+  1037→                    <CardContent>
+  1038→                      <div className="text-center py-12 text-muted-foreground">
+  1039→                        <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-40" />
+  1040→                        <p className="text-sm">Predictive analytics will be available as more invoice data is collected.</p>
+  1041→                        <p className="text-xs mt-1">Need at least 3 months of invoice history for accurate predictions.</p>
+  1042→                      </div>
+  1043→                    </CardContent>
+  1044→                  </Card>
+  1045→                </TabsContent>
+  1046→              )}
+  1047→            </Tabs>
+  1048→          </>
+  1049→        )}
+  1050→      </PageLayout>
+  1051→    </motion.div>
+  1052→  );
+  1053→}
+  1054→
