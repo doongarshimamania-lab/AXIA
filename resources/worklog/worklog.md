@@ -571,3 +571,27 @@ Stage Summary:
 - Rules file backup policy now satisfied: complete-code ZIP exists in /download/, /backups/, AND GitHub Release
 - No source code was modified; no files were deleted; only reorganized via git mv (history preserved)
 - Preview server is live at https://preview-<bot-id>.space-z.ai/ serving the latest axia/dist/ build
+
+---
+Task ID: start-preview-latest-from-github
+Agent: main
+Task: Start the preview with the latest code from github.
+
+Work Log:
+- Discovered local HEAD was at 1e47069 (pre-reorg state — single src/ at root, no axia/ folder)
+- git fetch origin showed remote ahead by ~30 commits including 38e649f (folder reorg) + a9608ec (release script) + 04772eb (audit report)
+- git reset --hard origin/main brought working tree to HEAD 04772eb (latest) — top-level now has axia/ + resources/ + skills/ + upload/
+- Verified axia/ contains: src/, public/, package.json, vite.config.ts, tsconfig*, convex.json, components.json, .env.example, README.md, Caddyfile, Procfile, lockfiles
+- Created axia/.env with VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud (URL sourced from resources/.zscripts/dev.sh CSP header + worklog notes)
+- cd axia && bun install → 538 packages installed in 2.50s
+- cd axia && bunx vite build → 3381 modules transformed in 12.90s; dist/ = index.html (8.79 kB) + index-CA6RJur8.js (2.56 MB) + index-DsYRzgfN.js (502 kB) + pdf-NkhGRooA.js (472 kB) + html2canvas + purify + index.es + index-vCAQmmmF.css (362 kB)
+- Discovered stale old-path watchdog at /home/z/my-project/.zscripts/dev.sh (PIDs 859, 863, 864) still running and respawning python3 servers pointing to non-existent /home/z/my-project/timelock/dist — killed all 4 PIDs
+- Started fresh watchdog: setsid bash resources/.zscripts/dev.sh (DIST=/home/z/my-project/axia/dist, PORT=3000)
+- Verified: PID 5373 (watchdog) + PID 5375 (python3 server) running, port 3000 LISTEN, curl GET / returns HTTP 200 8794 bytes, curl GET /assets/index-CA6RJur8.js returns HTTP 200 2564732 bytes (matches new build)
+
+Stage Summary:
+- Local working tree now in sync with origin/main at 04772eb (latest commit, includes folder reorg + Phase 1 manual send + notifications + audit report)
+- axia/ is the runnable production folder; latest build artifacts in axia/dist/
+- Preview server live on port 3000 serving the latest build via the resources/.zscripts/dev.sh watchdog
+- Preview URL: https://preview-<bot-id>.space-z.ai/
+- Convex backend: https://veracious-zebra-519.convex.cloud (CSP allows both https + wss)
