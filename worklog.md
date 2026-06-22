@@ -322,3 +322,40 @@ Stage Summary:
 - Activity feed: strict role hierarchy enforced (own hidden; manager sees only members; dev sees all; member sees none).
 - Frontend hardcoded role bug eliminated — every user now correctly sees only their actual role's UI.
 - Convex deploy successful; preview daemon serving new build.
+
+---
+Task ID: v5.4.0-security-audit
+Agent: Main agent (Super Z)
+Task: Complete Wave 1 + Wave 2 security audit of AXIA. Apply 16-char password cap (LPDOS guard). Verify all changes pushed to GitHub + git release + disk. Clean git repo strictly.
+
+Work Log:
+- Audited entire AXIA codebase (axia/src/convex/*, axia/src/**/*.{ts,tsx}, chrome-extension/*)
+- Wave 1 (Audit): 250+ findings — 40 Critical, 84 High, 84 Medium, 42 Low
+  - Backend: 203 findings across 7 categories (unbounded .collect(), missing rate limits, missing auth, IDOR, reversible token storage, hardcoded secrets, unbounded input)
+  - Frontend: 47 findings (clipboard attacks, localStorage secrets, postMessage origin bypass, open redirect, Chrome extension surveillance surface)
+- Wave 2 (Remediation): 13 patches applied
+  1. auth.ts + Auth.tsx: 16-char password cap (LPDOS guard)
+  2. OwnerDashboard.tsx: removed hardcoded CORRECT_PASSWORD, now calls server mutation
+  3. OwnerDashboard.tsx: removed localStorage auth-state auto-restore (XSS bypass)
+  4. proposals/billing/scope/crud.ts: crypto.getRandomValues replaces Math.random()
+  5. crypto.ts: verifyJWT uses crypto.timingSafeEqual
+  6. ownerAuth.ts: constant-time password compare + "use node" + bounded rate-limit query
+  7. audit.ts: rate-limit logOperation (60/min/user) + bounded verifyAuditIntegrity + 16KB snapshot cap
+  8. evidence.ts: IDOR fix — recordEvents/finalizeEvidenceSession/getEvidenceSummary verify ownership
+  9. debug.ts: admin-only (was any-auth)
+  10. seed.ts: admin-only (was any-auth)
+  11. Auth.tsx: open-redirect whitelist
+  12. users.ts: removed subscriptionTier from updateProfile (billing bypass); added setUserTier, grantTierByEmail, setUserRole admin mutations
+  13. ownerAuth.ts: bounded rate-limit query + input length cap
+- Generated audit PDF: download/AXIA_Security_Audit_Report_Wave1_Wave2.pdf (37 pages, 206 KB, includes 62-row attack vector matrix + team/tier grant guide)
+- Repo cleanup: untracked resources/, tool-results/, skills/, download/, timelock/, disk/, agent-ctx/, .zscripts/, etc. Tracked file count: 5471 -> 515 (-91%)
+- Committed in 2 commits (a717572 + 864d607), pushed to GitHub
+- Created and pushed annotated tag v5.4.0-security-audit
+
+Stage Summary:
+- 13 high-priority Critical/High vulnerabilities patched
+- 250+ remaining findings documented in audit PDF for follow-up releases
+- Repo is now lean (515 tracked files, only axia/ production code + 4 root files)
+- Tag v5.4.0-security-audit is on GitHub: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.4.0-security-audit
+- Audit PDF is on disk: /home/z/my-project/download/AXIA_Security_Audit_Report_Wave1_Wave2.pdf
+- Team/tier grant mechanism documented in PDF section 8 — admin mutations setUserTier, grantTierByEmail, setUserRole added to users.ts
