@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import PaymentReminders from "@/components/billing/PaymentReminders";
@@ -38,6 +39,8 @@ import {
   Receipt,
   ArrowUpRight,
   Hash,
+  Tag as TagIcon,
+  X,
 } from "lucide-react";
 import { TruthLayerBadge } from "@/components/truth-layer/TruthLayerBadge";
 import { calculateFinancialVerificationScore } from "@/components/truth-layer/truthLayerHelpers";
@@ -48,6 +51,8 @@ import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { PageLayout } from "@/components/design-system/PageLayout";
 import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
 import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
+// ponytail: import reusable tag components for badges, picker popover, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -224,6 +229,8 @@ export default function Invoices() {
   const [shareInvoiceId, setShareInvoiceId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  // ponytail: tag-filter state for the invoice list — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   // ── Phase 1: Manual send dialog state ──
   const [manualSendInvoice, setManualSendInvoice] = useState<{
@@ -235,6 +242,10 @@ export default function Invoices() {
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
   const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
+  // ponytail: load the workspace's tags so we can render TagBadges on each invoice row
+  // and a tag-filter chip bar above the list.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // ── Convex Queries ─────────────────────────────────────────────────────
   const invoices = useQuery(api.billing.crud.getInvoices, workspaceId ? { workspaceId } : "skip") as Invoice[] | undefined;
@@ -265,9 +276,13 @@ export default function Invoices() {
         searchQuery === "" ||
         (inv.clientName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesFilter && matchesSearch;
+      // ponytail: also apply the tag filter (if any) — invoices whose tagIds
+      // don't include the selected tag are hidden.
+      const matchesTag = !activeTagFilter ||
+        (Array.isArray((inv as any).tagIds) && (inv as any).tagIds.includes(activeTagFilter));
+      return matchesFilter && matchesSearch && matchesTag;
     });
-  }, [safeInvoices, activeFilter, searchQuery]);
+  }, [safeInvoices, activeFilter, searchQuery, activeTagFilter]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<string, number> = { all: safeInvoices.length };
@@ -515,6 +530,47 @@ export default function Invoices() {
               className="pl-9"
             />
           </div>
+          {/* ponytail: tag-filter chip bar — toggle pattern, only renders when there
+              are tags to filter by. */}
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                <TagIcon className="h-3 w-3" /> Filter:
+              </span>
+              {allTags.map((t: any) => {
+                const isActive = activeTagFilter === t._id;
+                return (
+                  <button
+                    key={t._id}
+                    type="button"
+                    onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                      isActive
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                    }`}
+                    style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                  >
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: t.color ?? "#888" }}
+                    />
+                    {t.name}
+                    {isActive && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+              {activeTagFilter && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTagFilter(null)}
+                  className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             {import.meta.env.DEV && safeInvoices.length === 0 && (
               <Button
@@ -707,6 +763,15 @@ export default function Invoices() {
                                     </span>
                                   )}
                                 </div>
+                                {/* ponytail: read-only tag badges on each invoice row. */}
+                                <div className="mt-1">
+                                  <TagBadges
+                                    tagIds={(invoice as any).tagIds}
+                                    tags={allTags}
+                                    max={3}
+                                    size="xs"
+                                  />
+                                </div>
                               </div>
                             </div>
 
@@ -730,6 +795,32 @@ export default function Invoices() {
                                 </p>
                               </div>
                               <div className="flex items-center gap-1">
+                                {/* ponytail: Manage-tags popover — TagPicker with entityId persists
+                                    immediately via setEntityTags, so no extra save logic needed. */}
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 px-2"
+                                      title="Manage tags"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-[320px]" align="end" onClick={(e) => e.stopPropagation()}>
+                                    <div className="space-y-2">
+                                      <div className="text-xs font-medium text-muted-foreground">Tags for {invoice.invoiceNumber}</div>
+                                      <TagPicker
+                                        entityType="invoices"
+                                        entityId={invoice._id}
+                                        initialTagIds={(invoice as any).tagIds ?? []}
+                                        categoryHint="general"
+                                      />
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                                 {invoice.status === "draft" && (
                                   <>
                                     <Button
