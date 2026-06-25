@@ -1,0 +1,779 @@
+     1→import { useState, useEffect, useMemo } from "react";
+     2→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     3→import { Button } from "@/components/ui/button";
+     4→import { Badge } from "@/components/ui/badge";
+     5→import { Input } from "@/components/ui/input";
+     6→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+     7→import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+     8→import { Label } from "@/components/ui/label";
+     9→import { Skeleton } from "@/components/ui/skeleton";
+    10→import { motion, AnimatePresence } from "framer-motion";
+    11→import { toast } from "sonner";
+    12→import {
+    13→  Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
+    14→  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
+    15→} from "lucide-react";
+    16→import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
+    17→import { useAuth } from "@/hooks/use-auth";
+    18→import { useWorkspaceContext } from "@/hooks/use-workspace";
+    19→import { useQuery, useMutation } from "@/lib/safe-convex-react";
+    20→import { api } from "@/convex/_generated/api";
+    21→import type { Id } from "@/convex/_generated/dataModel";
+    22→import { PageLayout } from "@/components/design-system/PageLayout";
+    23→
+    24→// ─── Helpers ─────────────────────────────────────────────────────────────────
+    25→
+    26→function formatTime(seconds: number) {
+    27→  const h = Math.floor(seconds / 3600);
+    28→  const m = Math.floor((seconds % 3600) / 60);
+    29→  const s = seconds % 60;
+    30→  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    31→}
+    32→
+    33→function formatDuration(minutes: number | undefined) {
+    34→  if (!minutes) return "0h 0m";
+    35→  const hours = Math.floor(minutes / 60);
+    36→  const mins = minutes % 60;
+    37→  return `${hours}h ${mins}m`;
+    38→}
+    39→
+    40→function formatDate(ts: number) {
+    41→  return new Date(ts).toLocaleDateString("en-US", {
+    42→    month: "short",
+    43→    day: "numeric",
+    44→    year: "numeric",
+    45→  });
+    46→}
+    47→
+    48→// ─── Component ───────────────────────────────────────────────────────────────
+    49→
+    50→export default function TimeTracking() {
+    51→  const { tier } = useSubscriptionTier();
+    52→  const { isAuthenticated, isLoading: authLoading } = useAuth();
+    53→  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+    54→  const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+    55→
+    56→  // ─── Convex queries ──────────────────────────────────────────────────────
+    57→  const currentSession = useQuery(api.tracking.crud.getCurrentSession,
+    58→    workspaceId ? { workspaceId } : {}
+    59→  );
+    60→  const sessionsData = useQuery(api.tracking.crud.getSessions,
+    61→    workspaceId ? { workspaceId } : {}
+    62→  );
+    63→  const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
+    64→  const clients = useQuery(api.clients.crud.getClients,
+    65→    workspaceId ? { workspaceId } : {}
+    66→  );
+    67→
+    68→  // ─── Convex mutations ────────────────────────────────────────────────────
+    69→  const startSessionMutation = useMutation(api.tracking.crud.startSession);
+    70→  const stopSessionMutation = useMutation(api.tracking.crud.stopSession);
+    71→  const pauseSessionMutation = useMutation(api.tracking.crud.pauseSession);
+    72→  const resumeSessionMutation = useMutation(api.tracking.crud.resumeSession);
+    73→  const createManualEntryMutation = useMutation(api.tracking.crud.createManualEntry);
+    74→  const deleteSessionMutation = useMutation(api.tracking.crud.deleteSession);
+    75→
+    76→  // ─── Local state ─────────────────────────────────────────────────────────
+    77→  const [isPaused, setIsPaused] = useState(false);
+    78→  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    79→  const [showManualEntry, setShowManualEntry] = useState(false);
+    80→  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+    81→  const [selectedProject, setSelectedProject] = useState("");
+    82→  const [selectedPlatform, setSelectedPlatform] = useState<"upwork" | "fiverr" | "toptal" | "manual">("manual");
+    83→  const [entryMemo, setEntryMemo] = useState("");
+    84→  const [isStarting, setIsStarting] = useState(false);
+    85→  const [isStopping, setIsStopping] = useState(false);
+    86→  const [isCreatingManual, setIsCreatingManual] = useState(false);
+    87→  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    88→
+    89→  // Manual entry form state
+    90→  const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
+    91→  const [manualStart, setManualStart] = useState("09:00");
+    92→  const [manualEnd, setManualEnd] = useState("17:00");
+    93→  const [manualProject, setManualProject] = useState("");
+    94→  const [manualClient, setManualClient] = useState("");
+    95→  const [manualMemo, setManualMemo] = useState("");
+    96→
+    97→  // ─── Demo mode ───────────────────────────────────────────────────────────
+    98→  const isDemoMode = !authLoading && !isAuthenticated;
+    99→
+   100→  // ─── Loading timeout ────────────────────────────────────────────────────
+   101→  const [queryTimeout, setQueryTimeout] = useState(false);
+   102→
+   103→  useEffect(() => {
+   104→    if (sessionsData === undefined && !authLoading) {
+   105→      const timer = setTimeout(() => setQueryTimeout(true), 3000);
+   106→      return () => clearTimeout(timer);
+   107→    } else {
+   108→      setQueryTimeout(false);
+   109→    }
+   110→  }, [sessionsData, authLoading]);
+   111→
+   112→  const isLoading = !authLoading && sessionsData === undefined && !queryTimeout && !isDemoMode;
+   113→
+   114→  // ─── Derived data from projects & clients ──────────────────────────────
+   115→  // Build a lookup map for projects by _id so we can resolve the selected project
+   116→  const projectMap = useMemo(() => {
+   117→    const map = new Map<string, any>();
+   118→    if (projects) {
+   119→      for (const p of projects) {
+   120→        map.set(p._id, p);
+   121→      }
+   122→    }
+   123→    return map;
+   124→  }, [projects]);
+   125→
+   126→  // Build a lookup map for clients by _id
+   127→  const clientMap = useMemo(() => {
+   128→    const map = new Map<string, any>();
+   129→    if (clients) {
+   130→      for (const c of clients) {
+   131→        map.set(c._id, c);
+   132→      }
+   133→    }
+   134→    return map;
+   135→  }, [clients]);
+   136→
+   137→  // Resolve the selected project's client info
+   138→  const selectedProjectData = selectedProject ? projectMap.get(selectedProject) : null;
+   139→  const selectedClientData = selectedProjectData?.clientId
+   140→    ? clientMap.get(selectedProjectData.clientId)
+   141→    : null;
+   142→
+   143→  // ─── Map Convex data ────────────────────────────────────────────────────
+   144→  // Compute totalMinutes from startTime/endTime when totalMinutes is missing
+   145→  const realSessions = (sessionsData ?? [])
+   146→    .filter((s: any) => s.endTime !== undefined)
+   147→    .map((s: any) => ({
+   148→      ...s,
+   149→      totalMinutes:
+   150→        s.totalMinutes ??
+   151→        (s.endTime && s.startTime
+   152→          ? Math.floor((s.endTime - s.startTime) / (1000 * 60))
+   153→          : 0),
+   154→    }));
+   155→  const timeEntries = realSessions;
+   156→
+   157→  const activeSession = isDemoMode ? null : currentSession;
+   158→  const isTimerRunning = !!activeSession && activeSession.endTime === undefined;
+   159→
+   160→  // ─── Timer effect ────────────────────────────────────────────────────────
+   161→  useEffect(() => {
+   162→    let interval: ReturnType<typeof setInterval> | null = null;
+   163→    if (isTimerRunning && !isPaused && activeSession) {
+   164→      const startTime = activeSession.startTime;
+   165→      interval = setInterval(() => {
+   166→        setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+   167→      }, 1000);
+   168→      // Set initial value
+   169→      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+   170→    }
+   171→    return () => {
+   172→      if (interval) clearInterval(interval);
+   173→    };
+   174→  }, [isTimerRunning, isPaused, activeSession]);
+   175→
+   176→  // Reset elapsed when session stops
+   177→  useEffect(() => {
+   178→    if (!isTimerRunning) {
+   179→      setElapsedSeconds(0);
+   180→      setIsPaused(false);
+   181→    }
+   182→  }, [isTimerRunning]);
+   183→
+   184→  // ─── Weekly stats ────────────────────────────────────────────────────────
+   185→  const totalMinutesThisWeek = timeEntries.reduce((acc: number, e: any) => acc + (e.totalMinutes ?? 0), 0);
+   186→  const totalHoursThisWeek = totalMinutesThisWeek / 60;
+   187→  const compliantMinutes = timeEntries
+   188→    .filter((e: any) => e.complianceStatus === "active")
+   189→    .reduce((acc: number, e: any) => acc + (e.totalMinutes ?? 0), 0);
+   190→  const flaggedMinutes = timeEntries
+   191→    .filter((e: any) => e.complianceStatus === "rejected")
+   192→    .reduce((acc: number, e: any) => acc + (e.totalMinutes ?? 0), 0);
+   193→  const flaggedHours = flaggedMinutes / 60;
+   194→  const complianceRate = totalMinutesThisWeek > 0 ? Math.round((compliantMinutes / totalMinutesThisWeek) * 100) : 100;
+   195→
+   196→  // ─── Handlers ────────────────────────────────────────────────────────────
+   197→  const handleStartTimer = async () => {
+   198→    if (!selectedProject) {
+   199→      toast.error("Please select a project first");
+   200→      return;
+   201→    }
+   202→
+   203→    if (isDemoMode) {
+   204→      toast.success("Timer started! (Demo mode)", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
+   205→      return;
+   206→    }
+   207→
+   208→    setIsStarting(true);
+   209→    try {
+   210→      // Resolve the project name from the selected project ID
+   211→      const projectName = selectedProjectData?.projectName ?? selectedProject;
+   212→      const clientName = selectedClientData?.clientName ?? "Unknown Client";
+   213→      const hourlyRate = selectedProjectData?.hourlyRate ?? selectedClientData?.hourlyRate ?? 75;
+   214→
+   215→      await startSessionMutation({
+   216→        projectName,
+   217→        clientName,
+   218→        hourlyRate,
+   219→        platform: selectedPlatform,
+   220→        notes: entryMemo || undefined,
+   221→        workspaceId,
+   222→      });
+   223→      toast.success("Timer started!", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
+   224→      setEntryMemo("");
+   225→    } catch (err: any) {
+   226→      toast.error(err?.message || "Failed to start timer");
+   227→    } finally {
+   228→      setIsStarting(false);
+   229→    }
+   230→  };
+   231→
+   232→  const handlePauseTimer = async () => {
+   233→    if (!activeSession) return;
+   234→
+   235→    if (isDemoMode) {
+   236→      setIsPaused(!isPaused);
+   237→      toast.info(isPaused ? "Timer resumed" : "Timer paused");
+   238→      return;
+   239→    }
+   240→
+   241→    try {
+   242→      if (isPaused) {
+   243→        await resumeSessionMutation({ sessionId: activeSession._id });
+   244→        setIsPaused(false);
+   245→        toast.info("Timer resumed");
+   246→      } else {
+   247→        await pauseSessionMutation({ sessionId: activeSession._id });
+   248→        setIsPaused(true);
+   249→        toast.info("Timer paused");
+   250→      }
+   251→    } catch (err: any) {
+   252→      toast.error(err?.message || "Failed to update timer");
+   253→    }
+   254→  };
+   255→
+   256→  const handleStopTimer = async () => {
+   257→    if (!activeSession) return;
+   258→
+   259→    if (isDemoMode) {
+   260→      toast.success("Time entry saved! (Demo mode)");
+   261→      return;
+   262→    }
+   263→
+   264→    setIsStopping(true);
+   265→    try {
+   266→      const result = await stopSessionMutation({ sessionId: activeSession._id });
+   267→      toast.success("Time entry saved!", {
+   268→        description: `${formatDuration(result.totalMinutes)} recorded for ${activeSession.projectName}`,
+   269→      });
+   270→    } catch (err: any) {
+   271→      toast.error(err?.message || "Failed to stop timer");
+   272→    } finally {
+   273→      setIsStopping(false);
+   274→    }
+   275→  };
+   276→
+   277→  const handleManualEntry = async () => {
+   278→    const startParts = manualStart.split(":");
+   279→    const endParts = manualEnd.split(":");
+   280→    const startDate = new Date(manualDate);
+   281→    startDate.setHours(parseInt(startParts[0]), parseInt(startParts[1]));
+   282→    const endDate = new Date(manualDate);
+   283→    endDate.setHours(parseInt(endParts[0]), parseInt(endParts[1]));
+   284→    const duration = endDate.getTime() - startDate.getTime();
+   285→
+   286→    if (duration <= 0) {
+   287→      toast.error("End time must be after start time");
+   288→      return;
+   289→    }
+   290→
+   291→    if (isDemoMode) {
+   292→      toast.success("Manual entry added! (Demo mode)", {
+   293→        description: `${formatDuration(Math.floor(duration / 60000))} for ${manualProject || "Unassigned"}`,
+   294→      });
+   295→      setShowManualEntry(false);
+   296→      resetManualForm();
+   297→      return;
+   298→    }
+   299→
+   300→    setIsCreatingManual(true);
+   301→    try {
+   302→      await createManualEntryMutation({
+   303→        projectName: manualProject || "Unassigned",
+   304→        clientName: manualClient || "Manual Entry",
+   305→        platform: "manual",
+   306→        notes: manualMemo || undefined,
+   307→        startTime: startDate.getTime(),
+   308→        endTime: endDate.getTime(),
+   309→        workspaceId,
+   310→      });
+   311→      toast.success("Manual entry added!", {
+   312→        description: `${formatDuration(Math.floor(duration / 60000))} for ${manualProject || "Unassigned"}`,
+   313→      });
+   314→      setShowManualEntry(false);
+   315→      resetManualForm();
+   316→    } catch (err: any) {
+   317→      toast.error(err?.message || "Failed to create manual entry");
+   318→    } finally {
+   319→      setIsCreatingManual(false);
+   320→    }
+   321→  };
+   322→
+   323→  const handleDeleteEntry = async (id: any) => {
+   324→    if (isDemoMode) {
+   325→      toast.success("Time entry deleted (Demo mode)");
+   326→      return;
+   327→    }
+   328→
+   329→    setIsDeleting(id as string);
+   330→    try {
+   331→      await deleteSessionMutation({ sessionId: id });
+   332→      toast.success("Time entry deleted");
+   333→    } catch (err: any) {
+   334→      toast.error(err?.message || "Failed to delete entry");
+   335→    } finally {
+   336→      setIsDeleting(null);
+   337→    }
+   338→  };
+   339→
+   340→  const resetManualForm = () => {
+   341→    setManualProject("");
+   342→    setManualClient("");
+   343→    setManualMemo("");
+   344→    setManualStart("09:00");
+   345→    setManualEnd("17:00");
+   346→  };
+   347→
+   348→  // ─── Style maps ──────────────────────────────────────────────────────────
+   349→  const platformColor: Record<string, string> = {
+   350→    upwork: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+   351→    fiverr: "bg-green-500/10 text-green-600 border-green-500/20",
+   352→    toptal: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+   353→    manual: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+   354→  };
+   355→
+   356→  const complianceColor: Record<string, string> = {
+   357→    active: "bg-emerald-500/10 text-emerald-600",
+   358→    at_risk: "bg-yellow-500/10 text-yellow-600",
+   359→    rejected: "bg-red-500/10 text-red-600",
+   360→  };
+   361→
+   362→  const complianceLabel: Record<string, string> = {
+   363→    active: "Compliant",
+   364→    at_risk: "At Risk",
+   365→    rejected: "Flagged",
+   366→  };
+   367→
+   368→  const complianceDotColor: Record<string, string> = {
+   369→    active: "bg-emerald-500",
+   370→    at_risk: "bg-yellow-500",
+   371→    rejected: "bg-red-500",
+   372→  };
+   373→
+   374→  // ─── Render ──────────────────────────────────────────────────────────────
+   375→  return (
+   376→    <motion.div
+   377→      className="w-full min-h-screen bg-background text-foreground"
+   378→      initial={{ opacity: 0 }}
+   379→      animate={{ opacity: 1 }}
+   380→      transition={{ duration: 0.3 }}
+   381→    >
+   382→      <PageLayout spaced>
+   383→        {/* Header */}
+   384→        <div>
+   385→          <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+   386→            Time Tracking
+   387→          </h1>
+   388→          <p className="text-[16px] text-muted-foreground">
+   389→            Track your work hours across all platforms with compliance monitoring
+   390→          </p>
+   391→        </div>
+   392→
+   393→        {/* Demo mode empty state */}
+   394→        {isDemoMode && (
+   395→          <Card className="p-8 bg-card rounded-xl border border-border">
+   396→            <div className="text-center space-y-4">
+   397→              <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+   398→                <Clock className="h-8 w-8 text-primary" />
+   399→              </div>
+   400→              <div>
+   401→                <h3 className="text-lg font-semibold text-foreground">Sign in to track your time</h3>
+   402→                <p className="text-sm text-muted-foreground mt-1">
+   403→                  Connect your account to track work hours across all platforms with compliance monitoring.
+   404→                </p>
+   405→              </div>
+   406→              <Button asChild>
+   407→                <a href="/auth">Sign In</a>
+   408→              </Button>
+   409→            </div>
+   410→          </Card>
+   411→        )}
+   412→
+   413→        {/* Loading state */}
+   414→        {isLoading ? (
+   415→          <div className="space-y-6">
+   416→            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+   417→              {[1, 2, 3, 4].map((i) => (
+   418→                <Card key={i}>
+   419→                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   420→                    <Skeleton className="h-4 w-24" />
+   421→                    <Skeleton className="h-4 w-4" />
+   422→                  </CardHeader>
+   423→                  <CardContent>
+   424→                    <Skeleton className="h-8 w-16 mb-1" />
+   425→                    <Skeleton className="h-3 w-20" />
+   426→                  </CardContent>
+   427→                </Card>
+   428→              ))}
+   429→            </div>
+   430→            <Skeleton className="h-[200px] w-full rounded-xl" />
+   431→            <Skeleton className="h-[400px] w-full rounded-xl" />
+   432→          </div>
+   433→        ) : (
+   434→          <>
+   435→            {/* Stats Cards */}
+   436→            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+   437→              <Card>
+   438→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   439→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Total This Week</CardTitle>
+   440→                  <Clock className="h-4 w-4 text-muted-foreground" />
+   441→                </CardHeader>
+   442→                <CardContent>
+   443→                  <div className="text-[24px] font-bold text-foreground">{totalHoursThisWeek.toFixed(1)}h</div>
+   444→                  <p className="text-[12px] text-muted-foreground">Across {timeEntries.length} entries</p>
+   445→                </CardContent>
+   446→              </Card>
+   447→
+   448→              <Card>
+   449→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   450→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Compliance Rate</CardTitle>
+   451→                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+   452→                </CardHeader>
+   453→                <CardContent>
+   454→                  <div className={`text-[24px] font-bold ${complianceRate >= 90 ? "text-emerald-600" : complianceRate >= 70 ? "text-yellow-600" : "text-red-600"}`}>
+   455→                    {complianceRate}%
+   456→                  </div>
+   457→                  <p className="text-[12px] text-muted-foreground">Compliant hours</p>
+   458→                </CardContent>
+   459→              </Card>
+   460→
+   461→              <Card>
+   462→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   463→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Flagged Hours</CardTitle>
+   464→                  <Badge variant="destructive" className="text-[10px] px-1.5">Risk</Badge>
+   465→                </CardHeader>
+   466→                <CardContent>
+   467→                  <div className="text-[24px] font-bold text-red-600">{flaggedHours.toFixed(1)}h</div>
+   468→                  <p className="text-[12px] text-muted-foreground">Needs review</p>
+   469→                </CardContent>
+   470→              </Card>
+   471→
+   472→              <Card>
+   473→                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+   474→                  <CardTitle className="text-[14px] font-medium text-muted-foreground">Avg Daily</CardTitle>
+   475→                  <Calendar className="h-4 w-4 text-muted-foreground" />
+   476→                </CardHeader>
+   477→                <CardContent>
+   478→                  <div className="text-[24px] font-bold text-foreground">
+   479→                    {(totalHoursThisWeek / Math.max(1, new Set(timeEntries.map((e: any) => new Date(e.startTime).toDateString())).size)).toFixed(1)}h
+   480→                  </div>
+   481→                  <p className="text-[12px] text-muted-foreground">Hours per working day</p>
+   482→                </CardContent>
+   483→              </Card>
+   484→            </div>
+   485→
+   486→            {/* Timer Section */}
+   487→            <Card className="border-2 border-primary/20">
+   488→              <CardContent className="pt-6">
+   489→                {isTimerRunning ? (
+   490→                  <div className="flex flex-col items-center gap-4">
+   491→                    <div className="flex items-center gap-3">
+   492→                      <div className={`h-3 w-3 rounded-full ${isPaused ? "bg-yellow-500" : "bg-emerald-500 animate-pulse"}`} />
+   493→                      <span className="text-sm font-medium text-muted-foreground">
+   494→                        {isPaused ? "Paused" : "Recording"} - {activeSession?.projectName}
+   495→                      </span>
+   496→                      <Badge variant="outline" className={platformColor[activeSession?.platform || "manual"]}>
+   497→                        {activeSession?.platform || "manual"}
+   498→                      </Badge>
+   499→                    </div>
+   500→                    <div className="text-[56px] font-mono font-bold text-foreground tracking-wider">
+   501→                      {formatTime(elapsedSeconds)}
+   502→                    </div>
+   503→                    <div className="flex items-center gap-3">
+   504→                      <Button
+   505→                        variant="outline"
+   506→                        size="lg"
+   507→                        onClick={handlePauseTimer}
+   508→                        className="w-32"
+   509→                        disabled={isStopping}
+   510→                      >
+   511→                        {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
+   512→                        {isPaused ? "Resume" : "Pause"}
+   513→                      </Button>
+   514→                      <Button
+   515→                        variant="destructive"
+   516→                        size="lg"
+   517→                        onClick={handleStopTimer}
+   518→                        className="w-32"
+   519→                        disabled={isStopping}
+   520→                      >
+   521→                        {isStopping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />}
+   522→                        Stop
+   523→                      </Button>
+   524→                    </div>
+   525→                    {activeSession?.notes && (
+   526→                      <p className="text-sm text-muted-foreground text-center">{activeSession.notes}</p>
+   527→                    )}
+   528→                  </div>
+   529→                ) : (
+   530→                  <div className="space-y-4">
+   531→                    <div className="flex items-center justify-between">
+   532→                      <div className="flex items-center gap-3">
+   533→                        <Timer className="h-5 w-5 text-primary" />
+   534→                        <span className="text-lg font-semibold">Start New Session</span>
+   535→                      </div>
+   536→                      <Button variant="outline" onClick={() => setShowManualEntry(true)}>
+   537→                        <Plus className="mr-2 h-4 w-4" />
+   538→                        Manual Entry
+   539→                      </Button>
+   540→                    </div>
+   541→                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   542→                      <div className="space-y-2">
+   543→                        <Label>Project</Label>
+   544→                        <Select value={selectedProject} onValueChange={setSelectedProject}>
+   545→                          <SelectTrigger className="w-full">
+   546→                            <SelectValue placeholder="Select project" />
+   547→                          </SelectTrigger>
+   548→                          <SelectContent>
+   549→                            {projects && projects.length > 0 ? (
+   550→                              projects.map((project: any) => (
+   551→                                <SelectItem key={project._id} value={project._id}>
+   552→                                  {project.projectName}
+   553→                                </SelectItem>
+   554→                              ))
+   555→                            ) : (
+   556→                              <SelectItem value="_none" disabled>No projects found</SelectItem>
+   557→                            )}
+   558→                          </SelectContent>
+   559→                        </Select>
+   560→                      </div>
+   561→                      <div className="space-y-2">
+   562→                        <Label>Platform</Label>
+   563→                        <Select value={selectedPlatform} onValueChange={(v) => setSelectedPlatform(v as any)}>
+   564→                          <SelectTrigger className="w-full">
+   565→                            <SelectValue />
+   566→                          </SelectTrigger>
+   567→                          <SelectContent>
+   568→                            <SelectItem value="upwork">Upwork</SelectItem>
+   569→                            <SelectItem value="fiverr">Fiverr</SelectItem>
+   570→                            <SelectItem value="toptal">Toptal</SelectItem>
+   571→                            <SelectItem value="manual">Manual</SelectItem>
+   572→                          </SelectContent>
+   573→                        </Select>
+   574→                      </div>
+   575→                      <div className="space-y-2">
+   576→                        <Label>Memo (optional)</Label>
+   577→                        <Input
+   578→                          placeholder="What are you working on?"
+   579→                          value={entryMemo}
+   580→                          onChange={(e) => setEntryMemo(e.target.value)}
+   581→                        />
+   582→                      </div>
+   583→                    </div>
+   584→                    <Button
+   585→                      className="bg-primary hover:bg-primary/90 w-full md:w-auto"
+   586→                      size="lg"
+   587→                      onClick={handleStartTimer}
+   588→                      disabled={isStarting}
+   589→                    >
+   590→                      {isStarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+   591→                      Start Timer
+   592→                    </Button>
+   593→                  </div>
+   594→                )}
+   595→              </CardContent>
+   596→            </Card>
+   597→
+   598→            {/* Time Entries List */}
+   599→            <Card>
+   600→              <CardHeader>
+   601→                <div className="flex items-center justify-between">
+   602→                  <CardTitle className="text-[18px]">Recent Time Entries</CardTitle>
+   603→                  <span className="text-sm text-muted-foreground">{timeEntries.length} entries</span>
+   604→                </div>
+   605→              </CardHeader>
+   606→              <CardContent>
+   607→                {timeEntries.length === 0 ? (
+   608→                  <div className="py-12 text-center">
+   609→                    <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+   610→                    <p className="text-muted-foreground">
+   611→                      No time entries yet. Start a timer or add a manual entry to begin tracking.
+   612→                    </p>
+   613→                  </div>
+   614→                ) : (
+   615→                  <div className="space-y-2">
+   616→                    <AnimatePresence>
+   617→                      {timeEntries.map((entry: any) => (
+   618→                        <motion.div
+   619→                          key={entry._id}
+   620→                          initial={{ opacity: 0, y: -10 }}
+   621→                          animate={{ opacity: 1, y: 0 }}
+   622→                          exit={{ opacity: 0, height: 0 }}
+   623→                          className="border border-border rounded-lg overflow-hidden"
+   624→                        >
+   625→                          <div
+   626→                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+   627→                            onClick={() => setExpandedEntry(expandedEntry === entry._id ? null : entry._id)}
+   628→                          >
+   629→                            <div className="flex items-center gap-4">
+   630→                              <div className={`h-2 w-2 rounded-full ${complianceDotColor[entry.complianceStatus] || "bg-emerald-500"}`} />
+   631→                              <div>
+   632→                                <div className="font-medium text-foreground">{entry.projectName}</div>
+   633→                                <div className="text-sm text-muted-foreground">{entry.clientName} &middot; {formatDate(entry.startTime)}</div>
+   634→                              </div>
+   635→                            </div>
+   636→                            <div className="flex items-center gap-3">
+   637→                              {entry.platform && (
+   638→                                <Badge variant="outline" className={platformColor[entry.platform] || platformColor.manual}>
+   639→                                  {entry.platform}
+   640→                                </Badge>
+   641→                              )}
+   642→                              <span className="font-mono text-sm font-medium text-foreground">
+   643→                                {formatDuration(entry.totalMinutes)}
+   644→                              </span>
+   645→                              <Badge variant="outline" className={complianceColor[entry.complianceStatus] || complianceColor.active}>
+   646→                                {complianceLabel[entry.complianceStatus] || "Compliant"}
+   647→                              </Badge>
+   648→                              {expandedEntry === entry._id ? (
+   649→                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+   650→                              ) : (
+   651→                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+   652→                              )}
+   653→                            </div>
+   654→                          </div>
+   655→                          <AnimatePresence>
+   656→                            {expandedEntry === entry._id && (
+   657→                              <motion.div
+   658→                                initial={{ height: 0, opacity: 0 }}
+   659→                                animate={{ height: "auto", opacity: 1 }}
+   660→                                exit={{ height: 0, opacity: 0 }}
+   661→                                className="overflow-hidden"
+   662→                              >
+   663→                                <div className="px-4 pb-4 pt-0 border-t border-border bg-muted/20">
+   664→                                  <div className="pt-3 space-y-2">
+   665→                                    <div className="flex items-start gap-2">
+   666→                                      <span className="text-sm font-medium text-muted-foreground w-16">Memo:</span>
+   667→                                      <span className="text-sm text-foreground">{entry.notes || "No memo"}</span>
+   668→                                    </div>
+   669→                                    <div className="flex items-start gap-2">
+   670→                                      <span className="text-sm font-medium text-muted-foreground w-16">Time:</span>
+   671→                                      <span className="text-sm text-foreground">
+   672→                                        {new Date(entry.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
+   673→                                        {entry.endTime ? new Date(entry.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Now"}
+   674→                                      </span>
+   675→                                    </div>
+   676→                                    <div className="flex items-start gap-2">
+   677→                                      <span className="text-sm font-medium text-muted-foreground w-16">Rate:</span>
+   678→                                      <span className="text-sm text-foreground">${entry.hourlyRate || 75}/hr</span>
+   679→                                    </div>
+   680→                                    {entry.isManualEntry && (
+   681→                                      <div className="flex items-start gap-2">
+   682→                                        <span className="text-sm font-medium text-muted-foreground w-16">Type:</span>
+   683→                                        <Badge variant="secondary" className="text-[11px]">Manual Entry</Badge>
+   684→                                      </div>
+   685→                                    )}
+   686→                                    <div className="flex gap-2 pt-2">
+   687→                                      <Button variant="outline" size="sm" onClick={() => toast.info("Edit feature coming soon")}>
+   688→                                        <Edit3 className="h-3 w-3 mr-1" /> Edit
+   689→                                      </Button>
+   690→                                      <Button
+   691→                                        variant="outline"
+   692→                                        size="sm"
+   693→                                        className="text-destructive hover:text-destructive"
+   694→                                        onClick={() => handleDeleteEntry(entry._id)}
+   695→                                        disabled={isDeleting === entry._id}
+   696→                                      >
+   697→                                        {isDeleting === entry._id ? (
+   698→                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+   699→                                        ) : (
+   700→                                          <Trash2 className="h-3 w-3 mr-1" />
+   701→                                        )}
+   702→                                        Delete
+   703→                                      </Button>
+   704→                                    </div>
+   705→                                  </div>
+   706→                                </div>
+   707→                              </motion.div>
+   708→                            )}
+   709→                          </AnimatePresence>
+   710→                        </motion.div>
+   711→                      ))}
+   712→                    </AnimatePresence>
+   713→                  </div>
+   714→                )}
+   715→              </CardContent>
+   716→            </Card>
+   717→          </>
+   718→        )}
+   719→
+   720→        {/* Manual Entry Dialog */}
+   721→        <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
+   722→          <DialogContent className="sm:max-w-[500px] overflow-hidden">
+   723→            <DialogHeader>
+   724→              <DialogTitle>Add Manual Time Entry</DialogTitle>
+   725→              <DialogDescription>Add a manual time entry for work you've completed outside of the timer.</DialogDescription>
+   726→            </DialogHeader>
+   727→            <div className="space-y-4 py-4">
+   728→              <div className="grid grid-cols-2 gap-4">
+   729→                <div className="space-y-2">
+   730→                  <Label>Date</Label>
+   731→                  <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
+   732→                </div>
+   733→                <div className="space-y-2">
+   734→                  <Label>Project</Label>
+   735→                  <Input placeholder="Project name" value={manualProject} onChange={(e) => setManualProject(e.target.value)} />
+   736→                </div>
+   737→              </div>
+   738→              <div className="space-y-2">
+   739→                <Label>Client</Label>
+   740→                <Input placeholder="Client name (optional)" value={manualClient} onChange={(e) => setManualClient(e.target.value)} />
+   741→              </div>
+   742→              <div className="grid grid-cols-2 gap-4">
+   743→                <div className="space-y-2">
+   744→                  <Label>Start Time</Label>
+   745→                  <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} />
+   746→                </div>
+   747→                <div className="space-y-2">
+   748→                  <Label>End Time</Label>
+   749→                  <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} />
+   750→                </div>
+   751→              </div>
+   752→              <div className="space-y-2">
+   753→                <Label>Memo</Label>
+   754→                <Input placeholder="What did you work on?" value={manualMemo} onChange={(e) => setManualMemo(e.target.value)} />
+   755→              </div>
+   756→              {tier === "free" && (
+   757→                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 break-words">
+   758→                  Free plan: Manual entries are not compliance-verified. Upgrade to Pro for verified time tracking.
+   759→                </div>
+   760→              )}
+   761→            </div>
+   762→            <DialogFooter>
+   763→              <Button variant="outline" onClick={() => setShowManualEntry(false)} disabled={isCreatingManual}>Cancel</Button>
+   764→              <Button
+   765→                className="bg-primary hover:bg-primary/90"
+   766→                onClick={handleManualEntry}
+   767→                disabled={isCreatingManual}
+   768→              >
+   769→                {isCreatingManual ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+   770→                Add Entry
+   771→              </Button>
+   772→            </DialogFooter>
+   773→          </DialogContent>
+   774→        </Dialog>
+   775→      </PageLayout>
+   776→    </motion.div>
+   777→  );
+   778→}
+   779→

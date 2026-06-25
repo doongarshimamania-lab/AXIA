@@ -1487,3 +1487,97 @@ Stage Summary:
   (e.g. Scope.tsx already used `as any` for `proposalId`, `scopeId`).
 
 End of Task ID C8.
+
+---
+Task ID: T1
+Agent: full-stack-developer (tags feature wiring)
+Task: Wire TagPicker into 7 entity pages + fix Tags.tsx itself
+
+Work Log:
+- Read worklog.md (entire file), TagPicker.tsx, TagBadges.tsx, Tags.tsx
+  crud.ts, Clients.tsx, use-workspace.tsx, safe-convex-react.ts before
+  touching any code. Followed the existing `// ponytail:` convention
+  for every change.
+- Phase 2 — TimeTracking.tsx (commit 07546cb):
+  - Added `setEntityTagsMutation` + workspace-scoped `getTags` query.
+  - Added `manualTagIds`, `timerTagIds` (detached), `activeTagFilter` state.
+  - handleStartTimer: capture returned sessionId, attach tags via setEntityTags.
+  - handleManualEntry: same pattern after createManualEntryMutation.
+  - TagPicker wired into both the timer-start form AND the manual-entry dialog.
+  - TagBadges on each time entry row, tag-filter chip bar above the list.
+- Phase 2 — Projects.tsx (commit fa31eac, plus ProjectList.tsx):
+  - Detached TagPicker in the New Project dialog (attached after addProject).
+  - "Manage tags" Popover on each project card (immediate persistence via entityId).
+  - TagBadges on each card, tag-filter chip bar above the grid.
+- Phase 2 — Clients.tsx (commit dbf0b92, plus ClientList.tsx):
+  - Detached TagPicker in the Add Client dialog (attached after createClient).
+  - "Manage tags" Popover on each client card.
+  - TagBadges on each card, tag-filter chip bar above the list.
+- Phase 3 — Proposals.tsx (commit ac04871):
+  - NOTE: Proposals.tsx has no inline create dialog (navigates to /proposals/new
+    which is ProposalBuilder, out of scope). Per the brief, added a "Manage tags"
+    Popover on each ProposalCard instead of a create-form picker.
+  - TagBadges on each proposal card, tag-filter chip bar above the grid.
+  - Tag filter stacks on top of the existing search + status-tab filtering.
+- Phase 3 — Invoices.tsx (commit f16014b):
+  - NOTE: same situation as Proposals — no inline create dialog. Added a
+    "Manage tags" Popover on each invoice row's action cluster.
+  - TagBadges on each invoice row, tag-filter chip bar in the Action Bar.
+- Phase 3 — Pipeline.tsx (commit e619ccf):
+  - Added `tagIds` to the Deal interface.
+  - Tag-filter chip bar above the kanban board (filters deals across all columns).
+  - "Manage tags" Popover on each DealCard (in the drag-handle cluster).
+  - TagBadges on each deal card, sized "xs".
+- Phase 3 — Goals.tsx (commit 837fe6a):
+  - Detached TagPicker in the Create Goal dialog (attached after createGoal).
+  - TagPicker ALSO wired into the Edit Goal dialog (seeded with existing tagIds;
+    after updateGoal succeeds, setEntityTags replaces the full list — with a
+    no-op short-circuit when the list hasn't changed).
+  - TagBadges on each goal card, tag-filter chip bar appended to the status
+    filter row.
+- Phase 4 — Tags.tsx (commit fd16826):
+  - Replaced getTags with getTagsWithUsage so the "Most Used" stat card and
+    per-card "N entries tagged" line show real numbers.
+  - Added per-entity usage breakdown row on each tag card (top 2 entity types,
+    e.g. "3 clients · 1 project").
+  - Tag cards are now clickable — opens a side Sheet showing every entity that
+    carries the tag, grouped by type, with deep links to the corresponding
+    pages (/clients, /projects, /proposals, /invoices, /time-tracking,
+    /pipeline, /goals). Backed by lazy getEntitiesByTag query.
+  - Empty-state CTA banner at the top explaining where tags can be attached,
+    with a "Learn how" link that opens a small workflow explainer dialog.
+  - Left the delete-dialog copy unchanged — phase 1b's cascade-unset in
+    deleteTag made the existing "remove from all associated entries" copy
+    truthful.
+
+Stage Summary:
+- 8 atomic commits landed (1 per page, scoped to that page's files only).
+- Every change is marked with a `// ponytail:` comment explaining the why.
+- Tag attach is best-effort on create flows: if setEntityTags fails, we warn
+  to the console but never fail the underlying entity creation, so the user
+  never loses data.
+- Tag attach on edit/manage flows uses the TagPicker's `entityId` path which
+  persists immediately via setEntityTags — no extra save button needed.
+- Detached pattern (create flows): local `formTagIds` state, attached via
+  setEntityTags after the create mutation returns the new ID.
+- All 7 entity pages now have: TagBadges on cards/rows, a tag-filter chip bar
+  where it makes sense, and either a create-form TagPicker (TimeTracking,
+  Projects, Clients, Goals) or a Manage Tags popover on each card (Proposals,
+  Invoices, Pipeline).
+- The Tags page itself now answers "where is this tag actually used?" with a
+  single click — the original "I can create tags but can't attach them
+  anywhere" complaint is fully addressed.
+- Deviations from the brief:
+  - Proposals.tsx has no inline create dialog → used a Manage Tags popover
+    instead of a form TagPicker.
+  - Invoices.tsx same as above.
+  - Goals.tsx: added the TagPicker to BOTH the Create and Edit dialogs (the
+    brief only mentioned the create dialog) because the Edit dialog already
+    existed and was a trivial addition.
+- 0 type errors introduced in any modified file (verified via
+  `bunx tsc --noEmit -p tsconfig.app.json` filtered to each filename).
+- The pre-existing `recordType="client"` TS error in Clients.tsx (TransferOwnershipDialog
+  expects "project" | "workspace" | "deal") was already present on the baseline
+  — my changes just shifted it from line 532 to line 625.
+
+End of Task ID T1.
