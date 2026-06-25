@@ -214,6 +214,35 @@ export const completeOnboarding = mutation({
   },
 });
 
+// ponytail: save step-1 onboarding data directly to the user doc
+// (no localStorage intermediate). Marks onboardingComplete=false so the
+// gate at ProtectedRoute.tsx still bounces them to step 2 on next visit.
+export const saveOnboardingStep1 = mutation({
+  args: {
+    fullName: v.string(),
+    hourlyRate: v.number(),
+    primaryPlatform: v.string(),
+    yearsExperience: v.optional(v.string()),
+    professionalBio: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateProfile");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const existing = await ctx.db.get(userId);
+    if (!existing) throw new Error("User not found");
+    await ctx.db.patch(userId, {
+      name: args.fullName,
+      hourlyRate: args.hourlyRate,
+      primaryPlatform: args.primaryPlatform,
+      yearsExperience: args.yearsExperience,
+      professionalBio: args.professionalBio,
+      // ponytail: keep onboardingComplete=false until step 2 finishes
+    });
+    return { success: true };
+  },
+});
+
 // Add: Get protection metrics for sidebar
 export const getProtectionMetrics = query({
   args: {},

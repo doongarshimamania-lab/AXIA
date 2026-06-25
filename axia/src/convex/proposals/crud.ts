@@ -887,3 +887,154 @@ export const saveUploadedTemplate = mutation({
     });
   },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ponytail: atomic convert-to-project
+//
+// Replaces the 4-mutation client-side flow at Proposals.tsx:317-387.
+// In one Convex transaction:
+//   1. Find-or-create the client (matched by email first, then name)
+//   2. Create the project, linked to the client + workspace
+//   3. If the proposal has a dealId, move that deal to the "Won" stage
+//   4. Back-link the proposal with clientId + projectId (and annotate notes)
+//
+// Atomicity guarantee: if any step throws, Convex rolls back all inserts.
+// Returns { clientId, projectId } so the caller can navigate.
+// ═══════════════════════════════════════════════════════════════════════════
+export const convertToProject = mutation({
+  args: {
+    proposalId: v.id("proposals"),
+  },
+  handler: async (ctx, { proposalId }) => {
+    await rateLimitAuthenticated(ctx, "createProposal");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const proposal = await ctx.db.get(proposalId);
+    if (!proposal) throw new Error("Proposal not found");
+
+    // Workspace access check
+    if (proposal.workspaceId) {
+      const access = await getRecordAccess(ctx, proposal, userId);
+      if (!access || access === "read") throw new Error("Not authorized");
+    } else if (proposal.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Idempotency: if proposal already has projectId, return early
+    if (proposal.projectId) {
+      return { clientId: proposal.clientId!, projectId: proposal.projectId, alreadyConverted: true };
+    }
+
+    const workspaceId = proposal.workspaceId;
+    const clientName = proposal.clientName?.trim() || "Unknown Client";
+    const clientEmail = proposal.clientEmail?.trim();
+    const hourlyRate = proposal.totalValue > 0 ? proposal.totalValue / 40 : 50;
+
+    // ── Step 1: Find-or-create the client ────────────────────────────────
+    let clientId = proposal.clientId;
+    if (!clientId) {
+      // Match by email first (more reliable than name)
+      let existing = null;
+      if (clientEmail) {
+        if (workspaceId) {
+          const byWs = await ctx.db
+            .query("clients")
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+            .filter((q) => q.eq(q.field("contactEmail"), clientEmail))
+            .first();
+          existing = byWs;
+        }
+        if (!existing) {
+          const byUser = await ctx.db
+            .query("clients")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.eq(q.field("contactEmail"), clientEmail))
+            .first();
+          existing = byUser;
+        }
+      }
+      // Fallback: match by case-insensitive name
+      if (!existing) {
+        const nameLower = clientName.toLowerCase();
+        if (workspaceId) {
+          const all = await ctx.db
+            .query("clients")
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+            .take(500);
+          existing = all.find((c) => (c.clientName || "").toLowerCase() === nameLower);
+        }
+      }
+
+      if (existing) {
+        clientId = existing._id;
+      } else {
+        clientId = await ctx.db.insert("clients", {
+          userId,
+          workspaceId,
+          clientName,
+          contactEmail: clientEmail,
+          contactName: clientName,
+          platform: "direct",
+          hourlyRate,
+          contractType: "hourly",
+          riskLevel: "medium",
+          createdAt: Date.now(),
+          lastActivityAt: Date.now(),
+          notes: `Created from proposal: ${proposal.title}`,
+        });
+      }
+    }
+
+    // ── Step 2: Create the project (linked to client + workspace) ────────
+    const projectId = await ctx.db.insert("projects", {
+      userId,
+      workspaceId,
+      clientId,
+      projectName: proposal.title,
+      hourlyRate,
+      projectType: "ongoing",
+      protectionLevel: "enhanced",
+      status: "active",
+      createdAt: Date.now(),
+      lastActivityAt: Date.now(),
+    });
+
+    // ── Step 3: Move the linked deal to "Won" (if any) ──────────────────
+    if (proposal.dealId) {
+      const deal = await ctx.db.get(proposal.dealId);
+      if (deal) {
+        // Find the "Won" stage in the deal's workspace
+        const stages = deal.workspaceId
+          ? await ctx.db
+              .query("pipelineStages")
+              .withIndex("by_workspace", (q) => q.eq("workspaceId", deal.workspaceId!))
+              .take(50)
+          : await ctx.db
+              .query("pipelineStages")
+              .withIndex("by_user", (q) => q.eq("userId", userId))
+              .take(50);
+        const wonStage = stages.find(
+          (s) => s.name.toLowerCase() === "won"
+        );
+        if (wonStage) {
+          await ctx.db.patch(deal._id, {
+            stageId: wonStage._id,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    }
+
+    // ── Step 4: Back-link the proposal with clientId + projectId ────────
+    const existingNotes = proposal.notes || "";
+    await ctx.db.patch(proposalId, {
+      clientId,
+      projectId,
+      notes: `${existingNotes ? existingNotes + "\n" : ""}[Converted to project — ${new Date().toLocaleDateString()}]`,
+      updatedAt: Date.now(),
+    });
+
+    return { clientId, projectId, alreadyConverted: false };
+  },
+});

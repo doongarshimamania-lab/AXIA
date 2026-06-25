@@ -69,6 +69,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
@@ -172,7 +173,8 @@ export default function AccountSettings() {
   }, []);
   const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { theme, setTheme } = useTheme();
-  const { signOut } = useAuthActions();
+  // ponytail: use wrapped signOut from useAuth (clears localStorage + reloads)
+  const { signOut } = useAuth();
 
   // ── Profile State ──
   // CRITICAL FIX (2026-06-22): Previously these defaulted to hardcoded values

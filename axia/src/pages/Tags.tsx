@@ -30,6 +30,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkspaceContext } from "@/hooks/use-workspace"; // ponytail: workspace scoping for tags queries/mutations
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { PageLayout } from "@/components/design-system/PageLayout";
@@ -46,9 +47,13 @@ const PRESET_COLORS = [
 
 export default function Tags() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // ponytail: extract active workspace id so tags are scoped per-workspace (prevents cross-workspace data leak)
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const workspaceId = isConvexConnected ? activeWorkspaceId : undefined;
 
   // ─── Convex queries & mutations ──────────────────────────────────────────
-  const tagsData = useQuery(api.tags.crud.getTags, {});
+  // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
   const createTagMutation = useMutation(api.tags.crud.createTag);
   const updateTagMutation = useMutation(api.tags.crud.updateTag);
   const deleteTagMutation = useMutation(api.tags.crud.deleteTag);
@@ -142,6 +147,7 @@ export default function Tags() {
     setIsCreating(true);
     try {
       await createTagMutation({
+        workspaceId: workspaceId as any, // ponytail: stamp the new tag with the active workspace
         name: formName.trim(),
         color: formColor,
         category: formCategory,

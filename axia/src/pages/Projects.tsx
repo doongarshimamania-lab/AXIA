@@ -74,6 +74,14 @@ export default function Projects() {
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const seedTestProjectsMutation = useMutation(api.seedProjects.seedTestProjects);
+  // ponytail: real New Project dialog (replaces dev-only "Add Test Project" path)
+  const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [newProject, setNewProject] = useState({ projectName: "", clientId: "", hourlyRate: "50", projectType: "ongoing" as "ongoing" | "fixed" | "milestone", protectionLevel: "enhanced" as "standard" | "enhanced" | "maximum" });
+  const clientsList = useQuery(
+    isConvexConnected && workspaceId ? api.clients.crud.getClients : "skip",
+    isConvexConnected && workspaceId ? { workspaceId } : "skip"
+  );
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
@@ -135,6 +143,37 @@ export default function Projects() {
     }
   };
 
+  // ponytail: real create-project handler. Requires a client (matches schema).
+  const handleCreateProject = async () => {
+    if (!newProject.projectName.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    if (!newProject.clientId) {
+      toast.error("Please select a client");
+      return;
+    }
+    if (!workspaceId) {
+      toast.error("No active workspace — please reload");
+      return;
+    }
+    try {
+      await addProjectMutation({
+        projectName: newProject.projectName.trim(),
+        clientId: newProject.clientId as any,
+        hourlyRate: Number(newProject.hourlyRate) || 50,
+        projectType: newProject.projectType,
+        protectionLevel: newProject.protectionLevel,
+        workspaceId,
+      } as any);
+      toast.success("Project created!");
+      setShowNewProjectDialog(false);
+      setNewProject({ projectName: "", clientId: "", hourlyRate: "50", projectType: "ongoing", protectionLevel: "enhanced" });
+    } catch (err: any) {
+      toast.error("Failed to create project", { description: err?.message });
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
       <PageLayout className="space-y-8">
@@ -148,6 +187,11 @@ export default function Projects() {
           </div>
 
           <div className="mb-4 flex items-center gap-2">
+            {/* ponytail: real New Project dialog — production path */}
+            <Button onClick={() => setShowNewProjectDialog(true)} size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
             <Button onClick={handleCreateTestProjects} disabled={isSeeding} variant="outline" size="sm">
               {isSeeding ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -267,6 +311,90 @@ export default function Projects() {
         currentOwnerId={(selectedProject as any)?.userId}
         onTransferComplete={() => setShowTransferDialog(false)}
       />
+
+      {/* ponytail: New Project dialog — inline, no new component file */}
+      {showNewProjectDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md space-y-4">
+            <h3 className="text-lg font-semibold">New Project</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Project Name *</label>
+                <input
+                  className="w-full p-2 border rounded-md bg-background border-input h-9"
+                  value={newProject.projectName}
+                  onChange={(e) => setNewProject((p) => ({ ...p, projectName: e.target.value }))}
+                  placeholder="e.g., Website Redesign"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Client *</label>
+                {clientsList && Array.isArray(clientsList) && clientsList.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No clients yet. <a href="/clients" className="underline">Add a client first</a>.
+                  </p>
+                ) : (
+                  <select
+                    className="w-full p-2 border rounded-md bg-background border-input h-9"
+                    value={newProject.clientId}
+                    onChange={(e) => setNewProject((p) => ({ ...p, clientId: e.target.value }))}
+                  >
+                    <option value="">Select a client…</option>
+                    {(clientsList as any[])?.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.clientName || c.name || c.email}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-muted-foreground block mb-1">Hourly Rate ($)</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded-md bg-background border-input h-9"
+                    value={newProject.hourlyRate}
+                    onChange={(e) => setNewProject((p) => ({ ...p, hourlyRate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground block mb-1">Type</label>
+                  <select
+                    className="w-full p-2 border rounded-md bg-background border-input h-9"
+                    value={newProject.projectType}
+                    onChange={(e) => setNewProject((p) => ({ ...p, projectType: e.target.value as any }))}
+                  >
+                    <option value="ongoing">Ongoing</option>
+                    <option value="fixed">Fixed</option>
+                    <option value="milestone">Milestone</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Protection Level</label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background border-input h-9"
+                  value={newProject.protectionLevel}
+                  onChange={(e) => setNewProject((p) => ({ ...p, protectionLevel: e.target.value as any }))}
+                >
+                  <option value="standard">Standard</option>
+                  <option value="enhanced">Enhanced</option>
+                  <option value="maximum">Maximum</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setShowNewProjectDialog(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleCreateProject}>
+                Create Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

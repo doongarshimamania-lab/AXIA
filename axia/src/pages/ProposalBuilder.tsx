@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate, useSearchParams } from "react-router";
+import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,6 +180,13 @@ export default function ProposalBuilder() {
 
   const templates = useQuery(api.proposals.crud.getTemplates, {}) as Template[] | undefined;
 
+  // ponytail: workspace + clients for the <Select>; skip when no workspace yet
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const clientsList = useQuery(
+    isConvexConnected && activeWorkspaceId ? api.clients.crud.getClients : "skip",
+    isConvexConnected && activeWorkspaceId ? { workspaceId: activeWorkspaceId } : "skip"
+  );
+
   // Loading timeout for edit mode
   const { isDisconnected } = useConvexConnectionState();
   const editLoading = !!(editId && existingProposal === undefined);
@@ -208,11 +216,14 @@ export default function ProposalBuilder() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [createdProposalId, setCreatedProposalId] = useState<string | null>(null);
   const [dealLoaded, setDealLoaded] = useState(false);
+  // ponytail: clientId links the proposal to a client record (was missing)
+  const [clientId, setClientId] = useState<string>("");
 
   // Load existing proposal for editing
   useEffect(() => {
     if (existingProposal && isEditing) {
       setTitle(existingProposal.title || "");
+      setClientId(existingProposal.clientId || "");
       setClientName(existingProposal.clientName || "");
       setClientEmail(existingProposal.clientEmail || "");
       setSections(
@@ -402,12 +413,15 @@ export default function ProposalBuilder() {
           title,
           sections: sectionData,
           totalValue,
+          workspaceId: activeWorkspaceId || undefined,
+          clientId: clientId || undefined,
+          dealId: activeDealId || undefined,
           clientName: clientName || undefined,
           clientEmail: clientEmail || undefined,
           validUntil: validUntilTimestamp,
           notes: notes || undefined,
           currency: "USD",
-        });
+        } as any);
         setCreatedProposalId(newId as string);
         toast.success("Draft saved!", {
           description: "You can continue editing or send when ready.",
@@ -446,12 +460,15 @@ export default function ProposalBuilder() {
           title,
           sections: sectionData,
           totalValue,
+          workspaceId: activeWorkspaceId || undefined,
+          clientId: clientId || undefined,
+          dealId: activeDealId || undefined,
           clientName: clientName || undefined,
           clientEmail: clientEmail || undefined,
           validUntil: validUntilTimestamp,
           notes: notes || undefined,
           currency: "USD",
-        });
+        } as any);
         proposalId = newId as string;
         setCreatedProposalId(proposalId);
       } catch (err: any) {
@@ -598,12 +615,34 @@ export default function ProposalBuilder() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-[13px] text-muted-foreground mb-1.5 block">
-                      Client Name
+                      Client
                     </Label>
+                    {/* ponytail: client <Select> links the proposal to a client record */}
+                    <select
+                      value={clientId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setClientId(id);
+                        const c = (clientsList as any[])?.find((x) => x._id === id);
+                        if (c) {
+                          setClientName(c.clientName || c.name || "");
+                          setClientEmail(c.contactEmail || c.email || "");
+                        }
+                      }}
+                      className="w-full p-2 border rounded-md bg-background border-input h-9"
+                    >
+                      <option value="">Select a client (or type below)…</option>
+                      {(clientsList as any[])?.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.clientName || c.name || c.email}
+                        </option>
+                      ))}
+                    </select>
                     <Input
-                      placeholder="e.g., Acme Corp"
+                      placeholder="e.g., Acme Corp (or pick above)"
                       value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
+                      onChange={(e) => { setClientName(e.target.value); setClientId(""); }}
+                      className="mt-2"
                     />
                   </div>
                   <div>

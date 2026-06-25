@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { useNavigate, useSearchParams } from "react-router";
+import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -182,9 +183,16 @@ export default function InvoiceBuilder() {
   const editId = searchParams.get("edit") as any;
 
   // ── Convex Queries ─────────────────────────────────────────────────────
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const existingInvoice = useQuery(
     editId ? api.billing.crud.getInvoice : "skip",
     editId ? { invoiceId: editId } : "skip"
+  );
+
+  // ponytail: load workspace clients for the <Select>; skip when no workspace yet
+  const clientsList = useQuery(
+    isConvexConnected && activeWorkspaceId ? api.clients.crud.getClients : "skip",
+    isConvexConnected && activeWorkspaceId ? { workspaceId: activeWorkspaceId } : "skip"
   );
 
   const workLinks = useQuery(
@@ -205,6 +213,8 @@ export default function InvoiceBuilder() {
   const [sending, setSending] = useState(false);
   const [invoiceId, setInvoiceId] = useState<string | null>(editId || null);
 
+  // ponytail: clientId is the source of truth; clientName/clientEmail are derived
+  const [clientId, setClientId] = useState<string>("");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [issueDate, setIssueDate] = useState(timestampToDate(Date.now()));
@@ -245,6 +255,7 @@ export default function InvoiceBuilder() {
   useEffect(() => {
     if (existingInvoice && editId) {
       const inv = existingInvoice as any;
+      setClientId(inv.clientId || "");
       setClientName(inv.clientName || "");
       setClientEmail(inv.clientEmail || "");
       setIssueDate(timestampToDate(inv.issueDate));
@@ -410,8 +421,12 @@ export default function InvoiceBuilder() {
 
   // ── Save Invoice ───────────────────────────────────────────────────────
   const handleSaveDraft = async () => {
-    if (!clientName.trim()) {
-      toast.error("Client name is required");
+    if (!clientId) {
+      toast.error("Please select a client");
+      return;
+    }
+    if (!activeWorkspaceId) {
+      toast.error("No active workspace — please reload");
       return;
     }
     const validItems = lineItems.filter((li) => li.description.trim() && li.quantity > 0 && li.rate > 0);
@@ -435,6 +450,8 @@ export default function InvoiceBuilder() {
       if (invoiceId) {
         await updateInvoice({
           invoiceId: invoiceId as any,
+          clientId: clientId as any,
+          workspaceId: activeWorkspaceId as any,
           clientName: clientName.trim(),
           clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
@@ -450,6 +467,8 @@ export default function InvoiceBuilder() {
         });
       } else {
         const newId = await createInvoice({
+          clientId: clientId as any,
+          workspaceId: activeWorkspaceId as any,
           clientName: clientName.trim(),
           clientEmail: clientEmail.trim() || undefined,
           lineItems: lineItemsData,
@@ -461,7 +480,7 @@ export default function InvoiceBuilder() {
           issueDate: dateToTimestamp(issueDate),
           notes: notes.trim() || undefined,
           currency,
-        });
+        } as any);
         setInvoiceId(newId as string);
         toast.success("Invoice created!", {
           description: "Your draft has been saved",
@@ -701,15 +720,36 @@ export default function InvoiceBuilder() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label htmlFor="clientName" className="text-sm">
-                            Client Name <span className="text-red-500">*</span>
+                          <Label htmlFor="clientId" className="text-sm">
+                            Client <span className="text-red-500">*</span>
                           </Label>
-                          <Input
-                            id="clientName"
-                            placeholder="Enter client name"
-                            value={clientName}
-                            onChange={(e) => setClientName(e.target.value)}
-                          />
+                          {clientsList && Array.isArray(clientsList) && clientsList.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              No clients yet. <a href="/clients" className="underline">Add a client first</a>.
+                            </p>
+                          ) : (
+                            <select
+                              id="clientId"
+                              value={clientId}
+                              onChange={(e) => {
+                                const id = e.target.value;
+                                setClientId(id);
+                                const c = (clientsList as any[])?.find((x) => x._id === id);
+                                if (c) {
+                                  setClientName(c.clientName || c.name || "");
+                                  setClientEmail(c.contactEmail || c.email || "");
+                                }
+                              }}
+                              className="w-full p-2 border rounded-md bg-background border-input h-9"
+                            >
+                              <option value="">Select a client…</option>
+                              {(clientsList as any[])?.map((c) => (
+                                <option key={c._id} value={c._id}>
+                                  {c.clientName || c.name || c.email}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor="clientEmail" className="text-sm">

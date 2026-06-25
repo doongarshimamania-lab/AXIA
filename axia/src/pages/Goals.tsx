@@ -41,6 +41,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkspaceContext } from "@/hooks/use-workspace"; // ponytail: workspace scoping for goals queries/mutations
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { PageLayout } from "@/components/design-system/PageLayout";
@@ -117,9 +118,13 @@ const daysUntil = (timestamp: number) => {
 
 export default function Goals() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // ponytail: extract active workspace id so goals are scoped per-workspace (prevents cross-workspace data leak)
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const workspaceId = isConvexConnected ? activeWorkspaceId : undefined;
 
   // ─── Convex queries & mutations ──────────────────────────────────────────
-  const goalsData = useQuery(api.goals.crud.getGoals, {});
+  // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
+  const goalsData = useQuery(api.goals.crud.getGoals, { workspaceId: workspaceId as any });
   const createGoalMutation = useMutation(api.goals.crud.createGoal);
   const updateGoalMutation = useMutation(api.goals.crud.updateGoal);
   const deleteGoalMutation = useMutation(api.goals.crud.deleteGoal);
@@ -217,6 +222,7 @@ export default function Goals() {
     setIsCreating(true);
     try {
       await createGoalMutation({
+        workspaceId: workspaceId as any, // ponytail: stamp the new goal with the active workspace
         title: formTitle.trim(),
         description: formDescription.trim() || undefined,
         type: formType,

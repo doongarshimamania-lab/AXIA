@@ -183,19 +183,9 @@ export default function Proposals() {
   const sendProposal = useMutation(api.proposals.crud.sendProposal);
   const duplicateProposal = useMutation(api.proposals.crud.duplicateProposal);
   const deleteProposal = useMutation(api.proposals.crud.deleteProposal);
+  // ponytail: single atomic server-side mutation replaces the 4-mutation client flow
+  const convertToProjectMutation = useMutation(api.proposals.crud.convertToProject);
   const seedMockProposals = useMutation(api.seedNew.seedMockProposals);
-
-  // Mutations for Convert-to-Project flow
-  const createClientMutation = useMutation(api.clients.crud.createClient);
-  const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
-  const moveDealMutation = useMutation(api.pipeline.crud.moveDeal);
-  const updateProposalMutation = useMutation(api.proposals.crud.updateProposal);
-
-  // Fetch pipeline stages (to find "Won" stage for deal conversion)
-  const pipelineStages = useQuery(api.pipeline.crud.getStages, workspaceId ? { workspaceId } : "skip") as { _id: string; name: string }[] | undefined;
-
-  // Fetch existing clients (to check if client already exists)
-  const existingClients = useQuery(api.clients.crud.getClients, workspaceId ? { workspaceId } : "skip") as { _id: string; clientName: string; contactEmail?: string }[] | undefined;
 
   // Filter counts (from all proposals for the tab badges)
   const convexAllProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? { workspaceId } : "skip") as Proposal[] | undefined;
@@ -316,71 +306,13 @@ export default function Proposals() {
 
   const handleConvertToProject = async (proposal: Proposal) => {
     try {
-      // Step 1: Find or create the client
-      const clientName = proposal.clientName || "Unknown Client";
-      const clientEmail = proposal.clientEmail;
-      let clientId: string | undefined;
-
-      // Check if a client with this name already exists
-      const existingClient = existingClients?.find(
-        (c) => c.clientName.toLowerCase() === clientName.toLowerCase()
-      );
-
-      if (existingClient) {
-        clientId = existingClient._id;
-      } else {
-        // Create a new client
-        const newClientId = await createClientMutation({
-          clientName,
-          platform: "direct" as const,
-          hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
-          contractType: "hourly" as const,
-          contactEmail: clientEmail,
-          contactName: clientName,
-          workspaceId,
-          notes: `Created from proposal: ${proposal.title}`,
-        });
-        clientId = newClientId as unknown as string;
-      }
-
-      if (!clientId) {
-        throw new Error("Failed to resolve client ID");
-      }
-
-      // Step 2: Create the project
-      await addProjectMutation({
-        projectName: proposal.title,
-        clientId: clientId as any,
-        hourlyRate: proposal.totalValue > 0 ? proposal.totalValue / 40 : 50,
-        projectType: "ongoing" as const,
-        protectionLevel: "enhanced" as const,
-        workspaceId,
-      });
-
-      // Step 3: If proposal has a dealId, move the deal to "Won" stage
-      const dealId = (proposal as any).dealId;
-      if (dealId && pipelineStages) {
-        const wonStage = pipelineStages.find(
-          (s) => s.name.toLowerCase() === "won"
-        );
-        if (wonStage) {
-          await moveDealMutation({
-            dealId: dealId as any,
-            stageId: wonStage._id as any,
-          });
-        }
-      }
-
-      // Step 4: Update proposal notes to indicate conversion
-      const existingNotes = proposal.notes || "";
-      await updateProposalMutation({
+      const result = await convertToProjectMutation({
         proposalId: proposal._id as any,
-        notes: `${existingNotes ? existingNotes + "\n" : ""}[Converted to project — ${new Date().toLocaleDateString()}]`,
-      });
-
-      toast.success("Project created!", {
-        description: `"${proposal.title}" has been converted to a project.`,
-      });
+      } as any);
+      toast.success(
+        (result as any)?.alreadyConverted ? "Already converted" : "Project created!",
+        { description: `"${proposal.title}" has been converted to a project.` }
+      );
     } catch (err: any) {
       toast.error("Failed to convert to project", { description: err.message });
     }

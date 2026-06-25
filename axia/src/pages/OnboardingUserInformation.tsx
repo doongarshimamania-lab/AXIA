@@ -8,9 +8,16 @@ import { ArrowRight, User, DollarSign, Briefcase, GraduationCap, Mail, Sun, Moon
 import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/ThemeProvider';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/use-auth';
+import { useMutation } from '@/lib/safe-convex-react';
+import { api } from '@/convex/_generated/api';
 
 export default function OnboardingUserInformation() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // ponytail: persist step 1 directly to Convex (no localStorage intermediate)
+  const saveStep1 = useMutation(api.users.saveOnboardingStep1);
   const [formData, setFormData] = useState({
     fullName: '',
     hourlyRate: '',
@@ -18,6 +25,26 @@ export default function OnboardingUserInformation() {
     professionalBio: '',
     yearsExperience: ''
   });
+
+  // ponytail: prefill from the user record (name already collected at signup)
+  useEffect(() => {
+    if (user?.name && !formData.fullName) {
+      setFormData((prev) => ({ ...prev, fullName: user.name }));
+    }
+    if (typeof user?.hourlyRate === 'number' && !formData.hourlyRate) {
+      setFormData((prev) => ({ ...prev, hourlyRate: String(user.hourlyRate) }));
+    }
+    if (user?.primaryPlatform && !formData.primaryPlatform) {
+      setFormData((prev) => ({ ...prev, primaryPlatform: user.primaryPlatform }));
+    }
+    if (user?.professionalBio && !formData.professionalBio) {
+      setFormData((prev) => ({ ...prev, professionalBio: user.professionalBio }));
+    }
+    if (user?.yearsExperience && !formData.yearsExperience) {
+      setFormData((prev) => ({ ...prev, yearsExperience: user.yearsExperience }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   
   const [errors, setErrors] = useState({
     fullName: '',
@@ -56,10 +83,19 @@ export default function OnboardingUserInformation() {
     return isValid;
   };
   
-  const handleContinue = () => {
-    if (validateForm()) {
-      localStorage.setItem('onboardingData', JSON.stringify(formData));
+  const handleContinue = async () => {
+    if (!validateForm()) return;
+    try {
+      await saveStep1({
+        fullName: formData.fullName,
+        hourlyRate: Number(formData.hourlyRate),
+        primaryPlatform: formData.primaryPlatform,
+        yearsExperience: formData.yearsExperience || undefined,
+        professionalBio: formData.professionalBio || undefined,
+      } as any);
       navigate('/onboarding-source');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save. Please try again.');
     }
   };
   

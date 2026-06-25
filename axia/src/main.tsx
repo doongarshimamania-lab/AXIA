@@ -266,7 +266,10 @@ root.render(
                   {/* Client Portal (Public, No Auth) */}
                   <Route path="/workspace/:token" element={<ClientWorkspace />} />
                   <Route path="/client-login" element={<ClientLogin />} />
-                  <Route path="/client-signup" element={<ClientSignup />} />
+                  {/* ponytail: /client-signup moved inside ProtectedRoute below —
+                      clientAuth.registerClient requires a logged-in user (used by
+                      freelancers to pre-register a client company into their workspace).
+                      Public client self-registration happens via /workspace/:token. */}
 
                   {/* Dashboard Routes (With Sidebar + Auth Guard) */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -291,6 +294,8 @@ root.render(
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
+                    {/* ponytail: moved from public routes — requires auth */}
+                    <Route path="/client-signup" element={<ClientSignup />} />
                     {/* Legacy redirects — these pages are now consolidated */}
                     <Route path="/platform-integrations" element={<AccountSettings />} />
                     <Route path="/subscription" element={<AccountSettings />} />

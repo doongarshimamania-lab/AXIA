@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
+import { useWorkspaceContext } from "@/hooks/use-workspace"; // ponytail: workspace scoping for scope queries/mutations
 import {
   Shield,
   Plus,
@@ -552,6 +553,10 @@ export default function Scope() {
   const [searchParams] = useSearchParams();
   const proposalIdFromUrl = searchParams.get("proposalId");
 
+  // ponytail: extract active workspace id so scope definitions are scoped per-workspace (prevents cross-workspace data leak)
+  const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
+  const workspaceId = isConvexConnected ? activeWorkspaceId : undefined;
+
   const [selectedScopeId, setSelectedScopeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("definitions");
 
@@ -585,7 +590,8 @@ export default function Scope() {
   const [formClientAck, setFormClientAck] = useState("");
 
   // ─── Convex Queries ──────────────────────────────────────────────────────
-  const scopes = useQuery(api.scope.crud.getScopeDefinitions, {}) as ScopeDefinition[] | undefined;
+  // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
+  const scopes = useQuery(api.scope.crud.getScopeDefinitions, { workspaceId: workspaceId as any }) as ScopeDefinition[] | undefined;
   const selectedScopeChangeOrders = useQuery(
     selectedScopeId ? api.scope.crud.getChangeOrders : "skip",
     selectedScopeId ? { scopeId: selectedScopeId as any } : "skip"
@@ -670,6 +676,7 @@ export default function Scope() {
     }
     try {
       await createScopeMutation({
+        workspaceId: workspaceId as any, // ponytail: stamp the new scope definition with the active workspace
         title: newScopeTitle,
         description: newScopeDescription,
         revisionLimit: parseInt(newScopeRevisionLimit) || 3,

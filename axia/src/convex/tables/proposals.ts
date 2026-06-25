@@ -29,6 +29,7 @@ export const proposalTables = {
     workspaceId: v.optional(v.id("workspaces")),
     clientId: v.optional(v.id("clients")),
     dealId: v.optional(v.id("deals")),
+    projectId: v.optional(v.id("projects")), // ponytail: back-link set when proposal is converted to project
     title: v.string().maxLength(200),
     status: v.union(
       v.literal("draft"),
