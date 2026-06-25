@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Plus, Lock, Share2, Copy, Check, ExternalLink } from "lucide-react";
+import { Shield, Plus, Lock, Share2, Copy, Check, ExternalLink, Tag as TagIcon } from "lucide-react";
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+// ponytail: read-only badge display + multi-select picker popover for client cards.
+import { TagPicker, TagBadges } from "@/components/tags";
 
 // Check if an ID is a mock/demo ID (not a real Convex document ID)
 // Convex IDs for table "clients" always start with "clients:" or are 22+ char base62 strings
@@ -45,6 +48,8 @@ interface Client {
   totalHours: number;
   totalValue: number;
   activeSession: boolean;
+  // ponytail: optional tagIds on the client (added by phase-1a schema patch).
+  tagIds?: string[];
 }
 
 interface ClientListProps {
@@ -54,6 +59,8 @@ interface ClientListProps {
   onAddClient: () => void;
   subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onUpgrade?: () => void;
+  // ponytail: workspace tag list for rendering TagBadges + the Manage Tags popover.
+  allTags?: any[];
 }
 
 export function ClientList({ 
@@ -62,12 +69,15 @@ export function ClientList({
   onSelectClient, 
   onAddClient,
   subscriptionTier = "free",
-  onUpgrade
+  onUpgrade,
+  allTags = []
 }: ClientListProps) {
   const [shareClientId, setShareClientId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  // ponytail: track which client's "Manage tags" popover is currently open.
+  const [manageTagsFor, setManageTagsFor] = useState<string | null>(null);
 
   // Only use mutation if the clientWorkspace API exists
   const clientWorkspaceApi = (api as any).clients?.clientWorkspace;
@@ -174,9 +184,45 @@ export function ClientList({
                       <div className="text-sm text-muted-foreground">
                         {client.platform} · ${client.hourlyRate}/hr · {client.contractType}
                       </div>
+                      {/* ponytail: read-only tag badges on each client card. */}
+                      <div className="mt-1">
+                        <TagBadges
+                          tagIds={client.tagIds}
+                          tags={allTags}
+                          max={3}
+                          size="xs"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* ponytail: Manage-tags popover — TagPicker with entityId persists
+                        immediately via setEntityTags, so no extra save logic needed. */}
+                    <Popover open={manageTagsFor === client._id} onOpenChange={(o) => setManageTagsFor(o ? client._id : null)}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => { e.stopPropagation(); setManageTagsFor(client._id); }}
+                          title="Manage tags"
+                        >
+                          <TagIcon className="h-3.5 w-3.5 mr-1" />
+                          Tags
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[320px]" align="end" onClick={(e) => e.stopPropagation()}>
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground">Tags for {client.clientName}</div>
+                          <TagPicker
+                            entityType="clients"
+                            entityId={client._id}
+                            initialTagIds={client.tagIds ?? []}
+                            categoryHint="client"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Badge className={getRiskColor(client.riskLevel)}>
                       {client.riskLevel} risk
                     </Badge>

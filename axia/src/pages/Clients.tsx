@@ -16,13 +16,15 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft, Tag as TagIcon, X } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { CustomFieldValues } from "@/components/CustomFieldValues";
 import { PageLayout } from "@/components/design-system/PageLayout";
+// ponytail: import reusable tag components for picker, badges, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
 
 export default function Clients() {
   const { tier: subscriptionTier } = useSubscriptionTier();
@@ -45,6 +47,13 @@ export default function Clients() {
   // ─── Convex mutations ──────────────────────────────────────────────────
   const createClientMutation = useMutation(api.clients.crud.createClient);
   const deleteClientMutation = useMutation(api.clients.crud.deleteClient);
+  // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
+  // client (createClient doesn't accept tagIds directly, so we patch after).
+  const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
+  // ponytail: load the workspace's tags so we can render TagBadges on each client card
+  // and a tag-filter chip bar above the list.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // ─── Local state ───────────────────────────────────────────────────────
   const [showAddClient, setShowAddClient] = useState(false);
@@ -63,6 +72,11 @@ export default function Clients() {
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  // ponytail: detached TagPicker state for the Add Client dialog — held locally
+  // until createClientMutation returns the new client ID, then persisted via setEntityTags.
+  const [formTagIds, setFormTagIds] = useState<string[]>([]);
+  // ponytail: tag-filter state for the client list — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
   const { isDisconnected } = useConvexConnectionState();
@@ -87,10 +101,18 @@ export default function Clients() {
     activeSession: c.activeSession ?? false,
     addedAt: c.addedAt,
     lastActivityAt: c.lastActivityAt,
+    // ponytail: preserve tagIds from the patched schema so the list can show badges.
+    tagIds: c.tagIds,
   }));
 
   // Use real clients only (empty array when demo/disconnected)
   const clients = realClients;
+
+  // ponytail: tag-filtered clients — when a filter chip is active, narrow the list
+  // to clients whose tagIds include the selected tag.
+  const filteredClients = activeTagFilter
+    ? clients.filter((c: any) => Array.isArray(c.tagIds) && c.tagIds.includes(activeTagFilter))
+    : clients;
 
   // ─── Auto-select first client ──────────────────────────────────────────
   const hasAutoSelected = useRef(false);
@@ -125,7 +147,7 @@ export default function Clients() {
 
     setIsCreating(true);
     try {
-      await createClientMutation({
+      const newClientId = await createClientMutation({
         clientName,
         platform,
         hourlyRate: Number(hourlyRate),
@@ -133,6 +155,19 @@ export default function Clients() {
         riskLevel,
         ...(workspaceId ? { workspaceId } : {}),
       });
+      // ponytail: attach the form's selected tags to the new client via the
+      // generic setEntityTags mutation (createClient doesn't accept tagIds).
+      if (newClientId && formTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "clients",
+            entityId: newClientId,
+            tagIds: formTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[Clients] failed to attach tags to new client:", tagErr?.message);
+        }
+      }
       toast.success("Client added successfully!");
       setShowAddClient(false);
       resetForm();
@@ -172,6 +207,8 @@ export default function Clients() {
     setPlatform("upwork");
     setContractType("hourly");
     setRiskLevel("low");
+    // ponytail: also reset the form's tag selection so the next client starts clean.
+    setFormTagIds([]);
   };
 
   // ─── Render ────────────────────────────────────────────────────────────
@@ -249,14 +286,58 @@ export default function Clients() {
           </div>
         ) : (
           <>
+            {/* ponytail: tag-filter chip bar above the client list — toggle pattern. */}
+            {allTags.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-muted-foreground mr-1 inline-flex items-center gap-1">
+                  <TagIcon className="h-3 w-3" /> Filter:
+                </span>
+                {allTags.map((t: any) => {
+                  const isActive = activeTagFilter === t._id;
+                  return (
+                    <button
+                      key={t._id}
+                      type="button"
+                      onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                        isActive
+                          ? "bg-foreground text-background border-foreground"
+                          : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                      }`}
+                      style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                    >
+                      <span
+                        className="inline-block w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: t.color ?? "#888" }}
+                      />
+                      {t.name}
+                      {isActive && <X className="h-3 w-3 ml-0.5" />}
+                    </button>
+                  );
+                })}
+                {activeTagFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTagFilter(null)}
+                    className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Client List */}
             <ClientList
-              clients={clients}
+              clients={filteredClients}
               selectedClientId={selectedClientId}
               onSelectClient={setSelectedClientId}
               onAddClient={() => setShowAddClient(true)}
               subscriptionTier={subscriptionTier}
               onUpgrade={() => toast.info("Upgrade feature coming soon")}
+              // ponytail: pass tags + tag-bearing fields so the list can render
+              // badges and a "Manage tags" popover on each card.
+              allTags={allTags}
             />
 
             {/* Empty state with CTA */}
@@ -427,6 +508,18 @@ export default function Clients() {
                 values={customFieldValues}
                 onChange={setCustomFieldValues}
               />
+              {/* ponytail: detached TagPicker — IDs are held in `formTagIds` and
+                  attached after the client is created via setEntityTags. */}
+              <div className="space-y-2">
+                <Label>Tags (optional)</Label>
+                <TagPicker
+                  entityType="clients"
+                  initialTagIds={formTagIds}
+                  onChange={setFormTagIds}
+                  categoryHint="client"
+                  placeholder="Add tags for this client..."
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddClient(false)} disabled={isCreating}>
