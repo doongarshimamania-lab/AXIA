@@ -14,6 +14,8 @@ import {
   Flag,
   BarChart3,
   Loader2,
+  Tag as TagIcon,
+  X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -45,6 +48,8 @@ import { useWorkspaceContext } from "@/hooks/use-workspace"; // ponytail: worksp
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { PageLayout } from "@/components/design-system/PageLayout";
+// ponytail: import reusable tag components for picker, badges, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -130,6 +135,13 @@ export default function Goals() {
   const deleteGoalMutation = useMutation(api.goals.crud.deleteGoal);
   const markGoalCompleteMutation = useMutation(api.goals.crud.markGoalComplete);
   const updateMilestoneMutation = useMutation(api.goals.crud.updateMilestone);
+  // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
+  // goal (createGoal doesn't accept tagIds directly, so we patch after).
+  const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
+  // ponytail: load the workspace's tags so we can render TagBadges on each goal card
+  // and a tag-filter chip bar above the list.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // ─── Local state ────────────────────────────────────────────────────────
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -148,6 +160,11 @@ export default function Goals() {
   const [formUnit, setFormUnit] = useState("%");
   const [formDeadline, setFormDeadline] = useState("");
   const [formStatus, setFormStatus] = useState("not_started");
+  // ponytail: detached TagPicker state for the Create + Edit dialogs — held locally
+  // until the goal is created/updated, then persisted via setEntityTags.
+  const [formTagIds, setFormTagIds] = useState<string[]>([]);
+  // ponytail: tag-filter state for the goals list — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   // Mutation loading state
   const [isCreating, setIsCreating] = useState(false);
@@ -177,8 +194,12 @@ export default function Goals() {
   // ── Filtering ──
   const filteredGoals =
     statusFilter === "all"
-      ? goals
-      : goals.filter((g: any) => g.status === statusFilter);
+      ? (activeTagFilter
+          ? goals.filter((g: any) => Array.isArray(g.tagIds) && g.tagIds.includes(activeTagFilter))
+          : goals)
+      : (activeTagFilter
+          ? goals.filter((g: any) => g.status === statusFilter && Array.isArray(g.tagIds) && g.tagIds.includes(activeTagFilter))
+          : goals.filter((g: any) => g.status === statusFilter));
 
   // ── Helpers ──
   const resetForm = () => {
@@ -190,6 +211,8 @@ export default function Goals() {
     setFormUnit("%");
     setFormDeadline("");
     setFormStatus("not_started");
+    // ponytail: also reset the form's tag selection so the next goal starts clean.
+    setFormTagIds([]);
   };
 
   const getProgress = (goal: any) => {
@@ -221,7 +244,7 @@ export default function Goals() {
 
     setIsCreating(true);
     try {
-      await createGoalMutation({
+      const newGoalId = await createGoalMutation({
         workspaceId: workspaceId as any, // ponytail: stamp the new goal with the active workspace
         title: formTitle.trim(),
         description: formDescription.trim() || undefined,
@@ -232,6 +255,19 @@ export default function Goals() {
         deadline,
         status: formStatus,
       });
+      // ponytail: attach the form's selected tags to the new goal via the
+      // generic setEntityTags mutation (createGoal doesn't accept tagIds).
+      if (newGoalId && formTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "goals",
+            entityId: newGoalId,
+            tagIds: formTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[Goals] failed to attach tags to new goal:", tagErr?.message);
+        }
+      }
       resetForm();
       setCreateOpen(false);
       toast.success(`Goal "${formTitle.trim()}" created`);
@@ -253,6 +289,8 @@ export default function Goals() {
     setFormUnit(goal.unit);
     setFormDeadline(goal.deadline ? new Date(goal.deadline).toISOString().split("T")[0] : "");
     setFormStatus(goal.status);
+    // ponytail: seed the tag picker with the goal's existing tags (if any).
+    setFormTagIds(Array.isArray(goal.tagIds) ? goal.tagIds : []);
     setEditOpen(true);
   };
 
@@ -287,6 +325,22 @@ export default function Goals() {
         deadline,
         status: formStatus,
       });
+      // ponytail: sync the goal's tags after a successful edit (replace the full list).
+      // We compare against the goal's existing tagIds to skip a no-op patch.
+      const existingTagIds = Array.isArray(editingGoal.tagIds) ? editingGoal.tagIds : [];
+      const sameLength = existingTagIds.length === formTagIds.length;
+      const same = sameLength && existingTagIds.every((id: string) => formTagIds.includes(id));
+      if (!same) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "goals",
+            entityId: editingGoal._id,
+            tagIds: formTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[Goals] failed to attach tags to edited goal:", tagErr?.message);
+        }
+      }
       resetForm();
       setEditOpen(false);
       setEditingGoal(null);
@@ -497,6 +551,18 @@ export default function Goals() {
                     onChange={(e) => setFormDeadline(e.target.value)}
                   />
                 </div>
+                {/* ponytail: detached TagPicker — IDs are held in `formTagIds` and
+                    attached after the goal is created via setEntityTags. */}
+                <div className="space-y-2">
+                  <Label>Tags (optional)</Label>
+                  <TagPicker
+                    entityType="goals"
+                    initialTagIds={formTagIds}
+                    onChange={setFormTagIds}
+                    categoryHint="general"
+                    placeholder="Add tags for this goal..."
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -617,6 +683,44 @@ export default function Goals() {
                   {filter.label}
                 </Button>
               ))}
+              {/* ponytail: tag-filter chip bar — toggle pattern, only renders when there
+                  are tags to filter by. Stacks on top of the status filter. */}
+              {allTags.length > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1.5 flex-wrap">
+                  {allTags.map((t: any) => {
+                    const isActive = activeTagFilter === t._id;
+                    return (
+                      <button
+                        key={t._id}
+                        type="button"
+                        onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                          isActive
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                        }`}
+                        style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                      >
+                        <span
+                          className="inline-block w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: t.color ?? "#888" }}
+                        />
+                        {t.name}
+                        {isActive && <X className="h-3 w-3 ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                  {activeTagFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTagFilter(null)}
+                      className="text-xs text-muted-foreground underline hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
 
             <Separator />
@@ -724,6 +828,14 @@ export default function Goals() {
                                   {goal.description}
                                 </p>
                               )}
+
+                              {/* ponytail: read-only tag badges on each goal card. */}
+                              <TagBadges
+                                tagIds={goal.tagIds}
+                                tags={allTags}
+                                max={3}
+                                size="xs"
+                              />
 
                               {/* Progress bar */}
                               <div className="space-y-1.5">
@@ -926,6 +1038,18 @@ export default function Goals() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            {/* ponytail: TagPicker in the Edit dialog — seeded with the goal's
+                existing tagIds; persisted via setEntityTags after the goal updates. */}
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <TagPicker
+                entityType="goals"
+                initialTagIds={formTagIds}
+                onChange={setFormTagIds}
+                categoryHint="general"
+                placeholder="Add tags for this goal..."
+              />
             </div>
           </div>
           <DialogFooter>
