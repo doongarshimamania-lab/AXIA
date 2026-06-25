@@ -18,7 +18,7 @@ export const getClientProtectionScore = query({
       throw new Error("Client not found or unauthorized");
     }
 
-    const userTier = "expert";
+    const userTier = user.subscriptionTier || "free";
     const metrics = calculateTierMetrics(client, userTier);
 
     return {

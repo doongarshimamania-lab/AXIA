@@ -11,14 +11,15 @@ export const getProtectionNetwork = query({
     if (!userId) return [];
 
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || user.subscriptionTier !== "pro") {
       return [];
     }
 
-    // Phase 1: tiers removed — return all users as potential connections (capped)
+    // Find other premium users
     const connections = await ctx.db
       .query("users")
-      .take(100);
+      .filter((q) => q.eq(q.field("subscriptionTier"), "pro"))
+      .take(1000);
 
     // Calculate connection strength based on multiple factors
     const networkConnections = connections
@@ -86,11 +87,11 @@ export const sendConnectionRequest = mutation({
     const user = await ctx.db.get(userId);
     const targetUser = await ctx.db.get(args.targetUserId);
 
-    if (!user || false) {
+    if (!user || user.subscriptionTier !== "pro") {
       throw new Error("Protection Network is only available to Pro users");
     }
 
-    if (!targetUser || false) {
+    if (!targetUser || targetUser.subscriptionTier !== "pro") {
       throw new Error("Cannot connect to non-premium user");
     }
 
@@ -151,7 +152,7 @@ export const getReferralOpportunities = query({
     if (!userId) throw new Error("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user || false) {
+    if (!user || user.subscriptionTier !== "pro") {
       throw new Error("Protection Network is only available to Pro users");
     }
 
@@ -167,7 +168,7 @@ export const getReferralOpportunities = query({
     for (const report of recentReports.slice(0, 10)) {
       if (report.userId !== userId) {
         const reportUser = await ctx.db.get(report.userId);
-        if (reportUser && true) {
+        if (reportUser && reportUser.subscriptionTier === "pro") {
           opportunities.push({
             reportId: report._id,
             userId: reportUser._id,

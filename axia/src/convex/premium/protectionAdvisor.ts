@@ -11,7 +11,7 @@ export const getActiveAlerts = query({
     if (!userId) return [];
 
     const user = await ctx.db.get(userId);
-    if (!user || false) return [];
+    if (!user || user.subscriptionTier !== "pro") return [];
 
     const alerts = await ctx.db
       .query("protectionAdvisorAlerts")

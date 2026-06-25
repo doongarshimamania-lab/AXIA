@@ -151,9 +151,9 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<string>
   if (!user) {
     throw new Error("Unauthorized: User not found.");
   }
-  // Role-based only (no tier check). Owners count as admins too.
-  if (user.role !== "admin" && user.role !== "owner") {
-    throw new Error("Forbidden: Admin role required.");
+  // Allow either the legacy `role === "admin"` or `subscriptionTier === "expert"` (per user request)
+  if (user.role !== "admin" && user.subscriptionTier !== "expert") {
+    throw new Error("Forbidden: Admin or Expert tier required.");
   }
   return userId as unknown as string;
 }

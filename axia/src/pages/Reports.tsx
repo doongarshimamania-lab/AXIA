@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
@@ -154,7 +155,7 @@ function formatCurrency(amount: number): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Reports() {
-  // Phase 1: tiers removed — no tier state needed
+  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // ─── Convex queries ──────────────────────────────────────────────────────
@@ -191,13 +192,13 @@ export default function Reports() {
   // ─── Map Convex data ────────────────────────────────────────────────────
   const reports: DisputeReport[] = (reportsData ?? []) as any;
 
-  // Phase 1: tiers removed — all users have full access
-  const isProOrAbove = true;
+  // Tier-gating logic
+  const isProOrAbove = subscriptionTier === "pro" || subscriptionTier === "expert";
   const reportsThisMonth = reports.filter(
     (r) => r.generatedAt > Date.now() - 30 * 24 * 60 * 60 * 1000
   ).length;
   const freeReportLimit = 1;
-  const hasReachedFreeLimit = false;
+  const hasReachedFreeLimit = !isProOrAbove && reportsThisMonth >= freeReportLimit;
 
   // Computed values
   const filteredReports = useMemo(() => {
@@ -245,7 +246,7 @@ export default function Reports() {
         action: {
           label: "Upgrade",
           onClick: () => {
-            /* Phase 1: tier removed — was: setSubscriptionTier("pro") */
+            setSubscriptionTier("pro");
             toast.success("Upgraded to Pro!", { description: "You now have unlimited report generation." });
           },
         },
@@ -289,7 +290,7 @@ export default function Reports() {
           action: {
             label: "Upgrade",
             onClick: () => {
-              /* Phase 1: tier removed — was: setSubscriptionTier("pro") */
+              setSubscriptionTier("pro");
               toast.success("Upgraded to Pro!", { description: "You now have unlimited report generation." });
             },
           },
@@ -477,7 +478,7 @@ export default function Reports() {
                     size="sm"
                     className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
                     onClick={() => {
-                      /* Phase 1: tier removed — was: setSubscriptionTier("pro") */
+                      setSubscriptionTier("pro");
                       toast.success("Upgraded to Pro!", {
                         description: "You now have unlimited report generation.",
                       });
@@ -510,7 +511,7 @@ export default function Reports() {
                       action: {
                         label: "Upgrade",
                         onClick: () => {
-                          /* Phase 1: tier removed — was: setSubscriptionTier("pro") */
+                          setSubscriptionTier("pro");
                           toast.success("Upgraded to Pro!", {
                             description: "You now have unlimited report generation.",
                           });
@@ -682,7 +683,7 @@ export default function Reports() {
                                       className="bg-amber-600 hover:bg-amber-700 text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        /* Phase 1: tier removed — was: setSubscriptionTier("pro") */
+                                        setSubscriptionTier("pro");
                                         toast.success("Upgraded to Pro!", {
                                           description: "Advanced analysis features are now unlocked.",
                                         });

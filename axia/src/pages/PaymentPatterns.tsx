@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useQuery, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { exportPaymentReport } from "@/lib/exportUtils";
@@ -158,8 +159,9 @@ function DemoModeBanner() {
 export default function PaymentPatterns() {
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
+  const { tier } = useSubscriptionTier();
   const { isAuthenticated } = useConvexAuth();
-  const isPro = true; // Phase 1: all users have full access (tiers removed)
+  const isPro = tier === "pro" || tier === "expert";
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 

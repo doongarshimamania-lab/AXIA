@@ -244,6 +244,34 @@ export const featureTables = {
     .index("by_policy", ["clientPolicyId"])
     .index("by_workspace", ["workspaceId"]),
 
+  upgradeTriggers: defineTable({
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    triggerType: v.string(), // "loss_aversion" | "feature_gate" | "value_showcase"
+    triggerSource: v.string().maxLength(1000),
+    tierShown: v.string().maxLength(50),
+    triggeredAt: v.number(),
+    converted: v.boolean(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_converted", ["userId", "converted"])
+    .index("by_workspace", ["workspaceId"]),
+
+  upgradeConversions: defineTable({
+    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    createdBy: v.optional(v.id("users")),
+    fromTier: v.string().maxLength(50),
+    toTier: v.string().maxLength(50),
+    triggerSource: v.string().maxLength(1000),
+    convertedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_tier", ["toTier"])
+    .index("by_workspace", ["workspaceId"]),
+
   waitlistEntries: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
     email: v.string().maxLength(320),

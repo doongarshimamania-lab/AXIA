@@ -12,7 +12,7 @@
  *   2. Every new user's dashboard showing identical fake data.
  *
  * Now this mutation is MINIMAL: it only enriches the user profile fields
- * (name, role, `subscriptionTier` (REMOVED in Phase 1), joinedAt) and is fully idempotent.
+ * (name, role, subscriptionTier, joinedAt) and is fully idempotent.
  * It does NOT create workspaces, clients, projects, deals, or pipeline
  * stages. The personal workspace + default pipeline stages are created
  * lazily by `workspaces.crud.seedPersonalWorkspace` (called from useAuth).
@@ -161,6 +161,7 @@ export const enrichDevUser = mutation({
     await ctx.db.patch(userId, {
       name: DEV_USER_NAME,
       role: "admin",
+      subscriptionTier: "pro",
       hourlyRate: 85,
       professionalBio: "Full-stack developer and freelance professional specializing in web applications, React, and cloud architecture. 8+ years of experience working with startups and enterprise clients.",
       protectedHours: 171,
@@ -407,7 +408,7 @@ export const enrichDevUser = mutation({
  * MINIMAL user profile enrichment — called automatically on first sign-in.
  *
  * CRITICAL: This is intentionally MINIMAL. It only sets user profile fields
- * (name, role, `subscriptionTier` (REMOVED in Phase 1), joinedAt). It does NOT create workspaces,
+ * (name, role, subscriptionTier, joinedAt). It does NOT create workspaces,
  * pipeline stages, clients, projects, or deals. The personal workspace is
  * created separately by `workspaces.crud.seedPersonalWorkspace`.
  *
@@ -440,11 +441,11 @@ export const seedDevProfile = mutation({
     // SECURITY: Only grant admin/pro to the dev user
     if (user.email === DEV_USER_EMAIL) {
       if (!user.role) updates.role = "admin";
-      if (!"expert") "expert" = "pro";
+      if (!user.subscriptionTier) updates.subscriptionTier = "pro";
     } else {
       // Regular users get "user" role and "free" tier by default
       if (!user.role) updates.role = "user";
-      if (!"expert") "expert" = "free";
+      if (!user.subscriptionTier) updates.subscriptionTier = "free";
     }
 
     if (!user.joinedAt) updates.joinedAt = Date.now();

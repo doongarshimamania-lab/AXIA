@@ -12,7 +12,7 @@ export const getProtectionValueMetrics = query({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
 
-    const tier = "expert";
+    const tier = user.subscriptionTier || "free";
     const hourlyRate = user.hourlyRate || 25;
     const now = Date.now();
     const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
@@ -132,6 +132,7 @@ export const getProtectionValueMetrics = query({
       },
       totalReports: allReports.length,
       resolvedReports: resolvedReports.length,
+      subscriptionTier: tier,
       tierProtectionRate: tierProtectionRates[tier] || 22,
       subscriptionCost,
     };

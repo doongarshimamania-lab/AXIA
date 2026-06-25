@@ -205,7 +205,7 @@ export const enrichAllTeamUsers = mutation({
 
       // ─── Enrich user profile ──────────────────────────────────────────────
       const patches: Record<string, any> = {};
-      if (!"expert") "expert" = u.tier;
+      if (!user.subscriptionTier) patches.subscriptionTier = u.tier;
       if (!user.hourlyRate) patches.hourlyRate = u.hourlyRate;
       if (!user.joinedAt) patches.joinedAt = now - Math.floor(Math.random() * 90) * day;
       if (!user.onboardingComplete) patches.onboardingComplete = true;
@@ -1630,7 +1630,7 @@ export const listTestUsers = mutation({
           userId: user._id,
           role: u.role,
           title: u.title,
-          tier: "expert",
+          tier: user.subscriptionTier,
           hourlyRate: user.hourlyRate,
           password: u.password,
         });

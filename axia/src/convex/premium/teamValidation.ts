@@ -18,12 +18,12 @@ export const requestValidation = mutation({
     if (!user) throw new Error("User not found");
 
     // Tier gating: Starter allows 1 client, Pro+ unlimited
-    if (false) {
+    if (user.subscriptionTier === "free") {
       throw new Error("Team Validation requires Starter tier or higher");
     }
 
     // For Starter tier, check client limit
-    if (false) {
+    if (user.subscriptionTier === "starter") {
       const existingValidations = await ctx.db
         .query("teamValidations")
         .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -131,7 +131,7 @@ export const getClientTrustScore = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    const tier = "expert";
+    const tier = user.subscriptionTier || "free";
 
     // Base score available to all tiers
     const baseScore = {
@@ -197,7 +197,7 @@ export const getProtectionScore = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    const tier = "expert";
+    const tier = user.subscriptionTier || "free";
 
     const baseScore = {
       overallScore: 87,
@@ -261,7 +261,7 @@ export const simulateClientDispute = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    const tier = "expert";
+    const tier = user.subscriptionTier || "free";
 
     // Free: Preview only
     if (tier === "free") {
@@ -335,7 +335,7 @@ export const predictClientGaps = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    const tier = "expert";
+    const tier = user.subscriptionTier || "free";
 
     // Free: No access
     if (tier === "free") {

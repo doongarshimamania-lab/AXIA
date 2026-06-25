@@ -11,7 +11,7 @@ export const getActivePlan = query({
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
-    if (!user || false) return null;
+    if (!user || user.subscriptionTier !== "pro") return null;
 
     const plan = await ctx.db
       .query("protectionPlans")
@@ -40,7 +40,7 @@ export const createPlan = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user || false) {
+    if (!user || user.subscriptionTier !== "pro") {
       throw new Error("PRO subscription required");
     }
 

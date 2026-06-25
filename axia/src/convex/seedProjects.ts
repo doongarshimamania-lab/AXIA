@@ -24,6 +24,7 @@ export const seedTestProjects = mutation({
         userId = await ctx.db.insert("users", {
           email: "guest@axia.demo",
           name: "Guest User",
+          subscriptionTier: "free",
           onboardingComplete: true,
         });
       }

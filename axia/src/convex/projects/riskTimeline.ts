@@ -104,7 +104,7 @@ export const getProjectRiskTimeline = query({
     const user = await ctx.db.get(userId);
     if (!user) return buildEmptyData(requestedTier ?? "free");
 
-    const tier = requestedTier ?? (normalizeTier("expert") ?? "free");
+    const tier = requestedTier ?? (normalizeTier(user.subscriptionTier) ?? "free");
     const hourlyRate = user?.hourlyRate || 25;
 
     // 1. Gather Data - Fetch all relevant data for the user

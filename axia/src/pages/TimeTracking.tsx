@@ -13,6 +13,7 @@ import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
   Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
 } from "lucide-react";
+import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
@@ -47,7 +48,7 @@ function formatDate(ts: number) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TimeTracking() {
-  // Phase 1: tiers removed
+  const { tier } = useSubscriptionTier();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
@@ -752,7 +753,7 @@ export default function TimeTracking() {
                 <Label>Memo</Label>
                 <Input placeholder="What did you work on?" value={manualMemo} onChange={(e) => setManualMemo(e.target.value)} />
               </div>
-              {false && (
+              {tier === "free" && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 break-words">
                   Free plan: Manual entries are not compliance-verified. Upgrade to Pro for verified time tracking.
                 </div>

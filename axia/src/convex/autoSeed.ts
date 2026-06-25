@@ -32,7 +32,7 @@ export const autoSeed = mutation({
     const user = await ctx.db.get(userId);
     if (user) {
       const patches: Record<string, any> = {};
-      if (!"expert") "expert" = "pro";
+      if (!user.subscriptionTier) patches.subscriptionTier = "pro";
       if (!user.hourlyRate) patches.hourlyRate = 85;
       if (!user.joinedAt) patches.joinedAt = now;
       if (!user.onboardingComplete) patches.onboardingComplete = true;

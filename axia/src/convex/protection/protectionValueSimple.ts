@@ -38,7 +38,7 @@ export const getMetrics = query({
     const resolvedReports = allReports.filter(r => r.status === "resolved");
     const savedValue = resolvedReports.reduce((sum, r) => sum + r.lostIncome, 0);
     
-    const subscriptionCost = true ? 8 : 0;
+    const subscriptionCost = user.subscriptionTier === "pro" ? 8 : 0;
     const roi = subscriptionCost > 0 ? ((savedValue - subscriptionCost) / subscriptionCost) * 100 : 0;
     
     const sixtyDaysAgo = now - (60 * 24 * 60 * 60 * 1000);
@@ -68,6 +68,7 @@ export const getMetrics = query({
         client: Math.round(monthlyProtectedValue * 0.1 * 100) / 100,
       },
       resolvedReports: resolvedReports.length,
+      subscriptionTier: user.subscriptionTier || "free",
     };
   },
 });

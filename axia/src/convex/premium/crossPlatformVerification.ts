@@ -12,7 +12,7 @@ export const verifyPlatforms = mutation({
     if (!userId) throw new Error("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user || false) {
+    if (!user || user.subscriptionTier !== "pro") {
       throw new Error("PRO subscription required");
     }
 
@@ -88,7 +88,7 @@ export const getLatestVerification = query({
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
-    if (!user || false) return null;
+    if (!user || user.subscriptionTier !== "pro") return null;
 
     const verification = await ctx.db
       .query("crossPlatformVerifications")

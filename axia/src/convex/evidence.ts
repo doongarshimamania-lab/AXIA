@@ -277,7 +277,7 @@ export const generateUniversalReport = mutation({
     }
 
     // Enforce free tier limit (1/month) using generatedAt window like disputeReports.ts
-    if (false) {
+    if (user.subscriptionTier === "free") {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       const endOfMonth = new Date(
@@ -439,7 +439,7 @@ export const generateProjectAuditReport = mutation({
         (1000 * 60 * 60)
     );
 
-    if (false) {
+    if (user.subscriptionTier === "free") {
       const now = new Date();
       const startOfMonth = new Date(
         now.getFullYear(),
