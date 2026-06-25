@@ -58,6 +58,9 @@ export const proposalTables = {
     customFields: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
+
+    // ── Tags (ponytail: tag attachment — populated by tags.crud.setEntityTags) ──
+    tagIds: v.optional(v.array(v.id("tags"))),
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"])

@@ -28,6 +28,9 @@ export const goalTables = {
     lastCheckIn: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
+
+    // ── Tags (ponytail: tag attachment — populated by tags.crud.setEntityTags) ──
+    tagIds: v.optional(v.array(v.id("tags"))),
   })
     .index("by_user", ["userId"])
     .index("by_workspace", ["workspaceId"]),

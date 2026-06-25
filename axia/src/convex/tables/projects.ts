@@ -91,6 +91,9 @@ export const projectTables = {
     // ── Workspace assignment ─────────────────────────────────────────────
     assignedMemberIds: v.optional(v.array(v.id("workspaceMembers"))),
 
+    // ── Tags (ponytail: tag attachment — populated by tags.crud.setEntityTags) ──
+    tagIds: v.optional(v.array(v.id("tags"))),
+
     // ── Timestamps ───────────────────────────────────────────────────────
     addedAt: v.optional(v.number()),
     lastActivityAt: v.optional(v.number()),
@@ -144,6 +147,9 @@ export const projectTables = {
     historicalSuccess: v.optional(v.number()),
     weeklyIncome: v.optional(v.number()),
     avgProjectValue: v.optional(v.number()),
+
+    // ── Tags (ponytail: tag attachment — populated by tags.crud.setEntityTags) ──
+    tagIds: v.optional(v.array(v.id("tags"))),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_name", ["userId", "projectName"])

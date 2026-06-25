@@ -28,6 +28,9 @@ export const trackingTables = {
     invoiceId: v.optional(v.id("invoices")),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+
+    // ── Tags (ponytail: tag attachment — populated by tags.crud.setEntityTags) ──
+    tagIds: v.optional(v.array(v.id("tags"))),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_project", ["userId", "projectName"])
