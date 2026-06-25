@@ -59,6 +59,7 @@ convex_local_backend.sqlite3
 
 # ─── Transient agent scratch (not source) ───
 /resources/tool-results/
+/tool-results/
 
 # ─── Large binaries (GitHub Releases only, >100 MB) ───
 *.zip
