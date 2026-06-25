@@ -583,3 +583,907 @@ Ranked by user-visible impact (most impactful first).
 ---
 
 End of Task ID 3.
+
+---
+
+Task ID: 4
+Agent: Explore (page gap audit)
+
+# AXIA — Post-Signup Page-by-Page Gap & Caveat Audit
+
+## 0. Methodology & Scope
+
+Read-only audit of the 26 post-signup pages listed in the task. For each page, I read the full file (or substantial portions for the largest files) and verified: data-fetching patterns, workspace scoping, loading/error/empty states, auth/role checks, form validation, URL-param consumption, navigation flow, cross-page linkage, and field-level typing. All line numbers refer to the file as it exists on the inspected commit. No files were modified.
+
+Cross-cutting note: `safe-convex-react` (`src/lib/safe-convex-react.ts`) wraps every `useQuery`/`useMutation` so that errors are swallowed and `undefined` is returned on failure. This means **every page silently fails on Convex errors** — there are no error UIs anywhere in the post-signup surface. The `useQueryTimeout` + `useConvexConnectionState` pattern handles *connection* loss but not *server-side* errors (e.g. Convex validation failures, function crashes). This is a systemic caveat cited below.
+
+---
+
+## 1. Dashboard.tsx — `/dashboard`
+
+**Purpose**: KPI overview landing page — projects, clients, revenue, pipeline summary.
+
+**Gaps**:
+- `projectsData = useQuery(api.projects.projectProtection.getMyProjects, {})` (line 230) — passes `{}`, no `workspaceId`. Projects are user-scoped, not workspace-scoped. Switching workspaces does not change this number.
+- `projectsData` has no loading skeleton of its own; only `isQueryLoading` (line 234) gates the KPI row, but `projectsData === undefined` is NOT included in `isQueryLoading` (line 234-240). So projects can be `undefined` and `activeProjects` falls back to `0` silently (line 260).
+- No empty state for the *right* column when there are no scope definitions, no overdue invoices, etc. The Scope card is conditionally hidden (line 743 `scopeCount > 0`) — but there is no "Create your first scope" CTA when `scopeCount === 0`.
+- "Quick Actions" cards (line 718-723) navigate to `/proposals/new`, `/invoices/new` — both of which are broken builders (see §6, §8 of Task 3). Clicking them produces a "Failed to save" toast.
+- The KPI sparkline data is **fake-derived** (lines 268-293): it uses `Math.sin(i * 1.3)` / `Math.cos(i * 1.1)` to fake a 7-point trend. There is no real time-series data feeding these sparklines — they look real but are decorative.
+- `handleUpgrade` (line 307) only updates local React state via `setSubscriptionTier`; no Stripe checkout, no backend write. Pure UI theater.
+
+**Caveats**:
+- `AnimatedNumber` (lines 61-96) uses `requestAnimationFrame` for 1.2s — re-mounts (e.g. on workspace switch) re-animate from 0. Visually flashy, no functional issue.
+- `revenueSparkline` etc. use `useMemo` with deps `[invoiceRevenue]` — fine, but the function body has `Math.sin(i * 1.3)` which is deterministic but not seeded, so the sparkline shape is consistent across renders (good).
+- "Get Started" empty-state (line 168-194) seeds via `autoSeed.autoSeed` mutation (line 299) — only fires when `import.meta.env.DEV`. In production, the "Seed Demo Data" button is hidden (line 180), but the empty state still says "Seed demo data to see how everything works" (line 177) — confusing copy for prod users.
+- The "Demo Mode" banner (line 348-360) is triggered by `isDisconnected` from `useConvexConnectionState`. It offers a `/auth` link, but the user is *already* signed-in (otherwise `ProtectedRoute` would have bounced them). The banner text is misleading.
+
+**Fix priority**: 🟠 High — Pass `workspaceId` to `getMyProjects` (line 230); include `projectsData === undefined` in `isQueryLoading`; add scope-empty CTA; replace fake sparklines with real monthly data or remove them.
+
+---
+
+## 2. Clients.tsx — `/clients`
+
+**Purpose**: CRM-style list of clients with policy profile, share, transfer-ownership, delete, bulk import, custom fields.
+
+**Gaps**:
+- Form has no client-side max-length caps on `clientName` (line 365-370) or `hourlyRate` (line 389-395). Schema enforces server-side, but the user gets a generic "Failed to add client" toast (line 140) on overflow.
+- No email field on the create form (`contactEmail` is never collected) — even though the schema supports it and `createClient` accepts it. The form collects only `clientName`, `platform`, `hourlyRate`, `contractType`, `riskLevel`.
+- No industry/website/phone/address fields exposed — they exist on the schema but the page never collects them.
+- After `handleAddClient` success (line 137), the dialog closes but the **newly created client is not auto-selected** — `selectedClientId` stays on the previously selected client (or null). The user has to scroll the list and click.
+- The `BulkImportDialog` `onImportComplete` callback (line 543-545) only shows a toast — no refetch trigger, no client-list refresh. (Convex live-query should auto-refresh, but there's no feedback that anything happened beyond the toast.)
+- `CustomFieldValues` is rendered inside the Add Client dialog (line 424-429) but the collected `customFieldValues` state (line 56) is **never sent** to `createClientMutation` (line 128-135). Custom fields are silently dropped.
+- `setShowCustomFields(!showCustomFields)` (line 195) toggles a `CustomFieldManager` panel *above* the client list — but it has no animation/scroll-into-view, so on a long page the user clicks the button and nothing visibly changes.
+- The `ClientList` component's `onUpgrade` prop (line 259) is a stub: `() => toast.info("Upgrade feature coming soon")`. Dead-end UX.
+
+**Caveats**:
+- `useEffect` at line 97-103 auto-selects the first client once per mount via `hasAutoSelected` ref. If the user deletes all clients and then adds a new one, the ref is already `true` so the new client is NOT auto-selected — minor UX bug.
+- `clientsData` is queried with `{workspaceId}` only when `workspaceId` is truthy (line 43). In demo mode (`workspaceId === undefined`), the query is `"skip"` and `clientsData` stays `undefined`, so `isLoading` is `true` forever — but `loadingTimedOut` flips after 3s, so the skeleton disappears and the empty `clients = []` array is rendered. The empty-state CTA then shows, which is the right outcome.
+- `usePermissions(selectedClient as any)` (line 110) is called with `null` when nothing is selected. The hook is at top-level (rules-of-hooks safe), but `perms.canDelete`/`perms.canShare` evaluate against `null` and likely return `false` — meaning the action buttons are hidden until a client is selected. OK behavior, but no visual hint that selection is required.
+- `deleteClientMutation` (line 158) cascades nothing on the client side. Backend may cascade or may leave orphan projects/deals. (Task 3 §4.1 confirmed orphans.)
+- `TransferOwnershipDialog` (line 528) receives `currentOwnerId={(selectedClient as any)?.userId}` — the `userId` is the *creator*, not necessarily the current owner after a transfer. Stale-ownership risk if the record has been transferred before.
+
+**Fix priority**: 🟡 Medium — Wire `customFieldValues` into the `createClientMutation` call; auto-select newly created client; add `contactEmail` field; add length caps.
+
+---
+
+## 3. Projects.tsx — `/projects`
+
+**Purpose**: Read-only list of projects with share / transfer-ownership actions.
+
+**Gaps**:
+- **No "Create Project" form.** The only "Add" button (line 151) calls `seedProjects.seedTestProjects` (line 76, 124) — a dev seeder that creates fake projects. There is no user-facing path to create a real project on this page.
+- `useQuery(api.projects.projectProtection.getMyProjects, {})` (line 84) — passes `{}`, **no `workspaceId`**. Workspace switch does not filter the list. Cross-workspace data leak.
+- `workspaceId` is destructured (line 66) but **never used** in any query/mutation on this page. Dead variable.
+- The `?createFromProposal=` URL param (line 51) only fires a misleading toast (line 57-60): "a project and scope were automatically created" — but Task 3 §3.2 confirms no scope is created. False claim.
+- `ProjectList`'s `onAddProject` prop (line 214) is wired to `handleCreateTestProjects` — clicking "Add" anywhere in the list component triggers the dev seeder. Confusing for end users.
+- No empty-state CTA that says "Convert a proposal to create a project" — the user has no idea how projects get created.
+- `setSearchParams({}, { replace: true })` (line 56) clears ALL params, not just `createFromProposal`. If the URL had other params, they'd be wiped.
+- The "Add Test Project" button is **NOT gated behind `import.meta.env.DEV`** — it's always visible in production. Users will click it expecting a create form and instead get dev test data.
+
+**Caveats**:
+- `isSeeding` 15-second client-side timeout (line 106-113) — if Convex is slow, the user sees "Request timed out" but the mutation may still succeed server-side, leaving orphan test projects.
+- `perms = usePermissions(selectedProject as any)` (line 97) — same null-safety pattern as Clients. Acceptable.
+- The `_id` cast at line 200-211 maps Convex `Id<"projects">` to `string` for the child component — no issue, but `as any` is used liberally.
+- No skeleton for the share/transfer dialogs — they render blank until data arrives.
+
+**Fix priority**: 🔴 Critical — Add a real "New Project" dialog (calls `projects.projectProtectionSimple.addProject` with required `clientId`); hide "Add Test Project" behind `import.meta.env.DEV`; pass `workspaceId` to `getMyProjects`.
+
+---
+
+## 4. Pipeline.tsx — `/pipeline`
+
+**Purpose**: Kanban board for deals + drag-and-drop stage moves + CSV/Excel bulk import.
+
+**Gaps**:
+- **Triple-seeding race still possible**: `useEffect` at line 384-397 fires `createDefaultStages` when `stages.length === 0`. This races with `useWorkspace`'s `seedPersonalWorkspace` (Task 3 §2.5). The `hasAttemptedDefaults` ref (line 382) only prevents re-fires *within the same mount*, not across the two code paths. The defensive dedup at lines 304-316 (and the backend `getStages` dedup at Task 3 §2.5) hides the duplicates from the UI but they still accumulate in the DB.
+- Deal-create form (line 1102-1258) has **no `clientId` field**. The schema supports `clientId?` (optional), but the form never collects it. So 100% of deals created via the page have `clientId: undefined`, breaking the deal→client→project linkage.
+- No client-side validation that `formValue` is a positive number — `Number("")` is `0`, which passes the `!formValue` check at line 1251 (because `!"" === true`, not `!0`). Actually `!""` is `true`, so empty value IS blocked, but `Number("abc")` is `NaN`, and `NaN` is not blocked. The mutation will reject it, but the user sees "Failed to create deal" with no field-level hint.
+- `formProbability` (line 1167) has `min={0} max={100}` HTML attributes but no JS validation — pasting `999` works, the mutation may accept it, and downstream weighted-value math is wrong.
+- CSV import (lines 663-811) auto-detects column mappings (line 156-188) — but doesn't validate that mapped fields have valid values. A CSV row with `value="abc"` becomes `Number("abc") = NaN`, then `0` via the `|| 0` fallback at line 782. The user sees "Imported N deals" but some have `value: 0` silently.
+- `bulkImportDeals` mutation (line 797) requires `workspaceId` and `stageId` — but `skipDuplicates: true` is hardcoded (line 801). The user has no UI to opt out of dedup, and the dedup logic is opaque (no indication which rows were skipped).
+- After CSV import, the dialog stays open showing the result (line 803). The user has to manually close. No "View imported deals" CTA — they have to navigate to the Kanban board themselves.
+- Drag-and-drop (lines 480-546): no optimistic update. The dragged card stays in its original column until the Convex mutation succeeds (~200-500ms). On a slow connection, the user sees the card snap back to the source column briefly. The `draggedDeal` state holds the original card, but its `stageId` doesn't change locally.
+- The empty-state CTA "Create Default Stages" (line 973-979) calls `createDefaultStages` directly — the same race-prone mutation. There is no "Are you sure?" confirmation.
+- "Make Proposal" action on a deal (line 637-660) calls `createProposalFromDeal`, then navigates to `/proposals/new?edit=${proposalId}`. But ProposalBuilder's `?edit=` param expects a proposal ID — and the URL fragment reads `?edit=`, not `?fromDeal=`. So the deal context is lost after navigation. The ProposalBuilder `useEffect` at line 213-231 only loads `existingProposal` (the new draft), which was created from the deal — so the data IS propagated. But the `?dealId=` param that ProposalBuilder also checks (line 162) is never set, so the back-link from proposal → deal is broken.
+
+**Caveats**:
+- The `safeStages` `useMemo` (line 304-316) dedups by both `_id` AND `name|order`. If the user manually renames a stage to match another's name+order, one of them disappears from the UI (but stays in the DB).
+- `useQueryTimeout` 3s timeout (line 344) — if Convex is slow, the Kanban renders with `safeStages = []` and the empty-state "Create Default Stages" CTA flashes briefly. If the user clicks it before real data arrives, they trigger the duplicate-seed race.
+- `moveDeal` mutation is fired on drop (line 529) with no optimistic update — UI lags behind user action.
+- `handleCreateProposalFromDeal` (line 637) — `createProposalFromDeal` may return `undefined` if the mutation fails silently under `safe-convex-react`. The page handles this case (line 646-651) with a generic error, but the user has no way to retry.
+- The `createDefaultStagesRef.current = createDefaultStages` assignment at line 379 happens on every render. The `useEffect` at line 384 only depends on `[stages, workspaceId]`, so the ref trick is fine, but it's a non-idiomatic pattern.
+- Drag-and-drop `e.dataTransfer.setData("text/plain", deal._id)` (line 486) — Firefox requires this for `dragstart` to fire. OK.
+- The `safeStats` `useMemo` (line 318-341) recomputes from local data when `stats.totalDeals === 0`, but does NOT recompute when `stats.totalDeals > 0` and a deal is deleted — so the stats bar shows stale data until the Convex query refetches.
+
+**Fix priority**: 🔴 Critical — Add `clientId` field to deal-create form; remove the auto-`createDefaultStages` effect at line 384-397; add optimistic update for drag-drop; validate `formValue` and `formProbability` numerically.
+
+---
+
+## 5. Proposals.tsx — `/proposals`
+
+**Purpose**: Read-only list of proposals with filter tabs, search, send/duplicate/delete/share/convert-to-project actions.
+
+**Gaps**:
+- `convexProposals` query (line 172) and `convexAllProposals` query (line 201) — these are **two separate `useQuery` calls** fetching the same data (`getProposals`) with slightly different args. This double-fetches on every render. The "all" filter call (line 201) is needed for filter-tab counts, but it duplicates data already fetched when `activeFilter === "all"`.
+- The `onView` callback (line 638) navigates to `/proposals/new?edit=${proposal._id}` — the URL says `/proposals/new` but the user is actually editing an existing proposal. Confusing URL.
+- `handleConvertToProject` (lines 317-387) — 4 sequential non-atomic mutations (Task 3 §3.3). No back-link from proposal to new project (line 376-379 only appends a note). The proposal's `clientId` field is NEVER set (line 376-379 only patches `notes`).
+- After successful convert, the user stays on the Proposals page. No navigation to the new project, no "View project" CTA in the success toast.
+- `handleSeed` (line 250-270) calls `seedMockProposals({})` with **no `workspaceId`** — mock proposals are user-scoped, not workspace-scoped. They appear in every workspace.
+- `Proposal` interface (lines 66-83) doesn't include `clientId`, `dealId`, `workspaceId` — even though the schema has them. So `handleConvertToProject` reads `proposal.dealId` via `(proposal as any).dealId` (line 361) — type-unsafe.
+- No filter for "expired" proposals in the tab list (line 129-136 — only all/draft/sent/viewed/signed/declined). Expired proposals are hidden unless the user searches.
+- "Mark as sent" opens `ManualSendDialog` (line 288-294) — but the dialog uses `proposal.clientEmail || proposal.clientName || ""` as the default recipient (line 292). If both are empty (which they often are, since ProposalBuilder never links a client), the recipient field is blank and the user has to type it manually.
+- `sendProposal` mutation (line 274) — no email is actually sent (Task 3 §1.13 notes follow-ups are scheduled, but the initial "send" only flips status). The user believes an email went out.
+
+**Caveats**:
+- The `filteredProposals` `useMemo` (line 230-240) filters client-side after Convex already filtered server-side (`activeFilter` is passed to the query at line 172). Duplicate filtering.
+- `filterCounts` (line 221-227) is computed from `allProposals` (the unfiltered query) — but `allProposals` is `[]` until the query resolves. So tab counts show `0` briefly on first render.
+- `existingClients` (line 198) and `pipelineStages` (line 195) are fetched on mount even if the user never clicks "Convert to Project". Wasteful if there are many clients/stages.
+- The convert-to-project `hourlyRate` heuristic `proposal.totalValue / 40` (lines 336, 354) — wild guess at 40 hours of work. If the proposal has `totalValue: 0` (common for drafts), the rate defaults to `50`. Hardcoded.
+- `(proposal as any).dealId` (line 361) — the cast hides the fact that the `Proposal` interface at line 66-83 doesn't declare `dealId`. Type-safety hole.
+
+**Fix priority**: 🔴 Critical — Make `handleConvertToProject` a single server-side atomic mutation; set `proposal.clientId` and a new `proposal.projectId` after conversion; navigate to the new project on success; pass `workspaceId` to `seedMockProposals`.
+
+---
+
+## 6. ProposalBuilder.tsx — `/proposals/new`
+
+**Purpose**: Create/edit proposal with sections (heading/text/pricing/terms/milestone/etc.), preview, save draft, send.
+
+**Gaps**:
+- **NEVER passes `workspaceId` to `createProposal`** (lines 401-410, 445-454). Grep confirms no `useWorkspaceContext` import. All builder-created proposals have `workspaceId: undefined` — invisible to workspace-scoped queries (Task 3 §1.13).
+- **NEVER passes `clientId` to `createProposal`** (lines 401-410). The mutation accepts it; the page collects only `clientName`/`clientEmail` strings. 100% of builder-created proposals have `clientId: undefined` and `dealId: undefined` (Task 3 §4.2).
+- **Reads `?dealId=` URL param** (line 162) but **never passes `dealId` to `createProposal`** (lines 401-410, 445-454). The deal context is loaded into form fields (line 234-249) but the linkage is lost on save.
+- **No client `<Select>`** — `clientName` and `clientEmail` are free-text inputs (line 195-196). The user can type a name that doesn't match any existing client, and the convert-to-project flow later does a case-insensitive name lookup to compensate (Task 3 §3.2).
+- `clientEmail` has no validation beyond HTML `type="email"` (which ProposalBuilder doesn't even use — it's a plain `Input`). Invalid emails silently pass through.
+- `validUntil` (line 201) defaults to empty — no minimum date validation. The user can set `validUntil` to a past date and the proposal is "expired" the moment it's saved.
+- `totalValue` is auto-calculated from `pricing` sections (line 253, `calculateTotal`) — but `milestone` sections are NOT included in the total. A proposal with only milestones has `totalValue: 0`.
+- No max-length cap on `title` (line 194) or section `content`. Schema enforces server-side, but the user sees a generic "Failed to save proposal" toast on overflow.
+- `handleSendProposal` (line 423-479) — saves the draft first (if not yet saved), then sends. If the save succeeds but the send fails, the user is left with a draft they didn't intend to save. No "Are you sure?" confirmation before send.
+- After successful send, navigates to `/proposals` (line 473). But if the user was editing an existing proposal (via `?edit=`), they lose their place. No "Back to editing" option.
+- No autosave. If the user closes the tab, all unsaved work is lost. There's no `beforeunload` handler.
+- `applyTemplate` (line 357-361) replaces ALL sections with the template's sections — no confirmation. If the user had unsaved work, it's gone.
+- `applyImportedSections` (line 364-367) — same issue, no confirmation.
+- The `?edit=` URL param is read (line 160) and `existingProposal` is fetched (line 170-173), but if the proposal ID is invalid (deleted, belongs to another user), `existingProposal` is `undefined` and the form stays blank. No error message; the user thinks the page is broken.
+
+**Caveats**:
+- `dealLoaded` ref (line 210) prevents re-applying deal data on re-render — good. But if the user navigates away and back, the ref resets and the deal data is re-applied, overwriting any edits.
+- `generateId()` (line 109-111) uses `Math.random().toString(36).substring(2, 10)` — 8 chars of entropy. Collisions are unlikely but possible if the user adds many sections. Should use `crypto.randomUUID()`.
+- `calculateTotal` (line 142-149) sums `pricing` items only — `milestone` sections, even if they have implicit value, are ignored. Inconsistent with how `ProposalPreview` (line 564-573) might display milestones.
+- `createdProposalId` state (line 209) — once set, the page is in "editing" mode for that ID. If the user clicks "Save Draft" again, it calls `updateProposal` (line 388-399). But there's no visual indicator that the proposal has been saved — the "Save Draft" button stays clickable and looks the same.
+- The `sections` state is mutated via `setSections` callbacks (lines 257-354). No immutability bugs spotted, but `useCallback` with empty deps `[]` means the callbacks close over stale `sections` — except they use the `prev` arg, so it's fine.
+- `useEffect` at line 213-231 has `[existingProposal, isEditing]` deps — if `existingProposal` changes (e.g. Convex live-update), the form is re-populated, **overwriting the user's in-progress edits**. No "you have unsaved changes" guard.
+
+**Fix priority**: 🔴 Critical — Pass `workspaceId`, `clientId`, and `dealId` to `createProposal`; add a client `<Select>`; add `beforeunload` autosave guard; add unsaved-changes warning before `applyTemplate`.
+
+---
+
+## 7. Invoices.tsx — `/invoices`
+
+**Purpose**: Read-only invoice list with filter tabs, search, expand-to-view, send/mark-paid/delete/share/bulk-import actions.
+
+**Gaps**:
+- No URL param consumption. The page never reads `?clientId=` or `?status=` — the user always lands on the "all" tab. (Grep confirms: no `useSearchParams` import.)
+- `expandedInvoiceId` (line 220) — when the user expands an invoice, the line items render in-place. But there is no "Edit" or "View in builder" link from the expanded view. To edit, the user has to know to navigate to `/invoices/new?edit=<id>` manually.
+- `handleSeedData` (line 336-354) calls `seedMockInvoices({})` with **no `workspaceId`** — mock invoices are user-scoped, leak across workspaces.
+- "Bulk Import" button (line 531-539) opens `BulkImportDialog` with `tableName="invoices"` — but the page never wires `onImportComplete` to do anything beyond a toast. No refetch, no success state.
+- `markInvoicePaid` (line 317-324) — no confirmation dialog. The user can accidentally mark an unpaid invoice as paid with one click.
+- `sendInvoice` (line 294-303) — same issue: no confirmation, no "are you sure?" before flipping status to "sent".
+- `daysOverdue` (line 619-620) — only computed when `status === "overdue"`. But an invoice with `status: "sent"` and a past `dueDate` is functionally overdue — the page doesn't show the overdue badge for it.
+- The "With Proof" stat (line 471-484) shows `safeStats.withProof` — but the page never explains what "validated billing" means. No tooltip, no info icon.
+- The `TruthLayerBadge` (line 682-691) — `details` array is hardcoded with three items, but the `score` is computed from `calculateFinancialVerificationScore([invoice]).score`. If the score is low, the badge shows red, but there's no actionable CTA ("Add proof to improve score").
+- No empty-state CTA when `safeInvoices.length === 0` and the user is not in demo mode — only the "No invoices found" card (line 587-614) with a "Seed Demo Data" button (gated behind `import.meta.env.DEV`). In production, the only CTA is "Create Invoice" (line 602-609), which is also dev-gated. **In production, an empty-state user has no Create button visible.**
+
+Wait — re-reading line 540-546, "Create Invoice" is NOT dev-gated; it's always visible. The dev-gated button is only the "Seed Demo Data" (line 519-530). The empty-state card at line 601-610 has another dev-gated "Seed Demo Data" button but no always-visible "Create Invoice" CTA. **Inconsistent: the empty-state card lacks a Create CTA, but the action bar above has one.**
+
+**Caveats**:
+- `InvoiceActions` sub-component (line 158-203) — extracted to fix rules-of-hooks. Calls `usePermissions(invoice)` inside. OK pattern.
+- `safeInvoices = invoices ?? []` (line 259) — empty array fallback. If Convex fails silently, the page shows empty state with no error.
+- `filteredInvoices` (line 261-270) — client-side filter on top of server-side. Same double-filter pattern as Proposals.
+- `formatCurrency` (line 135-141) — hardcoded to USD. If the invoice has `currency: "EUR"`, it still renders as `$X.XX`. The `currency` arg is accepted but never passed (line 700+ uses `formatCurrency(amount)` with no currency).
+- `daysOverdue` (line 151-154) — `Math.max(0, ...)` clamps to 0 for future due dates. OK.
+- The `STATUS_CONFIG` (line 93-122) — missing "partial" and "cancelled" statuses that the schema supports. Invoices with those statuses fall through to `STATUS_CONFIG.draft` (line 618).
+
+**Fix priority**: 🟠 High — Add a Create CTA to the empty-state card; pass `workspaceId` to `seedMockInvoices`; add confirmation dialogs for `markInvoicePaid` and `sendInvoice`; pass `currency` to `formatCurrency`; add an "Edit" link from the expanded invoice view.
+
+---
+
+## 8. InvoiceBuilder.tsx — `/invoices/new`
+
+**Purpose**: Create/edit invoice with line items, tax, work proofs, preview, save draft, send.
+
+**Gaps**:
+- **NEVER passes `clientId` to `createInvoice`** (lines 452-464). Task 3 §4.2 confirms the mutation REQUIRES `clientId: v.id("clients")` — Convex validation fails; `safe-convex-react` swallows the error; user sees "Failed to save invoice" toast. **Every invoice-creation attempt via the builder is broken.**
+- **NEVER passes `workspaceId` to `createInvoice`** (lines 452-464). Grep confirms no `useWorkspaceContext` import.
+- **NEVER reads `?projectId=` URL param** (Task 3 §5 notes WorkflowActions.tsx:170 navigates here with `?projectId=`). The page only reads `?edit=` (line 182). Project context is dropped.
+- **No client `<Select>`** — `clientName` and `clientEmail` are free-text inputs (lines 208-209). The mutation would derive these from the client doc if `clientId` were provided, but the page passes the strings instead.
+- `clientName` validation (line 413-416) — only checks `!clientName.trim()`. No max-length, no format check.
+- `lineItems` validation (line 417-421) — filters to `description.trim() && quantity > 0 && rate > 0`. But the user can add a line item with `quantity: 0` and it silently disappears from the save payload. No warning.
+- `taxRate` (line 215) — no validation. The user can enter `999` (% tax) and the math runs.
+- `dueDate` (line 211-213) — defaults to `Date.now() + 30 * 86400000` (30 days). No min-date check. The user can set `dueDate` before `issueDate` — the page doesn't warn.
+- `handleSendInvoice` (line 480-499) — gates on `!invoiceId` (line 481). If the user clicks "Send" before "Save Draft", they get "Please save the invoice first" toast. No auto-save like ProposalBuilder does.
+- `handleAddProof` (line 355-395) — gates on `!invoiceId` (line 356). The user has to save the draft before adding any work proofs. The "Proofs" button in the header (line 636-645) opens a panel, but the "Add Proof" dialog can't be used until after save. No explanation in the UI.
+- `invoiceNumber` defaults to `"(auto-generated)"` (line 217) — a string. The display logic at line 591 (`invoiceNumber !== "(auto-generated)"`) hides the badge until a real number is loaded. But on a new invoice, the user sees no number, which is confusing.
+- After successful save (line 466), the `invoiceId` is set but the user stays on the builder. No "View invoice" or "Go to invoices list" CTA.
+- `handleApplyTemplate` (line 502-546) — replaces line items, tax rate, and notes without confirmation. Destructive.
+- `STATUS_CONFIG` (line 123-144) — missing "partial", "cancelled", "draft" has wrong className (slate instead of grey). Minor.
+- The "Send Invoice" button (line 665-675) is `disabled={sending || status !== "draft"}` — so once an invoice is sent, the user can't re-send from the builder. They have to go back to the Invoices list and use the action menu there.
+
+**Caveats**:
+- `generateId()` (line 148-150) — `li_${Date.now()}_${Math.random()...}`. More unique than ProposalBuilder's, but still not `crypto.randomUUID()`.
+- `subtotal`/`taxAmount`/`total` are `useMemo`-derived (lines 276-282) — recomputed on every lineItem change. OK.
+- `allWorkProofs` (line 284-301) maps from `workLinks` query — but the mapping casts `wl.invoiceId` to `string` without checking it matches the current `invoiceId`. If the user navigates from one invoice to another via URL, stale proofs may render briefly.
+- `editLoading` (line 550) — only set when `editId && existingInvoice === undefined`. But `existingInvoice` is fetched via `useQuery(editId ? api.billing.crud.getInvoice : "skip", editId ? { invoiceId: editId } : "skip")` (line 185-188). The args are `"skip"` when no `editId`, so `existingInvoice` stays `undefined`. The `editLoading` flag is `true` forever in that case — but `editLoadTimedOut` flips after 3s. OK.
+- `useEffect` at line 245-273 populates the form from `existingInvoice`. No unsaved-changes guard — if the user starts editing before the query resolves, their edits are overwritten.
+- The "Import" button (line 646-654) opens `InvoiceTemplateImportDialog` — but the dialog's `onApply` callback (`handleApplyTemplate`) doesn't validate the imported data. A template with `taxRate: -5` would be applied as-is.
+
+**Fix priority**: 🔴 Critical — Replace `clientName`/`clientEmail` inputs with a client `<Select>`; pass `clientId` and `workspaceId` to `createInvoice`; read `?projectId=` URL param; add confirmation before `handleApplyTemplate`; add unsaved-changes guard.
+
+---
+
+## 9. Scope.tsx — `/scope`
+
+**Purpose**: Create/manage scope definitions, change orders, formalizations. Track scope creep and revision limits.
+
+**Gaps**:
+- **NEVER passes `workspaceId` to `createScopeDefinition`** (line 672-679). Grep confirms no `useWorkspaceContext` import. Scopes are user-scoped, leak across workspaces (Task 3 §1.17).
+- `useQuery(api.scope.crud.getScopeDefinitions, {})` (line 588) — passes `{}`, no `workspaceId`. Cross-workspace data leak.
+- **Never reads `?projectId=` URL param** (Task 3 §5 notes WorkflowActions.tsx:178 navigates here with `?projectId=`). The page only reads `?proposalId=` (line 553).
+- `handleCreateScope` (line 666-689) — passes `proposalId: proposalIdFromUrl || undefined` but **never passes `projectId`**. The mutation accepts it (Task 3 §1.12), but the form has no project picker.
+- `deliverables: []` hardcoded at line 677 — the create form has no UI to add deliverables. The user has to create the scope, then edit it elsewhere (but there's no edit-deliverables UI on this page either).
+- `handleFormalize` (line 747-761) — stub. Only shows `toast.info("Formalization will be available in a future update")`. The "Formalize Change" button is prominent in the header (line 785-790) but leads to a dead end.
+- `recordRevisionMutation` (line 697-706) — the `as any` cast hides that the mutation args object includes `deadlineImpact` which may not be in the schema.
+- No delete confirmation for `handleDeleteScope` (line 735-745) — wait, the delete is wired through `ScopeCard`'s `onDelete` (line 937) which calls `handleDeleteScope(scope._id)` directly. There's no AlertDialog. **One-click delete with no confirmation.**
+- The "Create Scope" dialog (not shown in my read, but inferred from `showCreateScope` state at line 559) has fields for `title`, `description`, `revisionLimit`, `totalEstimatedHours` — but no `projectName` or `clientId`. The user can't associate a scope with a project from the create flow.
+- `coChangeType` state (line 572) — typed as `"addition" | "modification" | "removal" | "revision"`, but the `Select` component (not shown) may not enforce this. If the schema rejects unknown values, the user sees a generic error.
+- The "Scope Creep Warning" banner (line 863-885) shows `${totalCostAtRisk}` — but `totalCostAtRisk` is summed from `metricsMap` which is populated by child `ScopeCardContainer` callbacks (line 609-620). If a scope card hasn't mounted yet (e.g. on first render), `metricsMap` is empty and the banner shows `$0` even if there's real risk.
+- No filter/search UI for scopes. If the user has 50 scopes, they scroll through all of them.
+- `coHoursAdded`, `coCostImpact` (lines 696-704) — `parseFloat` with `|| 0` fallback. If the user enters "abc", it becomes `0` silently. No validation error.
+
+**Caveats**:
+- `proposalIdFromUrl` pre-populates the form title (line 632-633) — but only if `newScopeTitle === "Scope for Proposal"` (the default). If the user has already typed a custom title, the prefill is skipped. Good guard, but the comparison is fragile (string literal).
+- `proposalData.totalValue / 75` (line 649) — hardcoded `$75/hr` rate heuristic to estimate hours. Different from the `proposal.totalValue / 40` heuristic in Proposals.tsx (Task 3 §6.8). Inconsistent.
+- `selectedScopeChangeOrders` (line 589-592) — fetched only when `selectedScopeId` is set. On first render, nothing is selected, so the query is skipped. After auto-select (line 623-627), the query fires. OK pattern.
+- `metricsMap` state (line 607) — updated via `handleMetricsReady` callback from child components. The `useCallback` with deps `[]` (line 609) means the callback closes over the initial `metricsMap` — but it uses the `prev` arg, so it's fine.
+- `useEffect` at line 630-653 — deps `[proposalIdFromUrl, proposalData, showCreateScope]`. If `proposalData` changes (live Convex update), the form is re-populated, potentially overwriting edits.
+- `activeScopes` (line 659) — computed but never used in the UI (the summary card at line 814-824 shows `totalScopes`, not `activeScopes`).
+
+**Fix priority**: 🔴 Critical — Pass `workspaceId` to `createScopeDefinition` and `getScopeDefinitions`; read `?projectId=` URL param; add a project picker; add delete confirmation; implement `handleFormalize` or remove the button.
+
+---
+
+## 10. TimeTracking.tsx — `/time-tracking`
+
+**Purpose**: Live timer + manual time entries with compliance status, weekly stats.
+
+**Gaps**:
+- **Doesn't pass `clientId` or `projectId_fk` to `startSession`** (lines 215-222). The mutation only accepts `projectName`/`clientName` strings (Task 3 §1.15). The FK columns in the schema are never populated.
+- `selectedProjectData?.hourlyRate ?? selectedClientData?.hourlyRate ?? 75` (line 213) — hardcoded `$75` fallback. Doesn't use the user's `users.hourlyRate` from onboarding.
+- `handleManualEntry` (line 277-321) — `manualProject` and `manualClient` are free-text strings (lines 93-94). The user can type any project/client name. No linkage to real `projects`/`clients` records.
+- `manualStart`/`manualEnd` (lines 91-92) — default `09:00`/`17:00`. No validation that the times are within a reasonable range (e.g. not 24 hours apart).
+- No max-duration check. The user can enter `manualStart: 00:00` and `manualEnd: 23:59` for a 24-hour entry. The mutation may accept it; compliance flagging happens server-side but the user gets no immediate warning.
+- `handleStartTimer` (line 197-230) — no check that another timer isn't already running. The `currentSession` query (line 57-59) returns the active session, and `isTimerRunning` (line 158) is computed from it. But if the user opens two tabs and clicks "Start" in both, two sessions may be created. Server-side dedup is unclear.
+- `handleStopTimer` (line 256-275) — no confirmation. One click stops the timer and saves the entry.
+- `handleDeleteEntry` (line 323-338) — `setIsDeleting(id)` then `deleteSessionMutation`. No confirmation dialog. One-click delete.
+- The "Manual Entry" dialog (not fully read) — `manualDate` defaults to today (line 90). No max-date check (the user can log time for next year) and no min-date (the user can log time for 5 years ago).
+- `complianceRate` (line 194) — `Math.round((compliantMinutes / totalMinutesThisWeek) * 100)`. If `totalMinutesThisWeek === 0`, returns `100` (line 194). Misleading — "100% compliance" with no data.
+- The weekly stats (lines 185-194) — computed from `timeEntries` which is filtered to only sessions with `endTime !== undefined` (line 146). Active sessions (no `endTime`) are excluded. So the "this week" stats don't include the currently-running timer.
+- No URL param consumption. The page can't be deep-linked with `?project=<id>` to pre-select a project.
+- `selectedPlatform` (line 82) — typed as `"upwork" | "fiverr" | "toptal" | "manual"`. But the schema's `workSessions.platform` may accept other values (e.g. `"freelancer"`). Missing option.
+- The timer display (line 26-31, `formatTime`) — shows `HH:MM:SS`. On a multi-day session, this becomes `48:30:00` etc. No day indicator.
+
+**Caveats**:
+- `isDemoMode = !authLoading && !isAuthenticated` (line 98) — demo mode short-circuits all mutations with `toast.success("... (Demo mode)")`. OK pattern, but the demo-mode timer never actually tracks time — `setElapsedSeconds` is only called in the real-timer effect (line 161-174), which is gated on `activeSession` (always `null` in demo mode).
+- `useEffect` at line 161-174 — `interval = setInterval(... 1000)`. The cleanup is correct. But the effect deps are `[isTimerRunning, isPaused, activeSession]` — if `activeSession` changes (e.g. Convex live-update of the session doc), the interval is cleared and re-created, potentially missing a tick.
+- `queryTimeout` state (line 101) — manual 3s timeout, NOT using the shared `useQueryTimeout` hook. Inconsistent with other pages.
+- `realSessions` (line 145-154) — filters out active sessions (no `endTime`). Then computes `totalMinutes` from `endTime - startTime` if missing. OK fallback.
+- `projectMap` and `clientMap` (lines 116-135) — built from `projects` and `clients` queries. If a project is deleted, the `projectMap` still has it (until the query refetches), and `selectedProjectData` may be stale.
+- `selectedClientData` (line 139-141) — resolved from `selectedProjectData.clientId`. If the project has no `clientId` (which is required by schema, so should never happen), `selectedClientData` is `null` and `clientName` falls back to `"Unknown Client"` (line 212).
+
+**Fix priority**: 🟠 High — Pass `clientId` and `projectId` to `startSession` (requires backend change to accept them); add delete confirmation; add max-duration validation; add `?project=<id>` URL param; use `users.hourlyRate` as fallback.
+
+---
+
+## 11. Reports.tsx — `/reports`
+
+**Purpose**: Generate and track dispute reports with evidence-backed protection.
+
+**Gaps**:
+- **No `useWorkspaceContext` import.** Grep confirms. `createDisputeReport` (line 279-285) doesn't pass `workspaceId`. Reports are user-scoped, leak across workspaces (Task 3 §1.20).
+- `useQuery(api.disputeReports.getUserDisputeReports, {})` (line 162) — passes `{}`, no `workspaceId`. Cross-workspace data leak.
+- `formClient` and `formProject` (lines 177-178) — free-text inputs. No client/project picker. The user types a name that may or may not match a real client/project.
+- `formDisputedHours` (line 179) — validated as `parseFloat` (line 262-266). Negative values are blocked (`hours <= 0`), but `NaN` is blocked by the `Number.isNaN` check. OK.
+- `formHourlyRate` (line 181) — `parseFloat(formHourlyRate) || 75` (line 268). Hardcoded `$75` fallback. Doesn't use `users.hourlyRate`.
+- `hasReachedFreeLimit` (line 201) — `reportsThisMonth >= freeReportLimit` where `freeReportLimit = 1`. But `reportsThisMonth` is computed client-side from `reports.filter(r => r.generatedAt > Date.now() - 30 * 86400000)` (line 197-199). If the user's clock is wrong, the limit check is wrong.
+- The "Upgrade" action in the limit-reached toast (lines 246-253, 290-297) — `setSubscriptionTier("pro")` is a pure client-side state change. No Stripe checkout, no backend write. The user "upgrades" but nothing actually changes.
+- `handleStatusChange` (line 320-349) — no confirmation. One click moves a report to "resolved" or "appealed". No undo.
+- `avgResolutionDays` (line 225-232) — `resolvedAt || r.generatedAt + 7 * 24 * 60 * 60 * 1000`. If `resolvedAt` is missing, it fabricates a 7-day resolution. The stat is misleading.
+- `protectedAmount` (line 234-236) — sums `lostIncome` for resolved reports. But `lostIncome` is set at creation time from `disputedHours * hourlyRate`. If the actual recovery was less, the stat is inflated.
+- No empty-state CTA when `reports.length === 0` (the demo-mode banner at line 374-391 is shown, but for an authenticated user with no reports, the page shows the stats bar with zeros and the "No reports found" empty state — but no prominent "Generate your first report" CTA).
+- The "Generate Report" dialog (not fully read) — `formDescription` is optional. The user can generate a report with just client + project + hours. No evidence attachment flow on this page (evidence comes from elsewhere).
+
+**Caveats**:
+- `isDemoMode = !authLoading && !isAuthenticated` (line 184) — demo mode shows a "Sign in to see your reports" card. OK.
+- `timedOut = useQueryTimeout(!authLoading && reportsData === undefined && !isDemoMode, 3000)` (line 188) — the `!isDemoMode` guard means the timeout doesn't fire in demo mode. OK.
+- `filterReports` (line 123-136) — client-side filter on top of the unfiltered query. Same double-filter pattern.
+- `stats` `useMemo` (line 218-239) — recomputed on every `reports` change. The `avgResolutionDays` fabrication is a real bug.
+- `updatingStatus` state (line 174) — tracks which report is being updated. Per-report spinner. OK pattern.
+- `resetForm` (line 312-318) — clears all fields including `formHourlyRate`. The next report starts with an empty rate field, defaulting to `$75` again.
+
+**Fix priority**: 🟠 High — Pass `workspaceId` to `createDisputeReport` and `getUserDisputeReports`; add client/project pickers; don't fabricate `avgResolutionDays`; gate "Upgrade" behind real Stripe flow or remove the action.
+
+---
+
+## 12. PaymentPatterns.tsx — `/payment-patterns`
+
+**Purpose**: Analytics dashboard for payment trends, platform breakdown, late-payment alerts.
+
+**Gaps**:
+- Read-only page. No mutations. All data comes from `getInvoices`, `getInvoiceStats`, `getClientsEnriched` (lines 169-171).
+- `platformBreakdown` (line 207-241) — `avgPaymentDays: id === "toptal" ? 7.1 : id === "upwork" ? 5.2 : 3.8` (line 233). **Hardcoded per-platform averages.** These are not computed from real data — they're decorative.
+- `trend: data.overdueCount > 0 ? -3 : 12` (line 239) — fake trend number. Either `-3` or `+12`, no real computation.
+- `recentPayments` (line 244-274) — maps invoices to a "recent payments" view. `project: inv.lineItems?.[0]?.description ?? inv.invoiceNumber ?? "Invoice"` (line 271) — uses the first line item's description as the "project". Misleading if the line item isn't a project name.
+- `latePaymentAlerts` (line 277-300) — `severity: daysOverdue >= 5 ? "critical" : "warning"` (line 288). The threshold is hardcoded.
+- The "Create Your First Invoice" CTA in the empty state (line 135-138) — `onClick={() => toast.info("Navigate to Invoices to create your first invoice")}`. **Doesn't navigate.** Just shows a toast telling the user to go elsewhere.
+- No filter by date range. The page shows "all time" data with no way to zoom into a specific month.
+- `exportPaymentReport` (line 43) — imported but the export button (if any) isn't visible in my read. May be wired elsewhere.
+- No URL param consumption.
+
+**Caveats**:
+- `useConvexAuth` (line 163) — used instead of `useAuth`. Inconsistent with other pages.
+- `isPro = tier === "pro" || tier === "expert"` (line 164) — computed but I didn't see it used in my read. May gate features further down.
+- `monthlyTrend` (line 181-204) — computed from real invoices. OK.
+- `enrichedClients.find(c => c._id === inv.clientId || c.clientName === inv.clientName)` (line 213-215, 247-249, 282-284) — falls back to name matching when `clientId` is missing. Fragile (Task 3 §6.13).
+- `platformMeta` (line 48-54) — hardcoded labels/colors. OK.
+- The `ChartSkeleton` (line 100-116) uses `Math.random()` for heights — different on every render. Visually noisy.
+
+**Fix priority**: 🟡 Medium — Replace hardcoded `avgPaymentDays` and `trend` with real computations from invoice `paidDate - issueDate` deltas; wire the empty-state CTA to `navigate("/invoices/new")`; add date-range filter.
+
+---
+
+## 13. EvidenceLibrary.tsx — `/evidence-library`
+
+**Purpose**: Browse evidence library with timeline, quality scorecard, team validation, export.
+
+**Gaps**:
+- Read-only page (mostly). The only mutation is `exportEvidence` (line 73), which is a client-side export utility.
+- `libraryQueryArgs` (line 253-258) includes `workspaceId` conditionally. OK.
+- `exportQueryArgs` (line 260-265) — fetches a full year of data on mount, even if the user never exports. Wasteful.
+- `timelineQueryArgs` (line 267-270) — fetches timeline for "today" only. If the user navigates to a different day (if the UI supports it), the query doesn't update.
+- `evidenceData === undefined && timelineData === undefined` (line 292) — `isLoading` is true only if BOTH are undefined. If one resolves and the other doesn't, `isLoading` is false but the page may render with partial data.
+- `exportLoading = exportData === undefined && clients === undefined` (line 293) — separate loading flag for the export panel. OK.
+- `timedOut = useQueryTimeout(isLoading, 5000)` (line 294) — 5s timeout, longer than other pages (3s). Inconsistent.
+- `safeEvidenceData` (line 298+) — fallback object with zeros. If the query fails, the page shows zeros with no error indicator.
+- The "Start Collecting Evidence" CTA (if present) likely points to the browser extension — but I didn't see it in my read.
+- No filter by evidence type in my read (the `viewMode` state at line 227 may handle this).
+- `trackEvent` and `AnalyticsEvents` (line 74) — imported for analytics. May not be wired in my read.
+
+**Caveats**:
+- `useConvexAuth` (line 220) — used instead of `useAuth`. Inconsistent.
+- `getTierLevel` and `hasTierAccess` (line 117-124) — tier-gating logic. PDF export requires "pro", legal package requires "pro", JSON requires "starter", CSV is free. OK.
+- `libraryDateRange` (line 230-237) — `±30 days` window. Evidence outside this window isn't shown in the library view (but is included in exports via `exportQueryArgs`).
+- `startOfDay` (line 239) — `useMemo(() => new Date().setHours(0,0,0,0), [])`. Empty deps — computed once per mount. If the user keeps the page open past midnight, `startOfDay` is stale.
+- `FORMAT_CONFIG` (line 104-109) — `legal` format is listed but the export utility may not support it.
+- The `DemoModeBanner` (line 204-214) — shown when `!isAuthenticated`. OK.
+
+**Fix priority**: 🟡 Medium — Don't fetch `exportData` on mount (lazy-load when user clicks export); unify the 5s timeout with the 3s pattern; add error state when queries fail.
+
+---
+
+## 14. EvidenceExport.tsx — `/evidence-export`
+
+**Purpose**: Export evidence in PDF/CSV/JSON/Legal formats with date range and filters.
+
+**Gaps**:
+- **No `useWorkspaceContext` import.** Grep confirms. `useQuery(api.evidence.library.getEvidenceLibraryData, { view: "date", startDate: ..., endDate: ... })` (line 247-254) — passes `{}` with no `workspaceId`. Cross-workspace data leak.
+- `useQuery(api.clients.crud.getClients, {})` (line 256) — `{}`, no `workspaceId`. Same leak.
+- `useQuery(api.scope.crud.getScopeDefinitions, {})` (line 257) — same.
+- `exportEvidence` (line 54) — client-side export. The "Download" button (if wired) generates the file in-browser. No backend involvement.
+- No URL param consumption.
+- `evidenceTypes` (line 267-299) — built from `evidenceData.evidenceItems`. The type labels and icons are hardcoded (line 271-286). If a new evidence type appears in the data, it gets a generic icon and a capitalized label.
+- `EmptyEvidenceState` (line 218-239) — `onClick={() => toast.info("Install the Axia browser extension to start collecting evidence")}`. **Doesn't navigate or link to the extension.** Just a toast.
+- No date-range validation. The user can set `dateFrom` after `dateTo` — the query may return empty results with no explanation.
+- The `RecentExport` interface (line 63-73) — `status: "completed" | "processing" | "failed"`. But there's no backend tracking of exports — `RecentExport` is a local-only type. The "Recent Exports" list (if rendered) likely shows nothing on first visit.
+
+**Caveats**:
+- `useConvexAuth` (line 244) — used instead of `useAuth`. Inconsistent.
+- `getTierLevel` and `hasTierAccess` (line 96-103) — same tier-gating as EvidenceLibrary.
+- `FORMAT_CONFIG` (line 83-88) — same as EvidenceLibrary.
+- `PageLoader` (line 55) — imported from `QueryState` but I didn't see it used in my read. May be dead import.
+- `trackEvent` and `AnalyticsEvents` (line 56) — imported, may not be wired.
+- The `DemoModeBanner` (line 205-215) — same as EvidenceLibrary.
+- `isLoading = evidenceData === undefined || clients === undefined` (line 260) — OR condition. If `evidenceData` resolves but `clients` doesn't, `isLoading` stays true.
+
+**Fix priority**: 🟡 Medium — Pass `workspaceId` to all three queries; wire the empty-state CTA to a real extension link or remove it; validate date range; remove dead `PageLoader` import.
+
+---
+
+## 15. Goals.tsx — `/goals`
+
+**Purpose**: Create and track goals with milestones, streaks, completion status.
+
+**Gaps**:
+- **No `useWorkspaceContext` import.** Grep confirms. `createGoalMutation` (line 219-228) doesn't pass `workspaceId`. Goals are user-scoped, leak across workspaces (Task 3 §1.17).
+- `useQuery(api.goals.crud.getGoals, {})` (line 122) — `{}`, no `workspaceId`. Cross-workspace data leak.
+- `formTarget` (line 206) — `Number(formTarget)`. No validation that it's positive. The user can set a target of `0` or `-100`.
+- `formCurrent` (line 207) — `Number(formCurrent) || 0`. No validation that it's `<= target`.
+- `formDeadline` (line 208) — `new Date(formDeadline).getTime()`. No min-date check. The user can set a deadline in the past.
+- `formType` (line 140) — `"custom"` default. The `GOAL_TYPES` array (line 82-88) includes `"revenue"`, `"hours"`, `"clients"`, `"protection"`, `"custom"`. But the type doesn't affect the UI — a "revenue" goal looks the same as a "custom" goal.
+- `formUnit` (line 143) — `"%"` default. The `UNIT_OPTIONS` array (line 90-96) includes `"USD"`, `"hours"`, `"clients"`, `"score"`, `"%"`. But the unit is just a display label — no validation that `formType === "revenue"` implies `formUnit === "USD"`.
+- `markGoalCompleteMutation` (line 126) — referenced but I didn't see the handler in my read. May be wired further down.
+- `updateMilestoneMutation` (line 127) — same.
+- No milestone UI in the create dialog. The schema has `milestones[]` but the form only collects title/description/type/target/current/unit/deadline/status.
+- `handleCreate` (line 196-237) — no max-length cap on `formTitle` or `formDescription`.
+- `getProgress` (line 190-193) — `if (goal.target === 0) return goal.status === "completed" ? 100 : 0`. Edge case handled, but `goal.current > goal.target` is clamped to `100` via `Math.min`. OK.
+- No URL param consumption.
+- `longestStreak` (line 170) — computed but I didn't see it displayed in my read.
+
+**Caveats**:
+- `isDemoMode = !authLoading && !isAuthenticated` (line 160) — demo mode short-circuits mutations. OK.
+- `timedOut = useQueryTimeout(!authLoading && goalsData === undefined, 3000)` (line 155) — the `!authLoading` guard means the timeout doesn't fire during auth loading. OK.
+- `goals = goalsData ?? []` (line 163) — empty array fallback. No error state.
+- `filteredGoals` (line 173-176) — client-side filter by `statusFilter`. OK.
+- `resetForm` (line 179-188) — clears all fields. Called after create/edit. OK.
+- `editingGoal` state (line 133) — set in `openEdit` (line 240-251). The form is populated from `editingGoal`, but there's no "discard changes" button — the user has to save or close the dialog.
+- `useEffect` not present for syncing — the form state is set imperatively in `openEdit`. OK pattern.
+- `deleteOpen` state (line 134) — delete confirmation dialog. OK (unlike Scope which has none).
+
+**Fix priority**: 🟠 High — Pass `workspaceId` to `createGoal` and `getGoals`; add milestone UI; validate `formTarget > 0` and `formCurrent <= formTarget`; add max-length caps.
+
+---
+
+## 16. Tags.tsx — `/tags`
+
+**Purpose**: Create and manage tags with colors and categories.
+
+**Gaps**:
+- **No `useWorkspaceContext` import.** Grep confirms. `createTagMutation` (line 144-148) doesn't pass `workspaceId`. Tags are user-scoped, leak across workspaces (Task 3 §1.18).
+- `useQuery(api.tags.crud.getTags, {})` (line 51) — `{}`, no `workspaceId`. Cross-workspace data leak.
+- `formName` (line 144) — no max-length cap. Schema enforces server-side.
+- `formColor` (line 145) — `PRESET_COLORS[0]` default. The color picker (line 279-300) includes 12 presets + a custom color input. OK.
+- `formCategory` (line 146) — `"general"` default. But there's no category picker in my read — the form may have a text input for category.
+- **Tags are not referenced by any other table** (Task 3 §1.18). The `tags` table is standalone. Creating tags has no functional effect on clients/projects/invoices.
+- `usageCount` (line 90) — displayed but never incremented (no other page calls a "use tag" mutation). Always `0`.
+- `mostUsedTag` (line 98-101) — computed but always the first tag (since all `usageCount` are `0`).
+- No URL param consumption.
+- `handleDelete` (line 208-231) — has a confirmation dialog (`deleteOpen` state). OK.
+- `handleEdit` (line 168-200) — no unsaved-changes guard.
+
+**Caveats**:
+- `isDemoMode = !authLoading && !isAuthenticated` (line 82) — demo mode short-circuits. OK.
+- `timedOut = useQueryTimeout(!authLoading && tagsData === undefined, 3000)` (line 77) — OK.
+- `realTags` (line 85-92) — maps Convex data to UI shape. OK.
+- `filteredTags` (line 104-110) — client-side filter by search and `activeFilter`. The `activeFilter` is a tag ID (line 58) — clicking a tag in the sidebar filters to... itself? Unclear UX.
+- `PRESET_COLORS` (line 39-43) — 12 colors. OK.
+- `formatDate` (line 119-126) — defined locally, same as other pages. Code duplication.
+
+**Fix priority**: 🟡 Medium — Pass `workspaceId` to `createTag` and `getTags`; add max-length cap on `formName`; either wire tags to clients/projects/etc. or remove the feature; clarify the `activeFilter` UX.
+
+---
+
+## 17. Messages.tsx — `/messages`
+
+**Purpose**: Slack-style messaging with channels, threads, reactions, pins, members.
+
+**Gaps**:
+- `channels` and `messagesMap` and `threadRepliesMap` are declared via `useState<...>([])` / `useState<...>({})` (lines 36, 38, 41) — but the destructured `setChannels` / `setMessagesMap` / `setThreadRepliesMap` are **missing** (only `channels` etc. are destructured). These state variables are **read-only** — the local state is never updated. All data flows through Convex. The local state is dead code.
+- `handleCreateChannel` (line 167-186) — `if (!activeWorkspaceId) { toast.error("No workspace selected"); return; }`. But `activeWorkspaceId` can be a fake `"ws_"` string in demo mode. The `createChannelMutation` would be called with an invalid workspace ID and fail.
+- `handleSendMessage` (line 188-200) — no validation that `content` is non-empty. The `MessageInput` component may validate, but the page doesn't.
+- `handleReact` (line 202-212) — no optimistic update. The reaction appears only after the Convex mutation succeeds.
+- `handleEdit` (line 225-232) — no confirmation. One click edits a message.
+- `handleDelete` (line 234-241) — no confirmation. One click deletes a message.
+- `handleChannelSelect` (line 149-165) — calls `markChannelReadMutation` and `markAllMentionsReadMutation` on every channel switch. If the user rapidly switches channels, multiple mutations fire. No debouncing.
+- `markAllMentionsReadMutation({})` (line 161) — called on EVERY channel select. This clears ALL mention notifications, not just those for the selected channel. Overly broad.
+- The "Create your first channel" button (line 331-340) — `onClick` calls `prompt("Channel name:")`. Browser-native prompt. Inconsistent with the rest of the app's dialog-based UX.
+- No loading state. `convexChannels === undefined` → `activeChannels = channels = []` (line 60). The page shows "No channels yet" briefly even if Convex is still loading.
+- No error state. If `createChannelMutation` fails, the toast says "Failed to create channel: [object Object]" (line 184 — `String(err)`).
+- `availableMembers={activeMembers.map(...)}` (line 273-278) — passed to `ChannelList`. But `activeMembers` is computed from `convexMembers` (line 136-146), which is only fetched when `isConvexChannel` is true (line 79-82). So when creating a channel (before any channel is selected), `activeMembers` is `[]`. The user can't add members to a new channel.
+- `currentUserId` (line 21) — `(user as Record<string, unknown>)?._id as string ?? ""`. If `user` is null (not yet loaded), `currentUserId` is `""`. Messages render with `authorId: ""` matching nobody.
+
+**Caveats**:
+- `canUseConvex = isConvexConnected && isValidConvexId(activeWorkspaceId)` (line 27) — gates all queries. OK.
+- `isConvexChannel = isConvexAvailable && !!activeChannelId && isValidConvexId(activeChannelId)` (line 64) — gates per-channel queries. OK.
+- `activeChannels` `useMemo` (line 47-61) — maps Convex channels to UI shape. Falls back to `channels` (always `[]`). OK.
+- `activeMessages` `useMemo` (line 97-116) — maps Convex messages, filters out thread replies (`!m.parentId`). OK.
+- `handleSendThreadReply` (line 251-264) — same as `handleSendMessage` but with `parentId`. OK.
+- The `ThreadPanel` (line 312-319) — rendered when `activeThreadId` is set. OK.
+- `MemberList` (line 321) — rendered when `showMemberList` is true. OK.
+- `prompt()` for channel name (line 333) — should be a Dialog.
+
+**Fix priority**: 🟠 High — Remove dead local state (`channels`, `messagesMap`, `threadRepliesMap`); add loading skeleton; debounce `markChannelRead` on rapid channel switches; replace `prompt()` with a Dialog; fix `availableMembers` to fetch workspace members before a channel is selected.
+
+---
+
+## 18. TeamManagement.tsx — `/teams`
+
+**Purpose**: Manage workspace members, invitations, teams (sub-groups), roles.
+
+**Gaps**:
+- `hasRealWorkspaceId = activeWorkspaceId && !activeWorkspaceId.startsWith("ws_")` (line 122) — gates all queries. In demo mode, all queries are skipped and `isDemoMode = !hasRealWorkspaceId` (line 266). OK pattern.
+- `handleInvite` (line 271-291) — `if (!inviteEmail.trim() || !activeWorkspaceId) return;` (line 272). No email format validation beyond `trim()`. The user can type "abc" and the invitation is sent.
+- `inviteRole` (line 168) — `"manager" | "member"`. The schema excludes "owner" (Task 3 §1.4). OK.
+- `inviteMessage` (line 169) — collected but **never sent** to the mutation (line 276-280 only passes `workspaceId`, `email`, `role`). The user types a message that's silently dropped.
+- `handleRemoveMember` (line 293-300+) — no confirmation dialog in my read. May be wired further down.
+- `stats` (line 234-247) — `pendingInvoiceCount: 0, totalRevenue: 0, totalHoursThisWeek: 0, protectionScore: 0` hardcoded. The stats card shows zeros for these metrics even if there's real data.
+- `members` mapping (line 207-225) — `projectsAssigned: 0, hoursThisWeek: 0` hardcoded. Per-member stats are always zero.
+- No URL param consumption.
+- `currentUser` query (line 125) — fetched to exclude self from the activity feed. But `currentUserId = currentUser?._id ?? null` (line 126) — if the query is loading, `currentUserId` is `null` and the self-exclusion doesn't work.
+- `TeamManagement` uses `useWorkspaceContext` for `isOwner`, `isManager`, `canManageTeam` (line 119). But the page doesn't gate the UI based on these — a non-manager can see the "Invite Member" button (which may be disabled further down, but I didn't see it).
+- The "Create Team" dialog (not fully read) — `teamName`, `teamColor`, `teamDescription`, `teamIsCrossTeam` (lines 179-183). No max-length caps.
+
+**Caveats**:
+- `convexMembers`, `convexStats`, `convexInvitations`, `convexTeams` (lines 128-147) — all gated on `hasRealWorkspaceId`. OK.
+- `loadingTimedOut = useQueryTimeout(isLoading, 3000)` (line 267) — OK.
+- `showLoading = isLoading && !loadingTimedOut && !isDisconnected` (line 268) — OK.
+- `members` `useMemo` (line 207-225) — maps Convex data. Falls back to `[]`. OK.
+- `teams` `useMemo` (line 227-232) — `if (convexTeams && convexTeams.length > 0) return convexTeams; return [];`. Simplifiable to `return convexTeams ?? [];`.
+- `invitations` `useMemo` (line 249-262) — maps `email` to `name` and `displayName`. OK.
+- `isDemoMode` (line 266) — shows `DemoModeBanner`. OK.
+- `TEAM_COLORS` (line 113-116) — 10 colors. OK.
+- The page is large (1628 lines) — I read only the first 300. Further gaps may exist in the unread portion.
+
+**Fix priority**: 🟡 Medium — Validate `inviteEmail` format; pass `inviteMessage` to the mutation (or remove the field); gate UI based on `isOwner`/`isManager`; replace hardcoded stats with real queries; add max-length caps.
+
+---
+
+## 19. AccountSettings.tsx — `/account-settings`
+
+**Purpose**: Profile, subscription, connections, help, security tabs in one settings page.
+
+**Gaps**:
+- `handleSubmitTicket` (line 268-280) — **stub.** `await new Promise(resolve => setTimeout(resolve, 1500))` then `toast.success("Support ticket submitted!")`. No backend write. The ticket is silently dropped.
+- `handleSignOut` (line 259-266) — only calls `signOut()`. **Does not clear `axia_*` localStorage keys** (Task 3 §6.5, Fix #5). Stale workspace ID, account mode, sidebar state, client email, and orphaned onboarding data persist.
+- `handleTierChange` (line 250-253) — `setSubscriptionTier(newTier)` is a pure client-side state change. No Stripe checkout, no backend write.
+- `profileEmail` (line 191) — set from Convex profile, but the input is read-only (not shown in my read, but typically disabled). The user can't change their email.
+- `handleSaveProfile` (line 229-248) — passes `name`, `hourlyRate`, `professionalBio` to `updateProfileMutation`. Doesn't pass `email` (correct — email is read-only), `yearsExperience`, `primaryPlatform`, `acquisitionSource`, etc. — even though the mutation may accept them.
+- `profileLoaded` flag (line 194) — prevents re-populating the form after the first load. But if the Convex profile changes (e.g. updated from another device), the form doesn't refresh.
+- `useEffect` at line 201-213 — `if (profile && !profileLoaded)`. Once `profileLoaded` is true, the effect is a no-op. OK.
+- `window.addEventListener("navigateToConnections", ...)` (line 167-171) — custom event for cross-component navigation. Fragile pattern — should use React Router's `useNavigate` or a URL hash.
+- `copied` state (line 196) — for the "copy email" button. `setTimeout(() => setCopied(false), 2000)` (line 226). OK.
+- No URL param consumption (e.g. `?section=subscription` to deep-link).
+- The "Help & Support" section (not fully read) — likely has the same stub `handleSubmitTicket`.
+- The "Security" section (not fully read) — likely has password change, 2FA, etc. May or may not be implemented.
+
+**Caveats**:
+- `useAuthActions` (line 71) — from `@convex-dev/auth/react`. `signOut()` is the only action used.
+- `useQuery(api.users.getProfile, {})` (line 188) — passes `{}`, no `workspaceId`. Profile is user-scoped, not workspace-scoped. OK (profile shouldn't be workspace-scoped).
+- `useConvexAuth` (line 72) — imported but I didn't see it used. May be used further down.
+- `useQueryTimeout` and `useConvexConnectionState` (line 72) — imported but I didn't see them used. May be used further down.
+- The `TIERS` array (line 106-149) — duplicated in `Subscription.tsx` (line 73-116) with DIFFERENT prices ($19/$49/$99 here vs $9/$29/$79 in Subscription.tsx). **Inconsistent pricing across pages.**
+- The `navItems` (line 81-87) — 5 sections. The `activeSection` state (line 163) controls which is shown. OK.
+- `useEffect` at line 166-172 — adds/removes a window event listener. Cleanup is correct.
+
+**Fix priority**: 🟠 High — Implement `handleSubmitTicket` (or remove it and link to HelpCenter); clear `axia_*` localStorage on signout; reconcile tier pricing with `Subscription.tsx`; pass `yearsExperience`/`primaryPlatform` to `updateProfileMutation`.
+
+---
+
+## 20. ApiSettings.tsx — route?
+
+**Purpose**: Placeholder page for upcoming API keys, webhooks, SDK docs.
+
+**Gaps**:
+- **No route in `main.tsx`.** Grep confirms `ApiSettings` is imported nowhere. This is an **orphan page** — unreachable via navigation.
+- `handleSignup` (line 33-44) — **stub.** `await new Promise((r) => setTimeout(r, 1000))` then `toast.success("You'll be notified when API access becomes available!")`. No backend write. The email is silently dropped.
+- `email` validation (line 34) — `!email.includes("@")`. Weak. Doesn't check for domain, TLD, etc.
+- No `useWorkspaceContext`, no `useAuth`, no `useConvexAuth`. The page is fully static.
+- No URL param consumption.
+- The "Planned API Endpoints" list (line 147-172) — hardcoded. No backend.
+- The "What's Coming" cards (line 84-132) — hardcoded. No backend.
+
+**Caveats**:
+- `hasSignedUp` state (line 31) — local only. On refresh, the user can sign up again.
+- `isSigningUp` state (line 30) — for the spinner. OK.
+- The page uses `PageLayout narrow` (line 49) — consistent with other settings pages.
+- No loading state (nothing to load).
+- No error state (nothing to fail).
+- The page is 264 lines — fully read.
+
+**Fix priority**: 🟢 Low — Either add a route (`/api-settings`) and wire `handleSignup` to a Convex mutation, or delete the orphan file. Given that it's a "coming soon" page, deleting is reasonable.
+
+---
+
+## 21. Subscription.tsx — `/subscription`
+
+**Purpose**: Pricing tiers, feature comparison, billing history, plan change.
+
+**Gaps**:
+- **`/subscription` route redirects to `/account-settings`** (main.tsx line 296). So this page is **unreachable** via the defined route. The `Subscription` component is mounted somewhere else (likely inside `AccountSettings`), or the route override is a mistake.
+- Wait — main.tsx line 296 says `<Route path="/subscription" element={<AccountSettings />} />`. So navigating to `/subscription` renders `AccountSettings`, NOT `Subscription.tsx`. The `Subscription.tsx` component is **orphaned** (like `ApiSettings`).
+- `confirmPlanChange` (line 648-666) — `setTier(target)` is a pure client-side state change. No Stripe checkout, no backend write. The user "upgrades" but nothing actually changes.
+- `rawInvoices = useQuery(... api.billing.crud.getInvoices, {})` (line 624-627) — `{}`, no `workspaceId`. Cross-workspace data leak.
+- `invoiceStats = useQuery(... api.billing.crud.getInvoiceStats, {})` (line 629-632) — same.
+- `billingHistory` (line 635-638) — built from `rawInvoices` via `invoiceToBillingRecord`. Treats all invoices as billing records, even though invoices are for the freelancer's clients, not for the freelancer's own subscription. **Concept mismatch.**
+- `getUsageForTier` (not shown) — likely computes usage stats. May have hardcoded values.
+- `TIERS` (line 73-116) — prices `$0/$9/$29/$79`. **Differs from `AccountSettings.tsx`** (`$0/$19/$49/$99`). Inconsistent pricing.
+- `getPrice` (line 668-672) — annual is `price * 0.8` (20% discount). Hardcoded.
+- `handlePlanChange` (line 643-646) — opens a confirm dialog. OK.
+- No URL param consumption.
+- The `BillingRecord` interface (not shown) — likely has `date`, `amount`, `status`, `invoiceUrl`. Mapped from `ConvexInvoice` via `invoiceToBillingRecord`.
+
+**Caveats**:
+- `useConvexAuth` (line 616) — used instead of `useAuth`. Inconsistent.
+- `isTierLoading` (line 615) — from `useSubscriptionTier`. The tier is stored in localStorage (per `useSubscriptionTier` hook). No backend source of truth.
+- `showTierLoading = isTierLoading && !tierTimedOut && !isDisconnected` (line 677) — OK.
+- `billingPeriod` state (line 617) — `"monthly" | "annual"`. OK.
+- `confirmDialog` state (line 618-621) — `{ open, target }`. OK.
+- The `ConfirmDialog` sub-component (line 580-609) — extracted. OK.
+- `downloadReceipt` (line 1199) — referenced. Likely generates a PDF via `jsPDF` (line 4). OK.
+
+**Fix priority**: 🟠 High — Either remove the route redirect (so `/subscription` renders `Subscription.tsx`) or delete `Subscription.tsx`. Reconcile tier pricing with `AccountSettings.tsx`. Wire `confirmPlanChange` to a real Stripe checkout. Pass `workspaceId` to invoice queries. Don't conflate client invoices with subscription billing records.
+
+---
+
+## 22. HelpCenter.tsx — `/help-center`
+
+**Purpose**: Placeholder help center with contact form.
+
+**Gaps**:
+- **`/help-center` route redirects to `/account-settings`** (main.tsx line 297). So this page is **unreachable** via the defined route. Orphaned like `Subscription.tsx`.
+- `handleSubmitContact` (line 35-58) — **stub.** `await new Promise((r) => setTimeout(r, 1500))` then `toast.success("Message sent!")`. No backend write. The message is silently dropped.
+- `contactForm.email` validation (line 40) — `!contactForm.email.includes("@")`. Weak.
+- No `useAuth`, no `useWorkspaceContext`, no `useConvexAuth`. Fully static.
+- No URL param consumption.
+- The "What's Coming" cards (line 112-147) — hardcoded. No backend.
+- `support@axia.pro` mailto link (line 100-105) — hardcoded email. OK.
+- No loading state (nothing to load).
+- No error state (nothing to fail).
+- The page is 248 lines — fully read.
+
+**Caveats**:
+- `contactForm` state (line 27-32) — `{ name, email, subject, message }`. OK.
+- `isSubmitting` state (line 33) — for the spinner. OK.
+- The page uses `PageLayout narrow` (line 63) — consistent.
+- The "24h response time" claim (line 96) — unverified. May not be true.
+
+**Fix priority**: 🟢 Low — Either remove the route redirect (so `/help-center` renders `HelpCenter.tsx`) and wire `handleSubmitContact` to a Convex mutation, or delete the orphan file.
+
+---
+
+## 23. PlatformIntegrations.tsx — `/platform-integrations`
+
+**Purpose**: Connect/disconnect Upwork, Fiverr, Toptal, Freelancer.com platforms.
+
+**Gaps**:
+- **`/platform-integrations` route redirects to `/account-settings`** (main.tsx line 295). So this page is **unreachable** via the defined route. Orphaned like `Subscription.tsx` and `HelpCenter.tsx`.
+- `handleConnect` (line 108-144) — `initiateConnection` then `completeConnection` with **fake credentials**: `platformUserId: "demo_${selectedPlatform}_user"`, `platformEmail: "user@${selectedPlatform}.com"` (lines 127-128). No real OAuth flow. The "connection" is a fake.
+- `handleDisconnect` (line 146-164) — calls `disconnectPlatform`. The `deletedRecords` count (line 151) is shown in the toast. OK.
+- `connections` query (line 50-53) — passes `{}`, no `workspaceId`. Cross-workspace data leak (connections are user-scoped).
+- `initiateConnection`, `completeConnection`, `disconnectPlatform` mutations (lines 56-64) — conditionally set to `null` when `!isAuthenticated`. This is a non-idiomatic pattern — `useMutation(null)` may throw.
+- `platformLabels` and `platformColors` (lines 32-44) — hardcoded. OK.
+- `getConnectionStatus` (line 86-92) — returns `null` if status isn't `"connected"` or `"pending"`. But the schema may have `"error"` status (line 300 checks `rawConnection?.status === "error"`). The "error" status is hidden from the main UI.
+- No URL param consumption.
+- The demo-mode view (line 167-229) — shows static preview cards. OK.
+- The loading state (line 237-273) — shows skeletons. OK.
+- The authenticated view (line 276+) — I read only the first 300 lines. Further gaps may exist.
+
+**Caveats**:
+- `useConvexAuth` (line 47) — used instead of `useAuth`. Inconsistent.
+- `isDisconnected` and `useQueryTimeout` (line 232-235) — OK.
+- `connectionMap` (line 75-84) — built from `connections`. OK.
+- The `handleConnect` flow (line 108-144) — two-step: initiate then complete. If `completeConnection` fails, the `initiateConnection` has already created a pending record. No cleanup.
+- The fake credentials (line 127-128) — `demo_upwork_user`, `user@upwork.com`. These are obviously fake. A real integration would use OAuth.
+- The `platforms` array (line 72) — `["upwork", "fiverr", "toptal", "freelancer"]`. Missing `"direct"` (which the `clients.platform` field supports). OK — direct clients don't have a platform to connect.
+
+**Fix priority**: 🟡 Medium — Either remove the route redirect (so `/platform-integrations` renders `PlatformIntegrations.tsx`) and implement real OAuth, or delete the orphan file. Pass `workspaceId` to `getPlatformConnectionStatus`. Don't use `useMutation(null)`.
+
+---
+
+## 24. OwnerDashboard.tsx — `/owner-dashboard`
+
+**Purpose**: Admin-only dashboard with MRR meter, priority actions, system health, Convex logs, waitlist management.
+
+**Gaps**:
+- **Auth is password-based, separate from Convex Auth.** `useOwnerAuth` (line 43-169) verifies against `OWNER_PASSWORD` env var via `ownerAuth.ownerAuth_verifyOwnerCredentials` mutation. OK pattern (server-side secret).
+- `mrr={null}` hardcoded at line 1188 — the `RevenueRiskMeter` always shows "No analytics data available". No Stripe integration.
+- `priorityActions` (line 1120-1124) — hardcoded array of 3 actions with fake revenue/time/ROI numbers. Pure theater.
+- `addAction` (line 1128-1142) — appends a new action with hardcoded values. No backend.
+- `completeActionById` (line 1144-1162) — removes the action and appends a fresh one. No backend.
+- `PriorityActionsModal` (line 368-557) — "Message High-Value Users" flow has a hardcoded message template (line 511-515) and `handleSendToAll` (line 376-385) just shows a success animation. No actual messages sent.
+- `ComplianceRuleTester` (line 561+) — `workSites: ["upwork.com", "github.com", "slack.com"]` hardcoded (line 566). The user can add/remove sites, but changes are local-only (no persistence).
+- `SystemHealthMonitor` (not fully read) — likely shows Convex connection status. May have hardcoded metrics.
+- `ConvexLogsSection` (line 730-871) — overrides `console.log`/`console.error`/`console.warn` to capture logs into React state. **This is a global side effect** — every page's console logs are captured. May cause performance issues with many logs.
+- `WaitlistEntriesSection` (line 874-882) — wraps `WaitlistEntriesInner` in a `ConvexProvider` with a specific client (prod or dev). The `prodConvex` and `devConvex` are passed as props from `main.tsx` (line 1088). OK pattern for cross-environment queries.
+- `WaitlistEntriesInner` (line 885-1010) — `useQuery(api.waitlist.getAllWaitlistEntries, {})` (line 886). **No auth check.** Anyone with the owner password can see all waitlist entries (emails, referral codes). OK for owner-only, but the `getAllWaitlistEntries` mutation should enforce owner auth server-side.
+- `useEffect` at line 892-895 — `console.log(...)` on every entries change. Debug logging left in.
+- `OwnerLogin` (line 1013-1084) — hardcoded `value="shubh"` for username (line 1047) and `value="shubh@timestop.app"` for hidden email (line 1038). Personal info in source.
+- No URL param consumption.
+- The `ThemeToggle` (line 172-199) — separate from the app's `ThemeProvider`. Two theme systems running in parallel.
+
+**Caveats**:
+- `useOwnerAuth` (line 43-169) — `SESSION_TIMEOUT = 10 * 60 * 1000` (10 min). Inactivity logout. OK.
+- `localStorage.getItem("ownerSessionActive")` (line 95) — set on login, but `useEffect` at line 118-135 explicitly does NOT restore `isAuthenticated` from localStorage (security fix noted in comment). OK.
+- `failedAttempts` (line 100-104) — after 3 failures, shows an error message for 5s. No rate limiting beyond this.
+- `verifyOwner({ password: candidate })` (line 92) — `candidate = inputPassword.slice(0, 64)` (line 91). Client-side length cap. OK.
+- `RevenueRiskMeter` (line 202-365) — `SAFE_MRR = Math.max(0, Math.min(mrr, 500))` (line 205). Clamps to 0-500. OK.
+- `getZoneColor` (line 222-226) — `< 400` red, `< 475` amber, else green. Hardcoded thresholds.
+- The SVG speedometer (line 239-306) — complex geometry. `CENTER_X = 400, CENTER_Y = 340, R = 300`. Hardcoded. May not scale on mobile.
+- `PriorityActionsModal` (line 368-557) — `showSuccess` animation (line 533-553). OK.
+- `ConvexLogsSection` (line 730-871) — captures `console.log/error/warn` globally. The cleanup at line 826-830 restores originals. OK pattern, but global side effects are risky.
+- The page is 1367 lines — I read ~600. Further gaps may exist.
+
+**Fix priority**: 🟡 Medium — Remove debug `console.log` (line 892-895); remove personal info (`shubh@timestop.app`); wire `mrr` to real Stripe data; make `priorityActions` backend-driven; remove global `console.log` override or scope it to the owner dashboard only.
+
+---
+
+## 25. ClientDashboard.tsx — `/client-dashboard`
+
+**Purpose**: Client-portal dashboard with WCVM, directory, verification requests, real-time validation tabs.
+
+**Gaps**:
+- `useEffect` at line 19-23 — `if (!isAuthenticated) navigate("/auth?redirect=/client-dashboard")`. OK redirect pattern.
+- `userProfile = useQuery(... api.users.getProfile, {})` (line 27-30) — passes `{}`, no `workspaceId`. Profile is user-scoped. OK.
+- `displayProfile` (line 53-63) — built from `userProfile`. `companyName: userProfile?.name || userProfile?.email?.split("@")[0] || "My Company"` (line 56). Falls back to email prefix — fragile.
+- `displayProfile.role: userProfile?.role || "member"` (line 58) — defaults to `"member"`. But `users.role` is `"admin" | "user"` (Task 3 §1.1), not `"member"`. **Type mismatch.**
+- `displayProfile.subscriptionTier: userProfile?.subscriptionTier || "free"` (line 59) — OK.
+- `displayProfile.industry` and `displayProfile.companySize` (lines 61-62) — read from `userProfile`, but `users` table doesn't have `industry` or `companySize` fields (Task 3 §1.1). These are always `""`.
+- `displayProfile.verificationCount: userProfile?.verificationCount ?? 0` (line 60) — `users` table doesn't have `verificationCount`. Always `0`.
+- "Pending Requests" stat (line 98) — hardcoded `0`. No query.
+- "Verified Professionals" stat (line 108) — hardcoded `0`. No query.
+- `WCVMVerificationDashboard clientId={displayProfile._id}` (line 182) — passes `userProfile._id` as `clientId`. But `userProfile._id` is a `users` ID, not a `clientCompanies` ID. **Type mismatch** — the WCVM component may query `clientCompanies` with a `users` ID and get nothing.
+- `VerificationRequestSystem clientId={displayProfile._id}` (line 190) — same issue.
+- "Sign Out" button (line 73-78) — `onClick={() => navigate("/auth")}`. **Doesn't actually sign out.** Just navigates to the auth page. The user's session is still active.
+- No URL param consumption.
+- No loading state for `userProfile === undefined`. The page renders with `displayProfile._id = "unknown"` briefly.
+
+**Caveats**:
+- `useConvexAuth` (line 16) — used instead of `useAuth`. Inconsistent.
+- `useQuery` is gated on `isAuthenticated` (line 27-30). OK.
+- The page is 200 lines — fully read.
+- `FreelancerDirectoryView` (line 186) — no props passed. May fetch its own data.
+- `RealTimeWorkValidation` (line 194) — no props passed. Same.
+- The "Sign Out" button text says "Sign Out" but the action is "navigate to /auth". Misleading.
+
+**Fix priority**: 🟠 High — Use `useAuthActions().signOut()` for the Sign Out button; pass the correct `clientCompanies` ID to `WCVMVerificationDashboard` and `VerificationRequestSystem` (requires joining `users` → `clientCompanies`); remove hardcoded stats or wire them to real queries; fix `displayProfile.role` type mismatch.
+
+---
+
+## 26. ClientWorkspace.tsx — `/workspace/:token`
+
+**Purpose**: Public client-portal view of projects, proposals, invoices, team for a specific freelancer-client relationship.
+
+**Gaps**:
+- `validation = useQuery(api.clients.clientWorkspace.validateWorkspaceToken, token ? { token } : "skip")` (line 197-200). Token validation via Convex. OK.
+- `shouldFetch = validation?.valid` (line 203). Gates all data queries. OK.
+- `useEffect` at line 227-231 — `recordAccess({ token })` on every validation success. **No debouncing.** If the user refreshes rapidly, multiple access records are logged.
+- `useEffect` at line 237-245 — `proposals.forEach(p => { if (p.status === "sent") markProposalViewed(...) })`. **Fires on every `proposals` change.** If Convex live-updates the proposals list, the mutation fires again. No "already marked" guard.
+- `useEffect` at line 247-255 — same for invoices. Same issue.
+- `markProposalViewed` and `markInvoiceViewed` mutations (lines 234-235) — fire without user interaction. The client doesn't even need to open the proposal — just loading the page marks all "sent" proposals as "viewed". **Privacy concern** — the freelancer sees "viewed" status even if the client didn't actually open the proposal.
+- `copyLink` (line 257-262) — copies the workspace URL to clipboard. **The URL contains the token.** Anyone with the URL has full read access to the client's projects/proposals/invoices. No expiry, no rotation (unless the backend enforces it).
+- No URL param beyond `:token`.
+- `expandedProject`, `expandedInvoice`, `expandedProposal` state (lines 191-193) — for accordion UI. OK.
+- The "Invalid or Expired Link" view (line 283-306) — shown when `!validation?.valid`. OK.
+- No loading state for `projects === undefined` after validation succeeds. The Projects tab may render blank briefly.
+- `outstandingAmount` (line 311-313) — sums `i.total` for non-paid/cancelled/draft invoices. OK.
+- `formatCurrency(outstandingAmount)` (line 377) — no currency arg. Hardcoded USD.
+- The "Copy Link" button (line 343-349) — `onClick={copyLink}`. No confirmation that the user wants to share the link.
+
+**Caveats**:
+- `useParams<{ token: string }>()` (line 189) — `token` may be `undefined`. The query is skipped if no token (line 199). OK.
+- `useQueryTimeout` and `useConvexConnectionState` (line 267-270) — OK.
+- `validationLoading = validation === undefined` (line 268) — OK.
+- `showValidationLoading = validationLoading && !validationTimedOut && !isDisconnected` (line 270) — OK.
+- `clientName = validation?.clientName ?? "Client"` (line 308) — fallback. OK.
+- `projectCount`, `activeProposals`, `outstandingAmount` (lines 309-313) — computed from queries. OK.
+- The page is 1117 lines — I read ~500. Further gaps may exist in the tab content components (`ProjectsTab`, `ProposalsTab`, `InvoicesTab`, `TeamTab`).
+- `getInitials` and `getAvatarColor` (lines 159-182) — helper functions. OK.
+- The `INVOICE_STATUS` config (line 114-122) — includes "partial", "cancelled" (unlike `Invoices.tsx` which omits them). More complete here.
+- `relativeTime` (line 146-157) — for "Just now" / "5m ago" display. OK.
+
+**Fix priority**: 🟠 High — Add debouncing to `recordAccess`; only mark proposals/invoices as viewed when the user actually expands them (not on page load); add token expiry/rotation; pass `currency` to `formatCurrency`; add loading states for tab content.
+
+---
+
+## Cross-Cutting Systemic Issues
+
+### S1. No page handles Convex server-side errors
+`safe-convex-react` swallows all errors and returns `undefined`. Every page's loading state checks `data === undefined`, but cannot distinguish "still loading" from "error". After the 3s `useQueryTimeout`, the page renders with empty data and no error indicator. The user sees an empty page with no way to know if it's a real empty state or a server failure.
+
+### S2. Workspace scoping is inconsistent
+- **Pages that DO pass `workspaceId`**: Dashboard (most queries), Clients, Pipeline, Proposals, Invoices, TimeTracking, PaymentPatterns, EvidenceLibrary, TeamManagement, ClientWorkspace, Messages.
+- **Pages that DON'T pass `workspaceId`**: Projects (`getMyProjects, {}`), Goals, Tags, Reports, Scope, EvidenceExport, ProposalBuilder, InvoiceBuilder, Subscription, PlatformIntegrations, AccountSettings (profile, OK), ClientDashboard (profile, OK).
+- **Result**: Switching workspaces does NOT filter Goals, Tags, Reports, Scopes, EvidenceExport data, Proposals created via ProposalBuilder, Invoices created via InvoiceBuilder, or Projects. These records leak across workspaces.
+
+### S3. No optimistic updates anywhere
+Every mutation waits for Convex to acknowledge before updating the UI. On slow connections, this means 200-500ms of no visual feedback. The Pipeline drag-and-drop (§4) and Messages reactions (§17) are the most noticeable. No page uses `useMutation`'s `onMutate` / `onError` / `onSettled` callbacks for optimistic updates.
+
+### S4. `safe-convex-react` hides broken mutations
+InvoiceBuilder (§8) calls `createInvoice` without `clientId` — Convex validation fails — `safe-convex-react` swallows the error — user sees "Failed to save invoice" toast. The page has no way to surface the specific validation error. Same pattern for any mutation that fails server-side.
+
+### S5. Inconsistent auth hook usage
+- `useAuth` (from `@/hooks/use-auth`): used by Clients, Projects, Proposals, TimeTracking, Reports, Goals, Tags, Messages, AccountSettings.
+- `useConvexAuth` (from `@/lib/safe-convex-react`): used by PaymentPatterns, EvidenceLibrary, EvidenceExport, Subscription, PlatformIntegrations, ClientDashboard.
+- These hooks return slightly different shapes (`useAuth` has `user` object; `useConvexAuth` has `isAuthenticated` boolean). Mixing them within the same app leads to inconsistent `isDemoMode` checks and different loading behaviors.
+
+### S6. Tier pricing is inconsistent across pages
+- `AccountSettings.tsx` (line 106-149): Free $0, Starter $19, Pro $49, Expert $99.
+- `Subscription.tsx` (line 73-116): Free $0, Starter $9, Pro $29, Expert $79.
+- The user sees different prices depending on which page they're on.
+
+### S7. Three "orphan" pages with route redirects
+- `Subscription.tsx` — `/subscription` renders `AccountSettings` (main.tsx:296).
+- `HelpCenter.tsx` — `/help-center` renders `AccountSettings` (main.tsx:297).
+- `PlatformIntegrations.tsx` — `/platform-integrations` renders `AccountSettings` (main.tsx:295).
+- `ApiSettings.tsx` — no route at all.
+
+These pages exist as files but are unreachable. Their content (placeholder "coming soon" UIs, stub forms) is dead code.
+
+### S8. `prompt()` and `alert()` in Messages
+Messages.tsx (§17) uses `prompt("Channel name:")` for channel creation — browser-native, inconsistent with the rest of the app's dialog-based UX.
+
+### S9. Hardcoded heuristics for hourly rate
+- Proposals.tsx: `proposal.totalValue / 40` (lines 336, 354).
+- Scope.tsx: `proposal.totalValue / 75` (line 649).
+- TimeTracking.tsx: `?? 75` (line 213).
+- Reports.tsx: `parseFloat(formHourlyRate) || 75` (line 268).
+- Three different magic numbers (40, 75, 75) for the same concept (default hourly rate). Should use `users.hourlyRate` from onboarding.
+
+### S10. No page-wide unsaved-changes guard
+ProposalBuilder, InvoiceBuilder, Scope, Goals, Tags, AccountSettings — all have forms with no `beforeunload` handler or "unsaved changes" warning. The user can navigate away and lose all input.
+
+---
+
+## Summary — Top 5 Critical Gaps (with page + line)
+
+1. **InvoiceBuilder cannot create invoices** — `InvoiceBuilder.tsx:452-464` calls `createInvoice` without `clientId` (required by `billing/crud.ts:166`). Convex validation fails; `safe-convex-react` swallows the error. Every invoice-creation attempt via the builder is broken.
+2. **ProposalBuilder never links proposals to clients/deals/workspaces** — `ProposalBuilder.tsx:401-410` calls `createProposal` with only `clientName`/`clientEmail` strings. No `workspaceId`, `clientId`, or `dealId` (even though `?dealId=` is read from URL at line 162). 100% of builder-created proposals are orphaned from their workspace, client, and deal.
+3. **Projects page has no create form** — `Projects.tsx:151` wires the only "Add" button to `seedProjects.seedTestProjects` (a dev seeder). The "Add Test Project" button is NOT gated behind `import.meta.env.DEV`, so production users click it expecting a create form and get dev test data instead. There is no production path to create a project from this page.
+4. **Goals, Tags, Reports, Scope don't pass `workspaceId`** — `Goals.tsx:219`, `Tags.tsx:144`, `Reports.tsx:279`, `Scope.tsx:672` all call their create mutations without `workspaceId`. Records are user-scoped, not workspace-scoped. Switching workspaces does not filter them. Cross-workspace data leak.
+5. **`handleConvertToProject` is 4 non-atomic mutations** — `Proposals.tsx:317-387` runs `createClient` → `addProject` → `moveDeal` → `updateProposal` sequentially from the client. Any failure leaves orphans. No back-link from proposal to new project. Misleading toast claims a scope was created (it wasn't).
+
+## Summary — Top 5 Most Common Caveats (anti-patterns repeated across pages)
+
+1. **`safe-convex-react` swallows all errors** — every page uses the wrapped `useQuery`/`useMutation`, which returns `undefined` on failure. No page can distinguish "loading" from "error". After a 3s timeout, the page renders empty data with no error indicator. (All 26 pages.)
+2. **Double-filtering (server + client)** — Proposals (§5, line 230-240), Invoices (§7, line 261-270), Reports (§11, line 204-216), Goals (§15, line 173-176), Tags (§16, line 104-110) all pass a filter to the Convex query AND then filter the results client-side. Wasteful and error-prone (the two filters can drift).
+3. **`as any` casts on mutation args** — Proposals (§5, line 361), Scope (§9, line 679, 706), TimeTracking (§10, line 222), Reports (§11, line 279), Goals (§15, line 219), Tags (§16, line 144), Messages (§17, line 174, 193, 205, 216, 227, 236, 255). The casts hide type mismatches between the page's local interface and the Convex mutation args.
+4. **Hardcoded `$75` / `$50` / `totalValue / 40` heuristics** — Proposals (§5, lines 336, 354), Scope (§9, line 649), TimeTracking (§10, line 213), Reports (§11, line 268), Dashboard (§1, line 336). None use `users.hourlyRate` from onboarding. (See S9 above.)
+5. **No unsaved-changes guard** — ProposalBuilder (§6), InvoiceBuilder (§8), Scope (§9), Goals (§15), Tags (§16), AccountSettings (§19). No `beforeunload` handler, no "you have unsaved changes" warning on navigation. The user can lose all input by closing the tab or clicking a nav link.
+
+---
+
+End of Task ID 4.
+
+---
+
+Task ID: C8
+Agent: full-stack-developer (workspaceId patching)
+Task: Pass workspaceId to mutations/queries in Goals, Tags, Reports, Scope pages
+
+Work Log:
+- src/pages/Goals.tsx
+  - Line 44: added `import { useWorkspaceContext } from "@/hooks/use-workspace";`
+  - Lines 121-123: added `useWorkspaceContext()` extraction + `workspaceId` derivation
+  - Line 127: `useQuery(api.goals.crud.getGoals, { workspaceId: workspaceId as any })` (was `{}`)
+  - Line 225: added `workspaceId: workspaceId as any` to `createGoalMutation({...})` call
+- src/pages/Tags.tsx
+  - Line 33: added `import { useWorkspaceContext } from "@/hooks/use-workspace";`
+  - Lines 50-52: added `useWorkspaceContext()` extraction + `workspaceId` derivation
+  - Line 56: `useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any })` (was `{}`)
+  - Line 150: added `workspaceId: workspaceId as any` to `createTagMutation({...})` call
+- src/pages/Scope.tsx
+  - Line 18: added `import { useWorkspaceContext } from "@/hooks/use-workspace";`
+  - Lines 556-558: added `useWorkspaceContext()` extraction + `workspaceId` derivation
+  - Line 594: `useQuery(api.scope.crud.getScopeDefinitions, { workspaceId: workspaceId as any })` (was `{}`)
+  - Line 679: added `workspaceId: workspaceId as any` to `createScopeMutation({...})` call
+- src/pages/Reports.tsx — NOT MODIFIED (see Stage Summary)
+
+Stage Summary:
+- 5 call sites patched across 3 files (Goals, Tags, Scope).
+- Reports.tsx was left untouched: none of the three Convex functions called by
+  this page (`disputeReports.getUserDisputeReports`, `createDisputeReport`,
+  `updateReportStatus`) accept `workspaceId` in their `args` definition. The
+  Task 3 audit (worklog line 568) claimed the mutations accept it, but reading
+  `src/convex/disputeReports.ts` shows they do not — the table column exists
+  but the mutation args don't. Per the task's "Don't" rules ("Do NOT modify
+  files in `src/convex/`"), Reports.tsx cannot be fixed without a backend
+  change, which is out of scope for C8.
+- Other call sites intentionally skipped (Convex function does not accept
+  `workspaceId`):
+  - Goals.tsx: `updateGoal`, `deleteGoal`, `markGoalComplete`, `updateMilestone`
+  - Tags.tsx: `updateTag`, `deleteTag`
+  - Scope.tsx: `getChangeOrders`, `getProposal`, `recordRevision`,
+    `approveChangeOrder`, `deleteScopeDefinition`
+- Every patched call site is marked with a `// ponytail:` comment.
+- All patches use `workspaceId as any` to bypass the TypeScript union issues
+  noted in the task instructions, consistent with the existing code style
+  (e.g. Scope.tsx already used `as any` for `proposalId`, `scopeId`).
+
+End of Task ID C8.
