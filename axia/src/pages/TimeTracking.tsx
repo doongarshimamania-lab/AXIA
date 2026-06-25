@@ -20,6 +20,9 @@ import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { PageLayout } from "@/components/design-system/PageLayout";
+// ponytail: import reusable tag components for picker, badges, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
+import { Tag as TagIcon, X } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +75,12 @@ export default function TimeTracking() {
   const resumeSessionMutation = useMutation(api.tracking.crud.resumeSession);
   const createManualEntryMutation = useMutation(api.tracking.crud.createManualEntry);
   const deleteSessionMutation = useMutation(api.tracking.crud.deleteSession);
+  // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
+  // workSession (the create mutations don't accept tagIds directly, so we patch after).
+  const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
+  // ponytail: load the workspace's tags so we can render TagBadges + filter chips.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // ─── Local state ─────────────────────────────────────────────────────────
   const [isPaused, setIsPaused] = useState(false);
@@ -93,6 +102,13 @@ export default function TimeTracking() {
   const [manualProject, setManualProject] = useState("");
   const [manualClient, setManualClient] = useState("");
   const [manualMemo, setManualMemo] = useState("");
+  // ponytail: tag state for both the manual-entry form AND the timer-start form.
+  // Detached mode — we hold these IDs locally until the workSession exists,
+  // then call setEntityTags to persist them.
+  const [manualTagIds, setManualTagIds] = useState<string[]>([]);
+  const [timerTagIds, setTimerTagIds] = useState<string[]>([]);
+  // ponytail: tag filter for the entries list — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   // ─── Demo mode ───────────────────────────────────────────────────────────
   const isDemoMode = !authLoading && !isAuthenticated;
@@ -212,7 +228,7 @@ export default function TimeTracking() {
       const clientName = selectedClientData?.clientName ?? "Unknown Client";
       const hourlyRate = selectedProjectData?.hourlyRate ?? selectedClientData?.hourlyRate ?? 75;
 
-      await startSessionMutation({
+      const newSessionId = await startSessionMutation({
         projectName,
         clientName,
         hourlyRate,
@@ -220,8 +236,23 @@ export default function TimeTracking() {
         notes: entryMemo || undefined,
         workspaceId,
       });
+      // ponytail: if the user picked tags before starting the timer, attach them now
+      // that the workSession exists. Use setEntityTags (detached-pattern persistence).
+      if (newSessionId && timerTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "workSessions",
+            entityId: newSessionId,
+            tagIds: timerTagIds as any,
+          });
+        } catch (tagErr: any) {
+          // Don't fail the timer start — just warn.
+          console.warn("[TimeTracking] failed to attach tags to new session:", tagErr?.message);
+        }
+      }
       toast.success("Timer started!", { description: `Tracking time for ${selectedProjectData?.projectName ?? selectedProject}` });
       setEntryMemo("");
+      setTimerTagIds([]);
     } catch (err: any) {
       toast.error(err?.message || "Failed to start timer");
     } finally {
@@ -299,7 +330,7 @@ export default function TimeTracking() {
 
     setIsCreatingManual(true);
     try {
-      await createManualEntryMutation({
+      const newSessionId = await createManualEntryMutation({
         projectName: manualProject || "Unassigned",
         clientName: manualClient || "Manual Entry",
         platform: "manual",
@@ -308,6 +339,19 @@ export default function TimeTracking() {
         endTime: endDate.getTime(),
         workspaceId,
       });
+      // ponytail: attach the form's selected tags to the new workSession via the
+      // generic setEntityTags mutation (createManualEntry doesn't accept tagIds).
+      if (newSessionId && manualTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "workSessions",
+            entityId: newSessionId,
+            tagIds: manualTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[TimeTracking] failed to attach tags to new manual entry:", tagErr?.message);
+        }
+      }
       toast.success("Manual entry added!", {
         description: `${formatDuration(Math.floor(duration / 60000))} for ${manualProject || "Unassigned"}`,
       });
@@ -343,7 +387,17 @@ export default function TimeTracking() {
     setManualMemo("");
     setManualStart("09:00");
     setManualEnd("17:00");
+    // ponytail: also reset the form's tag selection so the next entry starts clean.
+    setManualTagIds([]);
   };
+
+  // ponytail: tag-filtered entries — when a filter chip is active, narrow the
+  // list to entries whose tagIds include the selected tag. Fall back to the
+  // full list when no filter is set.
+  const filteredTimeEntries = useMemo(() => {
+    if (!activeTagFilter) return timeEntries;
+    return timeEntries.filter((e: any) => Array.isArray(e.tagIds) && e.tagIds.includes(activeTagFilter));
+  }, [timeEntries, activeTagFilter]);
 
   // ─── Style maps ──────────────────────────────────────────────────────────
   const platformColor: Record<string, string> = {
@@ -581,6 +635,18 @@ export default function TimeTracking() {
                         />
                       </div>
                     </div>
+                    {/* ponytail: detached TagPicker — IDs are held in `timerTagIds` and
+                        attached after the session is created via setEntityTags. */}
+                    <div className="space-y-2">
+                      <Label>Tags (optional)</Label>
+                      <TagPicker
+                        entityType="workSessions"
+                        initialTagIds={timerTagIds}
+                        onChange={setTimerTagIds}
+                        categoryHint="general"
+                        placeholder="Add tags for this timer session..."
+                      />
+                    </div>
                     <Button
                       className="bg-primary hover:bg-primary/90 w-full md:w-auto"
                       size="lg"
@@ -600,21 +666,63 @@ export default function TimeTracking() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[18px]">Recent Time Entries</CardTitle>
-                  <span className="text-sm text-muted-foreground">{timeEntries.length} entries</span>
+                  <span className="text-sm text-muted-foreground">{filteredTimeEntries.length}{activeTagFilter ? ` of ${timeEntries.length}` : ""} entries</span>
                 </div>
+                {/* ponytail: tag filter chip bar — only renders if there are tags to filter by. */}
+                {allTags.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap pt-2">
+                    <span className="text-xs text-muted-foreground mr-1 inline-flex items-center gap-1">
+                      <TagIcon className="h-3 w-3" /> Filter:
+                    </span>
+                    {allTags.map((t: any) => {
+                      const isActive = activeTagFilter === t._id;
+                      return (
+                        <button
+                          key={t._id}
+                          type="button"
+                          onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                            isActive
+                              ? "bg-foreground text-background border-foreground"
+                              : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                          }`}
+                          style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                        >
+                          <span
+                            className="inline-block w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: t.color ?? "#888" }}
+                          />
+                          {t.name}
+                          {isActive && <X className="h-3 w-3 ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                    {activeTagFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTagFilter(null)}
+                        className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                      >
+                        Clear filter
+                      </button>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                {timeEntries.length === 0 ? (
+                {filteredTimeEntries.length === 0 ? (
                   <div className="py-12 text-center">
                     <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                     <p className="text-muted-foreground">
-                      No time entries yet. Start a timer or add a manual entry to begin tracking.
+                      {activeTagFilter
+                        ? "No time entries match this tag filter."
+                        : "No time entries yet. Start a timer or add a manual entry to begin tracking."}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <AnimatePresence>
-                      {timeEntries.map((entry: any) => (
+                      {filteredTimeEntries.map((entry: any) => (
                         <motion.div
                           key={entry._id}
                           initial={{ opacity: 0, y: -10 }}
@@ -631,6 +739,15 @@ export default function TimeTracking() {
                               <div>
                                 <div className="font-medium text-foreground">{entry.projectName}</div>
                                 <div className="text-sm text-muted-foreground">{entry.clientName} &middot; {formatDate(entry.startTime)}</div>
+                                {/* ponytail: read-only tag badges on each time entry row. */}
+                                <div className="mt-1">
+                                  <TagBadges
+                                    tagIds={entry.tagIds}
+                                    tags={allTags}
+                                    max={3}
+                                    size="xs"
+                                  />
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -752,6 +869,18 @@ export default function TimeTracking() {
               <div className="space-y-2">
                 <Label>Memo</Label>
                 <Input placeholder="What did you work on?" value={manualMemo} onChange={(e) => setManualMemo(e.target.value)} />
+              </div>
+              {/* ponytail: detached TagPicker for manual entry — IDs are persisted
+                  after the workSession is created via setEntityTags. */}
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <TagPicker
+                  entityType="workSessions"
+                  initialTagIds={manualTagIds}
+                  onChange={setManualTagIds}
+                  categoryHint="general"
+                  placeholder="Add tags for this entry..."
+                />
               </div>
               {tier === "free" && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm text-yellow-600 break-words">
