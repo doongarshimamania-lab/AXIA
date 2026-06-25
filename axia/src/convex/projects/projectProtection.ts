@@ -34,7 +34,6 @@ async function resolveUserId(ctx: any) {
     const guestUserId = await ctx.db.insert("users", {
       email: "guest@axia.demo",
       name: "Guest User",
-      subscriptionTier: "free",
       onboardingComplete: true,
     });
     return guestUserId;
@@ -250,7 +249,6 @@ export const getProjectProtectionScore = query({
         complianceRate: 0,
         improvementOpportunity: "Please log in to view your protection score",
         tierProtectionRate: 22,
-        subscriptionTier: "free",
       };
     }
 
@@ -263,11 +261,10 @@ export const getProjectProtectionScore = query({
         complianceRate: 0,
         improvementOpportunity: "User not found",
         tierProtectionRate: 22,
-        subscriptionTier: "free",
       };
     }
 
-    const tier = (user as any).subscriptionTier || "free";
+    const tier = "expert"; // Phase 1: all users are expert (tiers removed)
     const tierProtectionRates: Record<string, number> = {
       free: 22,
       starter: 67,
@@ -287,7 +284,6 @@ export const getProjectProtectionScore = query({
           complianceRate: 0,
           improvementOpportunity: "Project not found or unauthorized",
           tierProtectionRate: 22,
-          subscriptionTier: "free",
         };
       }
       projectFilter = project.projectName;
@@ -311,7 +307,6 @@ export const getProjectProtectionScore = query({
         complianceRate: 0,
         improvementOpportunity: "Start collecting evidence to build your protection score",
         tierProtectionRate: 22,
-        subscriptionTier: "free",
       };
     }
 
@@ -381,7 +376,6 @@ export const getProjectProtectionScore = query({
       complianceRate,
       improvementOpportunity,
       tierProtectionRate: tierProtectionRates[tier] || 22,
-      subscriptionTier: tier,
     };
   },
 });

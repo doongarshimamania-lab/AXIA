@@ -19,7 +19,7 @@ export const getClientPolicyProfile = query({
       throw new Error("Client not found or unauthorized");
     }
 
-    const userTier = user.subscriptionTier || "free";
+    const userTier = "expert";
     
     // Get all sessions for this client to calculate metrics
     const sessions = await ctx.db

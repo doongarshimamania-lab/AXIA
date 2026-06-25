@@ -61,7 +61,7 @@ export const getMilestoneProtection = query({
       };
     }
 
-    const tier = user.subscriptionTier || "free";
+    const tier = "expert";
 
     // Get project filter
     let projectFilter: string | null = null;

@@ -45,17 +45,14 @@ export const getProfile = query({
 });
 
 // Add: Update current user's profile (partial updates)
-// NOTE: `subscriptionTier` was previously accepted here, allowing any user
-// to self-upgrade to any tier ("expert", "pro", etc.) and bypass billing.
-// That field is now managed exclusively by the admin-only `setUserTier`
-// mutation below. This closes the billing-bypass vulnerability flagged in
-// the Wave 2 security audit.
+// NOTE: Subscription tiers were removed in Phase 1. There is no longer a
+// `subscriptionTier` field on users — all users have a single flat plan.
+// Feature gating is now role-based only (user.role).
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     image: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
-    // subscriptionTier intentionally omitted — see comment above.
     // Add: extended profile fields
     professionalBio: v.optional(v.string()),
     protectedHours: v.optional(v.number()),
@@ -83,88 +80,28 @@ export const updateProfile = mutation({
   },
 });
 
-// ─── ADMIN: GRANT TIERS ─────────────────────────────────────────────────────
+// ─── ADMIN: ROLES ──────────────────────────────────────────────────────────
 //
-// Use these mutations to grant subscription tiers to yourself or other users.
-// Admin auth required — callers must have `users.role === "admin"`.
+// Subscription tiers were removed in Phase 1 (single flat plan for all users).
+// To grant a role (admin/user/owner/member) to a user, use `setUserRole` below.
 //
-// Example (grant yourself "expert" tier):
-//   npx convex run users:setUserTier '{ "targetUserId": "<your user id>", "tier": "expert" }'
-//
-// Example (grant by email — convenient when you only know the email):
-//   npx convex run users:grantTierByEmail '{ "email": "priya@example.com", "tier": "pro" }'
+// Example (promote a user to admin by email):
+//   npx convex run users:setUserRole '{ "targetUserId": "<user id>", "role": "admin" }'
 
 async function requireAdmin(ctx: QueryCtx) {
   const user = await getCurrentUser(ctx);
   if (!user) throw new Error("Not authenticated");
-  if (user.role !== "admin") throw new Error("Admin access required");
+  if (user.role !== "admin" && user.role !== "owner") throw new Error("Admin access required");
   return user;
 }
 
 /**
- * Admin-only: set a user's subscription tier by user ID.
- */
-export const setUserTier = mutation({
-  args: {
-    targetUserId: v.id("users"),
-    tier: v.union(
-      v.literal("free"),
-      v.literal("starter"),
-      v.literal("pro"),
-      v.literal("expert"),
-      v.literal("client"),
-    ),
-  },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const target = await ctx.db.get(args.targetUserId);
-    if (!target) throw new Error("Target user not found");
-    await ctx.db.patch(args.targetUserId, {
-      subscriptionTier: args.tier,
-      tierUpgradedAt: Date.now(),
-    });
-    return { success: true, userId: args.targetUserId, tier: args.tier };
-  },
-});
-
-/**
- * Admin-only: set a user's subscription tier by email.
- * Convenience wrapper — looks up the user by email, then calls setUserTier logic.
- */
-export const grantTierByEmail = mutation({
-  args: {
-    email: v.string(),
-    tier: v.union(
-      v.literal("free"),
-      v.literal("starter"),
-      v.literal("pro"),
-      v.literal("expert"),
-      v.literal("client"),
-    ),
-  },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const target = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
-    if (!target) throw new Error(`No user found with email ${args.email}`);
-    await ctx.db.patch(target._id, {
-      subscriptionTier: args.tier,
-      tierUpgradedAt: Date.now(),
-    });
-    return { success: true, userId: target._id, email: args.email, tier: args.tier };
-  },
-});
-
-/**
- * Admin-only: promote a user to admin role (or demote).
- * Useful for granting the owner/admin role to a co-founder or trusted dev.
+ * Admin-only: promote a user to admin role (or demote to user/member).
  */
 export const setUserRole = mutation({
   args: {
     targetUserId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("user")),
+    role: v.union(v.literal("admin"), v.literal("user"), v.literal("owner"), v.literal("member")),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);

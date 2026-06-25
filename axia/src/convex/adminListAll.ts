@@ -34,7 +34,7 @@ export const listAllUsers = query({
       email: u.email,
       name: u.name,
       role: u.role,
-      tier: u.subscriptionTier,
+      tier: "expert",
       onboardingComplete: u.onboardingComplete,
       isAnonymous: u.isAnonymous,
     }));

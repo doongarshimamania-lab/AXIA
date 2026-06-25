@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useWorkspaceContext } from "@/hooks/use-workspace";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -45,7 +44,6 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { PricingModal } from "@/components/PricingModal";
 import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Format helpers ─────────────────────────────────────────────────────
@@ -211,12 +209,11 @@ const itemVariants = {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const { isLoading: authLoading } = useAuth();
-  const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const navigate = useNavigate();
   const { isDisconnected } = useConvexConnectionState();
 
-  const [showPricingModal, setShowPricingModal] = useState(false);
+  // Pricing modal removed in Phase 1 (tier flattening)
 
   // ─── Convex queries ─────────────────────────────────────────────────────
   const wsId = isConvexConnected ? (activeWorkspaceId as any) : undefined;
@@ -304,11 +301,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleUpgrade = (tier: string) => {
-    toast.success(`Upgrading to ${tier}...`, { description: "You'll be redirected to Stripe checkout" });
-    setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
-    setShowPricingModal(false);
-  };
+  // Upgrade handler removed in Phase 1 (tier flattening)
 
   // ─── Auth loading gate ──────────────────────────────────────────────────
   if (authLoading) {
@@ -774,17 +767,6 @@ export default function Dashboard() {
         )}
       </PageLayout>
 
-      {/* Pricing Modal */}
-      <PricingModal
-        isOpen={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-        onUpgrade={handleUpgrade}
-        currentTier={subscriptionTier}
-        currentLoss={0}
-        potentialSavings={0}
-        highlightSavings={undefined}
-        vulnerabilityScore={0}
-      />
     </motion.div>
   );
 }

@@ -31,7 +31,7 @@ export const adminSeed = mutation({
     const userUpdates: Record<string, any> = {};
     if (!devUser.name) userUpdates.name = "Dev User";
     if (!devUser.role) userUpdates.role = "admin";
-    if (!devUser.subscriptionTier) userUpdates.subscriptionTier = "pro";
+    if (!"expert") "expert" = "pro";
     if (!devUser.hourlyRate) userUpdates.hourlyRate = 85;
     if (!devUser.onboardingComplete) {
       userUpdates.onboardingComplete = true;

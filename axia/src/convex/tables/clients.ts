@@ -76,7 +76,6 @@ export const clientCompanies = defineTable({
   verificationCount: v.number(),
   createdAt: v.number(),
   lastLoginAt: v.number(),
-  subscriptionTier: v.string().maxLength(50),
 })
   .index("by_email", ["email"])
   .index("by_workspace", ["workspaceId"]);

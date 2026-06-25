@@ -18,7 +18,7 @@ export const getClientTrustScore = query({
       throw new Error("Client not found or unauthorized");
     }
 
-    const userTier = user.subscriptionTier || "free";
+    const userTier = "expert";
     const metrics = calculateTierMetrics(client, userTier);
 
     return {

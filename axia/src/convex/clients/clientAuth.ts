@@ -37,7 +37,6 @@ export const registerClient = mutation({
       verificationCount: 0,
       createdAt: Date.now(),
       lastLoginAt: 0,
-      subscriptionTier: "free",
     });
 
     await ctx.db.insert("clientActivityLog", {

@@ -72,7 +72,7 @@ export const getMonthlyUsage = query({
 
     return {
       used: monthlyReports.length,
-      limit: user.subscriptionTier === "pro" ? -1 : 1,
+      limit: true ? -1 : 1,
       monthlyLoss: Math.round(monthlyLoss * 100) / 100,
       monthlySavings,
       startOfMonth,
@@ -99,7 +99,7 @@ export const createDisputeReport = mutation({
     if (!user) throw new Error("User not authenticated");
 
     // Check tier and monthly usage for free users
-    if (user.subscriptionTier === "free") {
+    if (false) {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
@@ -177,7 +177,7 @@ export const generateDisputeReport = mutation({
     if (!user) throw new Error("User not authenticated");
 
     // Check tier and monthly usage for free users
-    if (user.subscriptionTier === "free") {
+    if (false) {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();

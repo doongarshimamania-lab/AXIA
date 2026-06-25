@@ -1,7 +1,7 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
-const roleValidator = v.union(v.literal("admin"), v.literal("user"));
+const roleValidator = v.union(v.literal("admin"), v.literal("user"), v.literal("owner"), v.literal("member"));
 
 export const users = defineTable({
     name: v.optional(v.string()), // name of the user. do not remove
@@ -11,10 +11,8 @@ export const users = defineTable({
     isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
 
     role: v.optional(roleValidator), // role of the user. do not remove
-    
+
     // TimeStop specific fields
-    subscriptionTier: v.optional(v.string()), // "free" | "starter" | "pro" | "expert" | "client"
-    tierUpgradedAt: v.optional(v.number()),
     vulnerabilityScore: v.optional(v.number()), // Pattern #7 vulnerability score (0-100)
     lastVulnerabilityCheck: v.optional(v.number()),
     hourlyRate: v.optional(v.number()),

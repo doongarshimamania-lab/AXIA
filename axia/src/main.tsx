@@ -32,7 +32,6 @@ import PaymentPatterns from "./pages/PaymentPatterns.tsx";
 import Reports from "./pages/Reports.tsx";
 import PlatformIntegrations from "./pages/PlatformIntegrations.tsx";
 import EvidenceExport from "./pages/EvidenceExport.tsx";
-import Subscription from "./pages/Subscription.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 import Pipeline from "./pages/Pipeline.tsx";
 import Proposals from "./pages/Proposals.tsx";
