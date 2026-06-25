@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Plus, AlertTriangle, Lock } from "lucide-react";
+import { Briefcase, Plus, AlertTriangle, Lock, Tag as TagIcon } from "lucide-react";
+// ponytail: read-only badge display + multi-select picker popover for project cards.
+import { TagPicker, TagBadges } from "@/components/tags";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Project {
   _id: string;
@@ -15,6 +19,8 @@ interface Project {
   atRiskAmount: number;
   activeSession: boolean;
   rejectedHours: number;
+  // ponytail: optional tagIds on the project (added by phase-1a schema patch).
+  tagIds?: string[];
 }
 
 interface ProjectListProps {
@@ -24,6 +30,8 @@ interface ProjectListProps {
   onAddProject: () => void;
   subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onUpgrade?: () => void;
+  // ponytail: workspace tag list for rendering TagBadges + the Manage Tags popover.
+  allTags?: any[];
 }
 
 export function ProjectList({ 
@@ -32,8 +40,11 @@ export function ProjectList({
   onSelectProject, 
   onAddProject,
   subscriptionTier = "free",
-  onUpgrade
+  onUpgrade,
+  allTags = []
 }: ProjectListProps) {
+  // ponytail: track which project's "Manage tags" popover is currently open.
+  const [manageTagsFor, setManageTagsFor] = useState<string | null>(null);
   const getProtectionColor = (level: string) => {
     switch (level) {
       case "standard": return "text-blue-500 bg-blue-500/10";
@@ -84,11 +95,49 @@ export function ProjectList({
                       <div className="text-sm text-muted-foreground">
                         ${project.hourlyRate}/hr · {project.projectType}
                       </div>
+                      {/* ponytail: read-only tag badges on each project card. */}
+                      <div className="mt-1">
+                        <TagBadges
+                          tagIds={project.tagIds}
+                          tags={allTags}
+                          max={3}
+                          size="xs"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <Badge className={getProtectionColor(project.protectionLevel)}>
-                    {project.protectionLevel} protection
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {/* ponytail: Manage-tags popover — TagPicker with entityId persists
+                        immediately via setEntityTags, so no extra save logic needed. */}
+                    <Popover open={manageTagsFor === project._id} onOpenChange={(o) => setManageTagsFor(o ? project._id : null)}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => { e.stopPropagation(); setManageTagsFor(project._id); }}
+                          title="Manage tags"
+                        >
+                          <TagIcon className="h-3.5 w-3.5 mr-1" />
+                          Tags
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[320px]" align="end" onClick={(e) => e.stopPropagation()}>
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground">Tags for {project.projectName}</div>
+                          <TagPicker
+                            entityType="projects"
+                            entityId={project._id}
+                            initialTagIds={project.tagIds ?? []}
+                            categoryHint="project"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Badge className={getProtectionColor(project.protectionLevel)}>
+                      {project.protectionLevel} protection
+                    </Badge>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 gap-4 mt-3">
                   <div>

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Share2, ArrowRightLeft } from "lucide-react";
+import { Loader2, Plus, Share2, ArrowRightLeft, Tag as TagIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
@@ -14,6 +14,9 @@ import { useNavigate, useSearchParams } from "react-router";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { ShareDialog } from "@/components/ShareDialog";
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
+// ponytail: import reusable tag components for picker, badges, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Feature Components
 import { ProjectList } from "@/components/project-protection/ProjectList";
@@ -82,6 +85,19 @@ export default function Projects() {
     isConvexConnected && workspaceId ? api.clients.crud.getClients : "skip",
     isConvexConnected && workspaceId ? { workspaceId } : "skip"
   );
+  // ponytail: load the workspace's tags so we can render TagBadges on each project card
+  // and a tag-filter chip bar above the grid.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
+  // ponytail: detached TagPicker state for the New Project dialog — held locally
+  // until addProjectMutation returns the new project ID, then persisted via setEntityTags.
+  const [newProjectTagIds, setNewProjectTagIds] = useState<string[]>([]);
+  // ponytail: tag-filter state — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+
+  // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
+  // project (the create mutation doesn't accept tagIds directly).
+  const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
 
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
@@ -104,11 +120,19 @@ export default function Projects() {
     : null;
   const perms = usePermissions(selectedProject as any);
 
+  // ponytail: tag-filtered projects — when a filter chip is active, narrow the list
+  // to projects whose tagIds include the selected tag. Falls back to the full list
+  // when no filter is set.
+  const filteredProjects = useMemo(() => {
+    if (!activeTagFilter) return safeProjects;
+    return safeProjects.filter((p: any) => Array.isArray(p.tagIds) && p.tagIds.includes(activeTagFilter));
+  }, [safeProjects, activeTagFilter]);
+
   useEffect(() => {
-    if (!selectedProjectId && safeProjects.length > 0) {
-      setSelectedProjectId(safeProjects[0]._id);
+    if (!selectedProjectId && filteredProjects.length > 0) {
+      setSelectedProjectId(filteredProjects[0]._id);
     }
-  }, [safeProjects, selectedProjectId]);
+  }, [filteredProjects, selectedProjectId]);
 
   useEffect(() => {
     if (isSeeding) {
@@ -158,7 +182,7 @@ export default function Projects() {
       return;
     }
     try {
-      await addProjectMutation({
+      const newProjectId = await addProjectMutation({
         projectName: newProject.projectName.trim(),
         clientId: newProject.clientId as any,
         hourlyRate: Number(newProject.hourlyRate) || 50,
@@ -166,9 +190,23 @@ export default function Projects() {
         protectionLevel: newProject.protectionLevel,
         workspaceId,
       } as any);
+      // ponytail: attach the form's selected tags to the new project via the
+      // generic setEntityTags mutation (addProject doesn't accept tagIds).
+      if (newProjectId && newProjectTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "projects",
+            entityId: newProjectId,
+            tagIds: newProjectTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[Projects] failed to attach tags to new project:", tagErr?.message);
+        }
+      }
       toast.success("Project created!");
       setShowNewProjectDialog(false);
       setNewProject({ projectName: "", clientId: "", hourlyRate: "50", projectType: "ongoing", protectionLevel: "enhanced" });
+      setNewProjectTagIds([]);
     } catch (err: any) {
       toast.error("Failed to create project", { description: err?.message });
     }
@@ -239,9 +277,49 @@ export default function Projects() {
               </div>
             ) : (
               <>
+                {/* ponytail: tag-filter chip bar above the grid — toggle pattern. */}
+                {allTags.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-muted-foreground mr-1 inline-flex items-center gap-1">
+                      <TagIcon className="h-3 w-3" /> Filter:
+                    </span>
+                    {allTags.map((t: any) => {
+                      const isActive = activeTagFilter === t._id;
+                      return (
+                        <button
+                          key={t._id}
+                          type="button"
+                          onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                            isActive
+                              ? "bg-foreground text-background border-foreground"
+                              : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                          }`}
+                          style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                        >
+                          <span
+                            className="inline-block w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: t.color ?? "#888" }}
+                          />
+                          {t.name}
+                          {isActive && <X className="h-3 w-3 ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                    {activeTagFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTagFilter(null)}
+                        className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                      >
+                        Clear filter
+                      </button>
+                    )}
+                  </div>
+                )}
                 {/* Project List / Selection */}
                 <ProjectList 
-                projects={safeProjects.map((p: any) => ({
+                projects={filteredProjects.map((p: any) => ({
                   ...p,
                   _id: p._id,
                   protectionLevel: p.protectionLevel || "standard",
@@ -258,6 +336,9 @@ export default function Projects() {
                 onAddProject={handleCreateTestProjects}
                 subscriptionTier={tier}
                 onUpgrade={() => navigate("/subscription")}
+                // ponytail: pass tags + tag-bearing fields so the list can render
+                // badges and a "Manage tags" popover on each card.
+                allTags={allTags}
               />
               </>
             )}
@@ -382,6 +463,18 @@ export default function Projects() {
                   <option value="enhanced">Enhanced</option>
                   <option value="maximum">Maximum</option>
                 </select>
+              </div>
+              {/* ponytail: detached TagPicker — IDs are held in `newProjectTagIds` and
+                  attached after the project is created via setEntityTags. */}
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Tags (optional)</label>
+                <TagPicker
+                  entityType="projects"
+                  initialTagIds={newProjectTagIds}
+                  onChange={setNewProjectTagIds}
+                  categoryHint="project"
+                  placeholder="Add tags for this project..."
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
