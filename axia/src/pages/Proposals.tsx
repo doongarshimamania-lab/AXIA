@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   FileText,
   Plus,
@@ -46,12 +47,16 @@ import {
   Briefcase,
   ShieldCheck,
   Share2,
+  Tag as TagIcon,
+  X,
 } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageLayout } from "@/components/design-system/PageLayout";
 import { ManualSendDialog } from "@/components/manual-send/ManualSendDialog";
 import { DownloadPDFButton } from "@/components/pdf/DownloadPDFButton";
+// ponytail: import reusable tag components for badges, picker popover, and filter bar.
+import { TagPicker, TagBadges } from "@/components/tags";
 
 
 type ProposalStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
@@ -154,6 +159,8 @@ export default function Proposals() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareProposalId, setShareProposalId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
+  // ponytail: tag-filter state for the proposals grid — null = no filter, string = tagId.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   // ── Phase 1: Manual send dialog state ──
   // When the user clicks "Mark as sent" or "Log another send", we open the
@@ -167,6 +174,10 @@ export default function Proposals() {
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
   const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
+  // ponytail: load the workspace's tags so we can render TagBadges on each proposal card
+  // and a tag-filter chip bar above the grid.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // Convex queries
   const convexProposals = useQuery(api.proposals.crud.getProposals, workspaceId ? (activeFilter === "all" ? { workspaceId } : { workspaceId, status: activeFilter }) : "skip") as Proposal[] | undefined;
@@ -220,14 +231,26 @@ export default function Proposals() {
   const filteredProposals = useMemo(() => {
     if (!proposals) return [];
     return proposals.filter((p) => {
-      if (searchQuery === "") return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        p.title.toLowerCase().includes(q) ||
-        (p.clientName && p.clientName.toLowerCase().includes(q))
-      );
+      if (searchQuery !== "") {
+        const q = searchQuery.toLowerCase();
+        if (!(
+          p.title.toLowerCase().includes(q) ||
+          (p.clientName && p.clientName.toLowerCase().includes(q))
+        )) {
+          return false;
+        }
+      }
+      // ponytail: also apply the tag filter (if any) — proposals whose tagIds
+      // don't include the selected tag are hidden.
+      if (activeTagFilter) {
+        const ids = (p as any).tagIds as string[] | undefined;
+        if (!Array.isArray(ids) || !ids.includes(activeTagFilter)) {
+          return false;
+        }
+      }
+      return true;
     });
-  }, [proposals, searchQuery]);
+  }, [proposals, searchQuery, activeTagFilter]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -464,7 +487,7 @@ export default function Proposals() {
         </div>
 
         {/* Action Bar: Search */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -474,6 +497,47 @@ export default function Proposals() {
               className="pl-9"
             />
           </div>
+          {/* ponytail: tag-filter chip bar — toggle pattern, only renders when there
+              are tags to filter by. */}
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                <TagIcon className="h-3 w-3" /> Filter:
+              </span>
+              {allTags.map((t: any) => {
+                const isActive = activeTagFilter === t._id;
+                return (
+                  <button
+                    key={t._id}
+                    type="button"
+                    onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                      isActive
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                    }`}
+                    style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                  >
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: t.color ?? "#888" }}
+                    />
+                    {t.name}
+                    {isActive && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+              {activeTagFilter && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTagFilter(null)}
+                  className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filter Tabs */}
@@ -583,6 +647,9 @@ export default function Proposals() {
                   canDelete={canDeleteRecords}
                   canShare={canShareRecords}
                   onConvertToProject={handleConvertToProject}
+                  // ponytail: pass tags + tag-bearing fields so the card can render
+                  // badges and a Manage Tags popover.
+                  allTags={allTags}
                 />
               ))
             )}
@@ -689,6 +756,7 @@ function ProposalCard({
   onConvertToProject,
   canDelete,
   canShare,
+  allTags = [],
 }: {
   proposal: Proposal;
   idx: number;
@@ -704,10 +772,14 @@ function ProposalCard({
   onConvertToProject?: (proposal: Proposal) => void;
   canDelete?: boolean;
   canShare?: boolean;
+  // ponytail: workspace tag list for rendering TagBadges + the Manage Tags popover.
+  allTags?: any[];
 }) {
   const navigate = useNavigate();
   const config = statusConfig[proposal.status];
   const StatusIcon = config.icon;
+  // ponytail: track whether this card's Manage Tags popover is open.
+  const [manageTagsOpen, setManageTagsOpen] = useState(false);
 
   // Fetch follow-ups for this proposal — skip when using mock data
   // because mock IDs (e.g. "prop_1") are not valid Convex Id<"proposals"> values
@@ -741,16 +813,43 @@ function ProposalCard({
               <StatusIcon className="h-3 w-3 mr-1" />
               {config.label}
             </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+            <div className="flex items-center gap-1">
+              {/* ponytail: Manage-tags popover — TagPicker with entityId persists
+                  immediately via setEntityTags, so no extra save logic needed. */}
+              <Popover open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); setManageTagsOpen(true); }}
+                    title="Manage tags"
+                  >
+                    <TagIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px]" align="end" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">Tags for {proposal.title}</div>
+                    <TagPicker
+                      entityType="proposals"
+                      entityId={proposal._id}
+                      initialTagIds={(proposal as any).tagIds ?? []}
+                      categoryHint="general"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 {proposal.status === "draft" && (
                   <DropdownMenuItem
@@ -792,6 +891,7 @@ function ProposalCard({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
 
           {/* Title */}
@@ -810,6 +910,16 @@ function ProposalCard({
               {proposal.clientName}
             </p>
           )}
+
+          {/* ponytail: read-only tag badges on each proposal card. */}
+          <div className="mb-3">
+            <TagBadges
+              tagIds={(proposal as any).tagIds}
+              tags={allTags}
+              max={3}
+              size="xs"
+            />
+          </div>
 
           {/* Value */}
           <div className="flex items-baseline gap-1.5 mb-3">
