@@ -1,0 +1,302 @@
+     1→     1→# Axia Worklog
+     2→     2→
+     3→     3→This file tracks tasks performed by AI sub-agents on the Axia codebase.
+     4→     4→Each entry is separated by `---` and follows the protocol:
+     5→     5→`Task ID | Agent | Task | Work Log | Stage Summary`.
+     6→     6→
+     7→     7→---
+     8→     8→
+     9→     9→## Task ID: P1-RECON
+    10→    10→## Agent: Explore-tier-map
+    11→    11→## Task: Map ALL tier-related code in `/home/z/my-project/axia/` to prepare for removing ALL tier UI and flattening the schema to a single tier ("expert").
+    12→    12→
+    13→    13→### Work Log
+    14→    14→
+    15→    15→A recon-only pass (no files modified). Searched case-insensitively for: `tier`, `subscription`, `PricingModal`, `ReportLimitModal`, `use-subscription-tier`, `useSubscriptionTier`, `upgrade`, `free`/`starter`/`pro`/`expert`/`client` (as tier names), `isFreeTier`/`isProTier`/`isExpertTier`/`tierLimit`, `maxProjects`/`maxClients`/`maxReports`/`maxInvoices`, `plan` (billing context), `subscriptionTier`, `subscriptionPlan`, `billingPlan`, `getTierLevel`, `hasTierAccess`, `normalizeTier`, `api.tiers.*`, plus glob passes for `*tier*`, `*subscription*`, `*pricing*`, `*upgrade*`, `*plan*`.
+    16→    16→
+    17→    17→Key findings up front:
+    18→    18→
+    19→    19→- The app supports 5 tier string literals: `"free"`, `"starter"`, `"pro"`, `"expert"`, `"client"`. They appear as both a user `subscriptionTier` field (on `users`, `clientCompanies`) and as input args (`userTier`, `tierOverride`, `targetTier`, `tierShown`, `fromTier`, `toTier`).
+    20→    20→- The Convex `tiers/` directory (`tierDetection.ts`, `upgradeTracking.ts`) exports 5 functions that are NEVER imported by any frontend code (no `api.tiers.*` references found anywhere in `src/`). They appear to be admin/CLI-only or fully dead code.
+    21→    21→- The `use-subscription-tier.ts` hook is consumed by 11 pages/components.
+    22→    22→- The frontend has 4 "tier-switching" parent components that pick a tier-specific child variant: `ProjectRiskTimeline.tsx`, `MilestoneProtection.tsx`, `ProjectProtectionScore.tsx`, `ProjectHealthDashboardNew.tsx` (re-exported as `ProjectHealthDashboard`).
+    23→    23→- The `/subscription` route in `main.tsx` is a legacy redirect to `/account-settings`; the `Subscription.tsx` page itself is no longer routed but still ships in the bundle.
+    24→    24→- `ProtectedRoute.tsx` calls `setUser({ tier: user.subscriptionTier })` for analytics — minor.
+    25→    25→- `security/rateLimit.ts` `requireAdmin()` treats `subscriptionTier === "expert"` as equivalent to `role === "admin"` — this gate must be reworked when tiers collapse.
+    26→    26→- `users.ts` schema has `subscriptionTier` (string) and `tierUpgradedAt` (number) fields.
+    27→    27→- `clientCompanies` table (defined in BOTH `tables/projects.ts` and `tables/clients.ts` — duplicates) has a `subscriptionTier` field — but this represents the CLIENT COMPANY's tier (separate concept from user subscription tier). Decision required: keep or flatten.
+    28→    28→- `tables/features.ts` defines two entire tier-tracking tables — `upgradeTriggers` (with `tierShown` field) and `upgradeConversions` (with `fromTier`, `toTier` fields and `by_tier` index) — plus a `waitlistEntries` table whose `source` field uses literal `"pricing"`.
+    29→    29→- No `maxProjects` / `maxClients` / `maxReports` / `maxInvoices` field names exist. No `isFreeTier` / `isProTier` / `isExpertTier` / `tierLimit` symbols exist. Limits are enforced inline (e.g., `disputeReports.ts` line 75: `limit: user.subscriptionTier === "pro" ? -1 : 1`).
+    30→    30→- No `plan` schema field exists; the only `plan`-as-billing references are in `PricingCard.tsx` (landing), `FeatureComparison.tsx`, `Subscription.tsx`, `AccountSettings.tsx`, and `PremiumValueSection.tsx` (a "Manage Subscription" button label).
+    31→    31→- `protection/protectionValueSimple.ts:68` returns `platformBreakdown.client` (literal `"client"` here is a platform name, NOT a tier — false positive).
+    32→    32→- `data/mockProjectData.ts` is heavily tier-laced: every mock project has `tier: "free"` and `upgrade: { targetTier: "starter", ... }`.
+    33→    33→
+    34→    34→---
+    35→    35→
+    36→    36→## 1. Files to DELETE entirely (with reason)
+    37→    37→
+    38→    38→These files exist solely to support tier differentiation / pricing / upgrade UX. After flattening to a single "expert" tier, they have no remaining purpose.
+    39→    39→
+    40→    40→### Tier-system core (hook + Convex functions)
+    41→    41→
+    42→    42→| # | Absolute path | Reason |
+    43→    43→|---|---|---|
+    44→    44→| 1 | `/home/z/my-project/axia/src/hooks/use-subscription-tier.ts` | The hook itself (`useSubscriptionTier`). Returns the user's tier, syncs to localStorage. Whole file's purpose is tier state. DELETE. |
+    45→    45→| 2 | `/home/z/my-project/axia/src/convex/tiers/tierDetection.ts` | Exports `detectUserTier`, `getTierFeatures`, `calculateUpgradeValue`. Never imported by frontend (`api.tiers.*` has zero callers). DELETE. |
+    46→    46→| 3 | `/home/z/my-project/axia/src/convex/tiers/upgradeTracking.ts` | Exports `trackUpgradeTrigger`, `trackUpgradeConversion`. Never imported by frontend. DELETE. |
+    47→    47→| 4 | `/home/z/my-project/axia/src/convex/tiers/` (directory) | After deleting the two files above, the entire `tiers/` directory is empty and can be removed. |
+    48→    48→
+    49→    49→### Pricing / Upgrade modals
+    50→    50→
+    51→    51→| # | Absolute path | Reason |
+    52→    52→|---|---|---|
+    53→    53→| 5 | `/home/z/my-project/axia/src/components/PricingModal.tsx` | 5-tier pricing modal (Free/Starter/Pro/Expert/Client). Pure pricing UI. DELETE. |
+    54→    54→| 6 | `/home/z/my-project/axia/src/components/ReportLimitModal.tsx` | "Report limit reached — upgrade to premium" modal. DELETE. |
+    55→    55→| 7 | `/home/z/my-project/axia/src/components/project-protection/adaptive-evidence/UpgradePrompt.tsx` | Upgrade CTA card shown in adaptive-evidence timeline. DELETE. |
+    56→    56→| 8 | `/home/z/my-project/axia/src/components/project-protection/health/UpgradePrompt.tsx` | Upgrade CTA card shown in project-health dashboard. DELETE. |
+    57→    57→| 9 | `/home/z/my-project/axia/src/components/project-protection/adaptive-evidence/TierHeader.tsx` | Renders a `{tier} Tier` badge. DELETE. |
+    58→    58→
+    59→    59→### Subscription page (legacy, redirected)
+    60→    60→
+    61→    61→| # | Absolute path | Reason |
+    62→    62→|---|---|---|
+    63→    63→| 10 | `/home/z/my-project/axia/src/pages/Subscription.tsx` | 1273-line page defining `TIERS`, `FEATURES`, `FAQ_DATA`, pricing cards, plan-change dialog. The `/subscription` route in `main.tsx:296` is a legacy redirect to `/account-settings` — the page component is never rendered. DELETE the page; also remove the `import Subscription from "./pages/Subscription.tsx";` and the `<Route path="/subscription" element={<AccountSettings />} />` legacy redirect in `main.tsx`. |
+    64→    64→
+    65→    65→### Landing-page pricing components
+    66→    66→
+    67→    67→| # | Absolute path | Reason |
+    68→    68→|---|---|---|
+    69→    69→| 11 | `/home/z/my-project/axia/src/components/landing/PricingCard.tsx` | Presentational pricing-tier card used on the landing page. DELETE. |
+    70→    70→| 12 | `/home/z/my-project/axia/src/components/landing/FeatureComparison.tsx` | Full feature-comparison matrix across Free/Starter/Pro/Expert. DELETE. |
+    71→    71→
+    72→    72→### Tier-specific component variants (only the non-Expert variants)
+    73→    73→
+    74→    74→These are rendered via `switch(tier)` in parent components. After flattening, only the `Expert` variant is needed; the others become unreachable.
+    75→    75→
+    76→    76→| # | Absolute path | Reason |
+    77→    77→|---|---|---|
+    78→    78→| 13 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardFree.tsx` | Tier-specific dashboard for `free`. DELETE. |
+    79→    79→| 14 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardStarter.tsx` | Tier-specific dashboard for `starter`. DELETE. |
+    80→    80→| 15 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardPro.tsx` | Tier-specific dashboard for `pro`. DELETE. |
+    81→    81→| 16 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardFreeNew.tsx` | Alternate "New" variant for `free`. DELETE. |
+    82→    82→| 17 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardStarterNew.tsx` | Alternate "New" variant for `starter`. DELETE. |
+    83→    83→| 18 | `/home/z/my-project/axia/src/components/project-protection/health/DashboardProNew.tsx` | Alternate "New" variant for `pro`. DELETE. |
+    84→    84→| 19 | `/home/z/my-project/axia/src/components/project-protection/ProjectRiskTimelineFree.tsx` | Tier-specific risk timeline for `free`. DELETE. |
+    85→    85→| 20 | `/home/z/my-project/axia/src/components/project-protection/ProjectRiskTimelineStarter.tsx` | Tier-specific risk timeline for `starter`. DELETE. |
+    86→    86→| 21 | `/home/z/my-project/axia/src/components/project-protection/ProjectRiskTimelinePro.tsx` | Tier-specific risk timeline for `pro` (imports Starter and Free as fallbacks). DELETE. |
+    87→    87→| 22 | `/home/z/my-project/axia/src/components/project-protection/MilestoneProtectionFree.tsx` | Tier-specific milestone view for `free`. DELETE. |
+    88→    88→| 23 | `/home/z/my-project/axia/src/components/project-protection/MilestoneProtectionStarter.tsx` | Tier-specific milestone view for `starter`. DELETE. |
+    89→    89→| 24 | `/home/z/my-project/axia/src/components/project-protection/MilestoneProtectionPro.tsx` | Tier-specific milestone view for `pro`. DELETE. |
+    90→    90→| 25 | `/home/z/my-project/axia/src/components/project-protection/MilestoneProtectionTest.tsx` | Test scaffold for milestone protection (tier-aware). DELETE. |
+    91→    91→| 26 | `/home/z/my-project/axia/src/components/project-protection/score/ProtectionScoreCardFree.tsx` | Tier-specific protection-score card for `free`. DELETE. |
+    92→    92→| 27 | `/home/z/my-project/axia/src/components/project-protection/score/ProtectionScoreCardStarter.tsx` | Tier-specific protection-score card for `starter`. DELETE. |
+    93→    93→| 28 | `/home/z/my-project/axia/src/components/project-protection/score/ProtectionScoreCardPro.tsx` | Tier-specific protection-score card for `pro`. DELETE. |
+    94→    94→| 29 | `/home/z/my-project/axia/src/components/project-protection/score/ProtectionScoreCard.tsx` | Generic `ProtectionScoreCard` (not tier-suffixed). Grep shows it is exported but never imported anywhere — already dead code. DELETE. |
+    95→    95→| 30 | `/home/z/my-project/axia/src/components/project-protection/ProjectRiskTimelineStarter.tsx` | (duplicate of #20 — listed once) |
+    96→    96→
+    97→    97→**Note on the surviving "Expert" variants**: `DashboardExpert.tsx`, `DashboardExpertNew.tsx`, `ProjectRiskTimelineExpert.tsx`, `MilestoneProtectionExpert.tsx`, `ProtectionScoreCardExpert.tsx` should be KEPT. After deletion of the others, their parent switch-components (see Section 2) must be simplified to render the Expert variant unconditionally.
+    98→    98→
+    99→    99→### Mock data
+   100→   100→
+   101→   101→| # | Absolute path | Reason |
+   102→   102→|---|---|---|
+   103→   103→| 31 | `/home/z/my-project/axia/src/data/mockProjectData.ts` | Every mock project sets `tier: "free"` and `upgrade: { targetTier: "starter", ... }`. DELETE (or rewrite without tier fields). |
+   104→   104→
+   105→   105→---
+   106→   106→
+   107→   107→## 2. Files to EDIT (with what to remove)
+   108→   108→
+   109→   109→These files have legitimate purpose beyond tiers but contain tier checks / tier UI / subscription gating that must be stripped.
+   110→   110→
+   111→   111→### A. Schema files (see also Section 4 — Schema fields to remove)
+   112→   112→
+   113→   113→| # | Absolute path | What to remove |
+   114→   114→|---|---|---|
+   115→   115→| 1 | `/home/z/my-project/axia/src/convex/tables/users.ts` | Remove `subscriptionTier` field (line 16) and `tierUpgradedAt` field (line 17). |
+   116→   116→| 2 | `/home/z/my-project/axia/src/convex/tables/features.ts` | Remove the entire `upgradeTriggers` table (lines ~247–260), the entire `upgradeConversions` table (lines ~262–273) including its `by_tier` index, and the literal `"pricing"` value from the `waitlistEntries.source` comment (line ~279) if desired. Note: `waitlistEntries` table itself is not tier-specific, only the source comment references pricing. |
+   117→   117→| 3 | `/home/z/my-project/axia/src/convex/tables/projects.ts` | Remove `subscriptionTier` field from `clientCompanies` table (line 167). DECISION REQUIRED: this is the CLIENT COMPANY's tier, not the user's tier — confirm with the user before removing. |
+   118→   118→| 4 | `/home/z/my-project/axia/src/convex/tables/clients.ts` | Remove `subscriptionTier` field from `clientCompanies` table (line 79). Same caveat as #3 — this is the client company's tier. |
+   119→   119→| 5 | `/home/z/my-project/axia/src/convex/tables/clients.ts.disabled` | Disabled-file duplicate of #4 — remove `subscriptionTier` (line ~74) for consistency. |
+   120→   120→
+   121→   121→### B. Convex function files (see also Section 3 — Convex functions affected)
+   122→   122→
+   123→   123→| # | Absolute path | What to remove |
+   124→   124→|---|---|---|
+   125→   125→| 6 | `/home/z/my-project/axia/src/convex/users.ts` | Remove `setUserTier` mutation (lines ~107–128) and `grantTierByEmail` mutation (lines ~134–158). Also remove the `tier: v.union(...)` args validator on both. Keep `setUserRole` (separate concept). Update the doc comment on `updateProfile` (lines 47–58) to remove the explanation about why `subscriptionTier` was omitted — it's now simply gone. |
+   126→   126→| 7 | `/home/z/my-project/axia/src/convex/disputeReports.ts` | Remove tier-gating in `getMonthlyUsage` (line 75: `limit: user.subscriptionTier === "pro" ? -1 : 1` → unlimited), and the `if (user.subscriptionTier === "free")` blocks in `createDisputeReport` (line 102) and `generateDisputeReport` (line 180) — drop the limit check entirely. |
+   127→   127→| 8 | `/home/z/my-project/axia/src/convex/evidence.ts` | Remove `if (user.subscriptionTier === "free")` gates at lines 280 and 442. |
+   128→   128→| 9 | `/home/z/my-project/axia/src/convex/network/premiumNetwork.ts` | Remove `subscriptionTier !== "pro"` guards at lines 14, 90, 94, 155, 171. The Premium Network feature either becomes available to all (now-expert) users, or is gated differently. |
+   129→   129→| 10 | `/home/z/my-project/axia/src/convex/premium/protectionPlans.ts` | Remove `subscriptionTier !== "pro"` guards at lines 14, 43. |
+   130→   130→| 11 | `/home/z/my-project/axia/src/convex/premium/protectionAdvisor.ts` | Remove `subscriptionTier !== "pro"` guard at line 14. |
+   131→   131→| 12 | `/home/z/my-project/axia/src/convex/premium/crossPlatformVerification.ts` | Remove `subscriptionTier !== "pro"` guards at lines 15, 91. |
+   132→   132→| 13 | `/home/z/my-project/axia/src/convex/premium/teamValidation.ts` | Remove all `if (user.subscriptionTier === "free"|"starter"|"pro"|"expert")` branches in `getTeamValidation`, `submitValidation`, etc. (lines 21, 26, 134, 144, 154, 167, 200, 208, 217, 226, 237, 264, 267, 278, 288, 303, 338, 341, 350, 360, 372). Keep only the "expert"-equivalent code path. |
+   133→   133→| 14 | `/home/z/my-project/axia/src/convex/protection/protectionValue.ts` | Remove `tier = user.subscriptionTier \|\| "free"` (line 15) and the tier-conditional logic throughout. The `subscriptionTier` field returned in the metrics object (line 135) should be hardcoded to `"expert"` or removed. |
+   134→   134→| 15 | `/home/z/my-project/axia/src/convex/protection/protectionValueSimple.ts` | Remove `subscriptionCost = user.subscriptionTier === "pro" ? 8 : 0` (line 41) — replace with the expert-tier cost (likely $0 since billing is going away). Remove `subscriptionTier` from the returned object (line 71) or hardcode to `"expert"`. |
+   135→   135→| 16 | `/home/z/my-project/axia/src/convex/projects/projectProtection.ts` | Remove `subscriptionTier: "free"` defaults at lines 37, 253, 266, 290, 314. Remove `const tier = (user as any).subscriptionTier \|\| "free"` (line 270) and `subscriptionTier: tier` at line 384. |
+   136→   136→| 17 | `/home/z/my-project/axia/src/convex/projects/projectProtectionScore.ts` | Remove `userTier: v.string()` arg (line 15) and all `if (tier === "free"\|"starter"\|"pro"\|"expert")` branches (lines 363, 441, 567, 739). Keep only the expert path. |
+   137→   137→| 18 | `/home/z/my-project/axia/src/convex/projects/projectHealthDashboard.ts` | Remove `userTier: v.string()` arg (line 12) and tier branching at line 27 onward. |
+   138→   138→| 19 | `/home/z/my-project/axia/src/convex/projects/milestoneProtection.ts` | Remove `userTier: v.string()` arg (line 9), the tier-conditional `weeksToShow` ternary (line 92), and `if (tier === "expert" ...)` special cases (line 228). |
+   139→   139→| 20 | `/home/z/my-project/axia/src/convex/projects/riskTimeline.ts` | Remove `tierOverride` arg (line 34), `normalizeTier` helper (line 10), and the giant tier-conditional pillar/persuasion/upgrade-prompt builder (lines 41, 107, 122, 507–547). Always return the expert-equivalent payload. |
+   140→   140→| 21 | `/home/z/my-project/axia/src/convex/projects/adaptiveEvidenceSystem.ts` | Remove `userTier: v.string()` arg (line 8), `calculateTierSystem(projectData, args.userTier)` (line 18), `tier: args.userTier` in response (line 22). |
+   141→   141→| 22 | `/home/z/my-project/axia/src/convex/projects/milestoneReports.ts` | Search shows it's in projects/ but not directly tier-laced; verify before editing. |
+   142→   142→| 23 | `/home/z/my-project/axia/src/convex/clients/clientDisputeSimulation.ts` | Remove `userTier = user.subscriptionTier \|\| "free"` (line 22), all `if (tier === "free"\|"starter"\|"pro"\|"expert")` branches (lines 100, 116, 141, 179, 225, 229, 232, 235), `tier: userTier` and `upgradeMessage` from response (lines 90–91). |
+   143→   143→| 24 | `/home/z/my-project/axia/src/convex/clients/clientTrustScore.ts` | Same pattern as #23 (lines 21, 36, 49, 69, 96, 130, 134, 137, 140). |
+   144→   144→| 25 | `/home/z/my-project/axia/src/convex/clients/clientPolicyProfile.ts` | Same pattern (lines 22, 100, 116, 141, 179, 225, 229, 232, 235). |
+   145→   145→| 26 | `/home/z/my-project/axia/src/convex/clients/clientGapPrediction.ts` | Same pattern (lines 22, 132, 147, 169, 202, 242, 246, 249, 252). |
+   146→   146→| 27 | `/home/z/my-project/axia/src/convex/clients/clientProtectionScore.ts` | Same pattern (lines 21, 28, 29). |
+   147→   147→| 28 | `/home/z/my-project/axia/src/convex/clients/clientAuth.ts` | Remove `subscriptionTier: "free"` default in client-signup handler (line 40). |
+   148→   148→| 29 | `/home/z/my-project/axia/src/convex/clientAuth.ts` | Remove `subscriptionTier: "free"` default (line 40). |
+   149→   149→| 30 | `/home/z/my-project/axia/src/convex/security/rateLimit.ts` | Update `requireAdmin()` (lines 154–156) to no longer accept `subscriptionTier === "expert"` as an admin substitute — gate on `role === "admin"` only. CRITICAL: this currently lets any "expert"-tier user bypass admin gates. After flattening, EVERY user would be "expert" → everyone becomes admin. Must change to role-only. |
+   150→   150→| 31 | `/home/z/my-project/axia/src/convex/adminListAll.ts` | Remove `tier: u.subscriptionTier` from the `listAllUsers` response (line 37). Also remove the comment about "admin/expert-tier auth" (lines 3–4). |
+   151→   151→| 32 | `/home/z/my-project/axia/src/convex/adminSeed.ts` | Remove `subscriptionTier: "pro"` default seeding (line 34). |
+   152→   152→| 33 | `/home/z/my-project/axia/src/convex/autoSeed.ts` | Remove `subscriptionTier = "pro"` default seeding (line 35). |
+   153→   153→| 34 | `/home/z/my-project/axia/src/convex/seed.ts` | Remove `subscriptionTier: "pro"` (line 164) and the conditional `subscriptionTier = "pro"` / `"free"` assignments (lines 444, 448). |
+   154→   154→| 35 | `/home/z/my-project/axia/src/convex/seedProjects.ts` | Remove `subscriptionTier: "free"` default (line 27). |
+   155→   155→| 36 | `/home/z/my-project/axia/src/convex/seedTeamUsers.ts` | Remove `tier` field from all `TEST_USERS` definitions (lines 42, 55, 68, 81), the `if (!user.subscriptionTier) patches.subscriptionTier = u.tier` assignment (line 208), and `tier: user.subscriptionTier` in any response object (line 1633). This file is 1642 lines — full audit required. |
+   156→   156→| 37 | `/home/z/my-project/axia/src/convex/seedNew.ts` | No tier references found in `seedNew.ts` itself (the only match was the unrelated word "subscription billing" in a project description at line 264). No edits needed here. |
+   157→   157→| 38 | `/home/z/my-project/axia/src/convex/_generated/api.d.ts` | After deletion of `tiers/tierDetection.ts` and `tiers/upgradeTracking.ts`, regenerate via `npx convex codegen` — the generated `api.tiers.*` typings will disappear. No manual edit needed; just regenerate. |
+   158→   158→
+   159→   159→### C. Frontend pages
+   160→   160→
+   161→   161→| # | Absolute path | What to remove |
+   162→   162→|---|---|---|
+   163→   163→| 39 | `/home/z/my-project/axia/src/pages/AccountSettings.tsx` | Remove `TierKey` type (line 91), `TIERS` array (line 106), `useSubscriptionTier` import and usage (line 173), `handleTierChange` callback (line 250), and the entire tier-comparison / tier-switching UI (lines 564–780). The page is large (~800 lines) and the tier UI is a major section — full audit required. |
+   164→   164→| 40 | `/home/z/my-project/axia/src/pages/Dashboard.tsx` | Remove `PricingModal` import (line 48), `useSubscriptionTier` import (line 6), `showPricingModal` state (line 219), `setSubscriptionTier` calls (line 214), the `<PricingModal>` JSX (lines 778–790), and any tier-conditional rendering. |
+   165→   165→| 41 | `/home/z/my-project/axia/src/pages/Reports.tsx` | Remove `useSubscriptionTier` import (line 45) and usage (line 158), `isProOrAbove = subscriptionTier === "pro" \|\| "expert"` (line 196), and any tier-conditional report-limit UI. |
+   166→   166→| 42 | `/home/z/my-project/axia/src/pages/Clients.tsx` | Remove `useSubscriptionTier` import (line 12) and usage (line 28), and the `subscriptionTier={subscriptionTier}` prop pass to `<ClientList>` (line 258) and `tier={subscriptionTier}` to other components (line 342). |
+   167→   167→| 43 | `/home/z/my-project/axia/src/pages/Projects.tsx` | Remove `useSubscriptionTier` import (line 14) and usage (line 46), `subscriptionTier={tier}` prop pass (line 215). |
+   168→   168→| 44 | `/home/z/my-project/axia/src/pages/TimeTracking.tsx` | Remove `useSubscriptionTier` import (line 16) and usage (line 51), and any tier-conditional rendering. |
+   169→   169→| 45 | `/home/z/my-project/axia/src/pages/EvidenceLibrary.tsx` | Remove `useSubscriptionTier` import (line 7) and usage (line 219), `getTierLevel` helper (line 117), `hasTierAccess` helper (line 122), and all `hasTierAccess(subscriptionTier, "pro")` calls (lines 389, 430, 461, 520, 527, 531, 803, 849, 882) — replace with `true` (since everyone is expert). |
+   170→   170→| 46 | `/home/z/my-project/axia/src/pages/EvidenceExport.tsx` | Same pattern as #45 — remove `useSubscriptionTier` (line 51, 243), `getTierLevel` (line 96), `hasTierAccess` (line 101), and all tier-conditional checks (lines 358, 407, 704, 754, 795). |
+   171→   171→| 47 | `/home/z/my-project/axia/src/pages/PaymentPatterns.tsx` | Remove `useSubscriptionTier` import (line 40) and usage (line 162), and any tier-conditional rendering. |
+   172→   172→| 48 | `/home/z/my-project/axia/src/pages/ClientDashboard.tsx` | Remove `subscriptionTier: userProfile?.subscriptionTier \|\| "free"` (line 59) and any tier-conditional rendering. |
+   173→   173→| 49 | `/home/z/my-project/axia/src/main.tsx` | Remove `import Subscription from "./pages/Subscription.tsx";` (line 35) and the `<Route path="/subscription" element={<AccountSettings />} />` legacy redirect (line 296). Also consider removing the `/platform-integrations` and `/help-center` legacy redirects if desired (they're not tier-related but are listed alongside the subscription redirect). |
+   174→   174→
+   175→   175→### D. Frontend components (not already in Section 1)
+   176→   176→
+   177→   177→| # | Absolute path | What to remove |
+   178→   178→|---|---|---|
+   179→   179→| 50 | `/home/z/my-project/axia/src/components/CollapsibleSidebar.tsx` | Remove `subscriptionTier` from the inline profile object (line 92) and the `subscriptionTier = profile?.subscriptionTier \|\| "free"` line (line 187). Likely also remove any "Upgrade" / "Subscription" nav entry. Full file is large (~600+ lines) — audit needed. |
+   180→   180→| 51 | `/home/z/my-project/axia/src/components/ProfileSection.tsx` | Remove `useSubscriptionTier` import (line 3) and usage (line 14), and the `{subscriptionTier}` display text (line 36). |
+   181→   181→| 52 | `/home/z/my-project/axia/src/components/ProtectedRoute.tsx` | Remove `tier: (user as any).subscriptionTier` from the `setUser()` analytics call (line 29). |
+   182→   182→| 53 | `/home/z/my-project/axia/src/components/AIDisputePrediction.tsx` | Remove `subscriptionTier` prop (line 15), default (line 26), and `hasAccess = subscriptionTier === "pro" \|\| "expert"` gate (line 36). Always grant access. |
+   183→   183→| 54 | `/home/z/my-project/axia/src/components/Teams.tsx` | Remove `subscriptionTier` prop (line 13), default (line 16), `getTierLevel` helper (line 18), `hasTierAccess` helper (line 22), and the `{!hasTierAccess("pro") && (...)}` conditional UI (line 72). |
+   184→   184→| 55 | `/home/z/my-project/axia/src/components/ComplianceStatusWidget.tsx` | Remove `subscriptionTier` prop (line 14) and default (line 24), and any tier-conditional rendering. |
+   185→   185→| 56 | `/home/z/my-project/axia/src/components/CrossPlatformVerification.tsx` | Remove `subscriptionTier` prop (line 8), default (line 14), and `hasAccess = subscriptionTier === "pro" \|\| "expert"` gate (line 19). |
+   186→   186→| 57 | `/home/z/my-project/axia/src/components/CustomPolicyAnalyzer.tsx` | Remove `subscriptionTier` prop (line 6), default (line 13), and `hasAccess = subscriptionTier === "pro" \|\| "expert"` gate (line 19). |
+   187→   187→| 58 | `/home/z/my-project/axia/src/components/LostIncomeCalculator.tsx` | Remove `subscriptionTier` prop (line 12), and the tier-conditional upgrade-CTA rendering (lines 42, 43, 116, 117, 118, 173, 182, 183, 184, 189). The `tierPricing` / `tierSuccessRates` lookups become irrelevant. |
+   188→   188→| 59 | `/home/z/my-project/axia/src/components/PersonalizedProtectionPlan.tsx` | Remove `subscriptionTier` prop (line 8), default (line 14), and the `hasFullAccess` / `hasBasicAccess` / `isLocked` gates (lines 19–21). Always treat as `hasFullAccess`. |
+   189→   189→| 60 | `/home/z/my-project/axia/src/components/RealTimeProtectionAdvisor.tsx` | Remove `subscriptionTier` prop (line 18), default (line 24), and `hasAccess` gate (line 29). |
+   190→   190→| 61 | `/home/z/my-project/axia/src/components/PremiumValueSection.tsx` | Remove "Manage Subscription" button (line 60) — leads nowhere after deletion. Remove "Axia Expert Verification" copy if rebranding. Minor: file is not strictly tier-logic, but the subscription/expert wording should be cleaned up. |
+   191→   191→| 62 | `/home/z/my-project/axia/src/components/ProtectionValueDashboard.tsx` | Remove `tierDisplayNames[metrics.subscriptionTier] \|\| "Free Plan"` (line 112), and the tier-conditional CTA cards at lines 220, 227, 234 (`subscriptionTier === "free"`, `"starter"`, `"pro"`). |
+   192→   192→| 63 | `/home/z/my-project/axia/src/components/project-protection/ProjectList.tsx` | Remove `subscriptionTier` prop (line 25), default (line 34), `hasAdvancedMetrics` gate (line 47), `hasProjectInsights` gate (line 48). |
+   193→   193→| 64 | `/home/z/my-project/axia/src/components/client-protection/ClientList.tsx` | Remove `subscriptionTier` prop (line 55), default (line 64), `getTierLevel` helper (line 128), `hasPaymentPatternAccess` gate (line 132). |
+   194→   194→| 65 | `/home/z/my-project/axia/src/components/project-protection/ProjectRiskTimeline.tsx` | Remove `tier` prop (line 15). Replace the `switch(tier.toLowerCase())` block (lines 97–106) with a direct `<ProjectRiskTimelineExpert {...props} />`. Drop `tierOverride: tier.toLowerCase()` from the query args (line 41) — backend will no longer accept that arg. |
+   195→   195→| 66 | `/home/z/my-project/axia/src/components/project-protection/MilestoneProtection.tsx` | Remove `tier` prop (line 17). Replace the `switch(tier)` block (lines 73–131) with a direct `<MilestoneProtectionExpert .../>`. Drop `userTier` from the query args. |
+   196→   196→| 67 | `/home/z/my-project/axia/src/components/project-protection/ProjectProtectionScore.tsx` | Remove `tier` prop (line 13), `normalizedTier` (line 22), and the `if (normalizedTier === "expert"\|"pro"\|"starter"\|"free")` switch (lines 83–104). Always render `<ProtectionScoreCardExpert>`. Drop `userTier: normalizedTier` from the query args (line 28). |
+   197→   197→| 68 | `/home/z/my-project/axia/src/components/project-protection/ProjectHealthDashboardNew.tsx` | Remove the `switch(tier)` block (lines 69–77) — always render `<DashboardExpert>`. Drop `userTier` from the query args. |
+   198→   198→| 69 | `/home/z/my-project/axia/src/components/project-protection/AdaptiveEvidenceSystem.tsx` | Remove `tier` prop and any `<TierHeader>` / `<UpgradePrompt>` rendering. Audit needed. |
+   199→   199→| 70 | `/home/z/my-project/axia/src/components/project-protection/adaptive-evidence/AdaptiveEvidenceTimeline.tsx` | Audit for tier-conditional rendering; remove `TierHeader` and `UpgradePrompt` imports if present. |
+   200→   200→| 71 | `/home/z/my-project/axia/src/components/project-protection/ProjectHealthDashboard.tsx` | One-line re-export shim (`export { ProjectHealthDashboardNew as ProjectHealthDashboard }`). No tier logic — leave as-is. |
+   201→   201→
+   202→   202→### E. Type definitions
+   203→   203→
+   204→   204→| # | Absolute path | What to remove |
+   205→   205→|---|---|---|
+   206→   206→| 72 | `/home/z/my-project/axia/src/types/projectProtection.ts` | Remove `tier: 'free' \| 'starter' \| 'pro' \| 'expert'` from `EvidenceTimelineData` (line 75), `TimelineRiskData` (line 114), the tier-keyed `pillars: { free: ...; starter?: ...; pro?: ...; expert?: ... }` shape (lines 121–126) — collapse to a single `pillars: TimelinePillar[]`. Remove `tier: string` from `ProjectProtectionScoreData` (line 180). Remove `upgrade?: { targetTier: ... }` (lines 101–107) and `upgradePrompt?: { targetTier: ... }` (lines 136–140). |
+   207→   207→| 73 | `/home/z/my-project/axia/src/lib/monitoring.ts` | Remove `tier?: string` from the `setUser()` parameter type (line 56). Optionally remove the `SUBSCRIPTION_CHANGED` analytics event constant (line 119) if no longer dispatched. |
+   208→   208→
+   209→   209→### F. Landing page (marketing site)
+   210→   210→
+   211→   211→| # | Absolute path | What to remove |
+   212→   212→|---|---|---|
+   213→   213→| 74 | `/home/z/my-project/axia/src/components/landing/HeroSection.tsx` | Audit for tier mentions (grep matched "tier"). Likely minor copy edits. |
+   214→   214→| 75 | `/home/z/my-project/axia/src/components/landing/Hero.tsx` | Same — audit. |
+   215→   215→| 76 | `/home/z/my-project/axia/src/components/landing/FinalCTA.tsx` | Remove "Free forever tier · Cancel anytime" copy (line 63). |
+   216→   216→| 77 | `/home/z/my-project/axia/src/components/landing/WaitlistForm.tsx` | Audit — likely references "pricing" source string. |
+   217→   217→| 78 | `/home/z/my-project/axia/src/components/landing/Footer.tsx` | Remove "Pricing" from the Product links array (line 4). |
+   218→   218→| 79 | `/home/z/my-project/axia/src/components/landing/ValueProposition.tsx` | Audit — no direct grep hit but in landing/ folder. |
+   219→   219→| 80 | `/home/z/my-project/axia/src/components/landing/HowItWorks.tsx` | Audit — no direct grep hit. |
+   220→   220→| 81 | `/home/z/my-project/axia/src/components/landing/Testimonials.tsx` | Audit — no direct grep hit. |
+   221→   221→| 82 | `/home/z/my-project/axia/src/pages/Landing.tsx` | Audit — composes the landing sections; remove `<PricingCard>` / `<FeatureComparison>` usages if any. |
+   222→   222→
+   223→   223→### G. Other
+   224→   224→
+   225→   225→| # | Absolute path | What to remove |
+   226→   226→|---|---|---|
+   227→   227→| 83 | `/home/z/my-project/axia/src/components/ProfileModal.tsx` | Currently just a redirect to `/account-settings`. Not tier-specific, but mentioned in the Subscription page deletion chain. Leave as-is unless the redirect target changes. |
+   228→   228→| 84 | `/home/z/my-project/axia/src/lib/safe-convex-react.ts` | Grep matched "subscription" — audit for any tier-related React hooks. Likely a false positive (probably matched the word "subscription" in a comment about Convex subscriptions). |
+   229→   229→| 85 | `/home/z/my-project/axia/src/hooks/use-app-data.tsx` | Grep matched "subscription" — audit. |
+   230→   230→| 86 | `/home/z/my-project/axia/src/components/PremiumNetwork.tsx` | Renders the Premium Network section (gated by `subscriptionTier === "pro"` on backend). After flatten, it's available to all. Likely no prop changes needed — the backend gate at `network/premiumNetwork.ts` is what changes. Audit anyway. |
+   231→   231→
+   232→   232→---
+   233→   233→
+   234→   234→## 3. Convex functions affected
+   235→   235→
+   236→   236→### Functions that take a `tier`-related argument
+   237→   237→
+   238→   238→| Function | File | Arg(s) | Action |
+   239→   239→|---|---|---|---|
+   240→   240→| `tiers.getTierFeatures` | `convex/tiers/tierDetection.ts` | `tier: v.string()` | DELETE (whole file) |
+   241→   241→| `tiers.calculateUpgradeValue` | `convex/tiers/tierDetection.ts` | `targetTier: v.string()` | DELETE (whole file) |
+   242→   242→| `tiers.trackUpgradeTrigger` | `convex/tiers/upgradeTracking.ts` | `tierShown: v.string()` | DELETE (whole file) |
+   243→   243→| `tiers.trackUpgradeConversion` | `convex/tiers/upgradeTracking.ts` | `fromTier: v.string()`, `toTier: v.string()` | DELETE (whole file) |
+   244→   244→| `users.setUserTier` | `convex/users.ts` | `tier: v.union(v.literal("free"), "starter", "pro", "expert", "client")` | DELETE the mutation |
+   245→   245→| `users.grantTierByEmail` | `convex/users.ts` | `tier: v.union(...)` | DELETE the mutation |
+   246→   246→| `projects.projectProtectionScore.getProjectProtectionScore` | `convex/projects/projectProtectionScore.ts` | `userTier: v.string()` | REMOVE arg, hardcode expert path |
+   247→   247→| `projects.projectHealthDashboard.getProjectHealthDashboard` | `convex/projects/projectHealthDashboard.ts` | `userTier: v.string()` | REMOVE arg, hardcode expert path |
+   248→   248→| `projects.milestoneProtection.getMilestoneProtection` | `convex/projects/milestoneProtection.ts` | `userTier: v.string()` | REMOVE arg, hardcode expert path |
+   249→   249→| `projects.riskTimeline.getProjectRiskTimeline` | `convex/projects/riskTimeline.ts` | `tierOverride: v.optional(v.string())` | REMOVE arg, hardcode expert path |
+   250→   250→| `projects.adaptiveEvidenceSystem.*` | `convex/projects/adaptiveEvidenceSystem.ts` | `userTier: v.string()` | REMOVE arg, hardcode expert path |
+   251→   251→| `projects.projectProtection.getProjectProtectionDetails` | `convex/projects/projectProtection.ts` | (no tier arg, but returns `subscriptionTier` in mocked data) | REMOVE `subscriptionTier` from returned mock objects |
+   252→   252→
+   253→   253→### Functions that return a `tier`-related field
+   254→   254→
+   255→   255→| Function | File | Returned field | Action |
+   256→   256→|---|---|---|---|
+   257→   257→| `tiers.detectUserTier` | `convex/tiers/tierDetection.ts` | `currentTier`, `recommendedTier`, `shouldUpgrade` | DELETE (whole file) |
+   258→   258→| `protection.protectionValue.getMetrics` | `convex/protection/protectionValue.ts` | `subscriptionTier` | Hardcode `"expert"` or remove |
+   259→   259→| `protection.protectionValueSimple.getMetrics` | `convex/protection/protectionValueSimple.ts` | `subscriptionTier` | Hardcode `"expert"` or remove |
+   260→   260→| `projects.projectProtection.*` | `convex/projects/projectProtection.ts` | `subscriptionTier` (in 5+ mocked responses) | Remove from all response shapes |
+   261→   261→| `clients.clientDisputeSimulation.*` | `convex/clients/clientDisputeSimulation.ts` | `tier`, `upgradeMessage` | Remove from response |
+   262→   262→| `clients.clientTrustScore.*` | `convex/clients/clientTrustScore.ts` | `tier`, `upgradeMessage` | Remove from response |
+   263→   263→| `clients.clientPolicyProfile.*` | `convex/clients/clientPolicyProfile.ts` | `tier`, `upgradeMessage` | Remove from response |
+   264→   264→| `clients.clientGapPrediction.*` | `convex/clients/clientGapPrediction.ts` | `tier`, `upgradeMessage` | Remove from response |
+   265→   265→| `clients.clientProtectionScore.*` | `convex/clients/clientProtectionScore.ts` | `tier`, `upgradeMessage` | Remove from response |
+   266→   266→| `disputeReports.getMonthlyUsage` | `convex/disputeReports.ts` | `limit` (computed from tier) | Hardcode `-1` (unlimited) |
+   267→   267→| `adminListAll.listAllUsers` | `convex/adminListAll.ts` | `tier` | Remove from response |
+   268→   268→| `seedTeamUsers.enrichAllTeamUsers` | `convex/seedTeamUsers.ts` | `tier` (in response) | Remove from response |
+   269→   269→
+   270→   270→### Functions that READ `user.subscriptionTier` for gating (no arg, no return)
+   271→   271→
+   272→   272→These all need their tier check removed (or replaced with always-allow):
+   273→   273→
+   274→   274→| Function | File | Line(s) |
+   275→   275→|---|---|---|
+   276→   276→| `disputeReports.createDisputeReport` | `convex/disputeReports.ts` | 102 |
+   277→   277→| `disputeReports.generateDisputeReport` | `convex/disputeReports.ts` | 180 |
+   278→   278→| `disputeReports.getMonthlyUsage` | `convex/disputeReports.ts` | 75 |
+   279→   279→| `evidence.*` (multiple) | `convex/evidence.ts` | 280, 442 |
+   280→   280→| `network.premiumNetwork.getProtectionNetwork` | `convex/network/premiumNetwork.ts` | 14, 21 |
+   281→   281→| `network.premiumNetwork.sendConnectionRequest` | `convex/network/premiumNetwork.ts` | 90, 94 |
+   282→   282→| `network.premiumNetwork.*` (more) | `convex/network/premiumNetwork.ts` | 155, 171 |
+   283→   283→| `premium.protectionPlans.*` | `convex/premium/protectionPlans.ts` | 14, 43 |
+   284→   284→| `premium.protectionAdvisor.*` | `convex/premium/protectionAdvisor.ts` | 14 |
+   285→   285→| `premium.crossPlatformVerification.*` | `convex/premium/crossPlatformVerification.ts` | 15, 91 |
+   286→   286→| `premium.teamValidation.*` | `convex/premium/teamValidation.ts` | 21, 26, 134, 144, 154, 167, 200, 208, 217, 226, 237, 264, 267, 278, 288, 303, 338, 341, 350, 360, 372 |
+   287→   287→| `security.rateLimit.requireAdmin` | `convex/security/rateLimit.ts` | 154–156 (CRITICAL — see note in Section 2.B #30) |
+   288→   288→
+   289→   289→---
+   290→   290→
+   291→   291→## 4. Schema fields to remove
+   292→   292→
+   293→   293→### Fields on existing tables
+   294→   294→
+   295→   295→| Table | Field | File:Line | Notes |
+   296→   296→|---|---|---|---|
+   297→   297→| `users` | `subscriptionTier: v.optional(v.string())` | `convex/tables/users.ts:16` | Comment documents enum: `"free" \| "starter" \| "pro" \| "expert" \| "client"`. |
+   298→   298→| `users` | `tierUpgradedAt: v.optional(v.number())` | `convex/tables/users.ts:17` | Always paired with subscriptionTier; remove together. |
+   299→   299→| `clientCompanies` | `subscriptionTier: v.string().maxLength(50)` | `convex/tables/projects.ts:167` | **DECISION REQUIRED**: this is the CLIENT COMPANY's tier (e.g. for the client portal), not the freelancer's subscription tier. Confirm with user whether to remove. |
+   300→   300→| `clientCompanies` | `subscriptionTier: v.string()` | `convex/tables/clients.ts:79` | Duplicate definition of the same `clientCompanies` table (this is a known duplication between `tables/projects.ts` and `tables/clients.ts`). Same decision applies. |
+
+[showing lines 1-300 of 553; use offset=301 with limit to continue reading]
