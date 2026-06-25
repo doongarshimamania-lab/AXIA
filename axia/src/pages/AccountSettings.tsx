@@ -247,7 +247,7 @@ export default function AccountSettings() {
     }
   };
 
-  const handleTierChange = (newTier: TierKey | "client") => {
+  const handleTierChange = (newTier: TierKey) => {
     setSubscriptionTier(newTier);
     toast.success(`Subscription changed to ${newTier}`);
   };
@@ -394,7 +394,7 @@ function ProfileSection({
   profileEmail: string; setProfileEmail: (v: string) => void;
   profileHourlyRate: string; setProfileHourlyRate: (v: string) => void;
   profileBio: string; setProfileBio: (v: string) => void;
-  subscriptionTier: string; handleTierChange: (t: TierKey | "client") => void;
+  subscriptionTier: string; handleTierChange: (t: TierKey) => void;
   handleCopyEmail: () => void; copied: boolean;
   handleSaveProfile: () => void;
   isSavingProfile: boolean;
@@ -565,7 +565,7 @@ function SubscriptionSection({
   handleTierChange,
 }: {
   subscriptionTier: string;
-  handleTierChange: (t: TierKey | "client") => void;
+  handleTierChange: (t: TierKey) => void;
 }) {
   const [expandedTier, setExpandedTier] = useState<TierKey | null>(null);
   const { isAuthenticated } = useConvexAuth();

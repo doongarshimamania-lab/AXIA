@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, PlusCircle, ScanSearch, Lock } from "lucide-react";
 
 interface CustomPolicyAnalyzerProps {
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onAddPolicy?: () => void;
   onScanWork?: () => void;
   onUpgrade?: () => void;

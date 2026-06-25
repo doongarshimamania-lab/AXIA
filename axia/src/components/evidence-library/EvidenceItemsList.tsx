@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, FileText, ChevronLeft, ChevronRight, Mouse, Keyboard, Globe } from "lucide-react";
 
-type ViewType = "date" | "project" | "client" | "type";
+type ViewType = "date" | "project" | "type";
 
 interface EvidenceItem {
   id: string;

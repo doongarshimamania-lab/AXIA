@@ -11,7 +11,7 @@ interface TimeBlock {
   screenshotCount: number;
   mouseActivity: boolean;
   keyboardActivity: boolean;
-  platform: "upwork" | "fiverr" | "toptal" | "client";
+  platform: "upwork" | "fiverr" | "toptal";
 }
 
 interface WorkDiarySimulatorProps {

@@ -26,7 +26,6 @@ const TIER_PRICING = {
   starter: 4,
   pro: 7,
   expert: 12,
-  client: 49,
 };
 
 const TIER_SUCCESS_RATES = {
@@ -34,7 +33,6 @@ const TIER_SUCCESS_RATES = {
   starter: 45,
   pro: 83,
   expert: 95,
-  client: 100,
 };
 
 export function PricingModal({ 
@@ -242,50 +240,6 @@ export function PricingModal({
             </Button>
           </motion.div>
 
-          {/* Client Tier */}
-          <motion.div
-            className="border border-border rounded-lg p-3 flex flex-col"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
-            <h3 className="text-sm font-bold text-foreground mb-1 font-[Space_Grotesk]">Client</h3>
-            <div className="text-lg font-bold text-foreground mb-2 font-[Space_Grotesk]">
-              $49<span className="text-[10px] text-muted-foreground">/mo</span>
-            </div>
-            
-            <div className="space-y-1 mb-2 text-[11px] flex-1">
-              <div className="flex items-start gap-1">
-                <Check className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span className="text-foreground leading-tight">WCVM Access</span>
-              </div>
-              <div className="flex items-start gap-1">
-                <Check className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span className="text-emerald-500 leading-tight">100% Verified</span>
-              </div>
-              <div className="flex items-start gap-1">
-                <Check className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span className="text-foreground leading-tight">Directory Access</span>
-              </div>
-              <div className="flex items-start gap-1">
-                <Check className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span className="text-foreground leading-tight">Real-time Valid.</span>
-              </div>
-              <div className="flex items-start gap-1">
-                <Check className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span className="text-foreground leading-tight">White Label</span>
-              </div>
-            </div>
-
-            <Button 
-              onClick={() => handleUpgradeClick("client")}
-              className="w-full text-[10px] h-7 mt-auto"
-              variant="outline"
-              disabled={currentTier === "client"}
-            >
-              {currentTier === "client" ? "Current" : "Contact Sales"}
-            </Button>
-          </motion.div>
         </div>
 
         {highlightSavings && (

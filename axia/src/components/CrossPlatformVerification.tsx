@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface CrossPlatformVerificationProps {
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onVerify?: () => void;
   onUpgrade?: () => void;
 }

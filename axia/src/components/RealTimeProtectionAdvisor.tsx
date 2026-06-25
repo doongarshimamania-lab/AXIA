@@ -15,7 +15,7 @@ interface Alert {
 }
 
 interface RealTimeProtectionAdvisorProps {
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onResolveAlert?: (alertId: string) => void;
   onUpgrade?: () => void;
 }

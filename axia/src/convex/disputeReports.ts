@@ -311,7 +311,7 @@ export const deleteDisputeReport = mutation({
 function generateReportContent(session: any, rejectedBlocks: any[], rejectedHours: number, lostIncome: number): string {
   const date = new Date().toLocaleDateString();
 
-  const dominantPlatform: "upwork" | "fiverr" | "toptal" | "client" =
+  const dominantPlatform: "upwork" | "fiverr" | "toptal" =
     (rejectedBlocks[0]?.activity?.toLowerCase().includes("fiverr") ? "fiverr" :
      rejectedBlocks[0]?.activity?.toLowerCase().includes("toptal") ? "toptal" : "upwork") as any;
 

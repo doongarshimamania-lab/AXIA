@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 
 interface EvidenceCollectorProps {
   sessionId: Id<"workSessions"> | null;
-  platform: "upwork" | "fiverr" | "toptal" | "freelancer" | "client";
+  platform: "upwork" | "fiverr" | "toptal" | "freelancer";
   isActive: boolean;
 }
 

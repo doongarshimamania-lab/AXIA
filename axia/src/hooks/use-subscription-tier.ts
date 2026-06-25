@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/use-auth';
  */
 export function useSubscriptionTier() {
   const { user } = useAuth();
-  const [tier, setTierState] = useState<'free' | 'starter' | 'pro' | 'expert' | 'client'>('free');
+  const [tier, setTierState] = useState<'free' | 'starter' | 'pro' | 'expert'>('free');
   const [isLoading, setIsLoading] = useState(true);
 
   // Sync tier from Convex user record. Re-runs whenever `user` changes
@@ -35,7 +35,7 @@ export function useSubscriptionTier() {
 
     // Signed in — use the tier from the backend user record
     const backendTier = (user as any)?.subscriptionTier as
-      | 'free' | 'starter' | 'pro' | 'expert' | 'client'
+      | 'free' | 'starter' | 'pro' | 'expert'
       | undefined;
 
     const effectiveTier = backendTier ?? 'free';
@@ -58,7 +58,7 @@ export function useSubscriptionTier() {
   // Update tier locally. NOTE: this only updates localStorage + state.
   // To persist to the backend, call `api.users.updateProfile` with the
   // new tier (handled by the Subscription page / PricingModal).
-  const updateTier = (newTier: 'free' | 'starter' | 'pro' | 'expert' | 'client') => {
+  const updateTier = (newTier: 'free' | 'starter' | 'pro' | 'expert') => {
     setTierState(newTier);
     localStorage.setItem('axia_subscription_tier', newTier);
     window.dispatchEvent(new Event('axia_tier_update'));

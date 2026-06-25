@@ -48,7 +48,7 @@ interface TransferOwnershipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recordId: string;
-  recordType: "workspace" | "project" | "client" | "deal";
+  recordType: "workspace" | "project" | "deal";
   recordName: string;
   currentOwnerId?: string;
   currentOwnerName?: string;

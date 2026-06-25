@@ -76,7 +76,7 @@ import { PageLayout } from "@/components/design-system/PageLayout";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewType = "date" | "project" | "client" | "type";
+type ViewType = "date" | "project" | "type";
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
 type ExportStatus = "completed" | "processing" | "failed";
 

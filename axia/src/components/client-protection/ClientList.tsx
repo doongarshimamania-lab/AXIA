@@ -52,7 +52,7 @@ interface ClientListProps {
   selectedClientId: string | null;
   onSelectClient: (id: string | null) => void;
   onAddClient: () => void;
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onUpgrade?: () => void;
 }
 

@@ -89,7 +89,7 @@ export function CollapsibleSidebar() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   // Use real user data from auth
-  const profile = { name: user?.name || user?.email || "User", subscriptionTier: (user?.subscriptionTier || "free") as "free" | "starter" | "pro" | "expert" | "client", image: user?.image };
+  const profile = { name: user?.name || user?.email || "User", subscriptionTier: (user?.subscriptionTier || "free") as "free" | "starter" | "pro" | "expert", image: user?.image };
   const protectionMetrics = { 
     protectionScore: 92, 
     activeSession: { startTime: Date.now() - 30 * 60000 }, // 30 min session

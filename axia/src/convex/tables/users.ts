@@ -13,7 +13,7 @@ export const users = defineTable({
     role: v.optional(roleValidator), // role of the user. do not remove
     
     // TimeStop specific fields
-    subscriptionTier: v.optional(v.string()), // "free" | "starter" | "pro" | "expert" | "client"
+    subscriptionTier: v.optional(v.string()), // "free" | "starter" | "pro" | "expert"
     tierUpgradedAt: v.optional(v.number()),
     vulnerabilityScore: v.optional(v.number()), // Pattern #7 vulnerability score (0-100)
     lastVulnerabilityCheck: v.optional(v.number()),

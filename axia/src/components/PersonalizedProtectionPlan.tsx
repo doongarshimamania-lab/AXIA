@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 interface PersonalizedProtectionPlanProps {
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onCustomize?: () => void;
   onUpgrade?: () => void;
 }

@@ -263,7 +263,7 @@ export const adminSeed = mutation({
           userId,
           workspaceId,
           sessionId: ws._id,
-          platform: platform as "upwork" | "fiverr" | "toptal" | "freelancer" | "client",
+          platform: platform as "upwork" | "fiverr" | "toptal" | "freelancer",
           startTime: ws.startTime,
           endTime: ws.endTime,
           status: "finalized",

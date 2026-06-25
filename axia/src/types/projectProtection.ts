@@ -53,7 +53,7 @@ export type PersuasionFlags = {
 export type BusinessMapNode = {
   id: string;
   label: string;
-  type: 'project' | 'platform' | 'milestone' | 'income' | 'client';
+  type: 'project' | 'platform' | 'milestone' | 'income';
   status: 'protected' | 'at_risk' | 'vulnerable';
   value: number;
   x: number;

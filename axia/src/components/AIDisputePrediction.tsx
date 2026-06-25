@@ -12,7 +12,7 @@ interface RiskFactor {
 }
 
 interface AIDisputePredictionProps {
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   riskScore?: number;
   riskLevel?: "low" | "medium" | "high";
   riskFactors?: RiskFactor[];

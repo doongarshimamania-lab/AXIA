@@ -22,7 +22,7 @@ interface ProjectListProps {
   selectedProjectId: string | null;
   onSelectProject: (id: string | null) => void;
   onAddProject: () => void;
-  subscriptionTier?: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onUpgrade?: () => void;
 }
 

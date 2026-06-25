@@ -9,7 +9,7 @@ interface LostIncomeCalculatorProps {
     fiverr: number;
     toptal: number;
   };
-  subscriptionTier: "free" | "starter" | "pro" | "expert" | "client";
+  subscriptionTier: "free" | "starter" | "pro" | "expert";
   onUpgradeClick: () => void;
   atRiskAmount?: number;
 }
