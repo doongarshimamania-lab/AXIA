@@ -11,6 +11,9 @@ import {
   X,
   Palette,
   Loader2,
+  Info,
+  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,11 +32,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkspaceContext } from "@/hooks/use-workspace"; // ponytail: workspace scoping for tags queries/mutations
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { PageLayout } from "@/components/design-system/PageLayout";
+// ponytail: import the reusable read-only tag badges for the per-entity rows in the Used-in panel.
+import { TagBadges } from "@/components/tags";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -52,8 +64,11 @@ export default function Tags() {
   const workspaceId = isConvexConnected ? activeWorkspaceId : undefined;
 
   // ─── Convex queries & mutations ──────────────────────────────────────────
-  // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
-  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  // ponytail: replace getTags with getTagsWithUsage so the "Most Used" stat card and
+  // the per-card "N entries tagged" line show real numbers (the per-row usageCount
+  // column on the tags table is permanently 0 — the new query computes it by scanning
+  // every taggable table at request time).
+  const tagsData = useQuery(api.tags.crud.getTagsWithUsage, { workspaceId: workspaceId as any });
   const createTagMutation = useMutation(api.tags.crud.createTag);
   const updateTagMutation = useMutation(api.tags.crud.updateTag);
   const deleteTagMutation = useMutation(api.tags.crud.deleteTag);
@@ -66,6 +81,13 @@ export default function Tags() {
   const [editingTag, setEditingTag] = useState<any>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingTag, setDeletingTag] = useState<any>(null);
+  // ponytail: Used-in side sheet state — opens when the user clicks a tag card.
+  // We call getEntitiesByTag lazily when the sheet opens (not for every tag on mount).
+  const [usedInTag, setUsedInTag] = useState<any | null>(null);
+  const [usedInEntities, setUsedInEntities] = useState<any[] | null>(null);
+  const [usedInLoading, setUsedInLoading] = useState(false);
+  // ponytail: empty-state "Learn how" dialog.
+  const [learnHowOpen, setLearnHowOpen] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -87,12 +109,15 @@ export default function Tags() {
   const isDemoMode = !authLoading && !isAuthenticated;
 
   // ─── Data resolution ────────────────────────────────────────────────────
+  // ponytail: preserve the new perEntity breakdown (a Record<entityType, count>)
+  // so we can render "3 clients · 1 project" under each tag card.
   const realTags = (tagsData ?? []).map((t: any) => ({
     _id: t._id,
     name: t.name,
     color: t.color,
     category: t.category ?? null,
     usageCount: t.usageCount ?? 0,
+    perEntity: (t.perEntity ?? {}) as Record<string, number>,
     createdAt: t.createdAt,
   }));
 
@@ -129,6 +154,38 @@ export default function Tags() {
       year: "numeric",
     });
   };
+
+  // ponytail: open the Used-in side sheet for a tag. The lazy useQuery below
+  // (getEntitiesByTagQuery) auto-fetches whenever `usedInTag` is non-null, and the
+  // useEffect below pushes the resolved data into `usedInEntities` state. So all
+  // this handler does is set the active tag and reset the loading flag.
+  const openUsedIn = (tag: any) => {
+    setUsedInTag(tag);
+    setUsedInEntities(null);
+    setUsedInLoading(true);
+  };
+
+  const closeUsedIn = () => {
+    setUsedInTag(null);
+    setUsedInEntities(null);
+    setUsedInLoading(false);
+  };
+
+  // ponytail: lazy query hook — declared at the top level (rules-of-hooks) but
+  // skipped unless `usedInTag` is set.
+  const getEntitiesByTagQuery = useQuery(
+    api.tags.crud.getEntitiesByTag,
+    usedInTag ? { tagId: usedInTag._id as any } : "skip"
+  ) as any[] | undefined;
+
+  // ponytail: when the query resolves, push the result into our state so the
+  // sheet shows it. We only write when we have a tag open and the data is fresh.
+  useEffect(() => {
+    if (usedInTag && getEntitiesByTagQuery !== undefined) {
+      setUsedInEntities(getEntitiesByTagQuery);
+      setUsedInLoading(false);
+    }
+  }, [usedInTag, getEntitiesByTagQuery]);
 
   // ── Create ──
   const handleCreate = async () => {
@@ -341,6 +398,35 @@ export default function Tags() {
           </Dialog>
         </div>
 
+        {/* ── Empty-state CTA banner ──
+            ponytail: explains where tags can be attached so users don't get stuck
+            after creating a tag (the original complaint this feature fixes). */}
+        {!isDemoMode && (
+          <Card className="p-4 bg-primary/5 border-primary/20 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <Info className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-foreground">
+                  Tags can be attached to <strong>clients</strong>, <strong>projects</strong>,{" "}
+                  <strong>proposals</strong>, <strong>invoices</strong>, <strong>time entries</strong>,{" "}
+                  <strong>deals</strong>, and <strong>goals</strong>. Create one here, then start tagging
+                  from any of those pages.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary shrink-0"
+                onClick={() => setLearnHowOpen(true)}
+              >
+                Learn how
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* ── Demo mode empty state ── */}
         {isDemoMode && (
           <Card className="p-8 bg-card rounded-xl border border-border">
@@ -518,7 +604,10 @@ export default function Tags() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.04, duration: 0.3 }}
                   >
-                    <Card className="group hover:shadow-md transition-shadow">
+                    <Card
+                      className="group hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => openUsedIn(tag)}
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
@@ -533,7 +622,7 @@ export default function Tags() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => openEdit(tag)}
+                              onClick={(e) => { e.stopPropagation(); openEdit(tag); }}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -541,7 +630,7 @@ export default function Tags() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => openDelete(tag)}
+                              onClick={(e) => { e.stopPropagation(); openDelete(tag); }}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -566,6 +655,32 @@ export default function Tags() {
                               : `Created ${formatDate(tag.createdAt)}`}
                           </span>
                         </div>
+                        {/* ponytail: per-entity usage breakdown — show top 2 entity types
+                            as small text (e.g. "3 clients · 1 project"). Falls back to
+                            "Click to see usage" when the breakdown is empty. */}
+                        <div className="text-[11px] text-muted-foreground">
+                          {(() => {
+                            const entries = Object.entries(tag.perEntity ?? {})
+                              .filter(([, n]) => (n as number) > 0)
+                              .sort((a, b) => (b[1] as number) - (a[1] as number));
+                            if (entries.length === 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 hover:text-foreground">
+                                  Click to see usage <ChevronRight className="h-3 w-3" />
+                                </span>
+                              );
+                            }
+                            const top = entries.slice(0, 2)
+                              .map(([k, n]) => `${n} ${k}`)
+                              .join(" · ");
+                            const more = entries.length > 2 ? ` · +${entries.length - 2}` : "";
+                            return (
+                              <span className="inline-flex items-center gap-1 hover:text-foreground">
+                                {top}{more} <ChevronRight className="h-3 w-3" />
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -575,6 +690,126 @@ export default function Tags() {
           </>
         )}
       </PageLayout>
+
+      {/* ── Used-in side sheet ──
+          ponytail: opens when the user clicks a tag card. Shows the entities
+          that currently carry the tag, grouped by entity type, with deep links
+          to the corresponding pages. Calls getEntitiesByTag lazily (see the
+          useQuery + useEffect pair above). */}
+      <Sheet open={usedInTag !== null} onOpenChange={(open) => { if (!open) closeUsedIn(); }}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              {usedInTag && (
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: usedInTag.color }}
+                />
+              )}
+              Used in: {usedInTag?.name ?? ""}
+            </SheetTitle>
+            <SheetDescription>
+              Entities currently carrying this tag. Click a row to open the
+              corresponding page.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            {usedInLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : !usedInEntities || usedInEntities.length === 0 ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                <Tag className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                Not attached to any entity yet.
+              </div>
+            ) : (
+              (() => {
+                // Group entities by type so we can render a header per group.
+                const groups: Record<string, any[]> = {};
+                for (const e of usedInEntities) {
+                  (groups[e.entityType] ??= []).push(e);
+                }
+                const ENTITY_PATHS: Record<string, string> = {
+                  clients: "/clients",
+                  projects: "/projects",
+                  proposals: "/proposals",
+                  invoices: "/invoices",
+                  workSessions: "/time-tracking",
+                  deals: "/pipeline",
+                  goals: "/goals",
+                };
+                const ENTITY_LABELS: Record<string, string> = {
+                  clients: "Clients",
+                  projects: "Projects",
+                  proposals: "Proposals",
+                  invoices: "Invoices",
+                  workSessions: "Time Entries",
+                  deals: "Deals",
+                  goals: "Goals",
+                };
+                return Object.entries(groups).map(([type, rows]) => (
+                  <div key={type} className="space-y-1.5">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {ENTITY_LABELS[type] ?? type} ({rows.length})
+                    </div>
+                    {rows.map((r) => (
+                      <a
+                        key={`${type}-${r.entityId}`}
+                        href={ENTITY_PATHS[type] ?? "#"}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border hover:bg-muted/60 transition-colors group"
+                      >
+                        <span className="text-sm text-foreground truncate">{r.label}</span>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                ));
+              })()
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── "Learn how" dialog ──
+          ponytail: small explainer that opens from the empty-state CTA banner. */}
+      <Dialog open={learnHowOpen} onOpenChange={setLearnHowOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>How to use tags</DialogTitle>
+            <DialogDescription>
+              Tags work across seven entity types. Here's the workflow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-foreground py-2">
+            <p>
+              <strong>1. Create a tag here.</strong> Give it a name, color, and
+              category. Tags are scoped to your workspace.
+            </p>
+            <p>
+              <strong>2. Attach it from any entity page.</strong> Open any
+              client, project, proposal, invoice, time entry, deal, or goal and
+              look for the <em>Tags</em> field or the{" "}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border text-xs">
+                <Tag className="h-3 w-3" /> Tags
+              </span>{" "}
+              button on the card.
+            </p>
+            <p>
+              <strong>3. Filter by tag.</strong> Most list pages have a tag
+              chip-bar at the top — click a chip to narrow the list to entries
+              carrying that tag.
+            </p>
+            <p>
+              <strong>4. Click a tag card here</strong> to see everything it's
+              attached to, with deep links to each entity.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setLearnHowOpen(false)}>Got it</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Edit Tag Dialog ── */}
       <Dialog
