@@ -39,7 +39,10 @@ import {
   UserPlus,
   FileCheck2,
   Hourglass,
-} from "lucide-react";
+  Timer,
+  Trophy,
+  Crown,
+} from "lucide-react"; // ponytail: added Timer, Trophy, Crown for new Quick Actions + Upgrade CTA
 import { useQuery, useMutation, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
@@ -264,32 +267,32 @@ export default function Dashboard() {
   const collectionRate = invoiceTotal > 0 ? Math.round((invoicePaid / invoiceTotal) * 100) : 0;
   const pipelineHealth = totalDeals > 0 ? Math.min(100, Math.round((weightedValue / (pipelineValue || 1)) * 100)) : 0;
 
-  // ─── Sparkline data (derived from real stats) ───────────────────────────
+  // ─── Sparkline data (derived HONESTLY from real stats — no synthetic variance) ─────
+  // ponytail: replaced fake Math.sin/cos variance with linear growth from 0 → current.
+  // The trend now honestly represents "growth from zero to current value" instead of
+  // fabricating volatility that looks like real historical data.
   const revenueSparkline = useMemo(() => {
-    // Generate a 7-point trend from invoice data
     const base = invoiceRevenue || 0;
     if (base === 0) return [0, 0, 0, 0, 0, 0, 0];
-    const variance = base * 0.15;
-    return Array.from({ length: 7 }, (_, i) => Math.max(0, base * (0.6 + i * 0.06) + (Math.sin(i * 1.3) * variance)));
+    return Array.from({ length: 7 }, (_, i) => Math.max(0, base * (i / 6)));
   }, [invoiceRevenue]);
 
   const pipelineSparkline = useMemo(() => {
     const base = pipelineValue || 0;
     if (base === 0) return [0, 0, 0, 0, 0, 0, 0];
-    const variance = base * 0.1;
-    return Array.from({ length: 7 }, (_, i) => Math.max(0, base * (0.7 + i * 0.04) + (Math.cos(i * 1.1) * variance)));
+    return Array.from({ length: 7 }, (_, i) => Math.max(0, base * (i / 6)));
   }, [pipelineValue]);
 
   const clientsSparkline = useMemo(() => {
     const base = totalClients || 0;
     if (base === 0) return [0, 0, 0, 0, 0, 0, 0];
-    return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (0.5 + i * 0.08) + Math.sin(i * 0.9) * 1.5)));
+    return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (i / 6))));
   }, [totalClients]);
 
   const projectsSparkline = useMemo(() => {
     const base = totalProjects || 0;
     if (base === 0) return [0, 0, 0, 0, 0, 0, 0];
-    return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (0.4 + i * 0.1) + Math.cos(i * 1.2) * 1)));
+    return Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(base * (i / 6))));
   }, [totalProjects]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────
@@ -342,6 +345,18 @@ export default function Dashboard() {
               Your business at a glance — real-time insights, clients, deals, and revenue
             </p>
           </div>
+          {/* ponytail: wired-up Upgrade CTA — opens the previously-unreachable PricingModal */}
+          {subscriptionTier === "free" && (
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shadow-md"
+              onClick={() => setShowPricingModal(true)}
+            >
+              <Crown className="mr-1.5 h-4 w-4" />
+              Upgrade
+            </Button>
+          )}
         </motion.div>
 
         {/* Demo mode banner */}
@@ -720,6 +735,8 @@ export default function Dashboard() {
                       { icon: FileText, label: "Create Proposal", href: "/proposals/new", color: "text-sky-500" },
                       { icon: Receipt, label: "Create Invoice", href: "/invoices/new", color: "text-blue-500" },
                       { icon: UserPlus, label: "Add Client", href: "/clients", color: "text-emerald-500" },
+                      { icon: Timer, label: "Start Timer", href: "/time-tracking", color: "text-orange-500" },
+                      { icon: Trophy, label: "Set a Goal", href: "/goals", color: "text-amber-500" },
                     ].map((action, i) => (
                       <motion.button
                         key={action.label}
@@ -774,7 +791,7 @@ export default function Dashboard() {
         )}
       </PageLayout>
 
-      {/* Pricing Modal */}
+      {/* Pricing Modal — ponytail: now reachable via the Upgrade button in the header */}
       <PricingModal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
