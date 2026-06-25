@@ -71,9 +71,14 @@ import {
   CheckCircle2,
   Loader2,
   Share2,
+  Tag as TagIcon,
+  X,
 } from "lucide-react";
 import { PageLayout } from "@/components/design-system/PageLayout";
 import { ShareRecordsPanel } from "@/components/ShareRecordsPanel";
+// ponytail: read-only badge display + multi-select picker popover for deal cards.
+import { TagPicker, TagBadges } from "@/components/tags";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -104,6 +109,8 @@ interface Deal {
   order: number;
   createdAt: number;
   updatedAt: number;
+  // ponytail: optional tagIds on the deal (added by phase-1a schema patch).
+  tagIds?: string[];
 }
 
 interface PipelineStats {
@@ -294,6 +301,13 @@ export default function Pipeline() {
   const [selectedStageId, setSelectedStageId] = useState<Id<"pipelineStages"> | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // ponytail: tag-filter state for the kanban board — null = no filter, string = tagId.
+  // Filters deals across ALL columns.
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  // ponytail: load the workspace's tags so we can render TagBadges on each deal card
+  // and a tag-filter chip bar above the board.
+  const tagsData = useQuery(api.tags.crud.getTags, { workspaceId: workspaceId as any });
+  const allTags: any[] = tagsData ?? [];
 
   // ── Derived State ──
   // Dedup stages by _id AND by (name+order) — defensive. The backend
@@ -349,7 +363,11 @@ export default function Pipeline() {
     for (const stage of safeStages) {
       map.set(stage._id, []);
     }
-    for (const deal of safeDeals) {
+    // ponytail: optionally narrow deals to those carrying the active tag filter.
+    const filteredDeals = activeTagFilter
+      ? safeDeals.filter((d) => Array.isArray(d.tagIds) && d.tagIds.includes(activeTagFilter))
+      : safeDeals;
+    for (const deal of filteredDeals) {
       const list = map.get(deal.stageId);
       if (list) {
         list.push(deal);
@@ -360,7 +378,7 @@ export default function Pipeline() {
       list.sort((a, b) => a.order - b.order);
     }
     return map;
-  }, [safeStages, safeDeals]);
+  }, [safeStages, safeDeals, activeTagFilter]);
 
   // Win rate: deals in "Won" stage / (deals in "Won" + "Lost" stages)
   const winRate = useMemo(() => {
@@ -934,6 +952,49 @@ export default function Pipeline() {
         {/* ── Kanban Board (only on Pipeline tab; previously rendered unconditionally
              and stacked on top of the Share Records panel, which made the page
              look like the board was duplicated) ── */}
+        {activeTab === "pipeline" && (
+          // ponytail: tag-filter chip bar above the kanban board — toggle pattern,
+          // only renders when there are tags to filter by. Filters deals across all columns.
+          allTags.length > 0 ? (
+            <div className="flex items-center gap-1.5 flex-wrap mb-4">
+              <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                <TagIcon className="h-3 w-3" /> Filter:
+              </span>
+              {allTags.map((t: any) => {
+                const isActive = activeTagFilter === t._id;
+                return (
+                  <button
+                    key={t._id}
+                    type="button"
+                    onClick={() => setActiveTagFilter(isActive ? null : t._id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-colors ${
+                      isActive
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+                    }`}
+                    style={isActive ? undefined : { borderColor: (t.color ?? "#888") + "66", color: t.color ?? undefined }}
+                  >
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: t.color ?? "#888" }}
+                    />
+                    {t.name}
+                    {isActive && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+              {activeTagFilter && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTagFilter(null)}
+                  className="text-xs text-muted-foreground underline hover:text-foreground ml-1"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          ) : null
+        )}
         {activeTab === "pipeline" && (showLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -1035,6 +1096,9 @@ export default function Pipeline() {
                           onDragEnd={handleDragEnd}
                           onClick={() => openDealDetail(deal)}
                           onCreateProposal={() => handleCreateProposalFromDeal(deal)}
+                          // ponytail: pass tags + tag-bearing fields so the card can render
+                          // badges and a Manage Tags popover.
+                          allTags={allTags}
                         />
                       ))}
 
@@ -1959,6 +2023,7 @@ function DealCard({
   onDragEnd,
   onClick,
   onCreateProposal,
+  allTags = [],
 }: {
   deal: Deal;
   stage: Stage;
@@ -1968,9 +2033,13 @@ function DealCard({
   onDragEnd: () => void;
   onClick: () => void;
   onCreateProposal: () => void;
+  // ponytail: workspace tag list for rendering TagBadges + the Manage Tags popover.
+  allTags?: any[];
 }) {
   const sourceInfo = getSourceInfo(deal.source);
   const daysLeft = daysUntilClose(deal.expectedCloseDate);
+  // ponytail: track whether this card's Manage Tags popover is open.
+  const [manageTagsOpen, setManageTagsOpen] = useState(false);
   return (
     <div
       draggable
@@ -1989,6 +2058,31 @@ function DealCard({
     >
       {/* Drag handle + Create Proposal buttons */}
       <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* ponytail: Manage-tags popover — TagPicker with entityId persists
+            immediately via setEntityTags, so no extra save logic needed. */}
+        <Popover open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+              onClick={(e) => { e.stopPropagation(); setManageTagsOpen(true); }}
+              title="Manage tags"
+            >
+              <TagIcon className="h-3 w-3" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px]" align="end" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">Tags for {deal.title}</div>
+              <TagPicker
+                entityType="deals"
+                entityId={deal._id}
+                initialTagIds={deal.tagIds ?? []}
+                categoryHint="general"
+                size="xs"
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
         <button
           className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
           onClick={(e) => {
@@ -2055,6 +2149,16 @@ function DealCard({
           </Badge>
         </div>
       )}
+
+      {/* ponytail: read-only tag badges on each deal card. */}
+      <div className="mb-2">
+        <TagBadges
+          tagIds={deal.tagIds}
+          tags={allTags}
+          max={3}
+          size="xs"
+        />
+      </div>
 
       {/* Footer: Contact + Date */}
       <div className="flex items-center justify-between gap-2 mt-1">
