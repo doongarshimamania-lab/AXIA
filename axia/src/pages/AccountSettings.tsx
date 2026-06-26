@@ -272,13 +272,24 @@ export default function AccountSettings() {
       toast.error("Please fill in all fields");
       return;
     }
+    // ponytail: previously this setTimeout'd for 1.5s then toasted "Support
+    // ticket submitted!" — but no ticket was ever persisted anywhere, so the
+    // user's issue was silently dropped. There is no support-ticket backend
+    // yet. Instead of faking success, we now open the user's mail client with
+    // a prefilled message to hello@axia.com so the request actually reaches
+    // a human. (Audit item #11)
     setIsSubmittingTicket(true);
-    // TODO: Replace with real Convex mutation when support ticket system is implemented
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const subject = encodeURIComponent(`[Support] ${ticketSubject.trim()}`);
+    const body = encodeURIComponent(
+      `${ticketMessage.trim()}\n\n— Sent from Axia Account Settings`
+    );
+    window.location.href = `mailto:hello@axia.com?subject=${subject}&body=${body}`;
     setIsSubmittingTicket(false);
     setTicketSubject("");
     setTicketMessage("");
-    toast.success("Support ticket submitted! We'll get back to you within 24 hours.");
+    toast.success("Opening your email client", {
+      description: "If nothing happened, email hello@axia.com directly.",
+    });
   };
 
   // No mock articles - help articles will come from Convex when implemented
@@ -951,7 +962,21 @@ function SecuritySection({
                 <div className="text-xs text-muted-foreground">Change your login email</div>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="border-border hover:bg-accent">
+            {/* ponytail: previously had no onClick — the button looked
+                clickable but did nothing. Convex Auth doesn't expose an
+                email-change flow (it requires re-verification), so we
+                honestly route the user to support. (Audit item #10) */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border hover:bg-accent"
+              onClick={() =>
+                toast.info("Email change requires verification", {
+                  description:
+                    "Email hello@axia.com from your current address to request an email change.",
+                })
+              }
+            >
               Change
             </Button>
           </div>
@@ -966,7 +991,21 @@ function SecuritySection({
                 <div className="text-xs text-muted-foreground">Update your account password</div>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="border-border hover:bg-accent">
+            {/* ponytail: previously had no onClick. Convex Auth's standard
+                password-reset flow runs through the /auth page's "Forgot
+                password" link, not from inside the authenticated app.
+                (Audit item #10) */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border hover:bg-accent"
+              onClick={() =>
+                toast.info("Password reset", {
+                  description:
+                    "Sign out, then click \"Forgot password\" on the login screen to receive a reset link by email.",
+                })
+              }
+            >
               Change
             </Button>
           </div>
@@ -1074,19 +1113,35 @@ function ConnectionsSection() {
     {}
   );
 
+  // ponytail: wired to real Convex mutations — previously these handlers
+  // only setTimeout + toast.success, leaving the user with a fake "Connected"
+  // banner while nothing was actually written to platformConnections.
+  // Now initiatePlatformConnection creates a pending row (status="pending")
+  // and disconnectPlatform revokes tokens + deletes imported data.
+  // (Audit item #9)
+  const initiateConnection = useMutation(api.platforms.platformAuth.initiatePlatformConnection);
+  const disconnectConnection = useMutation(api.platforms.platformAuth.disconnectPlatform);
+  // ponytail: "Join the waitlist" button previously had no onClick.
+  // Now it calls the real addToWaitlist Convex mutation. (Audit item #10)
+  const joinWaitlist = useMutation(api.waitlist.addToWaitlist);
+
   const [connectingPlatform, setConnectingPlatform] = useState<Platform | null>(null);
   const [disconnectingPlatform, setDisconnectingPlatform] = useState<Platform | null>(null);
 
   const handleConnect = async (platform: Platform) => {
     setConnectingPlatform(platform);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success(`Connected to ${platformLabels[platform]}`, {
-        description: "Your platform data will begin syncing automatically.",
-      });
-    } catch {
+      const result: any = await initiateConnection({ platform });
+      if (result?.alreadyConnected) {
+        toast.info(`Already connected to ${platformLabels[platform]}`);
+      } else {
+        toast.success(`Connection to ${platformLabels[platform]} initiated`, {
+          description: "Your platform data will begin syncing automatically.",
+        });
+      }
+    } catch (err: any) {
       toast.error(`Failed to connect ${platformLabels[platform]}`, {
-        description: "Please try again later.",
+        description: err?.message || "Please try again later.",
       });
     }
     setConnectingPlatform(null);
@@ -1095,12 +1150,14 @@ function ConnectionsSection() {
   const handleDisconnect = async (platform: Platform) => {
     setDisconnectingPlatform(platform);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await disconnectConnection({ platform });
       toast.success(`Disconnected from ${platformLabels[platform]}`, {
         description: "Your platform data has been removed.",
       });
-    } catch {
-      toast.error(`Failed to disconnect ${platformLabels[platform]}`);
+    } catch (err: any) {
+      toast.error(`Failed to disconnect ${platformLabels[platform]}`, {
+        description: err?.message || "Please try again later.",
+      });
     }
     setDisconnectingPlatform(null);
   };
@@ -1289,7 +1346,33 @@ function ConnectionsSection() {
           </div>
           <p className="text-xs text-muted-foreground mt-3">
             We're building OAuth-based integrations to import your clients, projects, invoices, and proposals from these tools.
-            Want early access? <Button variant="link" className="h-auto p-0 text-xs text-primary">Join the waitlist</Button>
+            Want early access?{" "}
+            {/* ponytail: wired to api.waitlist.addToWaitlist — previously this
+                button had no onClick. (Audit item #10) */}
+            <Button
+              variant="link"
+              className="h-auto p-0 text-xs text-primary"
+              onClick={async () => {
+                const email = window.prompt("Enter your email to join the integrations waitlist:");
+                if (!email) return;
+                if (!email.includes("@") || email.length < 5) {
+                  toast.error("Please enter a valid email address");
+                  return;
+                }
+                try {
+                  await joinWaitlist({ email, source: "account-settings-integrations" });
+                  toast.success("You're on the waitlist!", {
+                    description: "We'll be in touch when these integrations launch.",
+                  });
+                } catch (err: any) {
+                  toast.error("Failed to join waitlist", {
+                    description: err?.message || "Please try again later.",
+                  });
+                }
+              }}
+            >
+              Join the waitlist
+            </Button>
           </p>
         </CardContent>
       </Card>

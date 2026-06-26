@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { ClientList } from "@/components/client-protection/ClientList";
-import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
+// ponytail: removed `import { ClientList } from "@/components/client-protection/ClientList"`
+// and `import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile"`.
+// The entire client-protection/ component tree (5 files) was deleted per audit
+// item #26 — it was rendering fabricated statistics and fake upgrade CTAs.
+// Clients.tsx now inlines a minimal honest list of client cards. The policy-profile
+// feature surface is gone (no real backend for it). (Audit items #26 + #28)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -327,52 +331,16 @@ export default function Clients() {
               </div>
             )}
 
-            {/* Client List */}
-            <ClientList
-              clients={filteredClients}
-              selectedClientId={selectedClientId}
-              onSelectClient={setSelectedClientId}
-              onAddClient={() => setShowAddClient(true)}
-              subscriptionTier={subscriptionTier}
-              onUpgrade={() => toast.info("Upgrade feature coming soon")}
-              // ponytail: pass tags + tag-bearing fields so the list can render
-              // badges and a "Manage tags" popover on each card.
-              allTags={allTags}
-            />
-
-            {/* Empty state with CTA */}
-            {!isDemoMode && clients.length === 0 && (
-              <Card className="p-8 bg-card rounded-xl border border-border">
-                <div className="text-center space-y-4">
-                  <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Shield className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">No clients yet</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Add your first client to start tracking protection and policy profiles.
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-3">
-                    <Button onClick={() => setShowAddClient(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Client
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowBulkImport(true)}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Bulk Import
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Client Policy Profile */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
+            {/* Client List — ponytail: inlined minimal honest list.
+                Previously this was <ClientList> from client-protection/ which
+                rendered fabricated protection scores and fake upgrade CTAs.
+                The inline version below shows only real fields from the
+                `clients` table: name, platform, hourly rate, contract type,
+                risk level, tags. No fabricated stats. (Audit item #26) */}
+            {filteredClients.length > 0 && (
+              <div className="space-y-2">
                 {selectedClientId && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2 pb-2">
                     {(canShareRecords || perms.canShare) && (
                       <Button
                         variant="outline"
@@ -416,20 +384,84 @@ export default function Clients() {
                     )}
                   </div>
                 )}
+                {filteredClients.map((c: any) => {
+                  const isSelected = c._id === selectedClientId;
+                  return (
+                    <button
+                      key={c._id}
+                      type="button"
+                      onClick={() => setSelectedClientId(c._id)}
+                      className={`w-full text-left p-4 rounded-xl border transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="font-semibold text-foreground truncate">{c.clientName}</div>
+                          <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="capitalize">{c.platform}</span>
+                            {typeof c.hourlyRate === "number" && (
+                              <span>${c.hourlyRate}/hr</span>
+                            )}
+                            {c.contractType && (
+                              <span className="capitalize">{c.contractType}</span>
+                            )}
+                            {c.riskLevel && (
+                              <span className={`capitalize ${
+                                c.riskLevel === "high" ? "text-red-500" :
+                                c.riskLevel === "medium" ? "text-amber-500" :
+                                "text-emerald-500"
+                              }`}>{c.riskLevel} risk</span>
+                            )}
+                          </div>
+                          {Array.isArray(c.tagIds) && c.tagIds.length > 0 && (
+                            <div className="pt-1">
+                              <TagBadges tagIds={c.tagIds} allTags={allTags} size="sm" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              {selectedClient ? (
-                <ClientPolicyProfile
-                  selectedClient={selectedClient}
-                  tier={subscriptionTier}
-                />
-              ) : (
-                <Card className="p-6 bg-card rounded-xl border border-border">
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Select a client to view policy profile
+            )}
+
+            {/* Empty state with CTA */}
+            {!isDemoMode && clients.length === 0 && (
+              <Card className="p-8 bg-card rounded-xl border border-border">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-primary" />
                   </div>
-                </Card>
-              )}
-            </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">No clients yet</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Add your first client to start tracking protection and policy profiles.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-3">
+                    <Button onClick={() => setShowAddClient(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Client
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowBulkImport(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Bulk Import
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* ponytail: removed the entire "Client Policy Profile" section.
+                It was a wrapper around <ClientPolicyProfile> which rendered
+                fabricated protection-rate stats and relied on the now-deleted
+                api.clients.clientPolicyProfile.getClientPolicyProfile query.
+                The Share / Transfer / Delete buttons that used to live here
+                have been moved up to the inline list header above. (Audit item #26) */}
           </>
         )}
 

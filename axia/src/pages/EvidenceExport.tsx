@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+// ponytail: added useNavigate so the "View Plans" upgrade button can
+// route to /subscription (which reroutes to AccountSettings → SubscriptionSection).
+// (Audit item #18)
+import { useNavigate } from "react-router";
 import {
   Download,
   FileText,
@@ -242,6 +246,8 @@ function EmptyEvidenceState() {
 export default function EvidenceExport() {
   const { tier } = useSubscriptionTier();
   const { isAuthenticated } = useConvexAuth();
+  // ponytail: used by the "View Plans" upgrade button (Audit item #18)
+  const navigate = useNavigate();
 
   // ─── Convex Queries ────────────────────────────────────────────────────────
   const evidenceData = useQuery(
@@ -804,7 +810,12 @@ export default function EvidenceExport() {
                           <p className="text-xs text-muted-foreground">
                             Upgrade to Pro or Expert to export PDF and Legal Packages with compliance verification and cryptographic seals.
                           </p>
-                          <Button variant="outline" size="sm" className="mt-2 text-xs">
+                          <Button variant="outline" size="sm" className="mt-2 text-xs"
+                            // ponytail: previously had no onClick. Now navigates
+                            // to /subscription (which reroutes to AccountSettings
+                            // → SubscriptionSection). (Audit item #18)
+                            onClick={() => navigate("/subscription")}
+                          >
                             <ChevronDown className="mr-1 h-3 w-3" />View Plans
                           </Button>
                         </div>
