@@ -94,4 +94,20 @@ export const complianceTables = {
     .index("by_platform", ["platform"])
     .index("by_last_checked", ["lastChecked"])
     .index("by_workspace", ["workspaceId"]),
+
+  // ponytail: moved rateLimits here from tables/security.ts so it is actually
+  // included in the deployed schema. Previously rateLimit.ts queried a table
+  // that did not exist in the deployment, breaking every mutation in the app.
+  rateLimits: defineTable({
+    bucket: v.string(),          // `${action}::${identifier}::${windowStart}`
+    action: v.string(),          // e.g. "signIn", "createInvoice"
+    identifier: v.string(),      // userId, email, or hashed IP
+    count: v.number(),
+    windowStart: v.number(),
+    windowEnd: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_bucket", ["bucket"])
+    .index("by_window_end", ["windowEnd"])
+    .index("by_action_and_identifier", ["action", "identifier"]),
 };

@@ -53,7 +53,9 @@ function useOwnerAuth() {
   // in the OWNER_PASSWORD Convex env var, never in the JS bundle. Previous
   // implementation hardcoded "@@@@HHH$" in client source which meant anyone
   // who opened DevTools could read it. (v5.4.0 security audit)
-  const verifyOwner = useMutation(api.ownerAuth.ownerAuth_verifyOwnerCredentials);
+  // ponytail: fixed phantom api.ownerAuth → api.security.ownerAuth (the function
+  // lives in convex/security/ownerAuth.ts, so its api path is api.security.ownerAuth.*)
+  const verifyOwner = useMutation(api.security.ownerAuth.ownerAuth_verifyOwnerCredentials);
 
   const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 

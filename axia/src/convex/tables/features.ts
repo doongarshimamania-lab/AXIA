@@ -7,13 +7,20 @@ export const featureTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    token: v.string().maxLength(1000),
+    // ponytail: v5.5.0 — token is now stored as SHA-256 hash (irreversible).
+    // Plaintext token is shown once at creation time, never retrievable after.
+    // Previously this used a plaintext `token` field with a `by_token` index,
+    // but the actual extension.ts code uses tokenHash + tokenSuffix + by_token_hash,
+    // so the schema and the code were out of sync and broke extension pairing.
+    tokenHash: v.string().maxLength(64),
+    // Last 4 chars of plaintext token for UI display only ("...abcd")
+    tokenSuffix: v.string().maxLength(8),
     createdAt: v.number(),
     expiresAt: v.number(),
     lastUsed: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
-    .index("by_token", ["token"])
+    .index("by_token_hash", ["tokenHash"])
     .index("by_workspace", ["workspaceId"]),
 
   networkConnections: defineTable({
