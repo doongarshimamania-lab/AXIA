@@ -2,22 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
   async rewrites() {
     return [
-      // Proxy /timelock/ requests to the Vite app server on port 3001
+      // ponytail: proxy /axia/* to the Vite dev server on port 3000
       {
-        source: '/timelock/:path*',
-        destination: 'http://localhost:3001/:path*',
-      },
-      // Also proxy the root to the Vite app (for direct access)
-      {
-        source: '/assets/:path*',
-        destination: 'http://localhost:3001/assets/:path*',
+        source: '/axia/:path*',
+        destination: 'http://localhost:3000/:path*',
       },
     ];
   },
