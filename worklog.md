@@ -1736,3 +1736,52 @@ Stage Summary — Comprehensive Audit Findings:
 Artifacts produced:
 - Commit 6cccc81 — Dashboard fixes (additive, no removals)
 - This worklog entry — full audit findings
+
+---
+Task ID: audit-cleanup-1
+Agent: main
+Task: Strictly-scoped cleanup per user request — fix Bug #4 (Convex duplicate exports) + remove 4 orphan pages (#5-#8) consolidated into AccountSettings. User explicitly said: do NOT remove the project-protection component tree, do NOT change AccountSettings UI, all functionality must keep working as it does now.
+
+Work Log:
+- Verified Bug #1 (rateLimits table missing) — ALREADY FIXED in tables/compliance.ts:101-112 with ponytail comment
+- Verified Bug #2 (extensionTokens schema mismatch) — ALREADY FIXED in tables/features.ts:6-24 with v5.5.0 hashed tokenHash/tokenSuffix fields with ponytail comment
+- Verified Bug #3 (OwnerDashboard phantom api path) — ALREADY FIXED at OwnerDashboard.tsx:58 with `api.security.ownerAuth.ownerAuth_verifyOwnerCredentials` and ponytail comment
+- Read projectProtection.ts to find 4 duplicate functions at lines 238, 390, 492, 588
+- Confirmed frontend uses standalone file paths exclusively (api.projects.{projectProtectionScore,adaptiveEvidenceSystem,projectHealthDashboard,milestoneProtection}.* — NOT api.projects.projectProtection.*)
+- Confirmed the 4 standalone files exist in src/convex/projects/
+- Read main.tsx — identified 3 orphan imports (PlatformIntegrations line 33, Subscription line 35, HelpCenter line 36). ApiSettings was never imported.
+- Confirmed 3 reroute routes at main.tsx:300-302 (`/platform-integrations`, `/subscription`, `/help-center` → <AccountSettings/>) — kept intact so old navigate() calls work
+- Confirmed AccountSettings.tsx already has the equivalent sections wired: SubscriptionSection (line 565), HelpSection (line 796), ConnectionsSection (line 1067). No UI changes needed.
+- Confirmed only `navigate("/subscription")` exists in Projects.tsx (lines 106, 338) — still works via the reroute
+- Wrote /home/z/my-project/scripts/cleanup_audit_bugs.py (persisted per Script Persistence Rule)
+- Ran the script — deleted 4 orphan page files, removed 3 imports from main.tsx with ponytail comment, removed 4 duplicate functions from projectProtection.ts (file went from 768 → 342 lines)
+- Sanity-checked: no dangling imports of ApiSettings/HelpCenter/Subscription/PlatformIntegrations anywhere in src/ (only the ponytail comment in main.tsx mentions them)
+- Sanity-checked: projectProtection.ts now has 6 exports (was 10) — all 4 duplicates gone, getProjectRiskHeatmap and 5 other non-duplicate functions intact
+- Committed atomically as ab9800e
+
+Stage Summary:
+- Commit ab9800e — 6 files changed, 3 insertions, 2,722 deletions
+- All 4 critical bugs are now resolved (3 were already fixed in earlier commits; #4 fixed in this commit)
+- 4 orphan page files deleted (~2,290 lines): ApiSettings.tsx (264), HelpCenter.tsx (248), Subscription.tsx (1272), PlatformIntegrations.tsx (508)
+- 4 duplicate Convex functions removed from projectProtection.ts (~430 lines)
+- ZERO UI CHANGES — AccountSettings.tsx untouched, all 3 reroute routes preserved, all navigate("/subscription") calls in Projects.tsx still resolve to AccountSettings
+- src/components/project-protection/ tree NOT touched (per user instruction)
+- Script persisted at /home/z/my-project/scripts/cleanup_audit_bugs.py for future iterations
+
+What's left from the original 70-item audit (for user's next decision):
+- MEDIUM items 9-24: fake onClick handlers, setTimeout-based fake actions, etc. (16 items, no deploy blockers)
+- MEDIUM items 25-32: orphan component trees (~58 orphan components, ~5,000+ LOC)
+  * project-protection tree (24 files, ~3,500 LOC) — user said keep
+  * client-protection (3 of 5 orphan)
+  * evidence-library (3 of 8 orphan)
+  * connectors (all 3 orphan)
+  * design-system (6 of 7 orphan)
+  * landing (10 of 16 orphan)
+  * root-level (24 of 47 orphan)
+  * ui shadcn primitives (16 unused)
+- MEDIUM items 33-38: backend orphan functions (361 truly orphaned) + 5 dead table-definition files + 5 unused schema tables + 4 dead users fields
+- MEDIUM items 39-52: dead imports (~30+ instances)
+- MEDIUM items 53-65: stale/hardcoded data pretending to be real
+- LOW items 66-67: schema mismatches in ClientDashboard.tsx and Messages.tsx
+- LOW items 68-70: TODOs
+
