@@ -1785,3 +1785,142 @@ What's left from the original 70-item audit (for user's next decision):
 - LOW items 66-67: schema mismatches in ClientDashboard.tsx and Messages.tsx
 - LOW items 68-70: TODOs
 
+
+---
+Task ID: audit-cleanup-2
+Agent: main
+Task: Strictly-scoped cleanup phase 2 per user request — fix audit items #9, #10, #11, #18 (lying CTAs), #28 (connectors orphan), and remove entire client-protection tree (item #26 — 5 components + 7 convex backend files). User confirmed: items #7 (HelpCenter) and #25 (project-protection tree) are out of scope (#7 already done in ab9800e, #25 user said keep).
+
+Work Log:
+- Read worklog to find audit items 9-24 (Lying CTAs section). Confirmed scope.
+- Investigated AccountSettings.tsx — ConnectionsSection at line 1067, SecuritySection at 923, handleSubmitTicket at 270.
+- Confirmed Convex backend has api.platforms.platformAuth.{initiatePlatformConnection, disconnectPlatform} for #9 fix, and api.waitlist.addToWaitlist for #10 "Join the waitlist" fix.
+- Confirmed no support-ticket backend exists for #11 — chose honest mailto: approach instead of faking success.
+- Fixed #9 in AccountSettings.tsx ConnectionsSection: handleConnect now calls initiateConnection mutation (creates pending row in platformConnections), handleDisconnect calls disconnectPlatform (revokes tokens + deletes imported data). Replaced setTimeout fakes.
+- Fixed #10 in AccountSettings.tsx SecuritySection: 'Change Email' and 'Change Password' buttons now show honest toast explaining the auth flow (no in-app email-change exists; password reset goes through /auth). 'Join the waitlist' button in ConnectionsSection now calls api.waitlist.addToWaitlist with a window.prompt()'d email.
+- Fixed #11 in AccountSettings.tsx handleSubmitTicket: replaced setTimeout fake with mailto: link to hello@axia.com with prefilled subject+body. User's issue actually reaches a human now.
+- Fixed #18 in EvidenceExport.tsx and EvidenceLibrary.tsx: added useNavigate import, declared `const navigate = useNavigate();` at top of component, wired 'View Plans' button onClick to navigate("/subscription") (which reroutes to AccountSettings → SubscriptionSection).
+- Investigated client-protection/ — confirmed 5 component files (ClientDisputeSimulation, ClientPaymentPattern, ClientGapPrediction, ClientPolicyProfile, ClientList). Confirmed ClientPolicyProfile and ClientList are used by Clients.tsx (lines 2-3 imports, lines 331 + 421 usage). Confirmed 3 others are truly orphan.
+- Investigated convex/clients/ — found 7 client-protection backend files (clientProtection.ts 986 lines, clientDisputeSimulation.ts 239 lines, clientGapPrediction.ts 256 lines, clientPolicyProfile.ts 239 lines, clientProtectionScore.ts 139 lines, clientTrustScore.ts 144 lines, clientProtectionSimple.ts 102 lines).
+- Grep-confirmed ZERO frontend usage of api.clients.clientProtection.* and the other 6 backend files. (api.clients.crud.* and api.clients.clientWorkspace.* are heavily used — KEPT.)
+- Investigated connectors/ — confirmed 4 files (FeatureConnector, WorkflowActions, ActivityTimeline, navigationHelpers) all truly orphan. Grep-confirmed zero imports anywhere in src/.
+- Performed Clients.tsx surgery:
+  * Removed imports of ClientList and ClientPolicyProfile (lines 2-3)
+  * Replaced `<ClientList>` JSX (lines 331-341) with inline minimal honest card list:
+    - Each client rendered as a clickable Card with name, platform, hourly rate, contract type, risk level, tag badges
+    - Selected client has highlighted border
+    - NO fabricated stats, NO fake upgrade CTAs
+  * Removed entire 'Client Policy Profile' section (lines 370-432) which contained `<ClientPolicyProfile>` JSX
+  * Moved Share / Transfer Ownership / Delete Client buttons (which lived in the policy profile section) up to the inline list header so they remain accessible when a client is selected
+- Wrote /home/z/my-project/scripts/cleanup_audit_phase2.py (persisted per Script Persistence Rule)
+- Ran the script — deleted 16 files (4,628 lines total), removed 2 empty directories
+- Cleaned up stale references in src/convex/_generated/api.d.ts (7 import lines + 7 API path entries) so project stays buildable until next `npx convex dev` regenerates the file
+- Sanity-check grep: ZERO dangling references to client-protection, connectors, or the deleted convex functions anywhere in src/ (only matches are in ponytail comments)
+- Committed atomically as a94e296
+
+Stage Summary:
+- Commit a94e296 — 21 files changed: 4 modified (AccountSettings, Clients, EvidenceExport, EvidenceLibrary, + api.d.ts), 16 deleted
+- Total deletions: 4,628 lines of dead/fabricated code removed
+- 4 lying CTAs now wired to real Convex mutations or honest messages (#9, #10, #11, #18)
+- Entire client-protection feature surface GONE (5 components + 7 convex backend files)
+- Entire connectors feature surface GONE (4 component files)
+- Clients.tsx still functional — inline honest client list replaces the deleted ClientList component
+- Share/Transfer/Delete client actions preserved (moved to inline list header)
+- ZERO UI changes to AccountSettings.tsx structure (only the lying CTAs were fixed)
+
+What's left from the original 70-item audit (for user's next decision):
+
+=== Already fixed (do not revisit) ===
+- Items 1-4: critical bugs (commits ab9800e + earlier)
+- Items 5-8: orphan pages (commit ab9800e)
+- Items 9, 10, 11, 18: lying CTAs in AccountSettings + EvidenceExport + EvidenceLibrary (commit a94e296)
+- Item 26: client-protection tree (5 components + 7 convex files, commit a94e296)
+- Item 28: connectors tree (4 components, commit a94e296)
+
+=== Out of scope per user instruction ===
+- Item 7: HelpCenter.tsx — already deleted in ab9800e
+- Item 25: project-protection tree — user said keep
+
+=== Still pending — HIGH priority (lying CTAs, fake buttons) ===
+- Item 12: ClientDashboard.tsx:73-78 — Sign Out button just navigates to /auth; doesn't call signOut()
+- Item 13: Clients.tsx:337 — onUpgrade toasts 'Upgrade feature coming soon' (NOTE: this CTA was inside the deleted ClientList — already gone, but worth verifying)
+- Item 14: Reports.tsx:248-251, 292-295 — Upgrade action just calls setSubscriptionTier('pro') locally (no Stripe, no payment)
+- Item 15: OwnerDashboard.tsx:693-713 — 'Fix API' button uses Math.random() > 0.3 to randomly succeed/fail
+- Item 16: OwnerDashboard.tsx:443-483 — 'Do This' buttons for 'Update Compliance Rules' and 'Launch Referral Program' just setTimeout then onComplete(); no real action
+- Item 17: OwnerDashboard.tsx:524-529 — 'Send to All' button fakes success animation, doesn't actually send
+- Item 19: EvidenceExport.tsx:233 and EvidenceLibrary.tsx:583 — 'Start Collecting Evidence' button only toasts
+- Item 20: PaymentPatterns.tsx:135 — 'Create Your First Invoice' button only toasts instead of navigating to /invoices/new
+- Item 21: ClientSignup.tsx:14 — useMutation('clientAuth:registerClient' as any) uses string-form with as any cast instead of api.clientAuth.registerClient
+- Item 22: landing/Footer.tsx:26 — All 16 footer link buttons use onClick={() => {}}. Imports useNavigate but never calls navigate()
+- Item 23: landing/FeatureComparison.tsx:63,166 — addToWaitlist mutation declared but never called. setLoadingTier declared but never invoked. Buttons appear to have loading states but don't.
+- Item 24: project-protection/score/ProtectionScoreCardExpert.tsx — formalizeDialogOpen state declared and dialog rendered but setFormalizeDialogOpen(true) is never called. Dialog permanently closed. (In project-protection tree that user said keep.)
+
+=== Still pending — MEDIUM (orphan component trees, ~53 components, ~3,500+ LOC) ===
+- Item 27: 3 of 8 evidence-library/ components orphan — EvidenceHealthScore, EvidenceGapPrediction, DisputeSuccessSimulation. Plus 3 orphan props (protectedHours, hasAccess, successRate declared but never read).
+- Item 29: 6 of 7 design-system/ orphan — StatCard, PageHeader, StatusBadge, EmptyState, ErrorBoundary, TabNav + barrel index.ts. Only PageLayout is used.
+- Item 30: 10 of 16 landing/ orphan — Hero, HowItWorks, PricingCard, ProblemSection, Testimonials, ValueProposition, WaitlistCTA, WaitlistForm, FeatureComparison, Features.
+- Item 31: 24 of 47 root-level components orphan — AIDisputePrediction, ComplianceStatusWidget, ConvexErrorBoundary, CorePositioning, CrossPlatformVerification, CustomPolicyAnalyzer, EvidenceCollection, EvidenceCollector, EvidenceMonitor, ExtensionTokenSection, LogoDropdown, LostIncomeCalculator, PersonalizedProtectionPlan, PlatformConnectionCard, PlatformConnections, PremiumValueSection, ProtectionMetrics, RealTimeProtectionAdvisor, ReportLimitModal, SectionErrorBoundary, Teams, TimelinePopup, WCVMVerificationBadge, WorkDiarySimulator.
+- Item 32: 16 of 47 ui/ shadcn primitives unused — aspect-ratio, breadcrumb, carousel, chart, command, context-menu, drawer, form, menubar, navigation-menu, pagination, radio-group, resizable, sidebar, slider, toggle-group.
+
+=== Still pending — MEDIUM (backend orphan functions, 361 truly orphaned) ===
+- Item 33: 118 functions in 10 flat-file duplicate modules (clients.ts, proposals.ts, deals.ts, scope.ts, workSessions.ts, evidence.ts, clientAuth.ts, teams.ts, messaging/channelMutations.ts, messaging/messageMutations.ts) — older parallel implementations of the subdir */crud.ts versions. Frontend uses subdir versions exclusively. Flat files are 100% dead AND broken against current schema.
+- Item 34: invoices.ts flat file — 30 of 32 functions orphaned; 2 alive via cron jobs (processDueReminders, processRecurringInvoices). Move those 2 to billing/ then delete invoices.ts.
+- Item 35: 14 entire unwired feature surfaces (each is a product decision: build UI or delete backend):
+  * Client portal (clients/clientPortal.ts — 12 functions)
+  * Custom fields (customFields/crud.ts — 7 functions; CustomFieldManager.tsx component exists but doesn't call them)
+  * Milestone alerts/reports/snapshots (10 functions across 3 files)
+  * Premium features (15 functions: teamValidation, protectionAdvisor, protectionPlans, crossPlatformVerification)
+  * Premium network (5 functions)
+  * Client policies (4 functions in policies/clientPolicies.ts)
+  * Freelancer directory (3 functions)
+  * Verification requests (4 functions)
+  * WCVM (3 functions)
+  * Tier detection / upgrade tracking (5 functions)
+  * Consent management (12 functions across security/consent, security/audit, audit/storeConsentAudit)
+  * Compliance alerts (3 functions)
+  * Time blocks (4 functions)
+  * Transfer ownership (5 functions)
+- Item 36: 5 dead table-definition files — tables/business.ts, tables/platform.ts, tables/work.ts, tables/clients.ts, tables/security.ts define 31 table duplicates NOT imported by schema.ts. (tables/security.ts already salvaged for rateLimits + extensionTokens in earlier commit.)
+- Item 37: 5 schema tables defined but never read/written — appUsage, automatedDisputeReports, complianceCertificates, dataLineage, policyIntelligence. Speculative future features.
+- Item 38: 4 dead fields on users table — lastVulnerabilityCheck, totalRejectedHours, totalLostIncome, platformSyncStatus. Never written by any mutation.
+
+=== Still pending — MEDIUM (dead imports, ~30+ instances) ===
+- Item 39: AccountSettings.tsx — 13 dead imports (Search, Headphones, Phone, Bug, Lightbulb, PlayCircle, ExternalLink, ArrowRight, CircleDot, Brain, BarChart3, HardDrive, useQueryTimeout)
+- Item 40: Auth.tsx — 6 dead Dialog component imports
+- Item 41: ClientWorkspace.tsx — Eye, ExternalLink
+- Item 42: Dashboard.tsx — 10 dead icons (TrendingUp, FileSignature, CreditCard, ArrowUpRight, ArrowDownRight, Minus, Target, BarChart3, Building2, PieChart) — left in place per user 'do not remove anything' instruction
+- Item 43: EvidenceLibrary.tsx — ChevronUp
+- Item 44: Goals.tsx — TagIcon, Popover, PopoverContent, PopoverTrigger
+- Item 45: InvoiceBuilder.tsx — Clock, Globe
+- Item 46: Landing.tsx — user destructured unused, scrollToFinalCTA function never called
+- Item 47: Messages.tsx — 3 useState calls with no setter (vestigial pre-Convex state)
+- Item 48: OnboardingSource.tsx — useEffect
+- Item 49: OwnerDashboard.tsx — 10 dead imports (ArrowUp, ArrowDown, ArrowRight, XCircle, TrendingUp, Zap, Target, Progress, createContext, useContext)
+- Item 50: ProposalBuilder.tsx — Sparkles
+- Item 51: TeamManagement.tsx — Palette
+- Item 52: Plus dead imports across ~20 orphan components (will be resolved when those orphan trees are deleted)
+
+=== Still pending — MEDIUM (stale/hardcoded data pretending to be real) ===
+- Item 53: AccountSettings.tsx:488-493 — 'Hours Protected: 124.5h', 'Denial Rate: 0%' hardcoded
+- Item 54: AccountSettings.tsx:988, 992 — 'Last Login: Today at 10:30 AM', 'Active Sessions: 1' hardcoded
+- Item 55: ClientDashboard.tsx:98, 108 — 'Pending Requests: 0', 'Verified Professionals: 0' hardcoded
+- Item 56: OwnerDashboard.tsx — entire dashboard is mockup: daysRemaining = null, hardcoded apiStatuses, Math.random() fix-API, fabricated priorityActions list with fake +\$72 MRR numbers, mrr={null} always
+- Item 57: PaymentPatterns.tsx:233, 239 — avgPaymentDays hardcoded per-platform (toptal=7.1, upwork=5.2, else=3.8); trend hardcoded (-3 or 12)
+- Item 58: Reports.tsx:228 — resolvedAt falls back to generatedAt + 7 days (fabricated)
+- Item 59: Reports.tsx:268 — hourly rate defaults to \$75 if user leaves blank
+- Item 60: TeamManagement.tsx:220-243 — projectsAssigned: 0, hoursThisWeek: 0, pendingInvoiceCount: 0, totalRevenue: 0, totalHoursThisWeek: 0, protectionScore: 0 hardcoded
+- Item 61: ClientDisputeSimulation.tsx — 8 fabricated percentage statistics presented as fact [FILE DELETED in a94e296 — RESOLVED]
+- Item 62: CrossPlatformVerification.tsx — hardcoded consistencyScore: 94 and platform list
+- Item 63: LostIncomeCalculator.tsx — fabricated '83% Average Success Rate' + 'Based on Axia Expert verification' attribution
+- Item 64: AIDisputePrediction.tsx:105-106 — hardcoded mock risk factor narrative
+- Item 65: Pricing inconsistency across orphan components — Starter is \$4 in ClientDisputeSimulation/ClientGapPrediction but \$7 in FeatureComparison/LostIncomeCalculator. Pro is \$7 vs \$15. Expert is \$12 vs \$49. [Partially resolved — ClientDisputeSimulation + ClientGapPrediction deleted in a94e296]
+
+=== Still pending — LOW (schema mismatches) ===
+- Item 66: ClientDashboard.tsx reads userProfile.verificationCount, industry, companySize, contactName, companyName from users table — none of these fields exist. The page fetches a freelancer record and pretends it's a client company.
+- Item 67: Messages.tsx reads m.reactions, m.threadReplyCount, m.readBy, m.authorName, m.isEdited, m.isPinned from message query results — not columns on messages table; must be computed in listMessages query (didn't audit query body).
+
+=== Still pending — LOW (TODOs) ===
+- Item 68: ApiSettings.tsx:39 — 'Replace with real Convex mutation when API access notification system is implemented' [FILE DELETED in ab9800e — RESOLVED]
+- Item 69: AccountSettings.tsx:276 — 'Replace with real Convex mutation when support ticket system is implemented' [RESOLVED in a94e296 — handleSubmitTicket now uses mailto: instead of faking it]
+- Item 70: HelpCenter.tsx:53 — same TODO [FILE DELETED in ab9800e — RESOLVED]
+
