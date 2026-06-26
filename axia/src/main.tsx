@@ -30,10 +30,9 @@ import Invoices from "./pages/Invoices.tsx";
 import InvoiceBuilder from "./pages/InvoiceBuilder.tsx";
 import PaymentPatterns from "./pages/PaymentPatterns.tsx";
 import Reports from "./pages/Reports.tsx";
-import PlatformIntegrations from "./pages/PlatformIntegrations.tsx";
 import EvidenceExport from "./pages/EvidenceExport.tsx";
-import Subscription from "./pages/Subscription.tsx";
-import HelpCenter from "./pages/HelpCenter.tsx";
+// ponytail: removed orphan page imports — ApiSettings, HelpCenter, Subscription, PlatformIntegrations are now fully consolidated into AccountSettings.tsx (which has SubscriptionSection, HelpSection, ConnectionsSection). The route aliases /subscription /help-center /platform-integrations are kept below as redirects to /account-settings so existing navigate() calls (e.g. Projects.tsx upgrade CTAs) keep working.
+
 import Pipeline from "./pages/Pipeline.tsx";
 import Proposals from "./pages/Proposals.tsx";
 import ProposalBuilder from "./pages/ProposalBuilder.tsx";
