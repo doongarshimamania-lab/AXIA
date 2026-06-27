@@ -839,12 +839,13 @@ export default function Pipeline() {
               Track and manage your deals from lead to close
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {import.meta.env.DEV && safeDeals.length === 0 && !isLoading && (
               <Button
                 onClick={handleSeedData}
                 disabled={isSeeding}
                 variant="outline"
+                size="sm"
                 className="gap-2"
               >
                 {isSeeding ? (
@@ -867,6 +868,7 @@ export default function Pipeline() {
             <Button
               onClick={handleOpenImportDialog}
               variant="outline"
+              size="sm"
               className="gap-2"
               disabled={safeStages.length === 0}
             >
@@ -880,6 +882,7 @@ export default function Pipeline() {
                 }
               }}
               disabled={safeStages.length === 0}
+              size="sm"
               className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             >
               <Plus className="h-4 w-4" />

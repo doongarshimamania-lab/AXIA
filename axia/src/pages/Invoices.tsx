@@ -571,7 +571,7 @@ export default function Invoices() {
               )}
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {import.meta.env.DEV && safeInvoices.length === 0 && (
               <Button
                 variant="outline"
@@ -594,6 +594,7 @@ export default function Invoices() {
               Bulk Import
             </Button>
             <Button
+              size="sm"
               className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-primary-foreground gap-2"
               onClick={() => navigate("/invoices/new")}
             >

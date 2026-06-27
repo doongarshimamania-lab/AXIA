@@ -332,7 +332,7 @@ export default function Dashboard() {
       <PageLayout maxWidth="max-w-[1400px]">
         {/* ─── Header ─────────────────────────────────────────────────── */}
         <motion.div
-          className="flex items-start justify-between mb-8"
+          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}

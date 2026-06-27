@@ -264,7 +264,9 @@ export default function Messages() {
   );
 
   return (
-    <div className="flex h-[calc(100vh)] bg-background">
+    // ponytail: subtract 56px (h-14) mobile header on mobile only — desktop has no top header.
+    // Without this, the bottom of the chat input is hidden behind the mobile header offset.
+    <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh)] bg-background">
       <ChannelList
         channels={activeChannels}
         activeChannelId={activeChannelId}

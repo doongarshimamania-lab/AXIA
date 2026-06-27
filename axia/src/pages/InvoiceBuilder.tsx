@@ -629,7 +629,8 @@ export default function InvoiceBuilder() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* ponytail: flex-wrap so the 5-button row wraps on mobile instead of overflowing */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"

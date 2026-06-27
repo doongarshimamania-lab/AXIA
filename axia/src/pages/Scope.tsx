@@ -776,18 +776,18 @@ export default function Scope() {
   return (
     <div className="w-full min-h-screen bg-background">
       <PageLayout spaced>
-        {/* Page Header */}
-        <div className="flex items-start justify-between">
+        {/* Page Header — ponytail: responsive, stacks on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
-              <Shield className="w-8 h-8 text-primary" />
+              <Shield className="w-8 h-8 text-primary shrink-0" />
               Scope Protection
             </h1>
             <p className="text-muted-foreground mt-1">
               Define project scope, track changes, formalize scope creep, and protect your income
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               onClick={() => setShowFormalizeDialog(true)}
               variant="outline"

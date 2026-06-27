@@ -220,7 +220,11 @@ function DashboardLayout() {
 
   return (
     <div className="flex w-full min-h-screen">
-      <CollapsibleSidebar />
+      {/* ponytail: desktop sidebar — hidden on mobile. The mobile sidebar
+          lives inside MobileHeader's Sheet, so rendering <CollapsibleSidebar />
+          here unconditionally caused it to appear TWICE on mobile (once inline
+          above the page content, once in the Sheet). Guard with !isMobile. */}
+      {!isMobile && <CollapsibleSidebar />}
       {/* Mobile header with hamburger */}
       {isMobile && <MobileHeader />}
       <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>

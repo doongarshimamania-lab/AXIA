@@ -215,16 +215,18 @@ export default function Projects() {
   return (
     <div className="w-full min-h-screen bg-background text-foreground">
       <PageLayout className="space-y-8">
-          <div className="mb-6">
-            <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
-              Project Protection
-            </h1>
-            <p className="text-[16px] text-muted-foreground">
-              Manage your project protection, track evidence, and monitor dispute risks.
-            </p>
-          </div>
-
-          <div className="mb-4 flex items-center gap-2">
+          {/* ponytail: responsive header — title + action buttons in one row on sm+,
+              stacked on mobile. All buttons size="sm" so mobile and laptop match. */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-[32px] font-bold text-foreground tracking-tight mb-2">
+                Project Protection
+              </h1>
+              <p className="text-[16px] text-muted-foreground">
+                Manage your project protection, track evidence, and monitor dispute risks.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
             {/* ponytail: real New Project dialog — production path */}
             <Button onClick={() => setShowNewProjectDialog(true)} size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
               <Plus className="h-4 w-4 mr-2" />
@@ -267,6 +269,7 @@ export default function Projects() {
                 Transfer Ownership
               </Button>
             )}
+            </div>
           </div>
 
           <div className="space-y-6">

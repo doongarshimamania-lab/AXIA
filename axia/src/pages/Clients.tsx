@@ -1,15 +1,18 @@
-import { useState, useEffect, useRef } from "react";
-// ponytail: removed `import { ClientList } from "@/components/client-protection/ClientList"`
-// and `import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile"`.
-// The entire client-protection/ component tree (5 files) was deleted per audit
-// item #26 — it was rendering fabricated statistics and fake upgrade CTAs.
-// Clients.tsx now inlines a minimal honest list of client cards. The policy-profile
-// feature surface is gone (no real backend for it). (Audit items #26 + #28)
-import { Card } from "@/components/ui/card";
+import { useState, useEffect, useRef, useCallback } from "react";
+// ponytail: previously this page imported `ClientList` and `ClientPolicyProfile`
+// from @/components/client-protection/. That tree was deleted per audit item #26
+// because it rendered fabricated protection scores, totalHours, totalValue,
+// and a fake "Payment Pattern Analysis" upgrade CTA. The polished card UI
+// has now been restored INLINE below — but WITHOUT the fabricated stats.
+// Only real fields from the `clients` table are shown: name, platform,
+// hourly rate, contract type, risk level, tags. (Audit items #26 + #28)
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -20,7 +23,7 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft, Tag as TagIcon, X } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft, Tag as TagIcon, X, Copy, Check, ExternalLink } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
@@ -81,6 +84,15 @@ export default function Clients() {
   const [formTagIds, setFormTagIds] = useState<string[]>([]);
   // ponytail: tag-filter state for the client list — null = no filter, string = tagId.
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  // ponytail: per-card "Manage tags" popover state — holds the client _id whose
+  // tag popover is currently open, or null when none is open.
+  const [manageTagsFor, setManageTagsFor] = useState<string | null>(null);
+  // ponytail: per-card "Share workspace" dialog state — holds the client _id
+  // being shared, the generated token (once ready), and copy/loading flags.
+  const [shareClientId, setShareClientId] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // ─── Loading timeout pattern ───────────────────────────────────────────
   const { isDisconnected } = useConvexConnectionState();
@@ -215,11 +227,87 @@ export default function Clients() {
     setFormTagIds([]);
   };
 
+  // ponytail: per-card Share handler — generates a client-workspace token via
+  // the (currently optional) clientWorkspace.generateClientWorkspaceToken
+  // mutation. Falls back to a demo token if the API isn't wired or the ID is
+  // a mock ID (so demo-mode users can still see the share dialog).
+  const clientWorkspaceApi = (api as any).clients?.clientWorkspace;
+  const generateToken = useMutation(
+    clientWorkspaceApi?.generateClientWorkspaceToken ?? null
+  );
+
+  const isMockId = (id: string): boolean => {
+    if (id.startsWith("client_") || id.startsWith("mem_") || id.startsWith("proj_")) return true;
+    if (id.length < 16 || id.includes("_")) return true;
+    return false;
+  };
+
+  const generateDemoToken = (clientId: string): string => {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const segments: string[] = ["demo"];
+    for (let s = 0; s < 3; s++) {
+      let seg = "";
+      for (let i = 0; i < 8; i++) {
+        seg += chars[Math.floor(Math.random() * chars.length)];
+      }
+      segments.push(seg);
+    }
+    return segments.join("-");
+  };
+
+  const handleShareClient = useCallback(async (clientId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShareClientId(clientId);
+    setShareLoading(true);
+    setShareToken(null);
+    try {
+      if (isMockId(clientId)) {
+        const demoToken = generateDemoToken(clientId);
+        setShareToken(demoToken);
+      } else {
+        if (!generateToken) {
+          toast.error("Share feature requires authentication. Please sign in.");
+          setShareClientId(null);
+          setShareLoading(false);
+          return;
+        }
+        const result = await generateToken({ clientId: clientId as any });
+        if (result) {
+          setShareToken(result.token);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate share link. You may need to be authenticated.");
+      setShareClientId(null);
+    }
+    setShareLoading(false);
+  }, [generateToken]);
+
+  const copyShareLink = () => {
+    if (!shareToken) return;
+    const url = `${window.location.origin}/workspace/${shareToken}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success("Link copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "low": return "text-emerald-500 bg-emerald-500/10";
+      case "medium": return "text-yellow-500 bg-yellow-500/10";
+      case "high": return "text-red-500 bg-red-500/10";
+      default: return "text-muted-foreground bg-muted";
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-screen bg-background">
       <PageLayout spaced>
-        <div className="flex items-center justify-between">
+        {/* ponytail: responsive header — stacks vertically on mobile, horizontally on sm+.
+            All buttons use size="sm" so mobile and laptop render IDENTICAL button heights. */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-[32px] font-bold text-foreground tracking-tight mb-2">
               Clients
@@ -228,7 +316,7 @@ export default function Clients() {
               Manage client policy profiles and protection settings.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -247,7 +335,7 @@ export default function Clients() {
               <Upload className="h-4 w-4" />
               Bulk Import
             </Button>
-            <Button onClick={() => setShowAddClient(true)}>
+            <Button size="sm" onClick={() => setShowAddClient(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Client
             </Button>
@@ -331,103 +419,220 @@ export default function Clients() {
               </div>
             )}
 
-            {/* Client List — ponytail: inlined minimal honest list.
-                Previously this was <ClientList> from client-protection/ which
-                rendered fabricated protection scores and fake upgrade CTAs.
-                The inline version below shows only real fields from the
-                `clients` table: name, platform, hourly rate, contract type,
-                risk level, tags. No fabricated stats. (Audit item #26) */}
+            {/* ponytail: Client List — restored to the polished Card-based layout
+                that lived in @/components/client-protection/ClientList before
+                audit item #26. The fabricated stats (protectionScore %, totalHours,
+                totalValue, fake Payment Pattern Analysis, fake Upgrade CTA) are
+                GONE — only real fields from the `clients` table are rendered:
+                name, platform, hourlyRate, contractType, riskLevel, tags.
+                Per-card actions (Manage Tags popover, Share workspace dialog,
+                risk badge) are preserved because they call real mutations.
+                The selected-client Share/Transfer/Delete actions now live in a
+                toolbar above the cards so they're reachable on mobile too. */}
             {filteredClients.length > 0 && (
-              <div className="space-y-2">
-                {selectedClientId && (
-                  <div className="flex items-center justify-end gap-2 pb-2">
-                    {(canShareRecords || perms.canShare) && (
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      Client Protection Hub
+                    </CardTitle>
+                    <Button size="sm" onClick={() => setShowAddClient(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Client
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* ponytail: selected-client action toolbar — wraps on mobile. */}
+                  {selectedClientId && (
+                    <div className="flex items-center gap-2 flex-wrap pb-3 mb-3 border-b border-border">
+                      {(canShareRecords || perms.canShare) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => {
+                            setSharingRecord({
+                              id: selectedClientId!,
+                              type: "client",
+                              sharing: (selectedClient as any)?.sharing || [],
+                            });
+                            setShowShareDialog(true);
+                          }}
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </Button>
+                      )}
+                      {perms.isOwner && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                          onClick={() => setShowTransferDialog(true)}
+                        >
+                          <ArrowRightLeft className="h-4 w-4" />
+                          Transfer Ownership
+                        </Button>
+                      )}
+                      {(canDeleteRecords || perms.canDelete) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                          onClick={() => setShowDeleteConfirm(true)}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Client
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {filteredClients.map((c: any) => {
+                      const isSelected = c._id === selectedClientId;
+                      return (
+                        <div
+                          key={c._id}
+                          className={`p-4 border border-border rounded-lg hover:bg-muted/50 transition cursor-pointer ${
+                            isSelected ? 'ring-2 ring-primary' : ''
+                          }`}
+                          onClick={() => setSelectedClientId(c._id === selectedClientId ? null : c._id)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="min-w-0">
+                                <div className="font-medium text-foreground truncate">{c.clientName}</div>
+                                <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <span className="capitalize">{c.platform}</span>
+                                  {typeof c.hourlyRate === "number" && (
+                                    <span>${c.hourlyRate}/hr</span>
+                                  )}
+                                  {c.contractType && (
+                                    <span className="capitalize">{c.contractType}</span>
+                                  )}
+                                </div>
+                                {Array.isArray(c.tagIds) && c.tagIds.length > 0 && (
+                                  <div className="mt-1">
+                                    <TagBadges tagIds={c.tagIds} tags={allTags} max={3} size="xs" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {/* ponytail: Manage-tags popover */}
+                              <Popover open={manageTagsFor === c._id} onOpenChange={(o) => setManageTagsFor(o ? c._id : null)}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={(e) => { e.stopPropagation(); setManageTagsFor(c._id); }}
+                                    title="Manage tags"
+                                  >
+                                    <TagIcon className="h-3.5 w-3.5 mr-1" />
+                                    Tags
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[280px] sm:w-[320px]" align="end" onClick={(e) => e.stopPropagation()}>
+                                  <div className="space-y-2">
+                                    <div className="text-xs font-medium text-muted-foreground">Tags for {c.clientName}</div>
+                                    <TagPicker
+                                      entityType="clients"
+                                      entityId={c._id}
+                                      initialTagIds={c.tagIds ?? []}
+                                      categoryHint="client"
+                                    />
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                              {c.riskLevel && (
+                                <Badge className={getRiskColor(c.riskLevel)}>
+                                  {c.riskLevel} risk
+                                </Badge>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30"
+                                onClick={(e) => handleShareClient(c._id, e)}
+                                title="Share workspace with client"
+                              >
+                                <Share2 className="h-3.5 w-3.5 mr-1" />
+                                Share
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+            /* ponytail: Share-link Dialog for the per-card Share button.
+               Kept outside the Card so it overlays the whole page when open. */}
+            <Dialog open={shareClientId !== null} onOpenChange={(open) => { if (!open) { setShareClientId(null); setShareToken(null); } }}>
+              <DialogContent className="sm:max-w-md max-w-[calc(100%-2rem)]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Share2 className="w-5 h-5 text-violet-500" />
+                    Share Client Workspace
+                  </DialogTitle>
+                  <DialogDescription>
+                    Generate a shareable link for this client. They can view their projects, proposals, invoices, and team — no login required.
+                  </DialogDescription>
+                </DialogHeader>
+                {shareLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : shareToken ? (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                      <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                        {shareToken?.startsWith("demo-")
+                          ? "Demo share link generated! (Using demo data — link will show sample content)"
+                          : "Share link generated successfully!"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 font-mono truncate">
+                        {window.location.origin}/workspace/{shareToken}
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setSharingRecord({
-                            id: selectedClientId!,
-                            type: "client",
-                            sharing: (selectedClient as any)?.sharing || [],
-                          });
-                          setShowShareDialog(true);
-                        }}
+                        onClick={copyShareLink}
+                        className="shrink-0"
                       >
-                        <Share2 className="h-4 w-4" />
-                        Share
+                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       </Button>
-                    )}
-                    {perms.isOwner && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                        onClick={() => setShowTransferDialog(true)}
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Transfer Ownership
-                      </Button>
-                    )}
-                    {(canDeleteRecords || perms.canDelete) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Client
-                      </Button>
-                    )}
+                    </div>
+                    <a
+                      href={`/workspace/${shareToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Preview as client
+                    </a>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        <strong>Note:</strong> Anyone with this link can view this client's projects, proposals, and invoices. The client will only see their own data.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-gray-500">
+                    Unable to generate link. Make sure you're authenticated.
                   </div>
                 )}
-                {filteredClients.map((c: any) => {
-                  const isSelected = c._id === selectedClientId;
-                  return (
-                    <button
-                      key={c._id}
-                      type="button"
-                      onClick={() => setSelectedClientId(c._id)}
-                      className={`w-full text-left p-4 rounded-xl border transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-card hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1 min-w-0">
-                          <div className="font-semibold text-foreground truncate">{c.clientName}</div>
-                          <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className="capitalize">{c.platform}</span>
-                            {typeof c.hourlyRate === "number" && (
-                              <span>${c.hourlyRate}/hr</span>
-                            )}
-                            {c.contractType && (
-                              <span className="capitalize">{c.contractType}</span>
-                            )}
-                            {c.riskLevel && (
-                              <span className={`capitalize ${
-                                c.riskLevel === "high" ? "text-red-500" :
-                                c.riskLevel === "medium" ? "text-amber-500" :
-                                "text-emerald-500"
-                              }`}>{c.riskLevel} risk</span>
-                            )}
-                          </div>
-                          {Array.isArray(c.tagIds) && c.tagIds.length > 0 && (
-                            <div className="pt-1">
-                              <TagBadges tagIds={c.tagIds} allTags={allTags} size="sm" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              </DialogContent>
+            </Dialog>
 
             {/* Empty state with CTA */}
             {!isDemoMode && clients.length === 0 && (

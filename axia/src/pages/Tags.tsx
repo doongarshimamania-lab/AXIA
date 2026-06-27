@@ -314,7 +314,7 @@ export default function Tags() {
 
           <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 shrink-0">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 shrink-0">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Tag
               </Button>

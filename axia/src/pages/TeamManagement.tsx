@@ -529,11 +529,11 @@ export default function TeamManagement() {
   return (
     <PageLayout>
       <div className="w-full space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header — ponytail: responsive, stacks on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-purple-500" />
+              <Building2 className="w-8 h-8 text-purple-500 shrink-0" />
               {activeWorkspace?.name || "Team Workspace"}
             </h1>
             <p className="text-muted-foreground">
@@ -541,8 +541,8 @@ export default function TeamManagement() {
             </p>
           </div>
           {canManageTeam && (
-            <div className="flex gap-2">
-              <Button className="gap-2" onClick={() => setShowInviteDialog(true)}>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" className="gap-2" onClick={() => setShowInviteDialog(true)}>
                 <UserPlus className="w-4 h-4" />
                 Invite Member
               </Button>
@@ -632,8 +632,8 @@ export default function TeamManagement() {
           </Card>
         )}
 
-        {/* Role Breakdown */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* Role Breakdown — ponytail: 1 column on mobile, 3 on sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30">
             <div className="flex items-center gap-2 mb-1">
               <Crown className="w-4 h-4 text-amber-500" />

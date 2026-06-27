@@ -518,27 +518,29 @@ export default function ProposalBuilder() {
     >
       <PageLayout narrow>
         {/* ─── Top Bar ────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+        {/* ponytail: responsive header — stacks vertically on mobile, row on sm+.
+            All buttons size="sm" so mobile and laptop render IDENTICAL button heights. */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-muted-foreground"
+              className="gap-1.5 text-muted-foreground shrink-0"
               onClick={() => navigate("/proposals")}
             >
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div className="h-5 w-px bg-border" />
+            <div className="h-5 w-px bg-border shrink-0" />
             <h1
-              className="text-[22px] font-bold text-foreground"
+              className="text-[22px] font-bold text-foreground truncate"
               style={{ fontFamily: "Space Grotesk, sans-serif" }}
             >
               {isEditing ? "Edit Proposal" : "Proposal Builder"}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
