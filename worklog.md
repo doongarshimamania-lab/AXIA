@@ -1951,3 +1951,32 @@ Stage Summary:
 - Build passes, deployed site live.
 - Known history noise: commits d4ac8b8 and 7480b28 have identical messages (rebase artifact from when user pushed e5f011c directly to GitHub mid-session). Working tree is correct; history duplicate is cosmetic and not worth a force-push to clean up.
 - Pre-existing bundle bloat: main chunk is 2.5MB (gzip 742KB) — caused by heavy deps (pdf, html2canvas, purify), NOT by this commit's 407 lines added to Clients.tsx. Code-splitting those deps is a separate task.
+
+---
+Task ID: mobile-ui-fix-2
+Agent: main
+Task: User reported 3 remaining mobile issues after commit 9ccc1db: (1) team switcher (change from one team to another) missing on mobile sidebar — present on laptop but not on mobile; (2) Clients list "still showing the old ones"; (3) many pages require horizontal scroll on mobile to view whole content — fix every page so content fits without horizontal scroll.
+
+Work Log:
+- Investigated sidebar: CollapsibleSidebar.tsx has two render branches — desktop (motion.div hidden md:flex, lines 195-547) and mobile (lines 549-605, rendered inside MobileHeader's Sheet). The desktop branch renders <ProfileSection/> + <WorkspaceSwitcher/> at lines 269-283. The mobile branch only had Logo + nav + theme toggle. That's why mobile users couldn't switch teams.
+- Verified deployed bundle: fetched https://axia-bay.vercel.app/assets/index-BXSux503.js and grep'd for "Client Protection Hub" — found it. The polished Clients UI from commit 9ccc1db IS deployed. User's "old ones" complaint is browser cache; will need hard refresh.
+- Audited horizontal-scroll causes across all pages: found 3 classes of overflow.
+  (a) Tables wrapped in 'overflow-hidden' instead of 'overflow-x-auto' — ProposalBuilder.tsx (2 tables at lines 1061, 1352), OwnerDashboard.tsx (7-col waitlist table at line 941).
+  (b) Fixed multi-col grids with no mobile fallback — OwnerDashboard.tsx grid-cols-12 with col-span-6 cards (line 1197), Scope.tsx 5 instances of grid-cols-4 / grid-cols-3 (lines 275, 407, 514, 540, 1028).
+  (c) Explicit min-width on table — Invoices.tsx min-w-[400px] at line 947.
+- Fixes applied:
+  - main.tsx: added overflow-x-hidden to DashboardLayout content root (safety net).
+  - CollapsibleSidebar.tsx: added <ProfileSection/> + <WorkspaceSwitcher/> to mobile sidebar block, matching desktop order.
+  - ProposalBuilder.tsx: 2 table wrappers overflow-hidden -> overflow-x-auto md:overflow-hidden.
+  - OwnerDashboard.tsx: wrapped 7-col waitlist table in overflow-x-auto div; grid-cols-12 col-span-6 -> grid-cols-1 sm:grid-cols-2.
+  - Invoices.tsx: removed min-w-[400px] from line-items table.
+  - Scope.tsx: 5 fixed grids -> responsive (grid-cols-2 sm:grid-cols-4, grid-cols-1 sm:grid-cols-3).
+- Build verified: npx vite build -> 3382 modules, OK in 10.35s.
+- Ponytail comments added to every change.
+- Committed as 3033f56, pushed to main.
+
+Stage Summary:
+- 6 files changed, 42 insertions(+), 11 deletions(-).
+- Mobile sidebar now identical to desktop (Logo + Profile + Team Switcher + Nav + Theme).
+- Horizontal scroll eliminated via root overflow-x-hidden safety net + targeted per-page fixes.
+- Clients list "old ones" issue is browser cache — deployed bundle verified to contain the polished UI. User needs hard refresh.
