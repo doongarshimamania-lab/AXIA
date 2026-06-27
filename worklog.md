@@ -1980,3 +1980,28 @@ Stage Summary:
 - Mobile sidebar now identical to desktop (Logo + Profile + Team Switcher + Nav + Theme).
 - Horizontal scroll eliminated via root overflow-x-hidden safety net + targeted per-page fixes.
 - Clients list "old ones" issue is browser cache — deployed bundle verified to contain the polished UI. User needs hard refresh.
+
+---
+Task ID: backups-and-404-fix
+Agent: main
+Task: User reported 404 NOT_FOUND on refreshing any non-root route (e.g. /clients) on axia-bay.vercel.app. Also requested all three backup types: semantic version tag, backup tag matching existing pattern, and GitHub Release with binary zip.
+
+Work Log:
+- Diagnosed 404: curled /clients → HTTP 404 with x-vercel-error: NOT_FOUND. Root / returns 200. This is classic SPA routing failure — Vercel serves index.html for / but returns 404 for /clients because no file named /clients exists on disk and the SPA fallback rewrite wasn't firing.
+- Inspected axia/vercel.json: the rewrite source used a regex negative lookahead "/((?!assets/|favicon\\.ico|...).*)" which Vercel's path-to-regexp engine was not applying reliably. Also cleanUrls: true can conflict with rewrites.
+- Fixed vercel.json: removed cleanUrls, replaced negative-lookahead regex with standard catch-all { source: "/(.*)", destination: "/index.html" }. Per Vercel docs, rewrites apply AFTER filesystem checks, so real files (/assets/*, /favicon.ico) are still served directly; only non-file requests fall through to /index.html.
+- Committed as e3bda40, pushed to main.
+- Created tag v5.5.1-mobile-ui-fixes on e3bda40 with annotated message describing all 3 commits (9ccc1db, 3033f56, e3bda40). Pushed to GitHub.
+- Created tag backup-2026-06-27_19-54-53_IST on e3bda40 matching existing backup tag naming pattern. Pushed to GitHub.
+- Generated backup zip: /tmp/axia-backup/axia-backup-v5.5.1-2026-06-27.zip (43MB, excludes node_modules, dist, .git, .convex, logs).
+- Extracted GitHub token from git remote URL (length 40, not printed/echoed).
+- Created GitHub Release via POST to api.github.com/repos/doongarshimamania-lab/AXIA/releases: release ID 345707637, HTML URL https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.5.1-mobile-ui-fixes.
+- Uploaded backup zip as release asset via POST to uploads.github.com: asset ID 459530289, state=uploaded, download URL https://github.com/doongarshimamania-lab/AXIA/releases/download/v5.5.1-mobile-ui-fixes/axia-backup-v5.5.1-2026-06-27.zip.
+- Verified 404 status: as of last check, Vercel still serves old deployment (JS hash index-BjPORZSm.js, unchanged from before e3bda40 push). CDN age 437s on root page. The vercel.json fix is on GitHub but Vercel has NOT rebuilt yet. The 404 will resolve once Vercel deploys commit e3bda40.
+
+Stage Summary:
+- All three backups completed:
+  1. Semantic tag: v5.5.1-mobile-ui-fixes (pushed)
+  2. Backup tag: backup-2026-06-27_19-54-53_IST (pushed)
+  3. GitHub Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.5.1-mobile-ui-fixes (with 43MB backup zip attached)
+- vercel.json SPA fix pushed as e3bda40 but Vercel has not rebuilt yet. User may need to check Vercel dashboard → Deployments to see if build triggered, or manually redeploy.
