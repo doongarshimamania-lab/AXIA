@@ -132,7 +132,7 @@ const SOURCE_OPTIONS = [
   { value: "upwork", label: "Upwork", color: "#14a800" },
   { value: "fiverr", label: "Fiverr", color: "#00b22d" },
   { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
-  { value: "referral", label: "Referral", color: "#8B5CF6" },
+  { value: "referral", label: "Referral", color: "#475569" },
   { value: "direct", label: "Direct", color: "#f59e0b" },
   { value: "other", label: "Other", color: "#6b7280" },
 ];
@@ -883,7 +883,7 @@ export default function Pipeline() {
               }}
               disabled={safeStages.length === 0}
               size="sm"
-              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+              className="gap-2 bg-[#475569] hover:bg-[#334155] text-white"
             >
               <Plus className="h-4 w-4" />
               Add Deal
@@ -897,7 +897,7 @@ export default function Pipeline() {
             icon={<BarChart3 className="h-5 w-5" />}
             label="Total Deals"
             value={isLoading ? "—" : String(safeStats.totalDeals)}
-            accent="#8B5CF6"
+            accent="#475569"
           />
           <StatsCard
             icon={<DollarSign className="h-5 w-5" />}
@@ -927,7 +927,7 @@ export default function Pipeline() {
           <button
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               activeTab === "pipeline"
-                ? "border-[#8B5CF6] text-foreground"
+                ? "border-[#475569] text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => setActiveTab("pipeline")}
@@ -940,7 +940,7 @@ export default function Pipeline() {
           <button
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               activeTab === "share-records"
-                ? "border-[#8B5CF6] text-foreground"
+                ? "border-[#475569] text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => setActiveTab("share-records")}
@@ -1020,7 +1020,7 @@ export default function Pipeline() {
             </p>
             <Button
               onClick={() => createDefaultStages(workspaceId ? { workspaceId } : {})}
-              className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+              className="gap-2 bg-[#475569] hover:bg-[#334155] text-white"
             >
               <Plus className="h-4 w-4" />
               Create Default Stages
@@ -1045,7 +1045,7 @@ export default function Pipeline() {
                     transition-colors duration-200
                     ${
                       isDragOver
-                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                        ? "border-[#475569] bg-[#475569]/5 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
                         : "border-border bg-muted/30"
                     }
                   `}
@@ -1142,7 +1142,7 @@ export default function Pipeline() {
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-[#8B5CF6]" />
+              <Plus className="h-5 w-5 text-[#475569]" />
               Create New Deal
             </DialogTitle>
             <DialogDescription>
@@ -1300,7 +1300,7 @@ export default function Pipeline() {
             <Button
               onClick={handleCreateDeal}
               disabled={isCreating || !formTitle.trim() || !formValue}
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+              className="bg-[#475569] hover:bg-[#334155] text-white"
             >
               {isCreating ? "Creating..." : "Create Deal"}
             </Button>
@@ -1357,7 +1357,7 @@ export default function Pipeline() {
                         <p className="text-xs text-muted-foreground">
                           Weighted Value
                         </p>
-                        <p className="text-lg font-bold text-[#8B5CF6]">
+                        <p className="text-lg font-bold text-[#475569]">
                           {formatCurrency(
                             detailDeal.value *
                               (detailDeal.probability / 100)
@@ -1482,7 +1482,7 @@ export default function Pipeline() {
                                         stage._id
                                       )
                                     }
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/5 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border hover:border-[#475569]/40 hover:bg-[#475569]/5 transition-colors"
                                   >
                                     <div
                                       className="h-2 w-2 rounded-full"
@@ -1520,7 +1520,7 @@ export default function Pipeline() {
                         if (detailDeal) handleCreateProposalFromDeal(detailDeal);
                       }}
                       disabled={isCreatingProposal === detailDeal?._id}
-                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                      className="gap-1.5 bg-[#475569] hover:bg-[#334155] text-white"
                     >
                       {isCreatingProposal === detailDeal?._id ? (
                         <motion.div
@@ -1550,7 +1550,7 @@ export default function Pipeline() {
                   {/* ── Edit Mode ── */}
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      <Pencil className="h-5 w-5 text-[#8B5CF6]" />
+                      <Pencil className="h-5 w-5 text-[#475569]" />
                       Edit Deal
                     </DialogTitle>
                     <DialogDescription>
@@ -1703,7 +1703,7 @@ export default function Pipeline() {
                     </Button>
                     <Button
                       onClick={handleUpdateDeal}
-                      className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                      className="bg-[#475569] hover:bg-[#334155] text-white"
                     >
                       Save Changes
                     </Button>
@@ -1815,8 +1815,8 @@ export default function Pipeline() {
                   border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                   transition-colors duration-200
                   ${isDragOver
-                    ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
-                    : "border-muted-foreground/25 hover:border-[#8B5CF6]/50 hover:bg-muted/30"
+                    ? "border-[#475569] bg-[#475569]/5"
+                    : "border-muted-foreground/25 hover:border-[#475569]/50 hover:bg-muted/30"
                   }
                 `}
                 onDragOver={handleDragOverFile}
@@ -1947,7 +1947,7 @@ export default function Pipeline() {
               <Button
                 onClick={handleImport}
                 disabled={isImporting || !selectedStageId || !workspaceId}
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+                className="bg-[#475569] hover:bg-[#334155] text-white gap-2"
               >
                 {isImporting ? (
                   <>
@@ -2054,8 +2054,8 @@ function DealCard({
         transition-all duration-150 select-none
         ${
           isDragging
-            ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5 shadow-lg z-50 opacity-50 scale-[1.02]"
-            : "border-border bg-card hover:border-[#8B5CF6]/25 hover:shadow-sm"
+            ? "border-[#475569]/40 bg-[#475569]/5 shadow-lg z-50 opacity-50 scale-[1.02]"
+            : "border-border bg-card hover:border-[#475569]/25 hover:shadow-sm"
         }
       `}
     >
@@ -2066,7 +2066,7 @@ function DealCard({
         <Popover open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
           <PopoverTrigger asChild>
             <button
-              className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#475569]/10 text-muted-foreground hover:text-[#475569] transition-colors"
               onClick={(e) => { e.stopPropagation(); setManageTagsOpen(true); }}
               title="Manage tags"
             >
@@ -2087,7 +2087,7 @@ function DealCard({
           </PopoverContent>
         </Popover>
         <button
-          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#8B5CF6]/10 text-muted-foreground hover:text-[#8B5CF6] transition-colors"
+          className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-[#475569]/10 text-muted-foreground hover:text-[#475569] transition-colors"
           onClick={(e) => {
             e.stopPropagation();
             onCreateProposal();

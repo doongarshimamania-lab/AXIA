@@ -185,8 +185,8 @@ function getStatusConfig(status: string) {
       return {
         label: "Scheduled",
         icon: Clock,
-        color: "text-[#8B5CF6]",
-        badgeClass: "bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/25",
+        color: "text-[#475569]",
+        badgeClass: "bg-[#475569]/15 text-[#475569] border-[#475569]/25",
       };
     case "skipped":
       return {
@@ -335,13 +335,13 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                 <Switch
                   checked={safeSettings.autoRemindersEnabled}
                   onCheckedChange={handleToggleAutoReminders}
-                  className="data-[state=checked]:bg-[#8B5CF6]"
+                  className="data-[state=checked]:bg-[#475569]"
                 />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 h-8 text-[12px] border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+                className="gap-1.5 h-8 text-[12px] border-[#475569]/30 text-[#475569] hover:bg-[#475569]/10"
                 onClick={handleScheduleAutoReminders}
               >
                 <Zap className="h-3.5 w-3.5" />
@@ -363,10 +363,10 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
               <p className="text-[18px] font-bold text-emerald-600">{totalRemindersSent}</p>
               <p className="text-[10px] text-emerald-500">delivered</p>
             </div>
-            <div className="p-3 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/10">
+            <div className="p-3 rounded-lg bg-[#475569]/5 border border-[#475569]/10">
               <p className="text-[11px] text-muted-foreground">Scheduled</p>
-              <p className="text-[18px] font-bold text-[#8B5CF6]">{totalScheduledReminders}</p>
-              <p className="text-[10px] text-[#8B5CF6]">pending</p>
+              <p className="text-[18px] font-bold text-[#475569]">{totalScheduledReminders}</p>
+              <p className="text-[10px] text-[#475569]">pending</p>
             </div>
           </div>
 
@@ -547,7 +547,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                           </div>
                           <Button
                             size="sm"
-                            className="h-7 px-2.5 gap-1.5 text-[11px] bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                            className="h-7 px-2.5 gap-1.5 text-[11px] bg-[#475569] hover:bg-[#475569]/90 text-white"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendReminder(invoice._id);
@@ -587,7 +587,7 @@ export default function PaymentReminders({ overdueCount }: PaymentRemindersProps
                                   reminderForDay?.status === "sent"
                                     ? "bg-emerald-500 text-white"
                                     : reminderForDay?.status === "scheduled"
-                                      ? "bg-[#8B5CF6] text-white"
+                                      ? "bg-[#475569] text-white"
                                       : isReached
                                         ? "bg-red-500/20 text-red-600"
                                         : "bg-muted text-muted-foreground/50"

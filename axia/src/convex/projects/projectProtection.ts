@@ -55,19 +55,36 @@ async function resolveUserId(ctx: any) {
 }
 
 // Get all projects for the current user
+// ponytail: added optional workspaceId arg so the projects list is scoped to the
+// active workspace — matching how getClients and getTags already filter. Without
+// this, projects from other workspaces leak into the list, and their tagIds
+// (which reference tags from a different workspace) never match the active
+// workspace's tag filter chips, making the filter appear broken (returns empty).
 export const getMyProjects = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.optional(v.id("workspaces")) },
+  handler: async (ctx, { workspaceId }) => {
     const userId = await resolveUserId(ctx);
-    
+
     if (!userId) {
       return [];
     }
 
-    const projects = await ctx.db
-      .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .take(100);
+    let projects;
+    if (workspaceId) {
+      // ponytail: scope by workspace when provided — this is the normal path
+      // used by the Projects page (which already has activeWorkspaceId).
+      projects = await ctx.db
+        .query("projects")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .take(100);
+    } else {
+      // ponytail: legacy fallback — no workspace filter. Kept for any caller
+      // that still passes {} (e.g. OwnerDashboard cross-workspace views).
+      projects = await ctx.db
+        .query("projects")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .take(100);
+    }
 
     // Return basic project data
     return projects.map((project) => ({

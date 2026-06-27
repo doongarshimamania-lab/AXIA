@@ -11,6 +11,7 @@ import { ThreadPanel, type ThreadReply } from "@/components/messaging/ThreadPane
 import { MemberList, type Member } from "@/components/messaging/MemberList";
 import { useWorkspaceContext, isValidConvexId } from "@/hooks/use-workspace";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -19,6 +20,10 @@ export default function Messages() {
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const { user } = useAuth();
   const currentUserId = (user as Record<string, unknown>)?._id as string ?? "";
+  // ponytail: mobile detection — on phones we render EITHER the channel list OR
+  // the active thread, not both side-by-side (the old layout crammed a 256px
+  // list + a thread into a 375px viewport, making both unusable).
+  const isMobile = useIsMobile();
 
   // ── Convex API references ──
   // Used via api.messaging.channels.* and api.messaging.messages.* below
@@ -264,24 +269,28 @@ export default function Messages() {
   );
 
   return (
-    // ponytail: subtract 56px (h-14) mobile header on mobile only — desktop has no top header.
-    // Without this, the bottom of the chat input is hidden behind the mobile header offset.
     <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh)] bg-background">
-      <ChannelList
-        channels={activeChannels}
-        activeChannelId={activeChannelId}
-        onChannelSelect={handleChannelSelect}
-        onCreateChannel={handleCreateChannel}
-        availableMembers={activeMembers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          role: m.role,
-          isOnline: m.isOnline,
-        }))}
-      />
+      {/* ponytail: mobile layout — show EITHER the channel list OR the thread.
+          On desktop (md+), both render side-by-side as before. The
+          `hidden md:flex` / `flex md:hidden` swap is driven by whether a
+          channel is active AND we're on mobile. */}
+      <div className={isMobile && activeChannel ? "hidden" : "flex"}>
+        <ChannelList
+          channels={activeChannels}
+          activeChannelId={activeChannelId}
+          onChannelSelect={handleChannelSelect}
+          onCreateChannel={handleCreateChannel}
+          availableMembers={activeMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            role: m.role,
+            isOnline: m.isOnline,
+          }))}
+        />
+      </div>
 
       {activeChannel ? (
-        <div className="flex-1 flex flex-col min-w-0 h-full">
+        <div className={isMobile ? "flex-1 flex flex-col min-w-0 h-full" : "flex-1 flex flex-col min-w-0 h-full"}>
           <ChannelHeader
             channelName={activeChannel.name}
             channelType={activeChannel.type}
@@ -290,6 +299,10 @@ export default function Messages() {
             pinnedCount={activeMessages.filter((m) => m.isPinned).length}
             showMemberList={showMemberList}
             onToggleMemberList={() => setShowMemberList(!showMemberList)}
+            // ponytail: pass onBack so the header shows a ← button on mobile
+            // that returns to the channel list. Hidden on desktop (md:hidden
+            // inside ChannelHeader).
+            onBack={() => setActiveChannelId(null)}
           />
 
           <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -320,34 +333,42 @@ export default function Messages() {
               />
             )}
 
-            {showMemberList && <MemberList members={activeMembers} />}
+            {/* ponytail: MemberList hidden on mobile — it squeezes the thread.
+                Users can still see members via the toggle button which will
+                overlay it on mobile if needed in a future iteration. */}
+            {showMemberList && !isMobile && <MemberList members={activeMembers} />}
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          {activeChannels.length === 0 && canUseConvex ? (
-            <div className="text-center">
-              <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium mb-1">No channels yet</p>
-              <p className="text-xs text-muted-foreground mb-4">Create your first channel to start messaging</p>
-              <button
-                onClick={() => {
-                  const name = prompt("Channel name:");
-                  if (name?.trim()) handleCreateChannel(name.trim(), false);
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Create your first channel
-              </button>
-            </div>
-          ) : (
-            <div className="text-center">
-              <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Select a channel to start messaging</p>
-            </div>
-          )}
-        </div>
+        // ponytail: this empty-state branch only renders on desktop — on mobile
+        // the list is always shown when no channel is active (see the
+        // isMobile && activeChannel ? "hidden" : "flex" condition above).
+        !isMobile ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            {activeChannels.length === 0 && canUseConvex ? (
+              <div className="text-center">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium mb-1">No channels yet</p>
+                <p className="text-xs text-muted-foreground mb-4">Create your first channel to start messaging</p>
+                <button
+                  onClick={() => {
+                    const name = prompt("Channel name:");
+                    if (name?.trim()) handleCreateChannel(name.trim(), false);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create your first channel
+                </button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Select a channel to start messaging</p>
+              </div>
+            )}
+          </div>
+        ) : null
       )}
     </div>
   );

@@ -544,7 +544,7 @@ export default function ProposalBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className={`gap-1.5 ${isPreview ? "bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/30" : ""}`}
+              className={`gap-1.5 ${isPreview ? "bg-[#475569]/10 text-[#475569] border-[#475569]/30" : ""}`}
               onClick={() => setIsPreview(!isPreview)}
             >
               <Eye className="h-3.5 w-3.5" />
@@ -566,7 +566,7 @@ export default function ProposalBuilder() {
             </Button>
             <Button
               size="sm"
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5"
+              className="bg-[#475569] hover:bg-[#334155] text-white gap-1.5"
               onClick={handleSendProposal}
               disabled={isSending}
             >
@@ -712,7 +712,7 @@ export default function ProposalBuilder() {
                   <div className="relative">
                     <Button
                       size="sm"
-                      className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                      className="gap-1.5 bg-[#475569] hover:bg-[#334155] text-white"
                       onClick={() => setShowSectionTypeDropdown(!showSectionTypeDropdown)}
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -736,7 +736,7 @@ export default function ProposalBuilder() {
                                 className="w-full text-left px-3 py-2 flex items-center gap-2.5 hover:bg-muted/50 transition-colors"
                                 onClick={() => addSection(type)}
                               >
-                                <Icon className="h-4 w-4 text-[#8B5CF6] flex-shrink-0" />
+                                <Icon className="h-4 w-4 text-[#475569] flex-shrink-0" />
                                 <div>
                                   <div className="text-[13px] font-medium text-foreground">
                                     {cfg.label}
@@ -783,7 +783,7 @@ export default function ProposalBuilder() {
                       <p className="text-[13px] mb-3">Add your first section to build the proposal</p>
                       <Button
                         size="sm"
-                        className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                        className="gap-1.5 bg-[#475569] hover:bg-[#334155] text-white"
                         onClick={() => addSection("heading")}
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -800,7 +800,7 @@ export default function ProposalBuilder() {
               <Card>
                 <CardHeader className="pb-3 px-5 pt-5">
                   <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-[#8B5CF6]" />
+                    <Clock className="h-4 w-4 text-[#475569]" />
                     Valid Until
                   </CardTitle>
                 </CardHeader>
@@ -831,7 +831,7 @@ export default function ProposalBuilder() {
             </div>
 
             {/* ─── Total Value ───────────────────────────────────────── */}
-            <Card className="border-[#8B5CF6]/20 bg-[#8B5CF6]/5">
+            <Card className="border-[#475569]/20 bg-[#475569]/5">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -842,7 +842,7 @@ export default function ProposalBuilder() {
                       Sum of all pricing section items
                     </p>
                   </div>
-                  <div className="text-[28px] font-bold text-[#8B5CF6]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+                  <div className="text-[28px] font-bold text-[#475569]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
                     {formatCurrency(totalValue)}
                   </div>
                 </div>
@@ -870,7 +870,7 @@ export default function ProposalBuilder() {
             {templates?.map((template) => (
               <div
                 key={template._id}
-                className="border border-border rounded-lg p-4 hover:border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/5 cursor-pointer transition-all"
+                className="border border-border rounded-lg p-4 hover:border-[#475569]/30 hover:bg-[#475569]/5 cursor-pointer transition-all"
                 onClick={() => applyTemplate(template)}
               >
                 <div className="flex items-start justify-between">
@@ -962,7 +962,7 @@ function SectionEditor({
       {/* Section Header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b border-border">
         <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab flex-shrink-0" />
-        <Icon className="h-4 w-4 text-[#8B5CF6] flex-shrink-0" />
+        <Icon className="h-4 w-4 text-[#475569] flex-shrink-0" />
         <Badge variant="outline" className="text-[10px] h-5 px-1.5">
           {cfg.label}
         </Badge>
@@ -1112,7 +1112,7 @@ function SectionEditor({
                     <tfoot>
                       <tr className="border-t border-border bg-muted/30">
                         <td className="py-2 px-3 font-semibold text-foreground">Total</td>
-                        <td className="py-2 px-3 text-right font-bold text-[#8B5CF6]">
+                        <td className="py-2 px-3 text-right font-bold text-[#475569]">
                           {formatCurrency(
                             (section.metadata?.items || []).reduce((s, i) => s + (i.price || 0), 0)
                           )}
@@ -1143,7 +1143,7 @@ function SectionEditor({
                 <div className="space-y-2">
                   {(section.metadata?.milestones || []).map((ms, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] text-[12px] font-bold flex-shrink-0">
+                      <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#475569]/10 text-[#475569] text-[12px] font-bold flex-shrink-0">
                         {i + 1}
                       </div>
                       <Input
@@ -1237,10 +1237,10 @@ function ProposalPreview({
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#8B5CF6] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-[#475569] flex items-center justify-center">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="white"/>
-                  <path d="M12 8V12L15 14" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M12 8V12L15 14" stroke="#475569" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </div>
               <div>
@@ -1375,9 +1375,9 @@ function ProposalPreview({
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="border-t border-border bg-[#8B5CF6]/5">
+                          <tr className="border-t border-border bg-[#475569]/5">
                             <td className="py-2.5 px-4 font-semibold text-foreground">Total</td>
-                            <td className="py-2.5 px-4 text-right font-bold text-[#8B5CF6]">
+                            <td className="py-2.5 px-4 text-right font-bold text-[#475569]">
                               {formatCurrency(sectionTotal)}
                             </td>
                           </tr>
@@ -1401,7 +1401,7 @@ function ProposalPreview({
                     <div className="space-y-3">
                       {milestones.map((ms, i) => (
                         <div key={i} className="flex items-center gap-3">
-                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] text-[13px] font-bold flex-shrink-0">
+                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-[#475569]/10 text-[#475569] text-[13px] font-bold flex-shrink-0">
                             {i + 1}
                           </div>
                           <div className="flex-1">
@@ -1435,7 +1435,7 @@ function ProposalPreview({
                 <span className="text-[18px] font-semibold text-foreground" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
                   Grand Total
                 </span>
-                <span className="text-[24px] font-bold text-[#8B5CF6]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+                <span className="text-[24px] font-bold text-[#475569]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
                   {formatCurrency(totalValue)}
                 </span>
               </div>

@@ -295,7 +295,7 @@ export function useNotifications() {
         dedupKey: "client-onboarded",
         currentValue: totalClients,
         icon: UserPlus,
-        iconColor: "text-violet-500 bg-violet-500/10",
+        iconColor: "text-violet-500 bg-slate-600/10",
         title: `${totalClients} Client${totalClients > 1 ? "s" : ""} Onboarded`,
         description: "Your client base is growing!",
         timestamp: Date.now() - 7200000,

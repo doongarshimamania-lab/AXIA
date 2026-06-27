@@ -24,7 +24,7 @@ const features = [
     description: "Simulate potential disputes and see your success probability. Make informed decisions about work submission.",
     stat: "83%",
     statLabel: "Dispute success rate",
-    color: "from-[#4F46E5] to-[#7C3AED]",
+    color: "from-[#4F46E5] to-[#334155]",
   },
   {
     icon: AlertTriangle,
@@ -56,7 +56,7 @@ const features = [
     description: "Generate professional dispute reports in seconds with all required evidence automatically compiled.",
     stat: "< 2 min",
     statLabel: "Report generation",
-    color: "from-[#7C3AED] to-[#A855F7]",
+    color: "from-[#334155] to-[#A855F7]",
   },
   {
     icon: Target,

@@ -69,7 +69,7 @@ const sectionTypeConfig: Record<
   SectionType,
   { label: string; icon: React.ElementType; color: string }
 > = {
-  heading: { label: "Heading", icon: Heading, color: "#8B5CF6" },
+  heading: { label: "Heading", icon: Heading, color: "#475569" },
   text: { label: "Text", icon: Type, color: "#6366f1" },
   pricing: { label: "Pricing", icon: DollarSign, color: "#22c55e" },
   terms: { label: "Terms", icon: FileCheck, color: "#f59e0b" },
@@ -227,7 +227,7 @@ export function TemplateImportDialog({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-[#8B5CF6]" />
+            <Upload className="h-5 w-5 text-[#475569]" />
             Import Template
           </DialogTitle>
           <DialogDescription>
@@ -251,8 +251,8 @@ export function TemplateImportDialog({
                   transition-all duration-200
                   ${
                     isDragOver
-                      ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
-                      : "border-border hover:border-[#8B5CF6]/50 hover:bg-muted/30"
+                      ? "border-[#475569] bg-[#475569]/5"
+                      : "border-border hover:border-[#475569]/50 hover:bg-muted/30"
                   }
                 `}
                 onDrop={handleDrop}
@@ -295,7 +295,7 @@ export function TemplateImportDialog({
             >
               {/* File info */}
               <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                <File className="h-4 w-4 text-[#8B5CF6]" />
+                <File className="h-4 w-4 text-[#475569]" />
                 <span className="text-[13px] font-medium">{fileName}</span>
                 <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
                   {parsedSections.length} sections
@@ -304,7 +304,7 @@ export function TemplateImportDialog({
 
               {isParsing ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 text-[#8B5CF6] animate-spin mb-3" />
+                  <Loader2 className="h-8 w-8 text-[#475569] animate-spin mb-3" />
                   <p className="text-[14px] text-muted-foreground">Parsing document structure...</p>
                 </div>
               ) : (
@@ -402,7 +402,7 @@ export function TemplateImportDialog({
               <Button
                 onClick={handleApply}
                 disabled={parsedSections.length === 0}
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                className="gap-1.5 bg-[#475569] hover:bg-[#334155] text-white"
               >
                 <Check className="h-3.5 w-3.5" />
                 Apply to Proposal
@@ -421,7 +421,7 @@ export function TemplateImportDialog({
               </Button>
               <Button
                 onClick={handleSaveAsTemplate}
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                className="gap-1.5 bg-[#475569] hover:bg-[#334155] text-white"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Template

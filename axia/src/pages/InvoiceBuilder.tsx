@@ -629,7 +629,7 @@ export default function InvoiceBuilder() {
             </div>
           </div>
 
-          {/* ponytail: flex-wrap so the 5-button row wraps on mobile instead of overflowing */}
+          {/* ponytail: flex-wrap so the 5-button toolbar wraps on mobile instead of overflowing. */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
@@ -666,7 +666,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+              className="gap-1.5 border-[#475569]/30 text-[#475569] hover:bg-[#475569]/10"
               onClick={() => setImportDialogOpen(true)}
             >
               <Upload className="h-4 w-4" />
@@ -675,7 +675,7 @@ export default function InvoiceBuilder() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/10"
+              className="gap-1.5 border-[#475569]/30 text-[#475569] hover:bg-[#475569]/10"
               onClick={handleSaveDraft}
               disabled={saving}
             >
@@ -685,7 +685,7 @@ export default function InvoiceBuilder() {
             {invoiceId && (
               <Button
                 size="sm"
-                className="gap-1.5 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white"
+                className="gap-1.5 bg-[#475569] hover:bg-[#475569]/90 text-white"
                 onClick={handleSendInvoice}
                 disabled={sending || status !== "draft"}
               >
@@ -714,7 +714,7 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-[#8B5CF6]" />
+                        <FileText className="h-4 w-4 text-[#475569]" />
                         Client Details
                       </CardTitle>
                     </CardHeader>
@@ -772,7 +772,7 @@ export default function InvoiceBuilder() {
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-[#8B5CF6]" />
+                        <Calendar className="h-4 w-4 text-[#475569]" />
                         Invoice Details
                       </CardTitle>
                     </CardHeader>
@@ -828,13 +828,13 @@ export default function InvoiceBuilder() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base font-semibold flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-[#8B5CF6]" />
+                          <DollarSign className="h-4 w-4 text-[#475569]" />
                           Line Items
                         </CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1.5 text-[#8B5CF6] border-[#8B5CF6]/30 hover:bg-[#8B5CF6]/10"
+                          className="gap-1.5 text-[#475569] border-[#475569]/30 hover:bg-[#475569]/10"
                           onClick={addLineItem}
                         >
                           <Plus className="h-4 w-4" />
@@ -916,7 +916,7 @@ export default function InvoiceBuilder() {
                                         title="Link Work Proof"
                                         onClick={() => openProofDialog(li.id)}
                                       >
-                                        <Link2 className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                                        <Link2 className="h-3.5 w-3.5 text-[#475569]" />
                                       </Button>
                                       <Button
                                         variant="ghost"
@@ -962,7 +962,7 @@ export default function InvoiceBuilder() {
                           <Separator />
                           <div className="flex justify-between text-base font-bold">
                             <span>Total</span>
-                            <span className="text-[#8B5CF6]">{formatCurrency(total, currency)}</span>
+                            <span className="text-[#475569]">{formatCurrency(total, currency)}</span>
                           </div>
                         </div>
                       </div>
@@ -1096,7 +1096,7 @@ export default function InvoiceBuilder() {
                               >
                                 Total
                               </TableCell>
-                              <TableCell className="text-right font-bold text-base text-[#8B5CF6]">
+                              <TableCell className="text-right font-bold text-base text-[#475569]">
                                 {formatCurrency(total, currency)}
                               </TableCell>
                             </TableRow>
@@ -1178,7 +1178,7 @@ export default function InvoiceBuilder() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base font-semibold flex items-center gap-2">
-                        <Paperclip className="h-4 w-4 text-[#8B5CF6]" />
+                        <Paperclip className="h-4 w-4 text-[#475569]" />
                         Work Proofs
                       </CardTitle>
                       <Button
@@ -1223,12 +1223,12 @@ export default function InvoiceBuilder() {
                               key={proof._id}
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="p-3 rounded-lg border border-border bg-card hover:border-[#8B5CF6]/30 transition-colors"
+                              className="p-3 rounded-lg border border-border bg-card hover:border-[#475569]/30 transition-colors"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-start gap-2 min-w-0">
-                                  <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-[#8B5CF6]" />}
+                                  <div className="h-7 w-7 rounded-md bg-[#475569]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    {proofType?.icon || <Paperclip className="h-3.5 w-3.5 text-[#475569]" />}
                                   </div>
                                   <div className="min-w-0">
                                     <p className="text-sm font-medium text-foreground truncate">
@@ -1302,7 +1302,7 @@ export default function InvoiceBuilder() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-[#8B5CF6]" />
+              <Link2 className="h-5 w-5 text-[#475569]" />
               Link Work Proof
             </DialogTitle>
             <DialogDescription>Attach a work proof to support this invoice line item.</DialogDescription>
@@ -1445,7 +1445,7 @@ export default function InvoiceBuilder() {
               Cancel
             </Button>
             <Button
-              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
+              className="bg-[#475569] hover:bg-[#475569]/90 text-white gap-1.5"
               onClick={handleAddProof}
               disabled={!proofForm.title.trim() || !invoiceId}
             >

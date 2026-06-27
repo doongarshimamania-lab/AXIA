@@ -987,11 +987,15 @@ export const convertToProject = mutation({
     }
 
     // ── Step 2: Create the project (linked to client + workspace) ────────
+    // ponytail: truncate proposal.title to 100 chars — proposals.title allows
+    // maxLength(200) but projects.projectName allows maxLength(100). Copying
+    // verbatim threw a Convex validation error for any title between 101-200
+    // chars, surfacing as "Failed to convert to project" in the UI.
     const projectId = await ctx.db.insert("projects", {
       userId,
       workspaceId,
       clientId,
-      projectName: proposal.title,
+      projectName: proposal.title.slice(0, 100),
       hourlyRate,
       projectType: "ongoing",
       protectionLevel: "enhanced",

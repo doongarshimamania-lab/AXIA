@@ -186,7 +186,7 @@ export const createDefaultStages = mutation({
 
     const defaults = [
       { name: "Lead", color: "#6366f1" },
-      { name: "Qualified", color: "#8b5cf6" },
+      { name: "Qualified", color: "#475569" },
       { name: "Proposal", color: "#a855f7" },
       { name: "Negotiation", color: "#c084fc" },
       { name: "Won", color: "#22c55e" },

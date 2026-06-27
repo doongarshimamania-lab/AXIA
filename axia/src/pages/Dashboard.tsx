@@ -99,7 +99,7 @@ function AnimatedNumber({ value, duration = 1200, prefix = "", suffix = "", deci
 }
 
 // ─── Mini Sparkline Chart (SVG) ──────────────────────────────────────────
-function Sparkline({ data, color = "#8B5CF6", height = 32, width = 80 }: {
+function Sparkline({ data, color = "#475569", height = 32, width = 80 }: {
   data: number[]; color?: string; height?: number; width?: number;
 }) {
   if (!data || data.length < 2) return null;
@@ -142,7 +142,7 @@ function Sparkline({ data, color = "#8B5CF6", height = 32, width = 80 }: {
 }
 
 // ─── Circular Progress Ring ──────────────────────────────────────────────
-function ProgressRing({ value, size = 56, strokeWidth = 4, color = "#8B5CF6", label }: {
+function ProgressRing({ value, size = 56, strokeWidth = 4, color = "#475569", label }: {
   value: number; size?: number; strokeWidth?: number; color?: string; label?: string;
 }) {
   const radius = (size - strokeWidth) / 2;
@@ -434,12 +434,12 @@ export default function Dashboard() {
                   <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-lg bg-slate-600/10 flex items-center justify-center">
                           <Users className="h-4 w-4 text-violet-500" />
                         </div>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Clients</span>
                       </div>
-                      <Sparkline data={clientsSparkline} color="#8B5CF6" />
+                      <Sparkline data={clientsSparkline} color="#475569" />
                     </div>
                     <div className="text-3xl font-bold text-foreground tracking-tight">
                       <AnimatedNumber value={totalClients} />
@@ -595,7 +595,7 @@ export default function Dashboard() {
                       </div>
                       {/* Close Rate */}
                       <div className="flex flex-col items-center text-center">
-                        <ProgressRing value={proposalSignatureRate} color="#8B5CF6" />
+                        <ProgressRing value={proposalSignatureRate} color="#475569" />
                         <span className="text-xs font-medium text-foreground mt-2">Close Rate</span>
                         <span className="text-[10px] text-muted-foreground">{proposalSigned} of {proposalTotal} proposals</span>
                       </div>

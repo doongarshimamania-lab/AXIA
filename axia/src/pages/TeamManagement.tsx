@@ -111,7 +111,7 @@ function MembersSkeleton() {
 
 // ─── Team Color Options ──────────────────────────────────────
 const TEAM_COLORS = [
-  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+  "#475569", "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
   "#EC4899", "#6366F1", "#14B8A6", "#F97316", "#06B6D4",
 ];
 
@@ -560,7 +560,7 @@ export default function TeamManagement() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-purple-500/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
+                <div className="p-2.5 bg-slate-600/10 rounded-lg"><Users className="w-5 h-5 text-purple-500" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Members</p>
                   <p className="text-2xl font-bold">{stats?.memberCount ?? activeMembers.length}</p>
@@ -605,7 +605,7 @@ export default function TeamManagement() {
             </Card>
             <Card className="p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-violet-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-violet-500" /></div>
+                <div className="p-2.5 bg-slate-600/10 rounded-lg"><DollarSign className="w-5 h-5 text-violet-500" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
                   <p className="text-2xl font-bold">${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k</p>
@@ -1421,7 +1421,7 @@ function TeamCard({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ backgroundColor: team.color || "#8B5CF6" }}
+            style={{ backgroundColor: team.color || "#475569" }}
           >
             {team.name.charAt(0).toUpperCase()}
           </div>
@@ -1429,7 +1429,7 @@ function TeamCard({
             <div className="font-semibold flex items-center gap-2">
               {team.name}
               {team.isCrossTeam && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-500/10 text-purple-600 border-purple-500/20">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-slate-600/10 text-purple-600 border-purple-500/20">
                   Cross-team
                 </Badge>
               )}
@@ -1575,7 +1575,7 @@ function SoloModePrompt() {
 
         <Card className="p-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800">
           <div className="text-center max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-slate-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-8 h-8 text-purple-500" />
             </div>
             <h2 className="text-2xl font-bold mb-3">Upgrade to Team Workspace</h2>

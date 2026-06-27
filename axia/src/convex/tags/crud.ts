@@ -258,23 +258,31 @@ export const getTagsWithUsage = query({
       counts.set(t._id, { total: 0, perEntity: {} });
     }
 
+    // ponytail: each table scan is now wrapped in try/catch so a failure on one
+    // table (e.g. a schema mismatch on the filter expression, or a timeout on a
+    // huge table) does NOT kill the whole query and return undefined (which made
+    // the Tags page render zero tags). The failing table simply contributes 0 to
+    // every tag's usage count. Also removed the fragile
+    // `q.neq(q.field("tagIds"), undefined)` Convex filter expression — its
+    // semantics around undefined fields are subtle and it was the most likely
+    // throw point. We now take(500) per table and skip tagless rows in JS.
     for (const [entityType, tableName] of Object.entries(TAGGABLE_TABLES)) {
-      // Scan the table — for each row, look at tagIds and bump counts.
-      // We use a filter on `tagIds` field existence to avoid pulling rows
-      // that have no tags (rare for filter, but cheap).
-      // ponytail: runtime string table name.
-      const rows = await ctx.db
-        .query(tableName)
-        .filter((q: any) => q.neq(q.field("tagIds"), undefined))
-        .take(5000);
-      for (const row of rows) {
-        const ids: string[] = row.tagIds ?? [];
-        for (const id of ids) {
-          const c = counts.get(id);
-          if (!c) continue; // tag belongs to another user/workspace — skip
-          c.total += 1;
-          c.perEntity[entityType] = (c.perEntity[entityType] ?? 0) + 1;
+      try {
+        const rows = await ctx.db
+          .query(tableName)
+          .take(500);
+        for (const row of rows) {
+          const ids: string[] = (row as any).tagIds ?? [];
+          for (const id of ids) {
+            const c = counts.get(id);
+            if (!c) continue; // tag belongs to another user/workspace — skip
+            c.total += 1;
+            c.perEntity[entityType] = (c.perEntity[entityType] ?? 0) + 1;
+          }
         }
+      } catch (err: any) {
+        // Log and continue — one broken table must not blank out the whole Tags page.
+        console.warn(`[getTagsWithUsage] scan failed for ${tableName}:`, err?.message ?? err);
       }
     }
 

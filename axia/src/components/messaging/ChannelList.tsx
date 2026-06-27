@@ -128,7 +128,7 @@ export function ChannelList({
   };
 
   return (
-    <div className="w-64 border-r border-border bg-muted/30 flex flex-col h-full">
+    <div className="w-full md:w-64 border-r border-border bg-muted/30 flex flex-col h-full">
       {/* Header */}
       <div className="p-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
@@ -216,7 +216,7 @@ export function ChannelList({
                 }`}
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-[9px] text-white font-bold">
                     {channel.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-background" />
@@ -358,7 +358,7 @@ export function ChannelList({
                           <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
                             isSelected
                               ? "bg-primary text-primary-foreground"
-                              : "bg-gradient-to-br from-violet-400 to-indigo-500 text-white"
+                              : "bg-gradient-to-br from-slate-400 to-slate-600 text-white"
                           }`}>
                             {isSelected ? (
                               <Check className="h-3.5 w-3.5" />

@@ -296,7 +296,7 @@ export function MessageInput({ onSend, channelName, members = [] }: MessageInput
                   i === mentionIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
                 }`}
               >
-                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-white flex items-center justify-center text-[10px] font-semibold">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 text-white flex items-center justify-center text-[10px] font-semibold">
                   {m.name
                     .split(" ")
                     .map((n) => n[0])

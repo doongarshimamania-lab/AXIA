@@ -359,6 +359,7 @@ export default function Proposals() {
               Create, send, and track proposals with automated follow-ups
             </p>
           </div>
+          {/* ponytail: flex-wrap so the Create/Seed row wraps on mobile. */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
@@ -376,7 +377,7 @@ export default function Proposals() {
             </Button>
             <Button
               size="sm"
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+              className="bg-[#475569] hover:bg-[#334155] text-white gap-2"
               onClick={() => navigate("/proposals/new")}
             >
               <Plus className="h-4 w-4" />
@@ -417,8 +418,8 @@ export default function Proposals() {
               title: "Total",
               value: stats?.total ?? 0,
               icon: FileText,
-              color: "text-[#8B5CF6]",
-              bgColor: "bg-[#8B5CF6]/10",
+              color: "text-[#475569]",
+              bgColor: "bg-[#475569]/10",
               format: (v: number) => String(v),
             },
             {
@@ -551,7 +552,7 @@ export default function Proposals() {
                 onClick={() => setActiveFilter(tab.key)}
                 className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
                   isActive
-                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
+                    ? "font-semibold text-foreground bg-[#475569]/10 ring-1 ring-[#475569]/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
@@ -559,7 +560,7 @@ export default function Proposals() {
                 <span
                   className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+                      ? "bg-[#475569]/20 text-[#475569]"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -567,7 +568,7 @@ export default function Proposals() {
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
+                    isActive ? "bg-[#475569]" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -607,7 +608,7 @@ export default function Proposals() {
                             Seed Sample Data
                           </Button>
                           <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2"
+                            className="bg-[#475569] hover:bg-[#334155] text-white gap-2"
                             onClick={() => navigate("/proposals/new")}
                           >
                             <Plus className="h-4 w-4" />
@@ -803,7 +804,7 @@ function ProposalCard({
       transition={{ duration: 0.3, delay: idx * 0.04 }}
       layout
     >
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#8B5CF6]/30 overflow-hidden h-full flex flex-col">
+      <Card className="group hover:shadow-lg transition-all duration-200 hover:border-[#475569]/30 overflow-hidden h-full flex flex-col">
         <CardContent className="p-5 flex flex-col flex-1">
           {/* Top Row: Status + Actions */}
           <div className="flex items-start justify-between mb-3">
@@ -897,7 +898,7 @@ function ProposalCard({
 
           {/* Title */}
           <h3
-            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#8B5CF6] transition-colors"
+            className="text-[16px] font-bold text-foreground mb-1 line-clamp-2 cursor-pointer hover:text-[#475569] transition-colors"
             style={{ fontFamily: "Space Grotesk, sans-serif" }}
             onClick={onView}
           >
@@ -956,7 +957,7 @@ function ProposalCard({
 
           {/* Follow-up Badge */}
           {scheduledFollowUps.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-[#8B5CF6] bg-[#8B5CF6]/10 rounded-md px-2 py-1 w-fit">
+            <div className="flex items-center gap-1.5 text-[11px] text-[#475569] bg-[#475569]/10 rounded-md px-2 py-1 w-fit">
               <Clock className="h-3 w-3" />
               <span>{scheduledFollowUps.length} follow-up{scheduledFollowUps.length !== 1 ? "s" : ""} scheduled</span>
             </div>
@@ -967,7 +968,7 @@ function ProposalCard({
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                className="bg-[#475569] hover:bg-[#334155] text-white gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMarkAsSent?.();
@@ -1031,7 +1032,7 @@ function ProposalCard({
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
-                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                className="bg-[#475569] hover:bg-[#334155] text-white gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onConvertToProject?.(proposal);

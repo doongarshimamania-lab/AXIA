@@ -294,7 +294,7 @@ export function DashboardExpertNew({ data }: DashboardExpertNewProps) {
                   <div className="bg-slate-950/50 rounded-xl p-4 border border-indigo-500/20 hover:bg-indigo-950/20 transition-all cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-indigo-500/10 rounded-lg">
+                        <div className="p-2 bg-slate-600/10 rounded-lg">
                           <Shield className="w-4 h-4 text-indigo-400" />
                         </div>
                         <div>

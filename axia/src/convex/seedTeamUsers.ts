@@ -173,7 +173,7 @@ export const enrichAllTeamUsers = mutation({
       // Also create default teams
       const teamNames = [
         { name: "Engineering", color: "#3b82f6" },
-        { name: "Design", color: "#8b5cf6" },
+        { name: "Design", color: "#475569" },
         { name: "Management", color: "#f59e0b" },
       ];
 
@@ -351,7 +351,7 @@ async function seedUserData(ctx: any, userId: any, workspaceId: any, u: typeof T
         workspaceId,
         name: stageNames[i],
         order: i,
-        color: ["#94a3b8", "#3b82f6", "#8b5cf6", "#f59e0b", "#22c55e", "#ef4444"][i],
+        color: ["#94a3b8", "#3b82f6", "#475569", "#f59e0b", "#22c55e", "#ef4444"][i],
       });
       stageIds.push(id);
     }
@@ -1237,7 +1237,7 @@ function getTagsData(theme: string) {
       { name: "Next.js", color: "#000000", category: "tech" },
       { name: "TypeScript", color: "#3178c6", category: "tech" },
       { name: "CSS/Tailwind", color: "#38bdf8", category: "tech" },
-      { name: "Dashboard", color: "#8b5cf6", category: "project" },
+      { name: "Dashboard", color: "#475569", category: "project" },
       { name: "Responsive", color: "#10b981", category: "project" },
       { name: "Urgent", color: "#ef4444", category: "priority" },
       { name: "Bug Fix", color: "#f97316", category: "type" },
@@ -1247,7 +1247,7 @@ function getTagsData(theme: string) {
       { name: "Brand Identity", color: "#ec4899", category: "project" },
       { name: "UI/UX", color: "#3b82f6", category: "skill" },
       { name: "Illustration", color: "#f59e0b", category: "type" },
-      { name: "Motion Design", color: "#8b5cf6", category: "type" },
+      { name: "Motion Design", color: "#475569", category: "type" },
       { name: "Icon Design", color: "#14b8a6", category: "type" },
       { name: "Revisions", color: "#ef4444", category: "status" },
       { name: "Approved", color: "#22c55e", category: "status" },
@@ -1260,11 +1260,11 @@ function getTagsData(theme: string) {
       { name: "API Design", color: "#6366f1", category: "skill" },
       { name: "Security", color: "#ef4444", category: "concern" },
       { name: "HIPAA", color: "#dc2626", category: "compliance" },
-      { name: "Microservices", color: "#8b5cf6", category: "architecture" },
+      { name: "Microservices", color: "#475569", category: "architecture" },
     ],
     "management-heavy": [
       { name: "Agile", color: "#3b82f6", category: "methodology" },
-      { name: "Scoping", color: "#8b5cf6", category: "phase" },
+      { name: "Scoping", color: "#475569", category: "phase" },
       { name: "Client Call", color: "#10b981", category: "activity" },
       { name: "Retainer", color: "#f59e0b", category: "contract" },
       { name: "Enterprise", color: "#6366f1", category: "tier" },

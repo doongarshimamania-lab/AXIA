@@ -89,7 +89,7 @@ export function WorkRhythmVisualizer({ rhythm, velocity, trend, peakHour }: Work
 
         {/* Peak Time */}
         <div className="bg-slate-50 rounded-lg p-2 border border-slate-100 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-purple-500/5 scale-y-0 group-hover:scale-y-100 transition-transform origin-bottom duration-500" />
+          <div className="absolute inset-0 bg-slate-600/5 scale-y-0 group-hover:scale-y-100 transition-transform origin-bottom duration-500" />
           <Clock className="w-4 h-4 text-purple-500 mb-1" />
           <div className="text-xl font-bold text-slate-700">{peakHour}:00</div>
           <div className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">Peak Hour</div>

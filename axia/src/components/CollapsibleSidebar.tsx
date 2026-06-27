@@ -232,7 +232,7 @@ export function CollapsibleSidebar() {
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 flex items-center justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#475569"/>
                 <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
@@ -553,7 +553,7 @@ export function CollapsibleSidebar() {
           <div className="h-14 border-b border-sidebar-border flex items-center px-4">
             <div className="flex items-center gap-2">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#8B5CF6"/>
+                <path d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z" fill="#475569"/>
                 <path d="M12 8V12L15 14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <span className="font-[Space_Grotesk] font-semibold text-base text-sidebar-foreground">Axia</span>
