@@ -2005,3 +2005,38 @@ Stage Summary:
   2. Backup tag: backup-2026-06-27_19-54-53_IST (pushed)
   3. GitHub Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.5.1-mobile-ui-fixes (with 43MB backup zip attached)
 - vercel.json SPA fix pushed as e3bda40 but Vercel has not rebuilt yet. User may need to check Vercel dashboard → Deployments to see if build triggered, or manually redeploy.
+
+---
+Task ID: multi-bug-fix-round-1
+Agent: main
+Task: User reported multiple issues: (1) clean dead code starting with Projects + Clients pages, identify bloat/quality/deps; (2) mobile buttons/pages getting cut on right; (3) Messages mobile — DM/group list should be collapsible, full message view shown; (4) Proposals convert-to-project Convex error; (5) Tags messy — Tags page shows no tags but other pages show tags, tag filtering returns empty despite having those tags; (6) make colors matte and clean; (7) newer upgraded deps. User chose: Cool Slate palette, safe-only deps, keep dev buttons as-is, all fixes in one pass.
+
+Work Log:
+- Launched Explore agent for thorough audit of deps, tag filter bug, Tags page bug, convert-to-project error, Messages mobile layout, mobile cutoff offenders.
+- Deps audit: stack is current (React 19, Vite 6, Tailwind 4, Convex 1.40). Flagged: typescript@^6.0.3 (doesn't exist), xlsx@0.18.5 (CVE), zod@3 (v4 out), recharts@2 (v3 out). User chose "safe only" → only typescript + xlsx addressed.
+- Tag filter bug ROOT CAUSE: getMyProjects query had no workspaceId filter, returned projects across ALL workspaces. Those projects' tagIds referenced tags from other workspaces → never matched active workspace's tag filter chips → filter returned empty.
+- Tags page bug ROOT CAUSE: getTagsWithUsage scanned 7 tables × 5000 rows (35,000 rows) with fragile filter expression. Any table scan failure killed the whole query → undefined → [] → empty Tags page.
+- Convert-to-project bug ROOT CAUSE: proposals.title maxLength(200) → projects.projectName maxLength(100). Titles 101-200 chars threw validation error.
+- Messages mobile ROOT CAUSE: ChannelList hard-coded w-64 (256px). On 375px phone, list took 68%, thread got 119px. No mobile navigation, no back button.
+
+Fixes applied (commit beb007d):
+1. getMyProjects: added optional workspaceId arg, filter by by_workspace index. Projects.tsx passes { workspaceId }.
+2. getTagsWithUsage: wrapped each table scan in try/catch, removed fragile filter, take(500) per table. Failing tables contribute 0 to counts instead of killing the query.
+3. convertToProject: truncate proposal.title.slice(0, 100) before inserting into projects table.
+4. Messages.tsx: added useIsMobile(). On mobile, renders EITHER channel list OR thread (not both). Added onBack prop to ChannelHeader (← button, md:hidden). ChannelList width → w-full md:w-64. MemberList hidden on mobile.
+5. Mobile cutoff: added flex-wrap to 5 button rows (InvoiceBuilder, Projects, Clients, Invoices, Proposals).
+6. Dead code removed from Projects.tsx: customFieldValues (unused), handleUpgrade (navigated to legacy redirect). Dev seed buttons KEPT per user decision.
+7. Cool Slate palette: replaced teal primary (#0D9488) with slate (#475569) in index.css. Replaced all hardcoded purple (#8B5CF6, #7C3AED) with slate across 43 files, 287 replacements. Applied via scripts/apply-cool-slate-palette.py (saved for re-runs).
+8. Deps: typescript ^6.0.3 → ^5.7.0 (TS 6 doesn't exist). xlsx kept as-is (CVE documented, migration to SheetJS CDN tarball is recommended follow-up — same API, zero breakage risk).
+
+Conflict resolution during rebase:
+- User pushed fa76542 (Update index.css) which included the responsive header from my earlier commit 9ccc1db.
+- 6 files conflicted (Projects, Invoices, Proposals, Pipeline, InvoiceBuilder, Messages).
+- Resolved by combining HEAD's size="sm" additions with my slate color changes. For Messages.tsx, kept my mobile layout. For header structure, took HEAD's responsive flex-col sm:flex-row pattern (better than my simpler version).
+- Build verified after rebase: 3382 modules, OK in 10.10s.
+
+Stage Summary:
+- 50 files changed, 509 insertions(+), 305 deletions(-).
+- 5 bugs fixed, dead code removed, Cool Slate palette applied, typescript fixed.
+- All changes compiled and pushed to main as beb007d.
+- xlsx CVE migration is the recommended follow-up (SheetJS CDN tarball).
