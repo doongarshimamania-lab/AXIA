@@ -5,11 +5,10 @@
   "installCommand": "pnpm install --no-frozen-lockfile",
   "devCommand": "vite --port 3000 --host 0.0.0.0",
   "outputDirectory": "dist",
-  "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon\\.ico|logo\\.png|logo\\.svg|robots\\.txt|manifest\\.json|api/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
