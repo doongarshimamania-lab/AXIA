@@ -1924,3 +1924,30 @@ What's left from the original 70-item audit (for user's next decision):
 - Item 69: AccountSettings.tsx:276 — 'Replace with real Convex mutation when support ticket system is implemented' [RESOLVED in a94e296 — handleSubmitTicket now uses mailto: instead of faking it]
 - Item 70: HelpCenter.tsx:53 — same TODO [FILE DELETED in ab9800e — RESOLVED]
 
+
+---
+Task ID: mobile-ui-fix-1
+Agent: main
+Task: User reported 3 issues after axia-bay.vercel.app deploy went live: (1) huge mobile UI bug — sidebar appearing twice on mobile (once inline pushing content down, once inside the hamburger Sheet); (2) Clients list UI regressed to a plain button list after audit commit a94e296 deleted the polished ClientList component — user wanted the previous polished look back; (3) button inconsistency — laptop showed size='sm' outline buttons next to default-size (h-9) primary buttons in the same row, looking misaligned on mobile. User asked for COMPLETE mobile responsiveness across all device types.
+
+Work Log:
+- Read worklog + git log to establish baseline (commit a94e296 had deleted ClientList, audit-cleanup-2 was the last worklog entry).
+- Audited mobile UI via Task subagent — identified 9 button-group overflow rows, 5 non-responsive headers, non-collapsing grids in TeamManagement + Scope, duplicate sidebar bug in main.tsx, Messages.tsx mobile height issue.
+- Fixed main.tsx: guarded inline <CollapsibleSidebar /> with {!isMobile && ...} so the sidebar renders exactly once on every breakpoint. The MobileHeader Sheet already renders its own copy on mobile.
+- Restored Clients.tsx polished card UI: Card+CardHeader+CardTitle 'Client Protection Hub' wrapper, per-card risk Badge, per-card Manage-tags Popover, per-card Share workspace Dialog (with copy-link + preview-as-client), selected-client action toolbar (Share / Transfer / Delete). Did NOT bring back fabricated stats (protectionScore %, totalHours, totalValue, fake Payment Pattern Analysis, fake Upgrade CTA) — audit item #26 stays satisfied.
+- Button consistency: unified all action-bar buttons to size='sm' across Clients, Projects, Pipeline, Invoices, Proposals, InvoiceBuilder, ProposalBuilder, Scope, TeamManagement, Goals, Tags.
+- Button-group overflow: added flex-wrap to 9 rows that previously overflowed on 375px viewports.
+- Responsive headers: converted 5 'flex items-center justify-between' headers to 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4' (Clients, Dashboard, TeamManagement, ProposalBuilder, Scope). Projects.tsx merged separate title + action rows into one responsive header.
+- Grid fallbacks: TeamManagement grid-cols-3 -> grid-cols-1 sm:grid-cols-3; Scope.tsx header icon got shrink-0.
+- Messages.tsx mobile height: h-[calc(100vh)] -> h-[calc(100vh-3.5rem)] on mobile, md:h-[calc(100vh)] on desktop (subtracts the 56px MobileHeader so chat input isn't hidden).
+- Verified: npx vite build -> 3382 modules, OK in 10.21s. Deployed site https://axia-bay.vercel.app/ returns HTTP 200.
+- All imports + state variables in Clients.tsx verified used (no dead code).
+- Ponytail comments added to main.tsx (4 total) and Clients.tsx (21 total) explaining every change.
+
+Stage Summary:
+- Single commit 9ccc1db pushed to main: 'fix(responsive): mobile UI — sidebar dedupe, restored Clients list, button consistency'.
+- 14 files changed, 359 insertions(+), 137 deletions(-).
+- Clients.tsx went from ~470 lines to 880 lines — this is the cost of the restored Share Dialog + Manage-tags Popover + per-card risk Badge + action toolbar (NOT bloat: every imported symbol and every state variable is actually used; verified by grep).
+- Build passes, deployed site live.
+- Known history noise: commits d4ac8b8 and 7480b28 have identical messages (rebase artifact from when user pushed e5f011c directly to GitHub mid-session). Working tree is correct; history duplicate is cosmetic and not worth a force-push to clean up.
+- Pre-existing bundle bloat: main chunk is 2.5MB (gzip 742KB) — caused by heavy deps (pdf, html2canvas, purify), NOT by this commit's 407 lines added to Clients.tsx. Code-splitting those deps is a separate task.
