@@ -1058,7 +1058,7 @@ function SectionEditor({
                   onChange={(e) => onUpdate(section.id, { content: e.target.value })}
                   className="font-medium"
                 />
-                <div className="border border-border rounded-lg overflow-hidden">
+                <div className="border border-border rounded-lg overflow-x-auto md:overflow-hidden">
                   <table className="w-full text-[13px]">
                     <thead>
                       <tr className="border-b border-border bg-muted/50">
@@ -1349,7 +1349,7 @@ function ProposalPreview({
                     >
                       {section.content || "Pricing"}
                     </h3>
-                    <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="border border-border rounded-lg overflow-x-auto md:overflow-hidden">
                       <table className="w-full text-[14px]">
                         <thead>
                           <tr className="border-b border-border bg-muted/50">

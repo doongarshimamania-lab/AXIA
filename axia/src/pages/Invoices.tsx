@@ -944,7 +944,12 @@ export default function Invoices() {
                                     Line Items
                                   </h4>
                                   <div className="rounded-lg border border-border overflow-x-auto bg-background">
-                                    <table className="w-full text-[13px] min-w-[400px]">
+                                    {/* ponytail: removed min-w-[400px] — it forced the invoice
+                                        line-items table to overflow on mobile even though the
+                                        parent already has overflow-x-auto. Table now shrinks
+                                        to fit container width and scrolls horizontally only
+                                        when its own content is genuinely wider than viewport. */}
+                                    <table className="w-full text-[13px]">
                                       <thead>
                                         <tr className="border-b border-border bg-muted/50">
                                           <th className="text-left py-2.5 px-3 font-medium text-muted-foreground">

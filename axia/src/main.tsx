@@ -227,7 +227,10 @@ function DashboardLayout() {
       {!isMobile && <CollapsibleSidebar />}
       {/* Mobile header with hamburger */}
       {isMobile && <MobileHeader />}
-      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
+      <div className="flex-1 min-h-screen bg-background pt-14 md:pt-0 overflow-x-hidden" style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 280px)', transition: 'margin-left 0.3s ease-in-out' }}>
+        {/* ponytail: overflow-x-hidden on the layout root is the safety net —
+            any inner element that forgot to wrap a wide table or grid will
+            be clipped instead of causing horizontal scroll on mobile. */}
         <Outlet />
       </div>
     </div>

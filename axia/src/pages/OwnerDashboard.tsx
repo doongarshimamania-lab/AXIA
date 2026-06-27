@@ -938,6 +938,10 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
               <p className="text-sm text-muted-foreground mt-2">Entries will appear here in real-time as users join.</p>
             </div>
           ) : (
+            /* ponytail: 7-column waitlist table needs horizontal scroll on mobile.
+               Wrapper added so the table no longer forces the whole page to scroll
+               left/right on narrow viewports. */
+            <div className="overflow-x-auto -mx-2 px-2">
             <table className="w-full border-collapse">
               <thead className="sticky top-0 bg-background z-10">
                 <tr className="border-b-2 border-border">
@@ -1004,6 +1008,7 @@ function WaitlistEntriesInner({ title, envLabel }: { title: string; envLabel: st
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </CardContent>
@@ -1194,9 +1199,11 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
             }} 
           />
           
-          <div className="grid grid-cols-12 gap-6 mb-8">
+          {/* ponytail: grid-cols-12 → grid-cols-1 on mobile, sm:grid-cols-2 on tablets.
+              The fixed 12-col with col-span-6 forced horizontal scroll on phones. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             {/* Users Needed Counter */}
-            <Card className="col-span-6">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-foreground">Users Needed Breakdown</CardTitle>
               </CardHeader>
@@ -1209,7 +1216,7 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
             </Card>
             
             {/* Burn Rate Monitor */}
-            <Card className="col-span-6">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-foreground">Burn Rate vs MRR Growth</CardTitle>
               </CardHeader>

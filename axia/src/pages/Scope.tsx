@@ -272,7 +272,7 @@ function ScopeCard({
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-3 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">{scope.deliverables.length}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Deliverables</p>
@@ -404,7 +404,7 @@ function ScopeCard({
               <BarChart3 className="w-4 h-4 text-primary" />
               Scope Impact Summary
             </h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 rounded-lg bg-muted/50 text-center">
                 <p className="text-lg font-bold text-foreground">+{health.totalHoursAdded}h</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Hours Added</p>
@@ -511,7 +511,7 @@ function ScopeCardSkeleton() {
           </div>
           <Skeleton className="w-5 h-5 ml-4" />
         </div>
-        <div className="grid grid-cols-4 gap-3 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="text-center">
               <Skeleton className="h-6 w-8 mx-auto mb-1" />
@@ -537,7 +537,7 @@ function ChangeOrderSkeleton() {
           <Skeleton className="h-3 w-12" />
         </div>
         <Skeleton className="h-3 w-full" />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[0, 1, 2].map(i => (
             <Skeleton key={i} className="h-14 rounded-lg" />
           ))}

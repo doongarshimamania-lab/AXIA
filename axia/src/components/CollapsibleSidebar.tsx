@@ -559,6 +559,22 @@ export function CollapsibleSidebar() {
               <span className="font-[Space_Grotesk] font-semibold text-base text-sidebar-foreground">Axia</span>
             </div>
           </div>
+          {/* ponytail: ProfileSection + WorkspaceSwitcher were missing on mobile —
+              the desktop sidebar rendered both at lines 269-283, but the mobile
+              block (this branch) only had Logo + nav + theme. Users on mobile had
+              no way to switch teams/workspaces from the sidebar. Now rendered
+              identically to desktop so mobile users see the same team switcher. */}
+          <ProfileSection
+            profile={profile}
+            isExpanded={true}
+            onOpenProfile={() => {
+              const event = new CustomEvent('openProfileModal');
+              window.dispatchEvent(event);
+            }}
+          />
+          <div className="px-2 py-1">
+            <WorkspaceSwitcher />
+          </div>
           {/* Nav items — always expanded on mobile */}
           <div className="flex-1 py-2 space-y-2 overflow-y-auto">
             <div className="px-2 space-y-0.5">
