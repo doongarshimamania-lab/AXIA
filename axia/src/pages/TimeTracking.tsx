@@ -700,7 +700,20 @@ export default function TimeTracking() {
             </Card>
             )}
 
-            {/* Time Entries List */}
+            {/* Time Entries List
+                ponytail: hide the entire "Recent Time Entries" card when the
+                workspace has no projects AND no timer is running — same
+                condition as the empty state above. Previously this card
+                rendered unconditionally, which meant a fresh workspace (or one
+                whose projects had all been deleted) would show the "No projects
+                yet" empty state in the timer section AND a list of orphaned
+                time entries (with projectName/clientName denormalized on each
+                workSession doc) right below it. That contradiction was
+                confusing — if there are no projects, the user shouldn't be
+                told there ARE entries "of clients and projects". Historical
+                entries are still in the DB and would re-appear here as soon as
+                the user creates a new project. */}
+            {!(projects && projects.length === 0 && !isTimerRunning) && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -870,6 +883,7 @@ export default function TimeTracking() {
                 )}
               </CardContent>
             </Card>
+            )}
           </>
         )}
 
