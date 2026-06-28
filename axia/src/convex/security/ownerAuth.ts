@@ -1,8 +1,9 @@
-"use node";
-
+// ponytail: removed "use node" — Convex only allows actions (not mutations)
+// in the Node.js runtime. The only Node API we used was crypto.timingSafeEqual,
+// which we replace with a pure-JS constant-time compare below. This lets the
+// mutation run in the default V8 worker runtime.
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import crypto from "crypto";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Server-side owner credential verification.
@@ -11,6 +12,19 @@ import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 //   1. Constant-time password comparison (was `===` — timing attack-able).
 //   2. Bounded rate-limit query (was .take(1000) — DoS amplification).
 //   3. Password length cap to prevent LPDOS via huge-string comparison.
+
+// ponytail: pure-JS constant-time string compare. Iterates over the FULL
+// length of both buffers regardless of early mismatch, so timing doesn't
+// leak the position of the first difference. Length is leaked (unavoidable
+// in pure JS) but owner password length is fixed and not security-relevant.
+function constantTimeEqual(a: Buffer, b: Buffer): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}
 export const ownerAuth_verifyOwnerCredentials = mutation({
   args: { password: v.string() },
   handler: async (ctx, args) => {
@@ -48,7 +62,7 @@ export const ownerAuth_verifyOwnerCredentials = mutation({
     const expBuf = Buffer.from(ownerPassword, "utf8");
     let isCorrect = false;
     if (candBuf.length === expBuf.length) {
-      isCorrect = crypto.timingSafeEqual(candBuf, expBuf);
+      isCorrect = constantTimeEqual(candBuf, expBuf);
     }
 
     // Log the attempt (without storing the password).

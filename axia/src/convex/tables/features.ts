@@ -12,9 +12,15 @@ export const featureTables = {
     // Previously this used a plaintext `token` field with a `by_token` index,
     // but the actual extension.ts code uses tokenHash + tokenSuffix + by_token_hash,
     // so the schema and the code were out of sync and broke extension pairing.
-    tokenHash: v.string().maxLength(64),
+    // ponytail: made tokenHash + tokenSuffix OPTIONAL because the deployment
+    // has legacy rows that still use the old plaintext `token` field. New
+    // rows always populate tokenHash+tokenSuffix; old rows keep `token`.
+    tokenHash: v.optional(v.string()),
     // Last 4 chars of plaintext token for UI display only ("...abcd")
-    tokenSuffix: v.string().maxLength(8),
+    tokenSuffix: v.optional(v.string()),
+    // ponytail: legacy plaintext token field — kept optional so old rows
+    // don't fail schema validation. New code never writes this field.
+    token: v.optional(v.string()),
     createdAt: v.number(),
     expiresAt: v.number(),
     lastUsed: v.optional(v.number()),
@@ -56,8 +62,8 @@ export const featureTables = {
     ),
     connectedAt: v.optional(v.number()),
     disconnectedAt: v.optional(v.number()),
-    platformUserId: v.optional(v.string().maxLength(50)),
-    platformEmail: v.optional(v.string().maxLength(320)),
+    platformUserId: v.optional(v.string()),
+    platformEmail: v.optional(v.string()),
     accessToken: v.optional(v.string()), // encrypted
     refreshToken: v.optional(v.string()), // encrypted
     tokenExpiresAt: v.optional(v.number()),
@@ -87,7 +93,7 @@ export const featureTables = {
     ),
     importedAt: v.number(),
     data: v.any(),
-    user_id_hash: v.string().maxLength(64),
+    user_id_hash: v.string(),
     dataLineageId: v.optional(v.id("dataLineage")),
   })
     .index("by_user", ["userId"])
@@ -107,9 +113,9 @@ export const featureTables = {
     ),
     consistencyScore: v.number(), // 0-100
     discrepancies: v.array(v.object({
-      platform1: v.string().maxLength(50),
-      platform2: v.string().maxLength(50),
-      issue: v.string().maxLength(1000),
+      platform1: v.string(),
+      platform2: v.string(),
+      issue: v.string(),
       severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     })),
     verifiedAt: v.number(),
@@ -131,8 +137,8 @@ export const featureTables = {
       v.literal("evidence_quality_low")
     ),
     severity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
-    message: v.string().maxLength(20000),
-    recommendation: v.string().maxLength(1000),
+    message: v.string(),
+    recommendation: v.string(),
     actionRequired: v.boolean(),
     triggeredAt: v.number(),
     resolvedAt: v.optional(v.number()),
@@ -155,11 +161,11 @@ export const featureTables = {
       v.literal("needs_revision")
     ),
     validationScore: v.number(), // 0-100
-    feedback: v.string().maxLength(1000),
+    feedback: v.string(),
     validatedAt: v.number(),
     issues: v.array(v.object({
-      type: v.string().maxLength(50),
-      description: v.string().maxLength(5000),
+      type: v.string(),
+      description: v.string(),
       severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     })),
   })
@@ -174,26 +180,26 @@ export const featureTables = {
     teamId: v.optional(v.id("teams")),
     sharing: v.optional(v.array(sharingEntry)),
     sessionId: v.optional(v.id("workSessions")),
-    caseId: v.string().maxLength(1000),
+    caseId: v.string(),
     generatedAt: v.number(),
     rejectedHours: v.number(),
     lostIncome: v.number(),
-    reportContent: v.optional(v.string().maxLength(20000)),
+    reportContent: v.optional(v.string()),
     status: v.union(v.literal("generated"), v.literal("sent"), v.literal("viewed"), v.literal("resolved"), v.literal("appealed")),
     // Additional fields for richer report management
-    title: v.optional(v.string().maxLength(200)),
-    description: v.optional(v.string().maxLength(5000)),
-    type: v.optional(v.string().maxLength(50)),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    type: v.optional(v.string()),
     evidenceCount: v.optional(v.number()),
-    evidenceSummary: v.optional(v.string().maxLength(5000)),
+    evidenceSummary: v.optional(v.string()),
     sentAt: v.optional(v.number()),
     viewedAt: v.optional(v.number()),
     resolvedAt: v.optional(v.number()),
     appealDeadline: v.optional(v.number()),
-    publicToken: v.optional(v.string().maxLength(64)),
-    clientId: v.optional(v.string().maxLength(1000)),
-    clientName: v.optional(v.string().maxLength(100)),
-    projectName: v.optional(v.string().maxLength(100)),
+    publicToken: v.optional(v.string()),
+    clientId: v.optional(v.string()),
+    clientName: v.optional(v.string()),
+    projectName: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
@@ -213,12 +219,12 @@ export const featureTables = {
       v.literal("fully_automated")
     ),
     generatedSections: v.array(v.object({
-      section: v.string().maxLength(1000),
-      content: v.string().maxLength(20000),
+      section: v.string(),
+      content: v.string(),
       aiGenerated: v.boolean(),
     })),
     evidenceAttached: v.array(v.string()),
-    platformSubmitted: v.optional(v.string().maxLength(50)),
+    platformSubmitted: v.optional(v.string()),
     submittedAt: v.optional(v.number()),
     status: v.union(
       v.literal("draft"),
@@ -256,8 +262,8 @@ export const featureTables = {
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
     triggerType: v.string(), // "loss_aversion" | "feature_gate" | "value_showcase"
-    triggerSource: v.string().maxLength(1000),
-    tierShown: v.string().maxLength(50),
+    triggerSource: v.string(),
+    tierShown: v.string(),
     triggeredAt: v.number(),
     converted: v.boolean(),
     metadata: v.optional(v.any()),
@@ -270,9 +276,9 @@ export const featureTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    fromTier: v.string().maxLength(50),
-    toTier: v.string().maxLength(50),
-    triggerSource: v.string().maxLength(1000),
+    fromTier: v.string(),
+    toTier: v.string(),
+    triggerSource: v.string(),
     convertedAt: v.number(),
   })
     .index("by_user", ["userId"])
@@ -281,10 +287,10 @@ export const featureTables = {
 
   waitlistEntries: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
-    email: v.string().maxLength(320),
+    email: v.string(),
     submittedAt: v.number(),
     source: v.string(), // "hero" | "cta" | "pricing"
-    suggestions: v.optional(v.string().maxLength(1000)),
+    suggestions: v.optional(v.string()),
     referralCode: v.optional(v.string()), // Unique code for this user
     referredBy: v.optional(v.string()), // Referral code of who referred them
     referredCount: v.optional(v.number()), // Number of people they've referred
@@ -300,17 +306,17 @@ export const featureTables = {
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    planName: v.string().maxLength(100),
+    planName: v.string(),
     planType: v.union(
       v.literal("conservative"),
       v.literal("balanced"),
       v.literal("aggressive")
     ),
     customRules: v.array(v.object({
-      ruleId: v.string().maxLength(1000),
-      ruleName: v.string().maxLength(100),
-      condition: v.string().maxLength(1000),
-      action: v.string().maxLength(1000),
+      ruleId: v.string(),
+      ruleName: v.string(),
+      condition: v.string(),
+      action: v.string(),
       enabled: v.boolean(),
     })),
     protectionGoals: v.object({
@@ -362,7 +368,7 @@ export const featureTables = {
       v.literal("approval_needed")
     ),
     severity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
-    message: v.string().maxLength(20000),
+    message: v.string(),
     protectionRate: v.optional(v.number()),
     isRead: v.boolean(),
     createdAt: v.number(),
@@ -394,7 +400,7 @@ export const featureTables = {
     insights: v.array(
       v.object({
         type: v.union(v.literal("success"), v.literal("warning"), v.literal("critical")),
-        message: v.string().maxLength(20000),
+        message: v.string(),
       })
     ),
     createdAt: v.number(),
@@ -408,16 +414,16 @@ export const featureTables = {
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
     projectId: v.id("projects"),
-    changeDescription: v.string().maxLength(5000),
-    originalScope: v.string().maxLength(1000),
-    newScope: v.string().maxLength(1000),
+    changeDescription: v.string(),
+    originalScope: v.string(),
+    newScope: v.string(),
     impactAssessment: v.object({
-      timeImpact: v.string().maxLength(1000),
-      budgetImpact: v.string().maxLength(1000),
-      deliverableImpact: v.string().maxLength(1000),
+      timeImpact: v.string(),
+      budgetImpact: v.string(),
+      deliverableImpact: v.string(),
     }),
-    clientAcknowledgment: v.optional(v.string().maxLength(1000)),
-    clientApprovalEvidence: v.optional(v.string().maxLength(1000)),
+    clientAcknowledgment: v.optional(v.string()),
+    clientApprovalEvidence: v.optional(v.string()),
     status: v.union(
       v.literal("pending"),
       v.literal("formalized"),

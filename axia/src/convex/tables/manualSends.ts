@@ -36,11 +36,11 @@ export const manualSendTables = {
       v.literal("other"),
     ),
     // Who it was sent to (free text — usually an email or phone number)
-    recipient: v.string().maxLength(1000),
+    recipient: v.string(),
     // Optional: subject line (for email) or message context
-    subject: v.optional(v.string().maxLength(1000)),
+    subject: v.optional(v.string()),
     // Optional: free-form notes ("I attached the PDF and CC'd their COO")
-    notes: v.optional(v.string().maxLength(5000)),
+    notes: v.optional(v.string()),
     // When the user says they sent it (defaults to now, but can be backdated)
     sentAt: v.number(),
     loggedAt: v.number(),

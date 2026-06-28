@@ -3,11 +3,11 @@ import { v } from "convex/values";
 
 export const messagingTables = {
   channels: defineTable({
-    name: v.string().maxLength(100),
+    name: v.string(),
     workspaceId: v.id("workspaces"),
     type: v.union(v.literal("channel"), v.literal("dm")),
     isPrivate: v.boolean(),
-    description: v.optional(v.string().maxLength(5000)),
+    description: v.optional(v.string()),
     createdBy: v.id("users"),
     isArchived: v.boolean(),
     lastMessageAt: v.optional(v.number()),
@@ -34,7 +34,7 @@ export const messagingTables = {
     channelId: v.id("channels"),
     workspaceId: v.id("workspaces"),
     authorId: v.id("users"),
-    content: v.string().maxLength(20000),
+    content: v.string(),
     parentId: v.optional(v.id("messages")),
     isEdited: v.boolean(),
     isPinned: v.boolean(),
@@ -50,7 +50,7 @@ export const messagingTables = {
   reactions: defineTable({
     messageId: v.id("messages"),
     userId: v.id("users"),
-    emoji: v.string().maxLength(1000),
+    emoji: v.string(),
     workspaceId: v.id("workspaces"),
   })
     .index("by_message", ["messageId"])

@@ -5,9 +5,9 @@ export const auditTrail = defineTable({
   userId: v.id("users"),
   workspaceId: v.optional(v.id("workspaces")),
   createdBy: v.optional(v.id("users")),
-  user_id_hash: v.string().maxLength(64),
-  operation: v.string().maxLength(1000),
-  source_platform: v.string().maxLength(50),
+  user_id_hash: v.string(),
+  operation: v.string(),
+  source_platform: v.string(),
   timestamp: v.number(),
   data_snapshot: v.any(),
 })
@@ -20,10 +20,10 @@ export const consentManagement = defineTable({
   userId: v.id("users"),
   workspaceId: v.optional(v.id("workspaces")),
   createdBy: v.optional(v.id("users")),
-  user_id_hash: v.string().maxLength(64),
+  user_id_hash: v.string(),
   consent_type: v.union(v.literal("PII"), v.literal("health"), v.literal("financial")),
   status: v.union(v.literal("granted"), v.literal("revoked")),
-  version: v.string().maxLength(1000),
+  version: v.string(),
   granted_at: v.number(),
   expires_at: v.number(),
   revoked_at: v.optional(v.number()),
@@ -37,9 +37,9 @@ export const complianceCertificates = defineTable({
   userId: v.id("users"),
   workspaceId: v.optional(v.id("workspaces")),
   createdBy: v.optional(v.id("users")),
-  user_id_hash: v.string().maxLength(64),
+  user_id_hash: v.string(),
   certificate_type: v.union(v.literal("deletion"), v.literal("export"), v.literal("audit")),
-  certificate_hash: v.string().maxLength(64),
+  certificate_hash: v.string(),
   issued_at: v.number(),
   metadata: v.any(),
 })
@@ -50,12 +50,12 @@ export const complianceCertificates = defineTable({
 
 export const dataLineage = defineTable({
   workspaceId: v.optional(v.id("workspaces")),
-  record_id: v.string().maxLength(1000),
-  user_id_hash: v.string().maxLength(64),
-  source_platform: v.string().maxLength(50),
+  record_id: v.string(),
+  user_id_hash: v.string(),
+  source_platform: v.string(),
   import_timestamp: v.number(),
-  jwt_signature: v.string().maxLength(128),
-  data_type: v.string().maxLength(50),
+  jwt_signature: v.string(),
+  data_type: v.string(),
 })
   .index("by_user_hash", ["user_id_hash"])
   .index("by_record_id", ["record_id"])
@@ -66,7 +66,7 @@ export const consentAudits = defineTable({
   userId: v.id("users"),
   workspaceId: v.optional(v.id("workspaces")),
   createdBy: v.optional(v.id("users")),
-  platform: v.string().maxLength(50),
+  platform: v.string(),
   action: v.union(
     v.literal("consent_granted"),
     v.literal("consent_revoked"),
@@ -75,7 +75,7 @@ export const consentAudits = defineTable({
   ),
   timestamp: v.number(),
   details: v.any(),
-  ipAddress: v.string().maxLength(64),
+  ipAddress: v.string(),
 })
   .index("by_user", ["userId"])
   .index("by_user_and_platform", ["userId", "platform"])
@@ -88,9 +88,9 @@ export const extensionTokens = defineTable({
   createdBy: v.optional(v.id("users")),
   // v5.5.0: token is now stored as SHA-256 hash (irreversible).
   // Plaintext token is shown once at creation time, never retrievable after.
-  tokenHash: v.string().maxLength(64),
+  tokenHash: v.string(),
   // Last 4 chars of plaintext token for UI display only ("...abcd")
-  tokenSuffix: v.string().maxLength(8),
+  tokenSuffix: v.string(),
   createdAt: v.number(),
   expiresAt: v.number(),
   lastUsed: v.optional(v.number()),

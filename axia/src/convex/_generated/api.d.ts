@@ -91,6 +91,7 @@ import type * as security_audit from "../security/audit.js";
 import type * as security_consent from "../security/consent.js";
 import type * as security_crypto from "../security/crypto.js";
 import type * as security_ownerAuth from "../security/ownerAuth.js";
+import type * as security_rateLimit from "../security/rateLimit.js";
 import type * as security_utils from "../security/utils.js";
 import type * as seed from "../seed.js";
 import type * as seedNew from "../seedNew.js";
@@ -227,6 +228,7 @@ declare const fullApi: ApiFromModules<{
   "security/consent": typeof security_consent;
   "security/crypto": typeof security_crypto;
   "security/ownerAuth": typeof security_ownerAuth;
+  "security/rateLimit": typeof security_rateLimit;
   "security/utils": typeof security_utils;
   seed: typeof seed;
   seedNew: typeof seedNew;

@@ -39,7 +39,7 @@ export const evidenceTables = {
       v.literal("platform_status")
     ),
     data: v.any(),
-    url: v.optional(v.string().maxLength(2048)),
+    url: v.optional(v.string()),
   })
     .index("by_session_and_time", ["evidenceSessionId", "t"])
     .index("by_workspace", ["workspaceId"]),
@@ -52,11 +52,11 @@ export const evidenceTables = {
     evidenceSessionId: v.id("evidenceSessions"),
     contextRelevanceScore: v.number(), // 0-100
     verificationMatrix: v.any(), // Mapping of requirements to evidence
-    verificationSignature: v.string().maxLength(1000),
+    verificationSignature: v.string(),
     verifiedAt: v.number(),
     clientRequirements: v.array(v.object({
-      id: v.string().maxLength(1000),
-      description: v.string().maxLength(5000),
+      id: v.string(),
+      description: v.string(),
       relevanceScore: v.number(),
       matchedEvidence: v.array(v.string()),
     })),
@@ -67,7 +67,7 @@ export const evidenceTables = {
     .index("by_workspace", ["workspaceId"]),
 
   evidenceMetadata: defineTable({
-    evidenceId: v.string().maxLength(1000),
+    evidenceId: v.string(),
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),

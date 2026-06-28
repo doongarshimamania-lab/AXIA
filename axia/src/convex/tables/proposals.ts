@@ -17,9 +17,9 @@ const sectionTypeUnion = v.union(
 );
 
 const sectionSchema = v.object({
-  id: v.string().maxLength(1000),
+  id: v.string(),
   type: sectionTypeUnion,
-  content: v.string().maxLength(20000),
+  content: v.string(),
   metadata: v.optional(v.any()),
 });
 
@@ -30,7 +30,7 @@ export const proposalTables = {
     clientId: v.optional(v.id("clients")),
     dealId: v.optional(v.id("deals")),
     projectId: v.optional(v.id("projects")), // ponytail: back-link set when proposal is converted to project
-    title: v.string().maxLength(200),
+    title: v.string(),
     status: v.union(
       v.literal("draft"),
       v.literal("sent"),
@@ -42,16 +42,16 @@ export const proposalTables = {
     publicToken: v.string(), // for client-facing view
     sections: v.array(sectionSchema),
     totalValue: v.number(),
-    currency: v.optional(v.string().maxLength(8)),
+    currency: v.optional(v.string()),
     validUntil: v.optional(v.number()),
     templateId: v.optional(v.id("proposalTemplates")),
-    clientName: v.optional(v.string().maxLength(100)),
-    clientEmail: v.optional(v.string().maxLength(320)),
+    clientName: v.optional(v.string()),
+    clientEmail: v.optional(v.string()),
     sentAt: v.optional(v.number()),
     viewedAt: v.optional(v.number()),
     signedAt: v.optional(v.number()),
-    signatureData: v.optional(v.string().maxLength(1000)),
-    notes: v.optional(v.string().maxLength(5000)),
+    signatureData: v.optional(v.string()),
+    notes: v.optional(v.string()),
     createdBy: v.optional(v.id("users")),
     teamId: v.optional(v.id("teams")),
     sharing: v.optional(v.array(sharingEntry)),
@@ -73,9 +73,9 @@ export const proposalTables = {
     userId: v.optional(v.id("users")), // system templates have no userId
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    name: v.string().maxLength(100),
-    industry: v.optional(v.string().maxLength(1000)),
-    description: v.optional(v.string().maxLength(5000)),
+    name: v.string(),
+    industry: v.optional(v.string()),
+    description: v.optional(v.string()),
     sections: v.array(sectionSchema),
     isSystem: v.optional(v.boolean()),
     usageCount: v.optional(v.number()),
@@ -91,8 +91,8 @@ export const proposalTables = {
     createdBy: v.optional(v.id("users")),
     proposalId: v.id("proposals"),
     dayNumber: v.number(), // 3, 7, or 14
-    subject: v.string().maxLength(1000),
-    body: v.string().maxLength(20000),
+    subject: v.string(),
+    body: v.string(),
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
     status: v.union(
       v.literal("scheduled"),

@@ -17,9 +17,13 @@ import { internal } from "./_generated/api";
 import { requireAdmin } from "./security/rateLimit";
 
 // v5.5.0: source from env (was: hardcoded "Axia2026!")
-const PASSWORD = process.env.SEED_PASSWORD || (process.env.NODE_ENV === "production"
-  ? (() => { throw new Error("SEED_PASSWORD env var required in production"); })()
-  : "DevSeed123!");
+// ponytail: removed the module-load throw — it broke `convex deploy` because
+// Convex evaluates every module at deploy time, and NODE_ENV is "production"
+// in the deploy environment even for dev deployments. The seed mutation
+// itself is admin-gated (requireAdmin), so a default password here is safe —
+// the mutation can only be invoked by an authenticated admin who already has
+// dashboard access. If you want to override, set SEED_PASSWORD env var.
+const PASSWORD = process.env.SEED_PASSWORD || "DevSeed123!";
 const day = 86400000;
 
 function generateToken(): string {

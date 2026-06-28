@@ -59,7 +59,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "convex": "^1.40.0",
+    "convex": "^1.42.0",
     "convex-helpers": "^0.1.75",
     "date-fns": "^4.1.0",
     "docx": "^9.7.1",

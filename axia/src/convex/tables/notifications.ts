@@ -23,11 +23,11 @@ export const notificationTables = {
   notifications: defineTable({
     userId: v.id("users"),
     workspaceId: v.optional(v.id("workspaces")),
-    type: v.string().maxLength(50),
-    title: v.string().maxLength(200),
-    body: v.string().maxLength(20000),
+    type: v.string(),
+    title: v.string(),
+    body: v.string(),
     // Optional deep-link target
-    link: v.optional(v.string().maxLength(2048)),
+    link: v.optional(v.string()),
     // Optional related entity references
     entityType: v.optional(
       v.union(
@@ -40,7 +40,7 @@ export const notificationTables = {
         v.literal("other"),
       )
     ),
-    entityId: v.optional(v.string().maxLength(1000)),
+    entityId: v.optional(v.string()),
     // Severity drives icon + color
     severity: v.optional(
       v.union(

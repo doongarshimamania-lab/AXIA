@@ -19,11 +19,11 @@ export const networkConnections = defineTable({
 
 export const platformComplianceChecks = defineTable({
   workspaceId: v.optional(v.id("workspaces")),
-  platform: v.string().maxLength(50),
+  platform: v.string(),
   complianceScore: v.number(),
   complianceStatus: v.any(),
   lastChecked: v.number(),
-  termsLastUpdated: v.string().maxLength(1000),
+  termsLastUpdated: v.string(),
 })
   .index("by_platform", ["platform"])
   .index("by_last_checked", ["lastChecked"])
@@ -46,8 +46,8 @@ export const platformConnections = defineTable({
   ),
   connectedAt: v.optional(v.number()),
   disconnectedAt: v.optional(v.number()),
-  platformUserId: v.optional(v.string().maxLength(50)),
-  platformEmail: v.optional(v.string().maxLength(320)),
+  platformUserId: v.optional(v.string()),
+  platformEmail: v.optional(v.string()),
   accessToken: v.optional(v.string()), // encrypted
   refreshToken: v.optional(v.string()), // encrypted
   tokenExpiresAt: v.optional(v.number()),
@@ -77,7 +77,7 @@ export const platformImportedData = defineTable({
   ),
   importedAt: v.number(),
   data: v.any(),
-  user_id_hash: v.string().maxLength(64),
+  user_id_hash: v.string(),
   dataLineageId: v.optional(v.id("dataLineage")),
 })
   .index("by_user", ["userId"])
@@ -97,9 +97,9 @@ export const crossPlatformVerifications = defineTable({
   ),
   consistencyScore: v.number(), // 0-100
   discrepancies: v.array(v.object({
-    platform1: v.string().maxLength(50),
-    platform2: v.string().maxLength(50),
-    issue: v.string().maxLength(1000),
+    platform1: v.string(),
+    platform2: v.string(),
+    issue: v.string(),
     severity: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   })),
   verifiedAt: v.number(),

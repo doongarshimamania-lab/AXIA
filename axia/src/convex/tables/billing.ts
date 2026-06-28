@@ -24,12 +24,12 @@ export const billingTables = {
     dueDate: v.number(),
     paidDate: v.optional(v.number()),
     paidAmount: v.optional(v.number()),
-    clientName: v.optional(v.string().maxLength(100)),
-    clientEmail: v.optional(v.string().maxLength(320)),
+    clientName: v.optional(v.string()),
+    clientEmail: v.optional(v.string()),
     lineItems: v.array(
       v.object({
-        id: v.string().maxLength(1000),
-        description: v.string().maxLength(5000),
+        id: v.string(),
+        description: v.string(),
         quantity: v.number(),
         rate: v.number(),
         amount: v.number(),
@@ -49,12 +49,12 @@ export const billingTables = {
     taxAmount: v.optional(v.number()),
     discountAmount: v.optional(v.number()),
     total: v.number(),
-    currency: v.optional(v.string().maxLength(8)),
-    notes: v.optional(v.string().maxLength(5000)),
-    terms: v.optional(v.string().maxLength(1000)),
+    currency: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    terms: v.optional(v.string()),
     // Stripe integration
-    stripePaymentIntentId: v.optional(v.string().maxLength(1000)),
-    stripeInvoiceId: v.optional(v.string().maxLength(1000)),
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeInvoiceId: v.optional(v.string()),
     proofCount: v.optional(v.number()), // how many work proofs attached
     hasValidatedBilling: v.optional(v.boolean()),
     sentAt: v.optional(v.number()),
@@ -84,7 +84,7 @@ export const billingTables = {
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
     invoiceId: v.id("invoices"),
-    lineItemId: v.string().maxLength(1000),
+    lineItemId: v.string(),
     proofType: v.union(
       v.literal("time_entry"),
       v.literal("task_completion"),
@@ -93,13 +93,13 @@ export const billingTables = {
       v.literal("deliverable_url"),
       v.literal("expense_record")
     ),
-    title: v.string().maxLength(200),
-    description: v.optional(v.string().maxLength(5000)),
+    title: v.string(),
+    description: v.optional(v.string()),
     hours: v.optional(v.number()),
     date: v.number(),
     value: v.optional(v.number()),
-    url: v.optional(v.string().maxLength(2048)),
-    fileName: v.optional(v.string().maxLength(100)),
+    url: v.optional(v.string()),
+    fileName: v.optional(v.string()),
     verified: v.optional(v.boolean()),
     workSessionId: v.optional(v.id("workSessions")),
     createdAt: v.number(),
@@ -119,8 +119,8 @@ export const billingTables = {
     sequenceDay: v.optional(v.number()), // alias for dayNumber, matching invoices.ts convention
     channel: v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp")),
     tone: v.union(v.literal("friendly"), v.literal("firm"), v.literal("urgent")),
-    subject: v.string().maxLength(1000),
-    body: v.string().maxLength(20000),
+    subject: v.string(),
+    body: v.string(),
     status: v.union(
       v.literal("scheduled"),
       v.literal("due"),
@@ -157,12 +157,12 @@ export const billingTables = {
     userId: v.optional(v.id("users")), // null = system template
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
-    name: v.string().maxLength(100),
-    industry: v.optional(v.string().maxLength(1000)),
-    description: v.optional(v.string().maxLength(5000)),
+    name: v.string(),
+    industry: v.optional(v.string()),
+    description: v.optional(v.string()),
     sections: v.array(
       v.object({
-        id: v.string().maxLength(1000),
+        id: v.string(),
         type: v.union(
           v.literal("heading"),
           v.literal("text"),
@@ -179,7 +179,7 @@ export const billingTables = {
           v.literal("total"),
           v.literal("notes")
         ),
-        content: v.string().maxLength(20000),
+        content: v.string(),
         metadata: v.optional(v.any()),
       })
     ),

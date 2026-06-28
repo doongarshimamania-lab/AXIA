@@ -13,12 +13,12 @@ export const trackingTables = {
     endTime: v.optional(v.number()),
     totalMinutes: v.optional(v.number()),
     complianceStatus: v.union(v.literal("active"), v.literal("at_risk"), v.literal("rejected")),
-    clientName: v.string().maxLength(100),
-    projectName: v.string().maxLength(100),
+    clientName: v.string(),
+    projectName: v.string(),
     hourlyRate: v.number(),
     // Optional fields for richer tracking
     platform: v.optional(v.union(v.literal("upwork"), v.literal("fiverr"), v.literal("toptal"), v.literal("manual"))),
-    notes: v.optional(v.string().maxLength(5000)),
+    notes: v.optional(v.string()),
     isManualEntry: v.optional(v.boolean()),
     invoiced: v.optional(v.boolean()),
     status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("stopped"), v.literal("completed"))),
@@ -48,8 +48,8 @@ export const trackingTables = {
     createdBy: v.optional(v.id("users")),
     startTime: v.number(),
     endTime: v.number(),
-    activity: v.string().maxLength(1000),
-    website: v.string().maxLength(2048),
+    activity: v.string(),
+    website: v.string(),
     complianceStatus: v.union(v.literal("compliant"), v.literal("at_risk"), v.literal("rejected")),
     screenshotCount: v.number(),
     mouseActivity: v.boolean(),
@@ -65,7 +65,7 @@ export const trackingTables = {
     workspaceId: v.optional(v.id("workspaces")),
     createdBy: v.optional(v.id("users")),
     sessionId: v.optional(v.id("workSessions")),
-    appName: v.string().maxLength(100),
+    appName: v.string(),
     startTime: v.number(),
     endTime: v.optional(v.number()),
     duration: v.optional(v.number()),
@@ -87,10 +87,10 @@ export const trackingTables = {
       v.literal("non_browser_work"),
       v.literal("timer_paused")
     ),
-    message: v.string().maxLength(20000),
+    message: v.string(),
     triggeredAt: v.number(),
     acknowledged: v.boolean(),
-    actionTaken: v.optional(v.string().maxLength(1000)),
+    actionTaken: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_user_and_type", ["userId", "alertType"])

@@ -5,10 +5,10 @@ import { sharingEntry } from "../sharedValidators";
 export const teamTables = {
   teams: defineTable({
     workspaceId: v.id("workspaces"),
-    name: v.string().maxLength(100),
-    color: v.string().maxLength(32),
-    icon: v.optional(v.string().maxLength(1000)),
-    description: v.optional(v.string().maxLength(5000)),
+    name: v.string(),
+    color: v.string(),
+    icon: v.optional(v.string()),
+    description: v.optional(v.string()),
     isCrossTeam: v.optional(v.boolean()), // Management team -- sees all data
     createdAt: v.number(),
     updatedAt: v.number(),
