@@ -2157,3 +2157,34 @@ Stage Summary:
 - Mobile UI: Messages Back button + MemberList Sheet + TeamManagement stats — all committed (37fdc1e).
 - Preview: local preview server running on port 3000. Live site: https://axia-bay.vercel.app (auto-rebuilding).
 - Release: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.5.3-convex-deploy-seed-cleanup
+
+---
+Task ID: clients-restore-2026-06-28
+Agent: main (Super Z)
+Task: User said "It is still showing old clients list, i want you to properly check the commit of clients and see what was the previous clients page and list looking like and properly restore it." Screenshot showed the post-9ccc1db inline version (action toolbar + per-card with Tags/risk/Share but NO stats grid).
+
+Work Log:
+- Analyzed screenshot via VLM (z-ai vision) — confirmed it showed the inline replacement UI from commit 9ccc1db: top action toolbar (Share / Transfer / Delete), one client card "khkh" with name + "Upwork $100/hr Hourly" + Tags icon + "low risk" badge + Share icon. No stats grid. No Payment Pattern Analysis. No Client Policy Profile section.
+- Traced git history of Clients.tsx: 4 commits total (38e649f, dbf0b92, a94e296, 9ccc1db). The polished <ClientList> + <ClientPolicyProfile> components were deleted in audit item #26 (commit a94e296) and partially replaced inline in commit 9ccc1db — but the inline replacement dropped the per-card stats grid (Protection Score / Total Hours / Total Value), the tier-gated Payment Pattern Analysis section, the active-session indicator, and the entire Client Policy Profile section.
+- Restored src/components/client-protection/ClientList.tsx from commit a94e296^ (file was deleted in audit #26). 363 lines.
+- Restored src/components/client-protection/ClientPolicyProfile.tsx from commit a94e296^ with one patch: removed the useQuery call to api.clients.clientPolicyProfile.getClientPolicyProfile (the backend file was also deleted in audit #26 and is NOT re-introduced). Component now renders directly from selectedClient data via toNumber() coercion. 482 lines.
+- Wrote /home/z/my-project/scripts/restore_clients.py to surgically rewrite Clients.tsx:
+  * Replaced imports (removed CardContent/CardHeader/CardTitle/Badge/Popover/Copy/Check/ExternalLink/useCallback; added ClientList + ClientPolicyProfile)
+  * Removed unused state (shareClientId, shareToken, shareLoading, copied, manageTagsFor)
+  * Removed unused helpers (clientWorkspaceApi, generateToken, isMockId, generateDemoToken, handleShareClient, copyShareLink, getRiskColor)
+  * Replaced inline Card + per-card rendering + Share Dialog with <ClientList> call
+  * Restored "Client Policy Profile" section below the list with selected-client Share/Transfer/Delete action toolbar at the top (kept responsive: flex-col on mobile, flex-row on sm+)
+- Build verified: npx vite build → 3375 modules, OK in 10.29s.
+- Committed as a33f3b2 "fix(clients): restore polished ClientList + ClientPolicyProfile UI (audit #26 partial revert)".
+- Pushed to origin/main.
+- Rebuilt dist/ at 13:54:05 UTC. serve-preview.cjs (PID 8493) is serving the fresh dist on port 3000.
+- Vercel auto-deploying commit a33f3b2 (visible at https://axia-bay.vercel.app/clients once build completes).
+
+Stage Summary:
+- Restored polished Clients list UI with per-card stats grid (Protection Score / Total Hours / Total Value), tier-gated Payment Pattern Analysis section, active-session indicator, and the full Client Policy Profile section below the list.
+- ClientList.tsx and ClientPolicyProfile.tsx files are back in src/components/client-protection/ — audit item #26 partially reverted by user request.
+- The deleted Convex backend (api.clients.clientPolicyProfile.getClientPolicyProfile) is NOT re-introduced. ClientPolicyProfile renders from selectedClient data directly with safe toNumber() coercion.
+- Mobile-responsive fixes from commit 9ccc1db preserved (flex-wrap, sm: stacking, size='sm' buttons).
+- Commit: a33f3b2 (pushed to origin/main).
+- Preview: http://localhost:3000 (serve-preview.cjs PID 8493, dist rebuilt at 13:54:05 UTC).
+- Live: https://axia-bay.vercel.app/clients (Vercel auto-deploying a33f3b2).
