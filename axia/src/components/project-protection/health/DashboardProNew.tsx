@@ -46,7 +46,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-slate-600 blur-lg opacity-20 animate-pulse" />
+              <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-20 animate-pulse" />
               <Shield className="w-8 h-8 text-indigo-400 relative z-10" />
             </div>
             <div>
@@ -172,7 +172,7 @@ export function DashboardProNew({ data, onUpgrade }: DashboardProNewProps) {
           </div>
           
           <div className="mt-8 pt-6 border-t border-indigo-900/50">
-            <Button onClick={onUpgrade} className="w-full bg-indigo-600 hover:bg-slate-600 text-white font-mono text-xs">
+            <Button onClick={onUpgrade} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs">
               UPGRADE_TO_EXPERT_TIER
             </Button>
           </div>

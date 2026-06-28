@@ -322,7 +322,7 @@ export const adminSeed = mutation({
         { name: "frontend", color: "#3b82f6" },
         { name: "backend", color: "#10b981" },
         { name: "urgent", color: "#ef4444" },
-        { name: "design", color: "#475569" },
+        { name: "design", color: "#8b5cf6" },
         { name: "api", color: "#f59e0b" },
         { name: "mobile", color: "#06b6d4" },
         { name: "devops", color: "#6366f1" },

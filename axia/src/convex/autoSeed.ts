@@ -118,7 +118,7 @@ export const autoSeed = mutation({
       // NOTE: Stage colors should match STAGE_COLORS in src/lib/tokens.ts
       const defaults = [
         { name: "Lead", color: "#6366f1" },
-        { name: "Qualified", color: "#475569" },
+        { name: "Qualified", color: "#8b5cf6" },
         { name: "Proposal", color: "#a855f7" },
         { name: "Negotiation", color: "#c084fc" },
         { name: "Won", color: "#22c55e" },
@@ -646,7 +646,7 @@ export const autoSeed = mutation({
     if (existingTags.length === 0) {
       const mockTags = [
         { name: "Web Development", color: "#3b82f6", category: "project" },
-        { name: "Mobile App", color: "#475569", category: "project" },
+        { name: "Mobile App", color: "#8b5cf6", category: "project" },
         { name: "Design", color: "#ec4899", category: "project" },
         { name: "Branding", color: "#f59e0b", category: "client" },
         { name: "API Integration", color: "#10b981", category: "project" },
@@ -661,7 +661,7 @@ export const autoSeed = mutation({
         { name: "Recurring", color: "#2563eb", category: "engagement" },
         { name: "High-Value", color: "#ca8a04", category: "priority" },
         { name: "Remote", color: "#0891b2", category: "engagement" },
-        { name: "Long-Term", color: "#334155", category: "engagement" },
+        { name: "Long-Term", color: "#7c3aed", category: "engagement" },
         { name: "New Client", color: "#059669", category: "client" },
       ];
 

@@ -50,7 +50,7 @@ const platformMeta: Record<string, { label: string; color: string; bg: string }>
   fiverr: { label: "Fiverr", color: "text-green-600", bg: "bg-green-500" },
   toptal: { label: "Toptal", color: "text-red-600", bg: "bg-red-500" },
   freelancer: { label: "Freelancer.com", color: "text-blue-600", bg: "bg-blue-500" },
-  direct: { label: "Direct", color: "text-violet-600", bg: "bg-slate-600" },
+  direct: { label: "Direct", color: "text-violet-600", bg: "bg-violet-500" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

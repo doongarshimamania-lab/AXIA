@@ -75,7 +75,7 @@ export default function Projects() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  // ponytail: removed `customFieldValues` state — declared but never read anywhere.
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const seedTestProjectsMutation = useMutation(api.seedProjects.seedTestProjects);
   // ponytail: real New Project dialog (replaces dev-only "Add Test Project" path)
   const addProjectMutation = useMutation(api.projects.projectProtectionSimple.addProject);
@@ -102,20 +102,10 @@ export default function Projects() {
   // ── Convex mutations for sharing ──
   const shareRecordMutation = useMutation(api.permissions.shareRecord.shareRecord);
   const unshareRecordMutation = useMutation(api.permissions.shareRecord.unshareRecord);
+  
+  const handleUpgrade = () => navigate("/subscription");
 
-  // ponytail: removed `handleUpgrade` — it navigated to /subscription which
-  // is a legacy redirect to /account-settings. The upgrade CTAs that used it
-  // were already removed in the audit cleanup.
-
-  // ponytail: pass workspaceId so getMyProjects scopes to the active workspace.
-  // Previously passed {} which returned projects across ALL workspaces — those
-  // projects' tagIds referenced tags from other workspaces, so the tag filter
-  // chip bar (which lists only the active workspace's tags) never matched,
-  // making the filter appear broken (returns empty list).
-  const projects = useQuery(
-    api.projects.projectProtection.getMyProjects,
-    workspaceId ? { workspaceId } : {}
-  );
+  const projects = useQuery(api.projects.projectProtection.getMyProjects, {});
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const { isDisconnected } = useConvexConnectionState();
@@ -238,7 +228,7 @@ export default function Projects() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
             {/* ponytail: real New Project dialog — production path */}
-            <Button onClick={() => setShowNewProjectDialog(true)} size="sm" className="bg-[#475569] hover:bg-[#334155] text-white">
+            <Button onClick={() => setShowNewProjectDialog(true)} size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
@@ -494,7 +484,7 @@ export default function Projects() {
               <Button variant="outline" size="sm" onClick={() => setShowNewProjectDialog(false)}>
                 Cancel
               </Button>
-              <Button size="sm" className="bg-[#475569] hover:bg-[#334155] text-white" onClick={handleCreateProject}>
+              <Button size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleCreateProject}>
                 Create Project
               </Button>
             </div>

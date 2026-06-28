@@ -167,7 +167,7 @@ function getInitials(name: string) {
 
 function getAvatarColor(name: string) {
   const colors = [
-    "bg-slate-600",
+    "bg-violet-500",
     "bg-blue-500",
     "bg-emerald-500",
     "bg-amber-500",
@@ -328,7 +328,7 @@ export default function ClientWorkspace() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-br from-slate-500 to-slate-700 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -342,7 +342,7 @@ export default function ClientWorkspace() {
             </div>
             <button
               onClick={copyLink}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-lg hover:bg-slate-100 dark:hover:bg-violet-900/50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "Copied!" : "Copy Link"}
@@ -400,7 +400,7 @@ export default function ClientWorkspace() {
               </div>
               <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-slate-500 to-purple-500 rounded-full transition-all"
+                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all"
                   style={{
                     width: `${projects.length > 0 ? Math.round(projects.reduce((sum, p) => sum + p.completionPct, 0) / projects.length) : 0}%`,
                   }}
@@ -479,7 +479,7 @@ export default function ClientWorkspace() {
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full ${
                     activeTab === tab.id
-                      ? "bg-slate-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400"
+                      ? "bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400"
                       : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                   }`}
                 >
@@ -541,7 +541,7 @@ function ProjectsTab({
             className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-slate-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
                 <FolderKanban className="w-5 h-5 text-violet-500" />
               </div>
               <div className="text-left">
@@ -598,7 +598,7 @@ function ProjectsTab({
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-slate-500 to-purple-500 rounded-full transition-all"
+                    className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all"
                     style={{ width: `${project.completionPct}%` }}
                   />
                 </div>
@@ -1047,7 +1047,7 @@ function TeamTab({ team }: { team: TeamMember[] | undefined }) {
             )}
             <span className={`inline-flex items-center mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${
               member.role === "owner"
-                ? "bg-slate-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
                 : member.role === "manager"
                 ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-500"

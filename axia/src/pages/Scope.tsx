@@ -132,7 +132,7 @@ function getStatusBadge(status: string) {
     case "rejected":
       return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-0 text-xs"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
     case "auto_generated":
-      return <Badge className="bg-slate-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
+      return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-0 text-xs"><Zap className="w-3 h-3 mr-1" />Auto-Detected</Badge>;
     case "active":
       return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-0 text-xs">Active</Badge>;
     case "completed":
@@ -853,7 +853,7 @@ export default function Scope() {
               </Card>
               <Card className="p-4 bg-card rounded-xl border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-100 dark:bg-purple-900/30">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                     <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
@@ -909,7 +909,7 @@ export default function Scope() {
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               Formalizations
               {totalUnformalized > 0 && (
-                <Badge className="ml-1.5 bg-slate-600 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
+                <Badge className="ml-1.5 bg-purple-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
               )}
             </TabsTrigger>
           </TabsList>

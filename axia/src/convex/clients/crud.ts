@@ -13,20 +13,23 @@ export const getClients = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
+    // ponytail: always query by_user first — this catches BOTH workspace-scoped
+    // clients AND legacy clients (those created before the workspace system,
+    // which have workspaceId === undefined and are invisible to the
+    // by_workspace index). Then optionally filter by workspaceId in JS,
+    // keeping legacy clients visible in every workspace.
     if (workspaceId) {
-      // Verify workspace membership
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];
-
-      return await ctx.db
-        .query("clients")
-        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .take(1000);
     }
-    return await ctx.db
+
+    const allClients = await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .take(1000);
+
+    if (!workspaceId) return allClients;
+    return allClients.filter((c) => !c.workspaceId || c.workspaceId === workspaceId);
   },
 });
 
@@ -60,13 +63,20 @@ export const getClientsEnriched = query({
       if (!membership) return [];
     }
 
-    const clients = workspaceId
-      ? await ctx.db.query("clients").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(1000)
-      : await ctx.db.query("clients").withIndex("by_user", (q) => q.eq("userId", userId)).take(1000);
+    // ponytail: same by_user-first pattern as getClients — catches legacy
+    // clients that have no workspaceId.
+    const clients = await ctx.db
+      .query("clients")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(1000);
+
+    const filtered = workspaceId
+      ? clients.filter((c) => !c.workspaceId || c.workspaceId === workspaceId)
+      : clients;
 
     // Resolve assigned members
     const enriched = await Promise.all(
-      clients.map(async (client) => {
+      filtered.map(async (client) => {
         const assignedMembers = await Promise.all(
           (client.assignedMemberIds ?? []).map(async (memberId) => {
             const memberDoc = await ctx.db.get(memberId);

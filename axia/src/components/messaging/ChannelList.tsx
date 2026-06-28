@@ -20,6 +20,7 @@ import {
   Users,
   X,
   Check,
+  ChevronRight,
 } from "lucide-react";
 
 export interface Channel {
@@ -62,6 +63,11 @@ export function ChannelList({
   const [isNewPrivate, setIsNewPrivate] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  // ponytail: collapsible section state — each section header is a toggle that
+  // hides/shows its list. Default both to expanded so users see everything on
+  // first load. Tapping the header row (not just the chevron) toggles it.
+  const [channelsCollapsed, setChannelsCollapsed] = useState(false);
+  const [dmsCollapsed, setDmsCollapsed] = useState(false);
 
   const filteredChannels = useMemo(() => {
     if (!searchQuery.trim()) return channels;
@@ -153,12 +159,32 @@ export function ChannelList({
       {/* Channel List */}
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {/* Channels Section */}
+          {/* Channels Section — ponytail: collapsible header. Tapping the header
+              row toggles the section. The + button is a separate click target
+              so users can still create a channel without expanding. */}
           <div className="mb-3">
             <div className="flex items-center justify-between px-2 py-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Channels
-              </span>
+              <button
+                type="button"
+                onClick={() => setChannelsCollapsed((v) => !v)}
+                className="flex items-center gap-1 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+                aria-expanded={!channelsCollapsed}
+                aria-controls="channels-section-list"
+              >
+                <ChevronRight
+                  className={`h-3 w-3 text-muted-foreground flex-shrink-0 transition-transform ${
+                    channelsCollapsed ? "" : "rotate-90"
+                  }`}
+                />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Channels
+                </span>
+                {regularChannels.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground/70 ml-1">
+                    {regularChannels.length}
+                  </span>
+                )}
+              </button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -168,72 +194,98 @@ export function ChannelList({
                 <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
-            {regularChannels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => onChannelSelect(channel.id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-                  activeChannelId === channel.id
-                    ? "bg-primary/15 text-primary"
-                    : "text-foreground/70 hover:bg-accent hover:text-foreground"
-                }`}
-              >
-                {channel.isPrivate ? (
-                  <Lock className="h-3.5 w-3.5 flex-shrink-0" />
-                ) : (
-                  <Hash className="h-3.5 w-3.5 flex-shrink-0" />
-                )}
-                <span className="truncate flex-1 text-left text-xs font-medium">
-                  {channel.name}
-                </span>
-                {channel.unreadCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="text-[9px] h-4 min-w-4 px-1 flex items-center justify-center"
+            {!channelsCollapsed && (
+              <div id="channels-section-list">
+                {regularChannels.map((channel) => (
+                  <button
+                    key={channel.id}
+                    onClick={() => onChannelSelect(channel.id)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+                      activeChannelId === channel.id
+                        ? "bg-primary/15 text-primary"
+                        : "text-foreground/70 hover:bg-accent hover:text-foreground"
+                    }`}
                   >
-                    {channel.unreadCount}
-                  </Badge>
-                )}
-              </button>
-            ))}
+                    {channel.isPrivate ? (
+                      <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+                    ) : (
+                      <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+                    )}
+                    <span className="truncate flex-1 text-left text-xs font-medium">
+                      {channel.name}
+                    </span>
+                    {channel.unreadCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="text-[9px] h-4 min-w-4 px-1 flex items-center justify-center"
+                      >
+                        {channel.unreadCount}
+                      </Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* DMs Section */}
+          {/* DMs Section — ponytail: same collapsible pattern. */}
           <div>
             <div className="flex items-center justify-between px-2 py-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Direct Messages
-              </span>
-            </div>
-            {dmChannels.map((channel) => (
               <button
-                key={channel.id}
-                onClick={() => onChannelSelect(channel.id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-                  activeChannelId === channel.id
-                    ? "bg-primary/15 text-primary"
-                    : "text-foreground/70 hover:bg-accent hover:text-foreground"
-                }`}
+                type="button"
+                onClick={() => setDmsCollapsed((v) => !v)}
+                className="flex items-center gap-1 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+                aria-expanded={!dmsCollapsed}
+                aria-controls="dms-section-list"
               >
-                <div className="relative flex-shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-[9px] text-white font-bold">
-                    {channel.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-background" />
-                </div>
-                <span className="truncate flex-1 text-left text-xs font-medium">
-                  {channel.name}
+                <ChevronRight
+                  className={`h-3 w-3 text-muted-foreground flex-shrink-0 transition-transform ${
+                    dmsCollapsed ? "" : "rotate-90"
+                  }`}
+                />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Direct Messages
                 </span>
-                {channel.unreadCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="text-[9px] h-4 min-w-4 px-1 flex items-center justify-center"
-                  >
-                    {channel.unreadCount}
-                  </Badge>
+                {dmChannels.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground/70 ml-1">
+                    {dmChannels.length}
+                  </span>
                 )}
               </button>
-            ))}
+            </div>
+            {!dmsCollapsed && (
+              <div id="dms-section-list">
+                {dmChannels.map((channel) => (
+                  <button
+                    key={channel.id}
+                    onClick={() => onChannelSelect(channel.id)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+                      activeChannelId === channel.id
+                        ? "bg-primary/15 text-primary"
+                        : "text-foreground/70 hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">
+                        {channel.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-background" />
+                    </div>
+                    <span className="truncate flex-1 text-left text-xs font-medium">
+                      {channel.name}
+                    </span>
+                    {channel.unreadCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="text-[9px] h-4 min-w-4 px-1 flex items-center justify-center"
+                      >
+                        {channel.unreadCount}
+                      </Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </ScrollArea>
@@ -358,7 +410,7 @@ export function ChannelList({
                           <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
                             isSelected
                               ? "bg-primary text-primary-foreground"
-                              : "bg-gradient-to-br from-slate-400 to-slate-600 text-white"
+                              : "bg-gradient-to-br from-violet-400 to-indigo-500 text-white"
                           }`}>
                             {isSelected ? (
                               <Check className="h-3.5 w-3.5" />

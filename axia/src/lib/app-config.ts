@@ -31,7 +31,7 @@ export const SOURCE_OPTIONS = [
   { value: "upwork", label: "Upwork", color: "#14a800" },
   { value: "fiverr", label: "Fiverr", color: "#00b22d" },
   { value: "linkedin", label: "LinkedIn", color: "#0a66c2" },
-  { value: "referral", label: "Referral", color: "#475569" },
+  { value: "referral", label: "Referral", color: "#8B5CF6" },
   { value: "direct", label: "Direct", color: "#f59e0b" },
   { value: "other", label: "Other", color: "#6b7280" },
 ] as const;

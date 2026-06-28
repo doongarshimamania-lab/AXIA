@@ -176,7 +176,7 @@ export function ShareRecordsPanel() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <Card className="bg-card/50 border-border/50">
             <CardContent className="p-3 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-slate-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <Share2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div>

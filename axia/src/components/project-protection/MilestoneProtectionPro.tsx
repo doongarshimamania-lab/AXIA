@@ -177,7 +177,7 @@ export function MilestoneProtectionPro({
                   <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     📸 Weekly Snapshot
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-purple-300 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Captures a point-in-time record of your work week: total hours worked, evidence collected, and protection rate. 
                     This creates a permanent record that proves your work history if disputes arise later.
                   </p>
@@ -201,7 +201,7 @@ export function MilestoneProtectionPro({
                   <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     🔔 Protection Alert
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-purple-300 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Notifies you when your protection rate drops below safe levels or evidence gaps are detected. 
                     Helps you fix issues before they become disputes.
                   </p>
@@ -225,7 +225,7 @@ export function MilestoneProtectionPro({
                   <div className="font-medium text-sm text-purple-900 dark:text-purple-100 mb-1">
                     📊 Weekly Report
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-purple-300 mb-2">
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
                     Analyzes your week's work patterns, compares to previous weeks, and provides actionable insights. 
                     Shows trends in hours, protection rate, and evidence quality to help you improve.
                   </p>

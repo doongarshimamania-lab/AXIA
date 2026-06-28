@@ -383,7 +383,7 @@ export default function Invoices() {
         transition={{ duration: 0.4 }}
       >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#475569] mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5CF6] mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading invoices...</p>
         </div>
       </motion.div>
@@ -418,8 +418,8 @@ export default function Invoices() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-[13px] font-medium text-muted-foreground">Total</CardTitle>
-                <div className="h-7 w-7 rounded-md bg-[#475569]/10 flex items-center justify-center">
-                  <Receipt className="h-3.5 w-3.5 text-[#475569]" />
+                <div className="h-7 w-7 rounded-md bg-[#8B5CF6]/10 flex items-center justify-center">
+                  <Receipt className="h-3.5 w-3.5 text-[#8B5CF6]" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -571,7 +571,6 @@ export default function Invoices() {
               )}
             </div>
           )}
-          {/* ponytail: flex-wrap so the Create/Import/Seed row wraps on mobile. */}
           <div className="flex items-center gap-2 flex-wrap">
             {import.meta.env.DEV && safeInvoices.length === 0 && (
               <Button
@@ -596,7 +595,7 @@ export default function Invoices() {
             </Button>
             <Button
               size="sm"
-              className="bg-[#475569] hover:bg-[#475569]/90 text-primary-foreground gap-2"
+              className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-primary-foreground gap-2"
               onClick={() => navigate("/invoices/new")}
             >
               <Plus className="h-4 w-4" />
@@ -615,7 +614,7 @@ export default function Invoices() {
                 onClick={() => setActiveFilter(tab.key)}
                 className={`pb-2 text-sm rounded-t-md px-3 transition-colors relative whitespace-nowrap ${
                   isActive
-                    ? "font-semibold text-foreground bg-[#475569]/10 ring-1 ring-[#475569]/30"
+                    ? "font-semibold text-foreground bg-[#8B5CF6]/10 ring-1 ring-[#8B5CF6]/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
@@ -623,7 +622,7 @@ export default function Invoices() {
                 <span
                   className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                     isActive
-                      ? "bg-[#475569]/20 text-[#475569]"
+                      ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -631,7 +630,7 @@ export default function Invoices() {
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                    isActive ? "bg-[#475569]" : "bg-transparent"
+                    isActive ? "bg-[#8B5CF6]" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -658,7 +657,7 @@ export default function Invoices() {
                       </p>
                       {import.meta.env.DEV && safeInvoices.length === 0 && (
                         <Button
-                          className="mt-4 bg-[#475569] hover:bg-[#475569]/90 text-white gap-2"
+                          className="mt-4 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-2"
                           onClick={handleSeedData}
                           disabled={seeding}
                         >
@@ -835,7 +834,7 @@ export default function Invoices() {
                                         handleOpenManualSend(invoice);
                                       }}
                                     >
-                                      <Send className="h-3.5 w-3.5 text-[#475569]" />
+                                      <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
                                     </Button>
                                     <Button
                                       variant="ghost"
@@ -863,7 +862,7 @@ export default function Invoices() {
                                         handleOpenManualSend(invoice);
                                       }}
                                     >
-                                      <Send className="h-3.5 w-3.5 text-[#475569]" />
+                                      <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
                                     </Button>
                                     <Button
                                       variant="ghost"
@@ -1105,7 +1104,7 @@ export default function Invoices() {
                                     <>
                                       <Button
                                         size="sm"
-                                        className="bg-[#475569] hover:bg-[#475569]/90 text-white gap-1.5"
+                                        className="bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-1.5"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleOpenManualSend(invoice);

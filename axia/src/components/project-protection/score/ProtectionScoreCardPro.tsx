@@ -84,7 +84,7 @@ export function ProtectionScoreCardPro({ data, onUpgrade, projectId, projectName
               </div>
               
               <div className="relative w-full aspect-square flex items-center justify-center mb-6 max-w-[200px] mx-auto">
-                <div className="absolute inset-0 bg-slate-600/20 blur-3xl rounded-full" />
+                <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full" />
                 <div className="relative flex flex-col items-center justify-center">
                   <span className="text-5xl font-black text-white">{data.score}</span>
                   <span className="text-xs font-bold text-indigo-300">SCORE</span>
@@ -98,7 +98,7 @@ export function ProtectionScoreCardPro({ data, onUpgrade, projectId, projectName
                 </div>
                 <div className="text-xs text-indigo-300 mb-2">85% of total project value secured</div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-slate-600" style={{ width: '85%' }} />
+                  <div className="h-full bg-indigo-500" style={{ width: '85%' }} />
                 </div>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function ProtectionScoreCardPro({ data, onUpgrade, projectId, projectName
                             className={`relative h-full border-r border-slate-950 transition-all hover:opacity-90 cursor-pointer group
                               ${segment.riskLevel === 'high' ? 'bg-red-500/20 hover:bg-red-500/30' : 
                                 segment.riskLevel === 'medium' ? 'bg-yellow-500/20 hover:bg-yellow-500/30' : 
-                                'bg-slate-600/20 hover:bg-slate-600/30'}`}
+                                'bg-indigo-500/20 hover:bg-indigo-500/30'}`}
                             style={{ width: `${segment.end - segment.start}%` }}
                           >
                             <div className="absolute bottom-1 left-2 text-[10px] font-bold text-white/70 group-hover:text-white">
@@ -273,7 +273,7 @@ export function ProtectionScoreCardPro({ data, onUpgrade, projectId, projectName
                 <div className="flex gap-1">
                   {data.evidenceTimeline?.slice(0, 5).map((entry) => (
                     <div key={entry.id} className={`h-1 flex-1 rounded-full ${
-                      entry.status === 'verified' ? 'bg-slate-600' : 'bg-slate-800'
+                      entry.status === 'verified' ? 'bg-indigo-500' : 'bg-slate-800'
                     }`} />
                   ))}
                 </div>
@@ -286,7 +286,7 @@ export function ProtectionScoreCardPro({ data, onUpgrade, projectId, projectName
             {data.upgradeMessage && (
               <Button 
                 onClick={onUpgrade}
-                className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-slate-700 hover:from-indigo-500 hover:to-purple-500 text-white font-bold border-0"
+                className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold border-0"
               >
                 {data.upgradeMessage} <ArrowRight className="w-4 h-4 ml-2" />
               </Button>

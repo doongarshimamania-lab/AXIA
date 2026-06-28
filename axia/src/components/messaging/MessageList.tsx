@@ -179,7 +179,7 @@ export function MessageList({
                   {!consecutive && (
                     <Avatar className="h-8 w-8 mt-0.5 flex-shrink-0">
                       <AvatarImage src={msg.authorAvatar} />
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-slate-400 to-slate-600 text-white">
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-violet-400 to-indigo-500 text-white">
                         {msg.authorName
                           .split(" ")
                           .map((n) => n[0])

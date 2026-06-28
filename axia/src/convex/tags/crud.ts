@@ -39,16 +39,18 @@ export const getTags = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    if (workspaceId) {
-      return await ctx.db
-        .query("tags")
-        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .take(1000);
-    }
-    return await ctx.db
+    // ponytail: always query by_user first — this catches BOTH workspace-scoped
+    // tags AND legacy tags (those created before the workspace system, which
+    // have workspaceId === undefined and are invisible to the by_workspace
+    // index). Then optionally filter by workspaceId in JS, keeping legacy tags
+    // visible in every workspace (they're "user-global").
+    const allTags = await ctx.db
       .query("tags")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .take(1000);
+
+    if (!workspaceId) return allTags;
+    return allTags.filter((t) => !t.workspaceId || t.workspaceId === workspaceId);
   },
 });
 
@@ -240,15 +242,19 @@ export const getTagsWithUsage = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
+    // ponytail: always query by_user first — same reason as getTags. The
+    // by_workspace index misses legacy tags (workspaceId === undefined), which
+    // caused the Tags page to render zero tags even though other pages (using
+    // getTags) showed them. We then optionally narrow to the active workspace
+    // in JS, keeping legacy tags visible.
+    const allTags = await ctx.db
+      .query("tags")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(1000);
+
     const tags = workspaceId
-      ? await ctx.db
-          .query("tags")
-          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-          .take(1000)
-      : await ctx.db
-          .query("tags")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .take(1000);
+      ? allTags.filter((t) => !t.workspaceId || t.workspaceId === workspaceId)
+      : allTags;
 
     if (tags.length === 0) return [];
 

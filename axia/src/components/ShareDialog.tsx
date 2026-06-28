@@ -353,7 +353,7 @@ export function ShareDialog({
                             <div
                               className="w-3 h-3 rounded-full shrink-0"
                               style={{
-                                backgroundColor: team.color || "#475569",
+                                backgroundColor: team.color || "#8B5CF6",
                               }}
                             />
                             <span>{team.name}</span>
