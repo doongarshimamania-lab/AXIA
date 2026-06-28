@@ -2231,3 +2231,88 @@ Stage Summary:
 - Preview rebuilt at 14:31:26 UTC. serve-preview.cjs (PID 8493) serving fresh dist on port 3000.
 - Vercel auto-deploying f8e9a14 (visible at https://axia-bay.vercel.app once build completes).
 - Files changed: CollapsibleSidebar.tsx, main.tsx, messaging/ChannelHeader.tsx, pages/TimeTracking.tsx, convex/proposals/crud.ts, components/pdf/DownloadPDFButton.tsx, pages/Proposals.tsx.
+
+---
+
+Task ID: BILLING-AUDIT-1
+Agent: general-purpose
+Task: Audit Invoices.tsx data flow
+
+Work Log:
+- Read previous worklog (Task ID: 3 — Explore data flow mapping) for context.
+- Read /home/z/my-project/axia/src/pages/Invoices.tsx (1293 lines) — enumerated all useQuery/useMutation calls, identified workspace-scoped queries, tag filter, share/delete/send/markPaid handlers.
+- Read /home/z/my-project/axia/src/convex/billing/crud.ts (796 lines) — confirmed getInvoices uses by_workspace index strictly (no legacy fallback); createInvoice requires clientId and derives clientName/clientEmail from client record; markInvoicePaid patches status+paidDate but not paidAmount; seedMockInvoices inserts WITHOUT workspaceId and with fake "mock_client_N" clientId strings.
+- Read /home/z/my-project/axia/src/pages/InvoiceBuilder.tsx (1468 lines) — confirmed it loads clients via api.clients.crud.getClients (which uses by_user index with workspace filter in JS, legacy-friendly) and creates invoices via api.billing.crud.createInvoice. It does NOT let user pick a project — only a client. It passes clientName/clientEmail to createInvoice but those args aren't in the schema so they're silently dropped.
+- Read /home/z/my-project/axia/src/convex/tables/billing.ts (213 lines) — full schema for invoices, invoiceWorkLinks, paymentReminders, reminderSettings, invoiceTemplates, recurringInvoices tables.
+- Grep for api.invoices / api.billing / from("invoices") / table("invoices") across src/ — found consumers in Invoices.tsx, InvoiceBuilder.tsx, PaymentPatterns.tsx, Dashboard.tsx, use-notifications.ts, PaymentReminders.tsx, InvoiceTemplateImportDialog.tsx.
+- Discovered /home/z/my-project/axia/src/convex/invoices.ts (1907 lines) is ORPHAN code — registered in _generated/api.d.ts as `api.invoices` but no caller in the entire codebase. Contains unused generateInvoiceFromSessions (convert-time-entries-to-invoice) and addWorkLink duplicates.
+- Grep for createInvoice callers — only InvoiceBuilder.tsx calls it.
+- Grep for generateInvoiceFromSessions / convertProposal — zero callers (dead code).
+
+Stage Summary:
+- Invoices.tsx uses 3 queries (getTags, getInvoices, getInvoiceStats — all workspace-scoped) and 6 mutations (shareRecord, unshareRecord, sendInvoice, markInvoicePaid, deleteInvoice, seedMockInvoices).
+- InvoiceBuilder.tsx is the ONLY creator of invoices. It only picks a clientId — never projectId or proposalId — so projectId/proposalId columns are perpetually empty.
+- Major disconnect: getClients (used by InvoiceBuilder) uses by_user-first pattern and explicitly keeps legacy (workspaceId=undefined) clients visible in every workspace. getInvoices uses by_workspace index strictly → legacy invoices (workspaceId=undefined) are invisible on the Invoices page. The two queries use inconsistent filtering strategies.
+- seedMockInvoices is doubly broken: (a) inserts without workspaceId so mock data is invisible on the Invoices page, (b) uses "mock_client_1" etc. as Id<"clients"> — invalid foreign keys that violate the createInvoice's own validation.
+- markInvoicePaid never sets paidAmount → paidAmount column is perpetually orphan/empty.
+- Reports.tsx reads ZERO invoice data. PaymentPatterns.tsx DOES read invoices (by workspaceId) and enriches with clients via getClientsEnriched.
+- convex/invoices.ts (1907 lines) is dead code; the live invoice backend is convex/billing/crud.ts. The "convert time entries to invoice" flow (generateInvoiceFromSessions) exists in dead code and is unreachable from the UI.
+
+---
+
+Task ID: BILLING-AUDIT-2
+Agent: general-purpose
+Task: Audit PaymentPatterns.tsx data flow
+
+Work Log:
+- Read prior worklog (especially §1.12 invoices table, §12 PaymentPatterns.tsx notes, and "S5. Inconsistent auth hook usage" finding).
+- Read /home/z/my-project/axia/src/pages/PaymentPatterns.tsx in full (1054 lines). Identified exactly 3 Convex queries (getInvoices, getInvoiceStats, getClientsEnriched) and zero mutations.
+- Read /home/z/my-project/axia/src/components/billing/PaymentReminders.tsx to confirm it is NOT imported by PaymentPatterns.tsx (it is used by Invoices.tsx:519 instead) — separate concern, included only for context.
+- Read /home/z/my-project/axia/src/convex/billing/crud.ts to verify query handlers: getInvoices (lines 10–44) filters by `by_workspace` index when workspaceId is provided, falling back to `by_user` index otherwise; getInvoiceStats (105–137) aggregates by `status` literal; createInvoice (162–245) requires clientId and derives clientName/clientEmail from the client doc; seedMockInvoices (544–635) inserts 4 mock invoices with FAKE clientId strings ("mock_client_1"…) and NO workspaceId.
+- Read /home/z/my-project/axia/src/convex/clients/crud.ts (1–234) for getClientsEnriched (55–113): queries `by_user` first, then JS-filters by workspaceId (also returns legacy clients with no workspaceId); joins assignedMembers + projectCount.
+- Verified canonical `clients` schema is in `tables/projects.ts:38` (NOT `tables/clients.ts`, which is the dead duplicate per prior worklog §0). The canonical clients table has dedicated payment-behavior fields `avgPaymentDays`, `onTimeRate`, `totalPaid`, `totalInvoiced`, `lastPaymentAt` (lines 85–89) — but createClient/updateClient NEVER write to them and PaymentPatterns NEVER reads them.
+- Grep'd for all consumers of the three queries used by PaymentPatterns:
+  - api.billing.crud.getInvoices → Invoices.tsx:251, use-notifications.ts:115, PaymentPatterns.tsx:169
+  - api.billing.crud.getInvoiceStats → Dashboard.tsx:231, Invoices.tsx:252, use-notifications.ts:111, PaymentPatterns.tsx:170
+  - api.clients.crud.getClientsEnriched → Dashboard.tsx:228, use-notifications.ts:112, PaymentPatterns.tsx:171
+- Verified Reports.tsx uses only disputeReports queries/mutations (no overlap).
+- Verified Clients.tsx:164 createClient passes workspaceId; getClientsEnriched will surface new clients to PaymentPatterns.
+- Verified InvoiceBuilder.tsx:469 createInvoice passes clientId + workspaceId; getInvoices by_workspace will surface new invoices to PaymentPatterns.
+- Confirmed prior worklog findings: PaymentPatterns.tsx:135 "Create Your First Invoice" button only toasts; lines 233/239 hardcode avgPaymentDays (toptal=7.1, upwork=5.2, else=3.8) and trend (-3 or 12); also newly noted line 333 hardcodes avgDaysLate = 3.5.
+
+Stage Summary:
+- PaymentPatterns.tsx is READ-ONLY — 3 queries, 0 mutations.
+- Data sources are real (invoices + clients tables via workspace-scoped queries), NOT synthesized wholesale. Monthly trend, platformBreakdown counts/totals, recentPayments status, latePaymentAlerts, onTimeRate, atRiskAmount are all derived from real invoice docs.
+- BUT three fields are fabricated: avgPaymentDays per platform (line 233), trend per platform (line 239), and avgDaysLate per risk client (line 333). The clients schema has REAL `avgPaymentDays` / `onTimeRate` / `lastPaymentAt` fields that are never written and never read.
+- Critical disconnect: `seedMockInvoices` (the "Seed Demo Data" button on Invoices.tsx) creates invoices with NO workspaceId. PaymentPatterns always passes `{workspaceId: wsId}` to getInvoices, so mock invoices are INVISIBLE to PaymentPatterns whenever the user has an active workspace (the normal case).
+- Critical disconnect: `seedMockInvoices` uses fake clientId strings ("mock_client_1" as Id<"clients">), so even if those invoices were visible, the client-join in platformBreakdown/recentPayments/latePaymentAlerts/riskClients would fall back to `c.clientName === inv.clientName` — which works only by accident because the mock invoice's clientName happens to match no real client and defaults platform to "direct".
+- Critical disconnect: `riskClients` joins invoices to clients by `inv.clientName ?? inv.clientId ?? "unknown"` (string match), not by Id. If two clients share a name (or a name was changed), risk attribution will be wrong.
+- No work-session / time-tracking data flows into this page at all. "Payment patterns" is derived purely from invoice.status (draft/sent/viewed/paid/partial/overdue/cancelled) plus client.platform and client.riskLevel. There is no concept of compliance, evidence, or work-session data here.
+- PaymentReminders.tsx (the file the task hinted at) is NOT used by PaymentPatterns.tsx — it is mounted in Invoices.tsx:519. Its queries (api.billing.reminders.getOverdueInvoices / getReminderSettings) and mutations (sendReminder / scheduleAutoReminders / updateReminderSettings) are entirely separate from PaymentPatterns.
+- Auth-hook inconsistency: PaymentPatterns uses useConvexAuth (line 163), not useAuth. isAuthenticated gates only the demo banner (line 418), not the queries (which are "skip"-gated by wsId). Acceptable.
+
+---
+
+Task ID: BILLING-AUDIT-3
+Agent: general-purpose
+Task: Audit Reports.tsx data flow
+
+Work Log:
+- Read /home/z/my-project/axia/src/pages/Reports.tsx (950 lines) end-to-end.
+- Cross-referenced /home/z/my-project/axia/src/convex/disputeReports.ts to verify query/mutation args and table access.
+- Located canonical `disputeReports` schema at /home/z/my-project/axia/src/convex/tables/features.ts:177-209 (confirmed tables/work.ts duplicate is dead per prior agent notes).
+- Compared filters on Invoices.tsx:251-253, PaymentPatterns.tsx:169-171, TimeTracking.tsx:63-72 — all pass `workspaceId`. Reports.tsx does not.
+- Grep-verified `api.disputeReports.*` is only imported by Reports.tsx (no Dashboard / OwnerDashboard / ClientDashboard consumer).
+- Grep-verified `getRecentReports` and `getMonthlyUsage` are dead code (defined but never called).
+- Confirmed hardcoded Pro-panel numbers (92% / Low / 87%) at Reports.tsx:708-718.
+- Confirmed fabricated `avgResolutionDays` fallback at Reports.tsx:228.
+
+Stage Summary:
+- Reports.tsx is a DISPUTE-REPORTS manager, NOT a billing/invoice analytics dashboard. The route name `/reports` is misleading — the page has zero queries against `clients`, `projects`, `invoices`, `workSessions`, `timeBlocks`, or `proposals`.
+- Only one Convex query is used: `api.disputeReports.getUserDisputeReports` with `{}` args, filtered server-side by `userId` only.
+- Two Convex mutations: `createDisputeReport` (no `workspaceId` arg) and `updateReportStatus`.
+- CRITICAL BUG: Reports does not pass `workspaceId` and the backend doesn't accept it. Reports leak across workspaces. Invoices / PaymentPatterns / TimeTracking all filter by `workspaceId`, so Reports is the odd one out.
+- The optional `sessionId` link to `workSessions` is never populated by the page (no session picker in the dialog). `evidenceCount` is synthesized via `Math.floor(disputedHours * 4)` server-side, not from real `timeBlocks`.
+- Invoices and time entries do NOT appear on this page — Reports only shows dispute reports that the user manually creates.
+- Hardcoded mock data: Pro Analysis panel (92% / Low / 87% at lines 708-718), `avgResolutionDays` fabrication (line 228), `$75` default rate (line 268).
+- Read-mostly page; the only writes are status transitions. No export button, no cross-page consumers of dispute reports.
