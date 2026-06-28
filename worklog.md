@@ -2095,3 +2095,31 @@ Stage Summary:
 - Palette script (scripts/apply-cool-slate-palette.py) deleted.
 - Real root cause for tag filter + Tags page empty was LEGACY DATA (records with workspaceId === undefined invisible to by_workspace index). Fixed by querying by_user first, filtering in JS.
 - Messages list now has collapsible Channels and Direct Messages sections (chevron toggle, count badge, accessibility attrs).
+
+---
+Task ID: backup-release-2026-06-28
+Agent: main (Super Z)
+Task: Verify code is pushed to GitHub + disk, and create a proper git release with complete code + exact file structure as backup.
+
+Work Log:
+- Verified local main = origin/main = f27ea74 (fast-forwarded from 1d81c4f). Working tree clean.
+- Confirmed reversal commit 1d81c4f IS on origin/main (includes: 43-file palette reversal, Projects.tsx revert, projectProtection revert, tags/clients by_user-first fix, ChannelList collapsible sections).
+- Discovered existing backup tags (backup-2026-06-27_19-54-53_IST and v5.5.1-mobile-ui-fixes) BOTH point to e3bda40 — that's BEFORE the multi-bug-fix and BEFORE the reversal work. So the user's concern was valid: the recent work had NO backup tag or release.
+- Built complete zip archive of axia/ file structure to /home/z/my-project/download/axia-backup-2026-06-28_10-51-43_IST.zip (1.4MB, 467 files). Excluded: node_modules, dist, .vercel, .convex, build, .git, coverage, npm-debug.log, .DS_Store.
+- Verified zip contents: index.css (26689B), ChannelList.tsx, Projects.tsx, projectProtection.ts, tags/crud.ts, clients/crud.ts, Messages.tsx, package.json, schema.ts — all present.
+- Created annotated tag backup-2026-06-28_10-51-43_IST at HEAD (f27ea74) with full description of contents.
+- Created annotated tag v5.5.2-reversal-tags-messages at reversal commit 1d81c4f with full release notes.
+- Pushed both tags to origin (both new).
+- Authenticated GitHub API call (token extracted from remote URL, never echoed) — created release v5.5.2-reversal-tags-messages (release ID 345889128), draft=false, prerelease=false.
+- Uploaded axia-backup-2026-06-28_10-51-43_IST.zip (1,381,619 bytes) as release asset — state: uploaded.
+- Verified release via API: tag v5.5.2-reversal-tags-messages, asset state=uploaded, download URL https://github.com/doongarshimamania-lab/AXIA/releases/download/v5.5.2-reversal-tags-messages/axia-backup-2026-06-28_10-51-43_IST.zip
+
+Stage Summary:
+- Code on disk: YES (working tree clean).
+- Code pushed to GitHub: YES (origin/main = f27ea74, includes reversal commit 1d81c4f).
+- Backup with complete code + exact file structure pushed to git release: YES.
+  - Release URL: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v5.5.2-reversal-tags-messages
+  - Asset: axia-backup-2026-06-28_10-51-43_IST.zip (1.4MB, 467 files — full axia/ source tree).
+  - Backup tag: backup-2026-06-28_10-51-43_IST (→ f27ea74).
+  - Version tag: v5.5.2-reversal-tags-messages (→ 1d81c4f).
+- Both new tags pushed to origin.
