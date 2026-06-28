@@ -2188,3 +2188,46 @@ Stage Summary:
 - Commit: a33f3b2 (pushed to origin/main).
 - Preview: http://localhost:3000 (serve-preview.cjs PID 8493, dist rebuilt at 13:54:05 UTC).
 - Live: https://axia-bay.vercel.app/clients (Vercel auto-deploying a33f3b2).
+
+---
+Task ID: multi-bug-fix-round-2-2026-06-28
+Agent: main (Super Z)
+Task: User reported 7 distinct bugs in one message. All fixed in commit f8e9a14.
+
+Work Log:
+1. Tags page missing from sidebar (mobile + laptop collapsed)
+   - Root cause: CollapsibleSidebar.tsx had Tags in the EXPANDED nav list (line 360-365) but NOT in the COLLAPSED icon-only nav list. On mobile, the Sheet-rendered sidebar inherited isExpanded from localStorage — if the user had collapsed the sidebar on desktop, the mobile Sheet showed the icon-only variant without Tags.
+   - Fix A: Added Tags icon button to the collapsed nav list (between Time Tracking and Goals).
+   - Fix B: Forced isExpanded=true on mobile in the useState initializer so the mobile Sheet ALWAYS renders full labels + Tags.
+
+2. Messages back button not fixed at top during scroll
+   - Root cause: ChannelHeader.tsx had no positioning — it relied on being inside a flex column where the body scrolled internally. On iOS Safari (and some Android browsers), the page itself could bounce-scroll, taking the header with it.
+   - Fix: Added 'sticky top-0 bg-background z-30' to the ChannelHeader root div. Now the header (and the mobile Back button inside it) stays pinned at the top of the messages pane no matter how far the user scrolls.
+
+3. Mobile sidebar not working after opening a DM
+   - Root cause: CollapsibleSidebar had no way to close the parent Sheet. After tapping a nav item, the Sheet stayed open, covering the freshly-loaded page.
+   - Fix: Added onNavigate prop to CollapsibleSidebar. Wrapped navigate() in a go() helper that calls onNavigate?.() after navigation. MobileHeader passes onNavigate={() => setOpen(false)} so any nav click auto-closes the Sheet.
+
+4. Time Tracking showing phantom project when no projects/clients exist
+   - Root cause: Timer card rendered unconditionally. When projects.length === 0, the project dropdown showed "No projects found" (disabled) but the Start Timer button was still visible — clicking it would error with "Please select a project first".
+   - Fix: Added a guard `projects && projects.length === 0 && !isTimerRunning` that renders a clear "No projects yet" empty-state card with CTAs to /clients (Add a Client) and /projects (Create Project). With an active timer, the running timer card still renders so the user can stop/pause it.
+
+5. convertToProject not auto-creating a client
+   - Root cause: The find-or-create logic in convertToProject (proposals/crud.ts line 935-987) ALREADY existed, BUT the insert used `createdAt: Date.now()` — the clients schema requires `addedAt` (NOT `createdAt`). Convex threw a validation error, silently failing the client creation step. The user thought convertToProject wasn't creating a client; in reality it was throwing.
+   - Fix: Changed `createdAt: Date.now()` → `addedAt: Date.now()` in the insert. Now the client is actually created. (Backend deployed to veracious-zebra-519.)
+
+6. Proposal download shows Print PDF instead of direct download
+   - Root cause: DownloadPDFButton.tsx triggerPrint() opened a new window, wrote HTML, and showed a toast asking the user to pick "Save as PDF" from the browser's print dialog. The user expected a direct download.
+   - Fix: Added downloadPdfFromHtml() helper that renders HTML to an off-screen container, snapshots it with html2canvas (transitive dep, already in node_modules), writes the image into a jsPDF A4 PDF with pagination, and triggers a real <a download> click via pdf.save(filename). Both libs are dynamic-imported so the main bundle doesn't pay the ~700KB cost. triggerDownload() is the new main handler; triggerPrint() is preserved for the explicit "Print" dropdown item. Falls back to legacy print-window if dynamic import fails.
+
+7. Proposal share link incorrectly marking proposal as 'sending'
+   - Root cause: In Proposals.tsx ProposalCard, the "Share link" quick-action button on draft proposals had onClick={() => onSend(proposal._id)}. onSend calls handleSend which calls the sendProposal Convex mutation — that flips status to "sent" + schedules follow-ups. The button is labeled "Share link" with a Share2 icon and tooltip "Generate a shareable public link" — clearly meant to OPEN THE SHARE DIALOG, not send the proposal.
+   - Fix: Changed onClick to call onShare?.(proposal._id) — same as the dropdown menu item — which opens the ShareDialog. The sendProposal mutation is no longer triggered by the Share link button.
+
+Stage Summary:
+- All 7 bugs fixed in commit f8e9a14 (pushed to origin/main).
+- Build verified: 3378 modules, OK in 10.19s.
+- Convex deployed: all functions live on https://veracious-zebra-519.convex.cloud (convertToProject now actually creates a client).
+- Preview rebuilt at 14:31:26 UTC. serve-preview.cjs (PID 8493) serving fresh dist on port 3000.
+- Vercel auto-deploying f8e9a14 (visible at https://axia-bay.vercel.app once build completes).
+- Files changed: CollapsibleSidebar.tsx, main.tsx, messaging/ChannelHeader.tsx, pages/TimeTracking.tsx, convex/proposals/crud.ts, components/pdf/DownloadPDFButton.tsx, pages/Proposals.tsx.
