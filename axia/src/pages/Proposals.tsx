@@ -1009,7 +1009,7 @@ function ProposalCard({
             </div>
           )}
 
-          {/* Quick Actions for Sent / Viewed — Log another send + Download PDF */}
+          {/* Quick Actions for Sent / Viewed — Log another send + Convert to Project + Download PDF */}
           {(proposal.status === "sent" || proposal.status === "viewed") && (
             <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 flex-wrap">
               <Button
@@ -1023,6 +1023,17 @@ function ProposalCard({
               >
                 <Send className="h-3 w-3" />
                 Log another send
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-1.5 h-8 text-[12px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConvertToProject?.(proposal);
+                }}
+              >
+                <Briefcase className="h-3 w-3" />
+                Convert to Project
               </Button>
               <DownloadPDFButton
                 document={proposal as any}
