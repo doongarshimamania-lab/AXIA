@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
   Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
+  Briefcase, Users,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +57,7 @@ export default function TimeTracking() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { activeWorkspaceId, isConvexConnected } = useWorkspaceContext();
   const workspaceId = isConvexConnected ? (activeWorkspaceId as Id<"workspaces">) : undefined;
+  const navigate = useNavigate();
 
   // ─── Convex queries ──────────────────────────────────────────────────────
   const currentSession = useQuery(api.tracking.crud.getCurrentSession,
@@ -538,6 +541,41 @@ export default function TimeTracking() {
             </div>
 
             {/* Timer Section */}
+            {/* ponytail: when the workspace has NO projects AND no active timer
+                is running, render a clear "create a project first" empty state
+                instead of the timer card. Previously the timer card rendered
+                with a "No projects found" dropdown AND a "Start Timer" button
+                that would error out — that was misleading UX. With an active
+                timer we still show the running timer card so the user can
+                stop/pause it, even if the underlying project was deleted. */}
+            {projects && projects.length === 0 && !isTimerRunning ? (
+              <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+                <CardContent className="pt-8 pb-8">
+                  <div className="text-center space-y-4">
+                    <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Briefcase className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">No projects yet</h3>
+                      <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                        You need at least one project and client to start tracking time.
+                        Create your first project to begin recording work sessions.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                      <Button onClick={() => navigate("/clients")}>
+                        <Users className="h-4 w-4 mr-2" />
+                        Add a Client
+                      </Button>
+                      <Button variant="outline" onClick={() => navigate("/projects")}>
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        Create Project
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
             <Card className="border-2 border-primary/20">
               <CardContent className="pt-6">
                 {isTimerRunning ? (
@@ -660,6 +698,7 @@ export default function TimeTracking() {
                 )}
               </CardContent>
             </Card>
+            )}
 
             {/* Time Entries List */}
             <Card>

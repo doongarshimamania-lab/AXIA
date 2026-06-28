@@ -16,6 +16,58 @@ import {
   Receipt,
   Loader2,
 } from "lucide-react";
+// ponytail: direct-download PDF support — the previous version opened a new
+// window and called window.print() which made the user manually pick "Save as
+// PDF" from the print dialog. Now we render the HTML to an off-screen container,
+// snapshot it with html2canvas, then write it into a jsPDF instance and trigger
+// a real <a download> click. Both libs are already in node_modules (html2canvas
+// is a transitive dep, jspdf is a direct dep). Dynamic-imported so the main
+// bundle doesn't pay the ~700KB cost on every page load.
+async function downloadPdfFromHtml(html: string, filename: string) {
+  // Create an off-screen container so the user never sees the rendered HTML.
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.top = "-99999px";
+  container.style.left = "-99999px";
+  container.style.width = "800px";
+  container.style.background = "#ffffff";
+  container.style.padding = "32px";
+  container.style.color = "#111827";
+  container.style.fontFamily = "Inter, system-ui, sans-serif";
+  container.innerHTML = html;
+  document.body.appendChild(container);
+  try {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+    const imgData = canvas.toDataURL("image/png");
+    // A4 size in mm: 210 × 297. Use the canvas aspect ratio to compute height.
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save(filename);
+  } finally {
+    document.body.removeChild(container);
+  }
+}
 
 // ─────────────────────────────────────────────
 // Types — minimal shape we need from proposal/invoice
@@ -346,6 +398,57 @@ export function DownloadPDFButton({
 }: DownloadPDFButtonProps) {
   const [generating, setGenerating] = useState(false);
 
+  // ponytail: the main click handler now downloads a real PDF file directly
+  // via jsPDF + html2canvas — no more "open print dialog and let the user pick
+  // Save as PDF". Falls back to the legacy print-window approach if the
+  // dynamic import fails (e.g. on a slow connection or blocked module).
+  const triggerDownload = async () => {
+    setGenerating(true);
+    try {
+      const html =
+        type === "proposal"
+          ? generateProposalHTML(document)
+          : generateInvoiceHTML(document);
+      const filename =
+        (type === "proposal"
+          ? (document.title || "proposal")
+          : (document.invoiceNumber || "invoice"))
+          .replace(/[^a-z0-9_-]+/gi, "_") + ".pdf";
+      await downloadPdfFromHtml(html, filename);
+      toast.success(`${type === "proposal" ? "Proposal" : "Invoice"} PDF downloaded`, {
+        description: filename,
+      });
+    } catch (err: any) {
+      console.warn("[DownloadPDFButton] direct download failed, falling back to print window:", err?.message);
+      // Fallback: legacy print-window approach
+      try {
+        const html =
+          type === "proposal"
+            ? generateProposalHTML(document)
+            : generateInvoiceHTML(document);
+        const printWindow = window.open("", "_blank", "width=900,height=700");
+        if (!printWindow) {
+          toast.error("Pop-up blocked", {
+            description: "Please allow pop-ups for AXIA to download the PDF.",
+          });
+          return;
+        }
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        toast.info("Print dialog opened", {
+          description: "Use your browser's \"Save as PDF\" option to download.",
+        });
+      } catch (fallbackErr: any) {
+        toast.error("Failed to generate PDF", { description: fallbackErr.message });
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // ponytail: separate print handler for the "Print" dropdown item — keeps the
+  // legacy print-window behavior for users who explicitly want to print.
   const triggerPrint = () => {
     setGenerating(true);
     try {
@@ -354,11 +457,10 @@ export function DownloadPDFButton({
           ? generateProposalHTML(document)
           : generateInvoiceHTML(document);
 
-      // Open in a new window and write the HTML
       const printWindow = window.open("", "_blank", "width=900,height=700");
       if (!printWindow) {
         toast.error("Pop-up blocked", {
-          description: "Please allow pop-ups for AXIA to download the PDF.",
+          description: "Please allow pop-ups for AXIA to print.",
         });
         setGenerating(false);
         return;
@@ -366,12 +468,9 @@ export function DownloadPDFButton({
       printWindow.document.open();
       printWindow.document.write(html);
       printWindow.document.close();
-
-      toast.success(`${type === "proposal" ? "Proposal" : "Invoice"} opened for print`, {
-        description: "Use your browser's \"Save as PDF\" option in the print dialog to download.",
-      });
+      toast.success(`${type === "proposal" ? "Proposal" : "Invoice"} opened for print`);
     } catch (err: any) {
-      toast.error("Failed to generate PDF", { description: err.message });
+      toast.error("Failed to open print preview", { description: err.message });
     } finally {
       setGenerating(false);
     }
@@ -396,7 +495,7 @@ export function DownloadPDFButton({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={triggerPrint} className="gap-2 cursor-pointer">
+          <DropdownMenuItem onClick={triggerDownload} className="gap-2 cursor-pointer">
             <Download className="h-3.5 w-3.5" />
             Save as PDF
           </DropdownMenuItem>
@@ -415,7 +514,7 @@ export function DownloadPDFButton({
       variant={variant}
       size={size}
       className={`gap-1.5 ${className}`}
-      onClick={triggerPrint}
+      onClick={triggerDownload}
       disabled={generating}
     >
       {generating ? (

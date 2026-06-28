@@ -197,7 +197,10 @@ function MobileHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[280px] p-0">
-            <CollapsibleSidebar />
+            {/* ponytail: pass onNavigate={setOpen.bind(null, false)} so any nav click
+                inside the sidebar auto-closes the mobile Sheet. Previously the Sheet
+                stayed open after navigating, covering the freshly-loaded page. */}
+            <CollapsibleSidebar onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
       </div>

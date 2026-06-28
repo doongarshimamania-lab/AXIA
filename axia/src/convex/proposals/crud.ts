@@ -969,6 +969,13 @@ export const convertToProject = mutation({
       if (existing) {
         clientId = existing._id;
       } else {
+        // ponytail: schema mismatch fix — the `clients` table requires `addedAt`
+        // (NOT `createdAt`). The previous version of this insert used `createdAt`
+        // which caused Convex to throw a validation error, silently failing the
+        // "convert to project" flow whenever the proposal had no clientId.
+        // Now the client is actually created, so convertToProject truly
+        // auto-creates a client (as the user expected). Also added `addedAt`
+        // alongside `lastActivityAt` to satisfy the schema.
         clientId = await ctx.db.insert("clients", {
           userId,
           workspaceId,
@@ -979,7 +986,7 @@ export const convertToProject = mutation({
           hourlyRate,
           contractType: "hourly",
           riskLevel: "medium",
-          createdAt: Date.now(),
+          addedAt: Date.now(),
           lastActivityAt: Date.now(),
           notes: `Created from proposal: ${proposal.title}`,
         });

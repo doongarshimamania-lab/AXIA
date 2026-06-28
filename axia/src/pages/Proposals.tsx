@@ -982,7 +982,16 @@ function ProposalCard({
                 className="gap-1.5 h-8 text-[12px]"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onSend(proposal._id);
+                  // ponytail: BUG FIX — this button was previously calling
+                  // onSend(proposal._id) which calls the sendProposal Convex
+                  // mutation that flips status to "sent" + schedules follow-ups.
+                  // The button is labeled "Share link" with a Share2 icon and
+                  // tooltip "Generate a shareable public link" — clearly meant
+                  // to OPEN THE SHARE DIALOG, not send the proposal. Now it
+                  // calls onShare (which opens ShareDialog) like the dropdown
+                  // menu item does. (User reported: "when I click on share link
+                  // it gets marked and does sending the proposal".)
+                  onShare?.(proposal._id);
                 }}
                 title="Generate a shareable public link"
               >

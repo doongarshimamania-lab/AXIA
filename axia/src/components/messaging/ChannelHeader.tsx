@@ -47,7 +47,15 @@ export function ChannelHeader({
   onBack,
 }: ChannelHeaderProps) {
   return (
-    <div className="h-12 border-b border-border flex items-center justify-between px-2 sm:px-4 flex-shrink-0">
+    // ponytail: sticky top-0 + z-30 so the header (and the mobile Back button
+    // inside it) stays pinned at the top of the messages pane no matter how
+    // far the user scrolls the MessageList below. The MessageList scrolls
+    // internally (overflow-y-auto), so without sticky the header was already
+    // mostly visible — but on iOS Safari and some Android browsers the
+    // header would scroll away when the page itself bounced. Sticky guarantees
+    // it stays put. z-30 is below the Sheet overlay (z-50) and below the
+    // MobileHeader (z-[9998]) so those still overlay correctly.
+    <div className="h-12 border-b border-border flex items-center justify-between px-2 sm:px-4 flex-shrink-0 sticky top-0 bg-background z-30">
       <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
         {/* ponytail: mobile back button — visible only on screens < md.
             Made it a labeled button (icon + "Back") so users on phones can
