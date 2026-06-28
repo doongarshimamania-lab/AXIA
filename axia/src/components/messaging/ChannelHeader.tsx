@@ -29,6 +29,10 @@ interface ChannelHeaderProps {
   // ponytail: mobile back button — when rendered on a phone, the Messages page
   // shows EITHER the channel list OR the thread (not both). This button swaps
   // back to the list. Hidden on desktop (where both panes are visible).
+  // ponytail: made the back affordance more prominent — on mobile it's now a
+  // labeled button ("Back") instead of a tiny icon, so users can always find
+  // their way back to the channel list from inside an open DM. The icon-only
+  // variant is still used on very narrow screens (<360px) to avoid overflow.
   onBack?: () => void;
 }
 
@@ -43,18 +47,22 @@ export function ChannelHeader({
   onBack,
 }: ChannelHeaderProps) {
   return (
-    <div className="h-12 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
-      <div className="flex items-center gap-2 min-w-0">
-        {/* ponytail: mobile back button — visible only on screens < md. */}
+    <div className="h-12 border-b border-border flex items-center justify-between px-2 sm:px-4 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        {/* ponytail: mobile back button — visible only on screens < md.
+            Made it a labeled button (icon + "Back") so users on phones can
+            always find their way back to the channel list from inside an
+            open DM. The label hides below 360px to avoid overflow. */}
         {onBack && (
           <Button
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 md:hidden flex-shrink-0"
+            size="sm"
+            className="h-8 px-2 md:hidden flex-shrink-0 gap-1"
             onClick={onBack}
             aria-label="Back to channels"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 flex-shrink-0" />
+            <span className="text-xs font-medium hidden min-[360px]:inline">Back</span>
           </Button>
         )}
         {channelType === "channel" ? (
@@ -87,9 +95,13 @@ export function ChannelHeader({
 
       <div className="flex items-center gap-1 flex-shrink-0">
         <TooltipProvider>
+          {/* ponytail: Search + Pinned buttons hidden on mobile — they're
+              non-functional placeholders right now and only clutter the
+              header on a 375px screen. Members toggle stays visible because
+              it's wired up (opens the MemberList overlay on mobile). */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:inline-flex">
                 <Search className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -98,7 +110,7 @@ export function ChannelHeader({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:inline-flex">
                 <Pin className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -112,6 +124,7 @@ export function ChannelHeader({
                 size="icon"
                 className="h-8 w-8"
                 onClick={onToggleMemberList}
+                aria-label={showMemberList ? "Hide members" : "Show members"}
               >
                 <PanelRight className="h-4 w-4" />
               </Button>

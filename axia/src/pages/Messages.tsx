@@ -9,6 +9,7 @@ import { MessageList, type Message } from "@/components/messaging/MessageList";
 import { MessageInput } from "@/components/messaging/MessageInput";
 import { ThreadPanel, type ThreadReply } from "@/components/messaging/ThreadPanel";
 import { MemberList, type Member } from "@/components/messaging/MemberList";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useWorkspaceContext, isValidConvexId } from "@/hooks/use-workspace";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -333,10 +334,24 @@ export default function Messages() {
               />
             )}
 
-            {/* ponytail: MemberList hidden on mobile — it squeezes the thread.
-                Users can still see members via the toggle button which will
-                overlay it on mobile if needed in a future iteration. */}
+            {/* ponytail: MemberList — on desktop it renders inline as a right
+                sidebar. On mobile it renders as a Sheet (slide-in overlay)
+                so the user can still access members without losing the chat.
+                The toggle button in ChannelHeader opens/closes both layouts. */}
             {showMemberList && !isMobile && <MemberList members={activeMembers} />}
+            {/* ponytail: mobile member list as a right-side Sheet overlay.
+                The Sheet's open state is bound to showMemberList so the same
+                toggle button in ChannelHeader controls both layouts. */}
+            <Sheet open={isMobile && showMemberList} onOpenChange={(o) => { if (!o) setShowMemberList(false); }}>
+              <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0">
+                <SheetHeader className="px-4 py-3 border-b border-border">
+                  <SheetTitle className="text-sm">Members ({activeMembers.length})</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto">
+                  <MemberList members={activeMembers} />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       ) : (

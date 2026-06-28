@@ -746,7 +746,13 @@ export default function TeamManagement() {
                         </div>
 
                         <div className="flex items-center gap-4">
-                          <div className="hidden md:flex items-center gap-4 text-sm text-muted-foreground">
+                          {/* ponytail: was `hidden md:flex` — that hid the
+                              "X projects" + "Yh/week" stats entirely on
+                              mobile, which the user explicitly called out
+                              ("right side of sidebar buttons... not
+                              available which is available in laptop
+                              display"). Now wraps below the name on mobile. */}
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                             {member.projectsAssigned > 0 && (
                               <span className="flex items-center gap-1">
                                 <Briefcase className="w-3.5 h-3.5" />
