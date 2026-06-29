@@ -2367,3 +2367,67 @@ Not yet done (deferred):
 - Delete the 1907-line dead `convex/invoices.ts` file (zero callers, but large deletion — separate commit)
 - Wire `projectId`/`proposalId` orphan fields to a project/proposal picker in InvoiceBuilder (UI change — deferred per user instruction)
 - Populate dead `clients.avgPaymentDays/onTimeRate/totalPaid/totalInvoiced/lastPaymentAt` fields in markInvoicePaid (needs schema + mutation change)
+
+---
+
+Task ID: 4-b
+Agent: general-purpose (mutation auditor)
+Task: Audit all Convex mutations for authorization gaps
+
+Work Log:
+- Read worklog.md to understand prior context (Task 3 data-flow map, Task 4 page-gap audit, BILLING-AUDIT-1/2/3, INVOICES-FIX-1, convex-deploy-seed-cleanup, multi-bug-fix-round-1/2). Confirmed prior finding that convex/invoices.ts is dead code (zero callers) and that the canonical invoice backend is convex/billing/crud.ts.
+- Scanned all 75 .ts files in /home/z/my-project/axia/src/convex/ (excluding _generated/) and identified 280 `export const X = mutation({...})` definitions.
+- For each mutation: read the handler, verified getAuthUserId/getCurrentUser/requireWorkspaceAccess/requireRecordAccess usage, checked ownership-of-requested-record verification, checked rateLimitAuthenticated presence.
+- Discovered CRITICAL bug in security/rateLimit.ts: `rateLimitAuthenticated` returns silently (does NOT throw) when there is no userId — so any mutation that relies on it ALONE for auth is actually callable unauthenticated. This affects: seedInvoiceTemplates, seedTemplates, expire (proposals.ts), markOverdue (invoices.ts), expireOldInvitations, handleStripeWebhook, listTestUsers.
+- Identified 5 CRITICAL UNSAFE mutations, 4 LOW-severity UNSAFE (idempotent batch/seed), 38 PARTIAL (IDOR) mutations, ~15 INTENTIONALLY PUBLIC, and ~218 SAFE.
+- Cross-referenced canonical auth pattern (billing/crud.ts:updateInvoice) against every record-mutating endpoint to find IDOR gaps where the caller passes a record ID and the handler patches/deletes without verifying ownership/workspace membership.
+
+Stage Summary:
+- 5 UNSAFE mutations (no auth, exploitable) — listed in report (handleStripeWebhook, trackUpgradeConversion, autoSeed, listTestUsers, plus 4 LOW-severity idempotent batch ops)
+- 38 PARTIAL mutations (IDOR risk) — listed in report with severities (HIGH/MEDIUM/LOW)
+- 218 SAFE mutations (auth + ownership verified)
+- 15 INTENTIONALLY PUBLIC mutations (token-based client flows, webhooks, owner login, waitlist)
+- Critical files needing fixes (priority order):
+  1. convex/tiers/upgradeTracking.ts — trackUpgradeConversion (tier escalation without payment)
+  2. convex/autoSeed.ts — autoSeed (auto-grants Pro tier)
+  3. convex/invoices.ts — handleStripeWebhook (marks invoices paid without signature, DEAD CODE but exploitable)
+  4. convex/seedTeamUsers.ts — listTestUsers (exposes test user passwords, no auth)
+  5. convex/workspaces/members.ts — assignMemberToProject/Client + unassign* (4 mutations, no caller-membership check)
+  6. convex/messaging/channels.ts (legacy) — createChannel, joinChannel (no workspace membership check)
+  7. convex/messaging/dms.ts (legacy) — getOrCreateDMChannel (no workspace membership check)
+  8. convex/clients/clientAuth.ts (+ top-level clientAuth.ts duplicate) — updateClientProfile (no ownership check on clientId)
+  9. convex/clients/verificationRequests.ts — createVerificationRequest (no client ownership check)
+  10. convex/premium/teamValidation.ts — submitValidation (no validator assignment check)
+  11. convex/manualSends.ts — logProposalManualSend + logInvoiceManualSend (workspace access check is a TODO comment)
+  12. convex/security/rateLimit.ts — rateLimitAuthenticated should throw on missing userId (root cause of multiple UNSAFE classifications)
+
+---
+Task ID: 4-a
+Agent: general-purpose (query auditor)
+Task: Audit all Convex queries for authorization gaps
+
+Work Log:
+- Read worklog.md to understand prior context (Tasks 1, 2, 3, BILLING-AUDIT-1/2/3, INVOICES-FIX-1; total ~2.4k lines).
+- Globbed /home/z/my-project/axia/src/convex/**/*.ts (excluded _generated/ and tables/). Found 109 backend TS files.
+- Grep'd for `export const X = query` definitions across all files. Found 207 total queries.
+- Read each query's handler end-to-end in every file. Excluded the 2 already-fixed queries per task instructions (billing/crud.ts:getWorkLinks and getPaymentReminders).
+- Classified each of the 207 queries by auth posture: SAFE / PARTIAL (IDOR risk) / UNSAFE (no auth) / INTENTIONALLY PUBLIC.
+- Identified 7 UNSAFE queries (no auth check at all), 18 PARTIAL queries (checks userId but doesn't verify ownership of requested record), 32 INTENTIONALLY PUBLIC queries (token-as-auth or by-design public), and 150 SAFE queries.
+- Produced detailed report with file:line refs and suggested fixes for each gap.
+
+Stage Summary:
+- 7 UNSAFE queries (no auth check) — listed in report (proposals/crud.ts:getFollowUps, scope/crud.ts:getChangeOrders, projects/projectProtectionScore.ts:getProjectProtectionScore, projects/projectHealthDashboard.ts:getProjectHealthDashboard, projects/adaptiveEvidenceSystem.ts:getAdaptiveEvidenceSystem, seedTeamUsers.ts:checkUserByEmail, clients/clientPortal.ts:getClientPendingApprovals [leaks approval tokens to anyone with client email]).
+- 18 PARTIAL queries (IDOR risk) — listed in report (most common patterns: workspaceId arg without membership verification; projectId/sessionId/stageId arg without ownership verification; client-email-keyed portal queries; guestUserId bypass in projects/riskTimeline.ts).
+- 150 SAFE queries.
+- 32 INTENTIONALLY PUBLIC queries (token-as-auth: 13; client-email-keyed portal: 9; static config: 4; dev/landing: 6).
+- Critical files needing fixes (in priority order):
+  1. proposals/crud.ts — getFollowUps (line 157): zero auth, leaks follow-up email subject/body for any proposalId.
+  2. scope/crud.ts — getChangeOrders (line 68): zero auth, leaks change orders (financial impact, hours, deadline) for any scopeId.
+  3. projects/projectProtectionScore.ts, projectHealthDashboard.ts, adaptiveEvidenceSystem.ts — zero auth on projectId-based queries; leak protection/dashboard data.
+  4. seedTeamUsers.ts — checkUserByEmail: zero auth, email enumeration + userId disclosure.
+  5. projects/riskTimeline.ts — guestUserId parameter bypasses auth entirely; anyone can claim to be any user.
+  6. projects/projectProtection.ts — guest@axia.demo fallback account: unauthenticated callers all share the same demo user's data.
+  7. clients/clientPortal.ts — email-keyed portal queries expose approval tokens (getClientPendingApprovals) which grant write access via approveDeliverable.
+  8. billing/crud.ts:getInvoiceTemplates, proposals/crud.ts:getTemplates, proposals.ts:listTemplates — workspaceId not verified against membership.
+  9. clients/clientAuth.ts:getClientProfile (both top-level and clients/ subdir) — any authenticated user can fetch any clientCompany by email.
+  10. waitlist.ts:getEntryByEmail — any authenticated user can look up any email's waitlist entry.
