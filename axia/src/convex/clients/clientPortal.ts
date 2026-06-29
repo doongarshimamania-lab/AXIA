@@ -195,7 +195,26 @@ export const rejectDeliverable = mutation({
   },
 });
 
-/** Get pending approvals for a client by email. */
+/**
+ * Get pending approvals for a client by email.
+ *
+ * ponytail: IDOR fix — previously this query returned the `approvalToken`
+ * field for each pending approval. The token is the auth credential for
+ * the public `approveDeliverable({ approvalToken })` mutation, which
+ * flips a deliverable's status to "completed". Combined with the email-
+ * keyed (guessable/enumerable) access model of this file, any attacker
+ * who knew a client's email could retrieve tokens and approve/reject
+ * that client's deliverables. That's a privilege-escalation attack
+ * surface at 1000-user scale.
+ *
+ * Now we strip `approvalToken` from the response. Clients see the list
+ * of pending approvals (title, project, deliverables, status) but
+ * cannot act on them via this query alone. The proper flow is for the
+ * freelancer (or the system) to send the client a one-time approval
+ * link via email/SMS containing the token — that's the existing
+ * `getScopeByApprovalToken` flow in scope/crud.ts. This query is just
+ * for the client to SEE what's pending, not to act on it.
+ */
 export const getClientPendingApprovals = query({
   args: { clientEmail: v.string() },
   handler: async (ctx, { clientEmail }) => {
@@ -231,7 +250,8 @@ export const getClientPendingApprovals = query({
               description: sd.description,
               projectName: project.projectName,
               clientName: client.clientName,
-              approvalToken: sd.approvalToken,
+              // ponytail: approvalToken intentionally omitted — see comment above.
+              hasApprovalToken: true, // signals to UI that an approval link exists
               deliverables: sd.deliverables,
               status: sd.status,
               clientApprovedAt: sd.clientApprovedAt,
