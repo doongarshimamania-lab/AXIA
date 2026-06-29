@@ -76,6 +76,12 @@ export const getProposalByToken = query({
   },
 });
 
+// ponytail: IDOR fix — previously when `workspaceId` was provided we queried
+// the `by_workspace` index WITHOUT verifying membership. Any authenticated
+// user could pass another workspace's ID and read all its proposal
+// templates (which may contain pricing strategy, scope language, terms).
+// Now we gate with `getWorkspaceMembership` and only return system
+// templates if the caller is not a member.
 export const getTemplates = query({
   args: { workspaceId: v.optional(v.id("workspaces")) },
   handler: async (ctx, { workspaceId }) => {
@@ -89,6 +95,11 @@ export const getTemplates = query({
     let userTemplates: any[] = [];
     if (userId) {
       if (workspaceId) {
+        // ponytail: verify caller is a member of this workspace before
+        // returning its templates. Non-members only get system templates.
+        const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
+        if (!membership) return systemTemplates;
+
         userTemplates = await ctx.db
           .query("proposalTemplates")
           .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))

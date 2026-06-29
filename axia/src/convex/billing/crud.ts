@@ -599,6 +599,13 @@ export const removeWorkLink = mutation({
 
 // ─── INVOICE TEMPLATES ─────────────────────────────────────────────────────
 
+// ponytail: IDOR fix — previously when `workspaceId` was provided we queried
+// the `by_workspace` index WITHOUT verifying membership. Any authenticated
+// user could pass another workspace's ID and read all its invoice templates
+// (which may contain bank details, terms, custom line items). Now we gate
+// with `getWorkspaceMembership` and only return system templates if the
+// caller is not a member. System templates remain public (by design — they
+// are the seed templates shipped to every account).
 export const getInvoiceTemplates = query({
   args: { workspaceId: v.optional(v.id("workspaces")) },
   handler: async (ctx, { workspaceId }) => {
@@ -611,6 +618,11 @@ export const getInvoiceTemplates = query({
     let userTemplates: any[] = [];
     if (userId) {
       if (workspaceId) {
+        // ponytail: verify caller is a member of this workspace before
+        // returning its templates. Non-members only get system templates.
+        const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
+        if (!membership) return systemTemplates;
+
         userTemplates = await ctx.db
           .query("invoiceTemplates")
           .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))

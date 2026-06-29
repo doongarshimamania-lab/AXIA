@@ -840,10 +840,16 @@ export const listTemplates = query({
     // Get workspace templates if provided
     let workspaceTemplates: any[] = [];
     if (args.workspaceId) {
-      workspaceTemplates = await ctx.db
-        .query("proposalTemplates")
-        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .take(1000);
+      // ponytail: IDOR fix — verify caller is a member of this workspace
+      // before returning its templates. Previously any authenticated user
+      // could pass another workspace's ID and read its proposal templates.
+      const membership = await getWorkspaceMembership(ctx, args.workspaceId, userId);
+      if (membership) {
+        workspaceTemplates = await ctx.db
+          .query("proposalTemplates")
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+          .take(1000);
+      }
     }
 
     // Get system templates (userId is null)
