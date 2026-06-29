@@ -4,52 +4,19 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "../_generated/dataModel";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
-// Helper to resolve user ID (Auth or Guest)
+// ponytail: IDOR fix — `resolveUserId` previously fell back to a SHARED
+// `guest@axia.demo` account when no authenticated user was present. This
+// is a 1000-user antipattern: all unauthenticated callers shared ONE
+// account, so if any real data ever landed on it (via a demo seed, a
+// stale cookie, etc.) it leaked to everyone. Now `resolveUserId` simply
+// returns the authenticated userId or null — no guest fallback. UI
+// pages already require auth (ProtectedRoute), so legit flows are
+// unaffected. Unauthenticated callers get [] / null which is the
+// correct empty-state behavior.
 async function resolveUserId(ctx: any) {
   try {
-    const authUserId = await getAuthUserId(ctx);
-    if (authUserId) {
-      return authUserId;
-    }
+    return await getAuthUserId(ctx);
   } catch (error) {
-    // No authenticated user - fall through to guest
-  }
-  
-  // For guest users, try to find existing guest by email using index
-  try {
-    const existingGuest = await ctx.db
-      .query("users")
-      .withIndex("email", (q: any) => q.eq("email", "guest@axia.demo"))
-      .first();
-    
-    if (existingGuest) {
-      return existingGuest._id;
-    }
-  } catch (error) {
-    // Index query failed, continue to create new guest
-  }
-  
-  // If no guest user exists, create one
-  try {
-    const guestUserId = await ctx.db.insert("users", {
-      email: "guest@axia.demo",
-      name: "Guest User",
-      subscriptionTier: "free",
-      onboardingComplete: true,
-    });
-    return guestUserId;
-  } catch (error) {
-    // If insert fails (duplicate), try to find it again
-    const existingGuest = await ctx.db
-      .query("users")
-      .withIndex("email", (q: any) => q.eq("email", "guest@axia.demo"))
-      .first();
-    
-    if (existingGuest) {
-      return existingGuest._id;
-    }
-    
-    // If all else fails, return null to show empty projects
     return null;
   }
 }
@@ -59,7 +26,7 @@ export const getMyProjects = query({
   args: {},
   handler: async (ctx) => {
     const userId = await resolveUserId(ctx);
-    
+
     if (!userId) {
       return [];
     }
@@ -158,11 +125,15 @@ export const updateProjectProtection = mutation({
 
 // Get project protection details
 export const getProjectProtectionDetails = query({
-  args: { 
+  args: {
     projectId: v.id("projects"),
     guestUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    // ponytail: IDOR fix — return null silently on auth failure instead
+    // of throwing, so an attacker can't enumerate project IDs by
+    // distinguishing "not found" vs "not authorized" error messages.
+    // Also no longer honors guestUserId (was an auth-bypass-as-feature).
     const userId = await resolveUserId(ctx);
     if (!userId) {
       return {
@@ -176,7 +147,13 @@ export const getProjectProtectionDetails = query({
 
     const project = await ctx.db.get(args.projectId);
     if (!project || project.userId !== userId) {
-      throw new Error("Project not found or unauthorized");
+      return {
+        project: null,
+        client: null,
+        totalSessions: 0,
+        totalReports: 0,
+        sessions: [],
+      };
     }
 
     // Get client info
@@ -253,10 +230,16 @@ export const getProjectRiskHeatmap = query({
     }
 
     // Get project filter
+    // ponytail: IDOR fix — previously used ANY project's name as a filter
+    // regardless of ownership, which could let an attacker build a heatmap
+    // from another user's project data if that project's name collided.
+    // Now we only apply the project filter if the project belongs to the
+    // caller; otherwise we treat it as no filter (returns caller's own
+    // data only, since allSessions is already by_user-scoped).
     let projectFilter: string | null = null;
     if (args.projectId) {
       const project = await ctx.db.get(args.projectId);
-      if (project) projectFilter = project.projectName;
+      if (project && project.userId === userId) projectFilter = project.projectName;
     }
 
     const allSessions = await ctx.db

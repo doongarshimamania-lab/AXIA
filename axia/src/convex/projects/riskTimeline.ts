@@ -13,18 +13,16 @@ const normalizeTier = (value?: string | null): TierName | undefined => {
   return VALID_TIERS.includes(lowered as TierName) ? (lowered as TierName) : undefined;
 };
 
-async function resolveUserId(ctx: QueryCtx, guestUserId?: Id<"users">): Promise<Id<"users"> | null> {
-  if (guestUserId) {
-    const guestUser = await ctx.db.get(guestUserId);
-    if (guestUser) {
-      return guestUser._id;
-    }
-  }
-
-  const authUserId = await getAuthUserId(ctx);
-  if (authUserId) return authUserId;
-
-  return null;
+// ponytail: IDOR fix — `resolveUserId` previously honored `args.guestUserId`
+// as a "trust me" parameter: anyone could pass `guestUserId: <victim user id>`
+// and read that user's full project risk timeline (sessions, time blocks,
+// evidence gaps, dollar projections, business map). That was a complete
+// auth bypass. Now `resolveUserId` only returns the authenticated userId
+// (or null). The `guestUserId` arg is kept in the schema for backwards
+// compatibility but silently ignored — frontend callers that pass it
+// will get the authenticated user's data, not the spoofed guest's.
+async function resolveUserId(ctx: QueryCtx): Promise<Id<"users"> | null> {
+  return await getAuthUserId(ctx);
 }
 
 export const getProjectRiskTimeline = query({
@@ -94,8 +92,10 @@ export const getProjectRiskTimeline = query({
       corePositioningMessage: "No data available",
     });
 
-    const userId = await resolveUserId(ctx, args.guestUserId);
-    
+    // ponytail: IDOR fix — pass NO guestUserId to resolveUserId. The arg
+    // is silently ignored. Only the authenticated user's data is returned.
+    const userId = await resolveUserId(ctx);
+
     // Default empty structure to return if no user/data found
     if (!userId) {
       return buildEmptyData(requestedTier ?? "free");
@@ -110,7 +110,7 @@ export const getProjectRiskTimeline = query({
     // 1. Gather Data - Fetch all relevant data for the user
     let projectFilter: string | null = null;
     let currentProject = null;
-    
+
     if (args.projectId) {
       currentProject = await ctx.db.get(args.projectId);
       if (currentProject && currentProject.userId === userId) {
