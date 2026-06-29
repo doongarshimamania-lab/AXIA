@@ -144,7 +144,13 @@ export const getEntryByReferralCode = query({
   },
 });
 
-// SECURITY: Requires auth — prevents email enumeration by unauthenticated users
+// ponytail: IDOR fix — previously required auth but didn't verify the
+// requested email belonged to the caller. Any authenticated user could
+// pass any email and read that email's waitlist entry (position,
+// referralCode, referredBy, referredCount). At 1000-user scale this
+// enables competitive intelligence. Now we restrict to: (a) admins,
+// or (b) callers whose own email matches args.email. Admins still
+// need to look up arbitrary entries for support purposes.
 export const getEntryByEmail = query({
   args: {
     email: v.string(),
@@ -152,6 +158,12 @@ export const getEntryByEmail = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
+
+    const user = await ctx.db.get(userId);
+    const isAdmin = user?.role === "admin";
+    const isOwnEmail = user?.email?.toLowerCase() === args.email.trim().toLowerCase();
+
+    if (!isAdmin && !isOwnEmail) return null;
 
     const entry = await ctx.db
       .query("waitlistEntries")

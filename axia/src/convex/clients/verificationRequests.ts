@@ -42,19 +42,36 @@ export const createVerificationRequest = mutation({
   },
 });
 
-// Get verification requests for client (requires auth)
+// ponytail: IDOR fix — previously returned ALL verification requests for
+// any clientId to any authenticated user. Verification requests contain
+// projectName, projectDescription, workPeriodStart/End, freelancerUserId
+// — sensitive work-history data. Now we restrict to: (a) admins, or
+// (b) requests where the caller is the freelancer who was asked to
+// verify. Client companies themselves should authenticate via the
+// client-portal token flow (separate from this query).
+// Get verification requests for client (requires auth + relationship)
 export const getClientVerificationRequests = query({
   args: { clientId: v.id("clientCompanies") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    const requests = await ctx.db
+    // Admins can see all requests for any client
+    const user = await ctx.db.get(userId);
+    if (user?.role === "admin") {
+      return await ctx.db
+        .query("verificationRequests")
+        .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
+        .take(1000);
+    }
+
+    // Non-admins: only see requests where they are the freelancer
+    const allRequests = await ctx.db
       .query("verificationRequests")
       .withIndex("by_client", (q) => q.eq("clientId", args.clientId))
       .take(1000);
 
-    return requests;
+    return allRequests.filter((r) => r.freelancerUserId === userId);
   },
 });
 

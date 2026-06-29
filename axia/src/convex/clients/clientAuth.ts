@@ -51,7 +51,14 @@ export const registerClient = mutation({
   },
 });
 
-// Get client profile (requires auth)
+// ponytail: IDOR fix — previously this returned ANY clientCompany row by
+// email to ANY authenticated user. Emails are enumerable, so any user
+// could read any company's full profile (companyName, contactName,
+// industry, companySize, website, subscriptionTier). Now we verify the
+// caller has a relationship to this client: either (a) the caller created
+// a verification request for them, or (b) the caller is an admin.
+// Returns null if no relationship exists.
+// Get client profile (requires auth + relationship to client)
 export const getClientProfile = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
@@ -63,6 +70,21 @@ export const getClientProfile = query({
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
+    if (!client) return null;
+
+    // ponytail: verify caller has a relationship to this client.
+    // Admins see everything; otherwise the caller must have filed a
+    // verification request involving this client.
+    const user = await ctx.db.get(userId);
+    if (user?.role === "admin") return client;
+
+    const verificationRequest = await ctx.db
+      .query("verificationRequests")
+      .withIndex("by_client", (q) => q.eq("clientId", client._id))
+      .filter((q) => q.eq(q.field("freelancerUserId"), userId))
+      .first();
+
+    if (!verificationRequest) return null;
     return client;
   },
 });
