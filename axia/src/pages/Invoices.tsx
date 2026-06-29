@@ -224,7 +224,11 @@ export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
+  // ponytail: removed `seeding` state + `seedMockInvoices` mutation — the old
+  // backend mutation inserted invoices with NO workspaceId and FAKE clientId
+  // strings (`"mock_client_1" as Id<"clients">`), making them invisible to the
+  // workspace-scoped list view and unjoinable to real clients. "Bulk Import"
+  // remains as the legitimate path for seeding real data.
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareInvoiceId, setShareInvoiceId] = useState<string | null>(null);
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
@@ -248,23 +252,19 @@ export default function Invoices() {
   const allTags: any[] = tagsData ?? [];
 
   // ── Convex Queries ─────────────────────────────────────────────────────
+  // ponytail: only ONE query — `getInvoices`. We derive stats client-side
+  // from the same array (see `stats` useMemo below). Previously the page
+  // fired both `getInvoices` AND `getInvoiceStats`, each scanning up to 1000
+  // rows server-side — at 1000 concurrent users that's 2000 reads per page
+  // load, and the two queries could disagree on a race. Single-query + derive
+  // is cheaper and always consistent.
   const invoices = useQuery(api.billing.crud.getInvoices, workspaceId ? { workspaceId } : "skip") as Invoice[] | undefined;
-  const stats = useQuery(api.billing.crud.getInvoiceStats, workspaceId ? { workspaceId } : "skip") as {
-    total: number;
-    paid: number;
-    pending: number;
-    overdue: number;
-    draft: number;
-    totalRevenue: number;
-    totalOutstanding: number;
-    withProof: number;
-  } | undefined;
 
   // ── Convex Mutations ───────────────────────────────────────────────────
   const sendInvoice = useMutation(api.billing.crud.sendInvoice);
   const markInvoicePaid = useMutation(api.billing.crud.markInvoicePaid);
   const deleteInvoice = useMutation(api.billing.crud.deleteInvoice);
-  const seedMockInvoices = useMutation(api.billing.crud.seedMockInvoices);
+  // ponytail: `seedMockInvoices` removed — see note near local state above.
 
   // ── Computed ───────────────────────────────────────────────────────────
   const safeInvoices = invoices ?? [];
@@ -294,16 +294,28 @@ export default function Invoices() {
     return counts;
   }, [safeInvoices]);
 
-  const safeStats = stats ?? {
-    total: 0,
-    paid: 0,
-    pending: 0,
-    overdue: 0,
-    draft: 0,
-    totalRevenue: 0,
-    totalOutstanding: 0,
-    withProof: 0,
-  };
+  // ponytail: derive stats client-side from the already-fetched `safeInvoices`
+  // array — eliminates the redundant `getInvoiceStats` query (see note above)
+  // and guarantees the stat cards and the list always agree.
+  // Ceiling: `getInvoices` returns at most 1000 rows per workspace, so these
+  // counts cap at 1000. For workspaces exceeding that, add `by_workspace_and_status`
+  // index + paginated stats query. Documented here so the upgrade path is obvious.
+  const safeStats = useMemo(() => {
+    const paid = safeInvoices.filter((i) => i.status === "paid");
+    const outstanding = safeInvoices.filter((i) =>
+      ["sent", "viewed", "overdue"].includes(i.status)
+    );
+    return {
+      total: safeInvoices.length,
+      paid: paid.length,
+      pending: safeInvoices.filter((i) => i.status === "sent" || i.status === "viewed").length,
+      overdue: safeInvoices.filter((i) => i.status === "overdue").length,
+      draft: safeInvoices.filter((i) => i.status === "draft").length,
+      totalRevenue: paid.reduce((s, i) => s + i.total, 0),
+      totalOutstanding: outstanding.reduce((s, i) => s + i.total, 0),
+      withProof: safeInvoices.filter((i) => (i.proofCount ?? 0) > 0).length,
+    };
+  }, [safeInvoices]);
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleSendInvoice = async (invoiceId: string) => {
@@ -348,29 +360,15 @@ export default function Invoices() {
     }
   };
 
-  const handleSeedData = async () => {
-    setSeeding(true);
-    try {
-      const result = await seedMockInvoices({});
-      if ((result as any)?.seeded) {
-        toast.success("Mock data seeded!", {
-          description: `${(result as any).count} invoices created`,
-        });
-      } else {
-        toast.info("Invoices already exist", {
-          description: `${(result as any)?.count || 0} invoices found`,
-        });
-      }
-    } catch (err: any) {
-      toast.error("Failed to seed data", { description: err.message });
-    } finally {
-      setSeeding(false);
-    }
-  };
+  // ponytail: `handleSeedData` removed — the backend mutation it called
+  // (`seedMockInvoices`) produced invisible + corrupt rows. The "Bulk Import"
+  // button below is the legitimate path for batch data entry.
 
   // ── Loading: useQueryTimeout for loading timeout ──
   const { isDisconnected } = useConvexConnectionState();
-  const isLoading = invoices === undefined || stats === undefined;
+  // ponytail: loading is now gated on `invoices` only — `stats` is derived
+  // client-side from `invoices` (no separate query to wait for).
+  const isLoading = invoices === undefined;
   const timedOut = useQueryTimeout(isLoading, 3000);
   const showLoading = isLoading && !timedOut && !isDisconnected;
 
@@ -572,18 +570,9 @@ export default function Invoices() {
             </div>
           )}
           <div className="flex items-center gap-2 flex-wrap">
-            {import.meta.env.DEV && safeInvoices.length === 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={handleSeedData}
-                disabled={seeding}
-              >
-                <Database className="h-4 w-4" />
-                {seeding ? "Seeding..." : "Seed Demo Data"}
-              </Button>
-            )}
+            {/* ponytail: "Seed Demo Data" button removed — the backend mutation
+                produced invisible + corrupt rows (no workspaceId, fake clientIds).
+                "Bulk Import" remains as the legitimate batch-entry path. */}
             <Button
               variant="outline"
               size="sm"
@@ -652,19 +641,9 @@ export default function Invoices() {
                         {searchQuery
                           ? "Try adjusting your search terms"
                           : safeInvoices.length === 0
-                          ? "Create your first invoice or seed demo data to get started"
+                          ? "Create your first invoice to get started"
                           : "No invoices match this filter"}
                       </p>
-                      {import.meta.env.DEV && safeInvoices.length === 0 && (
-                        <Button
-                          className="mt-4 bg-[#8B5CF6] hover:bg-[#8B5CF6]/90 text-white gap-2"
-                          onClick={handleSeedData}
-                          disabled={seeding}
-                        >
-                          <Database className="h-4 w-4" />
-                          {seeding ? "Seeding..." : "Seed Demo Data"}
-                        </Button>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

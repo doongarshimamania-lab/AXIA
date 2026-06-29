@@ -13,23 +13,29 @@ export const getClients = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    // ponytail: always query by_user first — this catches BOTH workspace-scoped
-    // clients AND legacy clients (those created before the workspace system,
-    // which have workspaceId === undefined and are invisible to the
-    // by_workspace index). Then optionally filter by workspaceId in JS,
-    // keeping legacy clients visible in every workspace.
+    // ponytail: workspace-strict filter when workspaceId is provided.
+    // Previously this returned legacy clients (workspaceId === undefined) in
+    // EVERY workspace, which caused a data-flow mismatch: InvoiceBuilder
+    // showed those legacy clients in its dropdown, but `getInvoices` (strict
+    // by_workspace) would never show invoices for them — so users could pick
+    // a client, create an invoice, and have it appear to vanish. Now we only
+    // return clients that actually belong to the active workspace.
+    // When no workspaceId is passed (rare — pre-workspace mode), we fall back
+    // to by_user, which naturally includes legacy clients.
     if (workspaceId) {
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];
+
+      return await ctx.db
+        .query("clients")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .take(1000);
     }
 
-    const allClients = await ctx.db
+    return await ctx.db
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .take(1000);
-
-    if (!workspaceId) return allClients;
-    return allClients.filter((c) => !c.workspaceId || c.workspaceId === workspaceId);
   },
 });
 
@@ -58,21 +64,26 @@ export const getClientsEnriched = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
+    // ponytail: workspace-strict filter — same rationale as getClients above.
+    // Legacy clients (no workspaceId) are only returned when no workspaceId
+    // is passed, which keeps PaymentPatterns / Dashboard consistent with
+    // Invoices (which uses strict by_workspace).
     if (workspaceId) {
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];
     }
 
-    // ponytail: same by_user-first pattern as getClients — catches legacy
-    // clients that have no workspaceId.
-    const clients = await ctx.db
-      .query("clients")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .take(1000);
+    const clients = workspaceId
+      ? await ctx.db
+          .query("clients")
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+          .take(1000)
+      : await ctx.db
+          .query("clients")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .take(1000);
 
-    const filtered = workspaceId
-      ? clients.filter((c) => !c.workspaceId || c.workspaceId === workspaceId)
-      : clients;
+    const filtered = clients;
 
     // Resolve assigned members
     const enriched = await Promise.all(

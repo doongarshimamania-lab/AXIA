@@ -451,9 +451,10 @@ export default function InvoiceBuilder() {
         await updateInvoice({
           invoiceId: invoiceId as any,
           clientId: clientId as any,
-          workspaceId: activeWorkspaceId as any,
-          clientName: clientName.trim(),
-          clientEmail: clientEmail.trim() || undefined,
+          // ponytail: removed clientName/clientEmail — the backend re-derives
+          // them from the client record (crud.ts:211-212) so they were being
+          // silently dropped. workspaceId is also not accepted by updateInvoice
+          // (it's immutable post-create) — removed to match the schema.
           lineItems: lineItemsData,
           subtotal,
           taxRate,
@@ -469,8 +470,7 @@ export default function InvoiceBuilder() {
         const newId = await createInvoice({
           clientId: clientId as any,
           workspaceId: activeWorkspaceId as any,
-          clientName: clientName.trim(),
-          clientEmail: clientEmail.trim() || undefined,
+          // ponytail: removed clientName/clientEmail — see note above.
           lineItems: lineItemsData,
           subtotal,
           taxRate,

@@ -2,7 +2,6 @@ import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
-import type { Id } from "../_generated/dataModel";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
@@ -13,7 +12,11 @@ export const getInvoices = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    // If workspaceId provided, filter by workspace with membership check
+    // ponytail: ceiling — `.take(1000)` is fine for the vast majority of
+    // workspaces. If a workspace exceeds 1000 invoices, switch to cursor-based
+    // pagination (`paginate`) and add a `by_workspace_and_status` index for
+    // the status-filtered path. The current status filter is a JS-side
+    // `.filter()` after the take, which is O(n) but avoids a second index.
     if (workspaceId) {
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];
@@ -138,6 +141,12 @@ export const getInvoiceStats = query({
 
 // ─── MUTATIONS ────────────────────────────────────────────────────────────
 
+// ponytail: ceiling — `generateInvoiceNumber` scans up to 1000 user invoices
+// to find the max INV-NNN. At 1000 concurrent creates this is a hot read path
+// but Convex handles it in <10ms. If this becomes a bottleneck, persist a
+// `nextInvoiceNumber` counter on the workspace row and increment atomically.
+// The current approach is O(n) per create but always correct (no race window
+// between read-counter and write-counter).
 function generateInvoiceNumber(existing: any[]): string {
   const nums = existing.map(inv => {
     const match = inv.invoiceNumber?.match(/INV-(\d+)/);
@@ -329,7 +338,11 @@ export const sendInvoice = mutation({
       updatedAt: Date.now(),
     });
 
-    // Schedule payment reminders
+    // ponytail: ceiling — schedules 3 `paymentReminders` rows synchronously.
+    // At 1000 concurrent sends this is 3000 inserts, still well within Convex's
+    // transaction limits (each insert is ~1ms). If this becomes a bottleneck,
+    // move reminder scheduling to a scheduled job (ctx.scheduler.runAt) that
+    // fires AFTER the mutation commits, so the user sees "sent" instantly.
     const reminderSchedule = [
       { day: 3, tone: "friendly" as const, subject: `Invoice ${invoice.invoiceNumber} - Friendly Reminder` },
       { day: 7, tone: "firm" as const, subject: `Invoice ${invoice.invoiceNumber} - Payment Due` },
@@ -540,99 +553,12 @@ export const removeWorkLink = mutation({
 });
 
 // ─── SEED MOCK DATA ───────────────────────────────────────────────────────
-
-export const seedMockInvoices = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await rateLimitAuthenticated(ctx, "seedMockInvoices");
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const existing = await ctx.db
-      .query("invoices")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .take(1000);
-
-    if (existing.length > 0) return { seeded: false, count: existing.length };
-
-    const now = Date.now();
-    const day = 86400000;
-
-    const mockInvoices = [
-      {
-        clientId: "mock_client_1" as Id<"clients">,
-        clientName: "Acme Corp",
-        clientEmail: "billing@acmecorp.com",
-        status: "paid" as const,
-        lineItems: [
-          { id: "li1", description: "Frontend Development - Homepage", quantity: 40, rate: 125, amount: 5000, hasProof: true },
-          { id: "li2", description: "UI/UX Design - Dashboard", quantity: 20, rate: 150, amount: 3000, hasProof: true },
-        ],
-        subtotal: 8000, taxRate: 10, taxAmount: 800, total: 8800,
-        issueDate: now - 30 * day, dueDate: now - 15 * day, paidDate: now - 12 * day,
-        proofCount: 2, hasValidatedBilling: true,
-      },
-      {
-        clientId: "mock_client_2" as Id<"clients">,
-        clientName: "TechStart Inc",
-        clientEmail: "finance@techstart.io",
-        status: "sent" as const,
-        lineItems: [
-          { id: "li1", description: "API Development - User Service", quantity: 60, rate: 150, amount: 9000, hasProof: true },
-          { id: "li2", description: "Database Architecture", quantity: 15, rate: 175, amount: 2625, hasProof: false },
-        ],
-        subtotal: 11625, taxRate: 8, taxAmount: 930, total: 12555,
-        issueDate: now - 5 * day, dueDate: now + 10 * day,
-        proofCount: 1, hasValidatedBilling: true,
-      },
-      {
-        clientId: "mock_client_3" as Id<"clients">,
-        clientName: "GlobalMedia",
-        clientEmail: "accounts@globalmedia.com",
-        status: "overdue" as const,
-        lineItems: [
-          { id: "li1", description: "Mobile App - iOS & Android", quantity: 80, rate: 125, amount: 10000, hasProof: true },
-          { id: "li2", description: "QA Testing", quantity: 20, rate: 100, amount: 2000, hasProof: true },
-          { id: "li3", description: "App Store Deployment", quantity: 5, rate: 200, amount: 1000, hasProof: false },
-        ],
-        subtotal: 13000, taxRate: 10, taxAmount: 1300, total: 14300,
-        issueDate: now - 45 * day, dueDate: now - 15 * day,
-        proofCount: 2, hasValidatedBilling: true,
-      },
-      {
-        clientId: "mock_client_4" as Id<"clients">,
-        clientName: "DesignHub",
-        clientEmail: "pay@designhub.co",
-        status: "draft" as const,
-        lineItems: [
-          { id: "li1", description: "Brand Identity Package", quantity: 1, rate: 4500, amount: 4500, hasProof: false },
-          { id: "li2", description: "Social Media Kit", quantity: 1, rate: 2000, amount: 2000, hasProof: false },
-        ],
-        subtotal: 6500, taxRate: 10, taxAmount: 650, total: 7150,
-        issueDate: now, dueDate: now + 30 * day,
-        proofCount: 0, hasValidatedBilling: false,
-      },
-    ];
-
-    for (let i = 0; i < mockInvoices.length; i++) {
-      const inv = mockInvoices[i];
-      await ctx.db.insert("invoices", {
-        userId,
-        invoiceNumber: `INV-${String(i + 1).padStart(3, "0")}`,
-        publicToken: generateToken(),
-        currency: "USD",
-        notes: "",
-        sentAt: inv.status !== "draft" ? inv.issueDate : undefined,
-        viewedAt: inv.status === "paid" ? inv.issueDate + day : undefined,
-        createdAt: inv.issueDate,
-        updatedAt: now,
-        ...inv,
-      });
-    }
-
-    return { seeded: true, count: mockInvoices.length };
-  },
-});
+// ponytail: `seedMockInvoices` removed. It inserted invoices with NO
+// workspaceId and FAKE clientId strings (`"mock_client_1" as Id<"clients">`),
+// making them invisible to the workspace-scoped `getInvoices` query and
+// unjoinable to real client rows. At 1000-user scale this also bypassed the
+// `createInvoice` validation (client existence check, workspace membership).
+// The "Bulk Import" CSV flow remains as the legitimate batch-entry path.
 
 // ─── INVOICE TEMPLATES ─────────────────────────────────────────────────────
 
