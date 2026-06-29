@@ -2316,3 +2316,54 @@ Stage Summary:
 - Invoices and time entries do NOT appear on this page — Reports only shows dispute reports that the user manually creates.
 - Hardcoded mock data: Pro Analysis panel (92% / Low / 87% at lines 708-718), `avgResolutionDays` fabrication (line 228), `$75` default rate (line 268).
 - Read-mostly page; the only writes are status transitions. No export button, no cross-page consumers of dispute reports.
+
+---
+Task ID: INVOICES-FIX-1
+Agent: main
+Task: Fix the entire Invoices page — remove all hardcoded/mock data, make CRUD actually work, scale-safe for 1000 users. UI unchanged.
+
+Work Log:
+- Read Invoices.tsx (1292 lines), InvoiceBuilder.tsx (1467 lines), billing/crud.ts (795 lines), tables/billing.ts (213 lines), clients/crud.ts
+- Audited via 3 parallel subagents (BILLING-AUDIT-1/2/3) — full reports in prior worklog entries
+- Identified 9 distinct issues; fixed 6 in this commit (remaining 3 are dead-code deletion + orphan-field cleanup, deferred)
+
+Fixes applied:
+1. Removed `seedMockInvoices` mutation + UI button (both "Seed Demo Data" buttons)
+   - Root cause: inserted invoices with NO workspaceId + FAKE clientId strings ("mock_client_1" as Id<"clients">)
+   - Result: invisible in workspace-scoped list view + unjoinable to real clients
+   - At scale: bypassed createInvoice validation (client existence check, workspace membership)
+2. Made `getClients` and `getClientsEnriched` workspace-strict when workspaceId is provided
+   - Root cause: legacy fallback returned clients with workspaceId === undefined in EVERY workspace
+   - Result: InvoiceBuilder showed legacy clients whose invoices would never appear in Invoices list
+   - Fix: use `by_workspace` index when workspaceId provided, `by_user` only as fallback
+3. Removed silently-dropped `clientName`/`clientEmail` args from InvoiceBuilder's createInvoice/updateInvoice calls
+   - Root cause: backend mutation schemas don't accept these args; backend re-derives from client record
+   - Also removed `workspaceId` from updateInvoice call (not in schema — workspace is immutable post-create)
+4. Eliminated redundant `getInvoiceStats` query on Invoices.tsx — now derived client-side from `invoices` array via useMemo
+   - Root cause: page fired BOTH getInvoices AND getInvoiceStats, each scanning 1000 rows
+   - At 1000 concurrent users: 2000 reads/page-load → now 1000 reads/page-load
+   - Bonus: stats and list can no longer disagree on a race
+5. Added scale-safety `ponytail:` comments to:
+   - `getInvoices` — documents 1000-row ceiling + upgrade path (cursor pagination + by_workspace_and_status index)
+   - `generateInvoiceNumber` — documents O(n) scan + upgrade path (workspace counter row)
+   - `sendInvoice` — documents 3-sync-inserts ceiling + upgrade path (scheduled job)
+6. Removed unused `Id` import from billing/crud.ts (only used in dead seedMockInvoices)
+
+Files changed:
+- axia/src/pages/Invoices.tsx — removed seedMock UI/state/handler, removed getInvoiceStats query, derived stats via useMemo
+- axia/src/pages/InvoiceBuilder.tsx — removed silently-dropped args from create/update calls
+- axia/src/convex/billing/crud.ts — removed seedMockInvoices mutation, added scale comments, removed unused import
+- axia/src/convex/clients/crud.ts — made getClients + getClientsEnriched workspace-strict
+
+Stage Summary:
+- All 5 CRUD operations (create/update/send/markPaid/delete) verified end-to-end against schema + handlers
+- Zero hardcoded/mock data remains in Invoices flow
+- Workspace filter consistency: getInvoices, getClients, getClientsEnriched all use strict by_workspace when workspaceId provided
+- Scale ceiling documented: 1000 invoices per workspace (take(1000)), 1000 concurrent sends (3 inserts each)
+- UI unchanged — only data flow, queries, and dead-code removal
+- Build verified: `pnpm build` passes (10.08s)
+
+Not yet done (deferred):
+- Delete the 1907-line dead `convex/invoices.ts` file (zero callers, but large deletion — separate commit)
+- Wire `projectId`/`proposalId` orphan fields to a project/proposal picker in InvoiceBuilder (UI change — deferred per user instruction)
+- Populate dead `clients.avgPaymentDays/onTimeRate/totalPaid/totalInvoiced/lastPaymentAt` fields in markInvoicePaid (needs schema + mutation change)
