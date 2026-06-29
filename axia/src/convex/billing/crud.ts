@@ -75,9 +75,30 @@ export const getInvoiceByToken = query({
   },
 });
 
+// ponytail: IDOR fix — `getWorkLinks` previously had NO auth check. Any
+// authenticated user could pass any `invoiceId` and read the work-proof
+// records (screenshots, time entries, file URLs) attached to anyone's
+// invoice. This is the same workspace/owner gate used by `getInvoice`.
+// At 1000-user scale this matters because Convex IDs aren't enumerable
+// but ARE leaked via notification previews, search results, and any
+// future admin/dashboard view — closing the door before someone walks in.
 export const getWorkLinks = query({
   args: { invoiceId: v.id("invoices") },
   handler: async (ctx, { invoiceId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const invoice = await ctx.db.get(invoiceId);
+    if (!invoice) return [];
+
+    // Same gate as getInvoice: workspace membership OR direct ownership
+    if (invoice.workspaceId) {
+      const access = await getRecordAccess(ctx, invoice, userId);
+      if (!access) return [];
+    } else if (invoice.userId !== userId) {
+      return [];
+    }
+
     return await ctx.db
       .query("invoiceWorkLinks")
       .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
@@ -85,6 +106,11 @@ export const getWorkLinks = query({
   },
 });
 
+// ponytail: IDOR fix — `getPaymentReminders` checked `userId` exists but
+// never verified that the passed `invoiceId` belongs to the caller. Any
+// authenticated user could pass another user's invoiceId and read all
+// reminder emails (subject + body containing client name, invoice number,
+// dollar amount). Same workspace/owner gate as `getInvoice`.
 export const getPaymentReminders = query({
   args: { invoiceId: v.optional(v.id("invoices")) },
   handler: async (ctx, { invoiceId }) => {
@@ -92,6 +118,17 @@ export const getPaymentReminders = query({
     if (!userId) return [];
 
     if (invoiceId) {
+      // Verify caller has access to THIS invoice before returning its reminders
+      const invoice = await ctx.db.get(invoiceId);
+      if (!invoice) return [];
+
+      if (invoice.workspaceId) {
+        const access = await getRecordAccess(ctx, invoice, userId);
+        if (!access) return [];
+      } else if (invoice.userId !== userId) {
+        return [];
+      }
+
       return await ctx.db
         .query("paymentReminders")
         .withIndex("by_invoice", (q) => q.eq("invoiceId", invoiceId))
