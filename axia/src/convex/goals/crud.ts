@@ -1,10 +1,16 @@
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getWorkspaceMembership } from "../permissions";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
+// ponytail: IDOR fix — previously when `workspaceId` was provided we
+// queried the `by_workspace` index WITHOUT verifying membership. Any
+// authenticated user could pass another workspace's ID and read all its
+// goals (titles, milestones, deadlines, streaks, lastCheckIn). Now we
+// gate with `getWorkspaceMembership` and return [] for non-members.
 export const getGoals = query({
   args: { workspaceId: v.optional(v.id("workspaces")) },
   handler: async (ctx, { workspaceId }) => {
@@ -12,6 +18,9 @@ export const getGoals = query({
     if (!userId) return [];
 
     if (workspaceId) {
+      const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
+      if (!membership) return [];
+
       return await ctx.db
         .query("goals")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))

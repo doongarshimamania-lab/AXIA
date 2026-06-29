@@ -83,11 +83,29 @@ export const getDeals = query({
   },
 });
 
+// ponytail: IDOR fix — previously returned all deals for any stageId to
+// any authenticated user, with no check that the stage belonged to the
+// caller's workspace. Deals contain title, value, contactEmail,
+// contactName, notes — sensitive pipeline data. Now we verify the stage
+// exists and the caller has workspace access before returning its deals.
 export const getDealsByStage = query({
   args: { stageId: v.id("pipelineStages") },
   handler: async (ctx, { stageId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
+
+    const stage = await ctx.db.get(stageId);
+    if (!stage) return [];
+
+    // ponytail: verify caller has access to the stage's workspace.
+    // Falls back to direct ownership for legacy non-workspace stages.
+    if (stage.workspaceId) {
+      const membership = await getWorkspaceMembership(ctx, stage.workspaceId, userId);
+      if (!membership) return [];
+    } else if (stage.userId && stage.userId !== userId) {
+      return [];
+    }
+
     return await ctx.db
       .query("deals")
       .withIndex("by_stage", (q) => q.eq("stageId", stageId))

@@ -19,6 +19,21 @@ export const getScopeDefinitions = query({
 
     // If projectId provided, filter by project
     if (projectId) {
+      // ponytail: IDOR fix — previously returned all scope definitions
+      // for any projectId without verifying the caller owns/has-access-to
+      // the project. Scope definitions contain deliverables, revision
+      // limits, approval tokens — sensitive scope-creep protection data.
+      // Now we look up the project and verify ownership/workspace access.
+      const project = await ctx.db.get(projectId);
+      if (!project) return [];
+
+      if (project.workspaceId) {
+        const access = await getRecordAccess(ctx, project, userId);
+        if (!access) return [];
+      } else if (project.userId !== userId) {
+        return [];
+      }
+
       return await ctx.db
         .query("scopeDefinitions")
         .withIndex("by_project", (q) => q.eq("projectId", projectId))
