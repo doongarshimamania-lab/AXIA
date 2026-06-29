@@ -1,11 +1,12 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { getCurrentUser } from "../users";
-import { 
-  calculateHealthScoreHelper, 
-  calculateDisputeSuccessRateHelper, 
-  calculateWorkContextAnalysisHelper, 
-  predictEvidenceGapsHelper 
+import { getWorkspaceMembership } from "../permissions";
+import {
+  calculateHealthScoreHelper,
+  calculateDisputeSuccessRateHelper,
+  calculateWorkContextAnalysisHelper,
+  predictEvidenceGapsHelper
 } from "./analytics";
 
 export const getEvidenceLibraryData = query({
@@ -18,10 +19,25 @@ export const getEvidenceLibraryData = query({
   handler: async (ctx, args) => {
     try {
       const user = await getCurrentUser(ctx).catch(() => null);
-      
+
       // Always return mock data if anything fails or user is missing
       if (!user) {
         return getMockEvidenceLibraryData();
+      }
+
+      // ponytail: IDOR fix — previously when workspaceId was provided we
+      // queried the by_workspace index WITHOUT verifying membership. Any
+      // authenticated user could pass another workspace's ID and read
+      // its evidence sessions (dispute-success rate, evidence items,
+      // content quality scores). Now we fall back to caller's own data
+      // if they're not a member of the requested workspace.
+      let effectiveWorkspaceId = args.workspaceId;
+      if (effectiveWorkspaceId) {
+        const membership = await getWorkspaceMembership(ctx, effectiveWorkspaceId, user._id);
+        if (!membership) {
+          // Not a member — fall back to user's own data
+          effectiveWorkspaceId = undefined;
+        }
       }
 
       // Use analytics helpers for consistent scoring
@@ -32,10 +48,10 @@ export const getEvidenceLibraryData = query({
 
       // CRITICAL: Limit evidence items query to prevent unbounded collection
       let evidenceSessions;
-      if (args.workspaceId) {
+      if (effectiveWorkspaceId) {
         evidenceSessions = await ctx.db
           .query("evidenceSessions")
-          .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", effectiveWorkspaceId!))
           .order("desc")
           .take(50);
       } else {
@@ -142,12 +158,22 @@ export const getEvidenceTimeline = query({
       const startOfDay = new Date(args.date).setHours(0, 0, 0, 0);
       const endOfDay = new Date(args.date).setHours(23, 59, 59, 999);
 
+      // ponytail: IDOR fix — verify workspace membership before using
+      // the by_workspace index. Non-members fall back to user's own data.
+      let effectiveWorkspaceId = args.workspaceId;
+      if (effectiveWorkspaceId) {
+        const membership = await getWorkspaceMembership(ctx, effectiveWorkspaceId, user._id);
+        if (!membership) {
+          effectiveWorkspaceId = undefined;
+        }
+      }
+
       // CRITICAL: Limit timeline query
       let evidenceSessions;
-      if (args.workspaceId) {
+      if (effectiveWorkspaceId) {
         evidenceSessions = await ctx.db
           .query("evidenceSessions")
-          .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId!))
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", effectiveWorkspaceId!))
           .order("desc")
           .take(100);
       } else {

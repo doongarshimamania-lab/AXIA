@@ -448,6 +448,13 @@ export const generateWCVMVerification = mutation({
   },
 });
 
+// ponytail: IDOR fix — previously returned the latest WCVM verification
+// for any sessionId to any authenticated user, without verifying the
+// session belonged to the caller. WCVM verifications contain context-
+// relevance scores, work/non-work site counts, requirement matches —
+// sensitive performance-monitoring data. Now we look up the session
+// and verify ownership/workspace access before returning its
+// verification. Returns null if no access.
 // Get latest WCVM verification for a session
 export const getSessionVerification = query({
   args: {
@@ -456,6 +463,21 @@ export const getSessionVerification = query({
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
     if (!user) return null;
+
+    // ponytail: verify the caller owns/has-access-to the session.
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) return null;
+
+    if (session.workspaceId) {
+      // For workspace sessions, the caller must be a workspace member.
+      // Reuse the getRecordAccess gate by passing the session as record.
+      // Lazy import to avoid circular deps if any.
+      const { getRecordAccess } = await import("../permissions");
+      const access = await getRecordAccess(ctx, session, user._id);
+      if (!access) return null;
+    } else if (session.userId !== user._id) {
+      return null;
+    }
 
     const verification = await ctx.db
       .query("wcvmVerifications")
