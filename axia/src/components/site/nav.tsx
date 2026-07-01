@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { Link } from "react-router";
 import { AxiaLogo } from "./brand";
 import { useScrollSpy } from "./use-scroll-spy";
 import { cn } from "@/lib/utils";
@@ -97,19 +98,24 @@ export function SiteNav() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <a
-            href="#login"
+          {/* ponytail: 'Sign in' was href="#login" (broken — no #login section
+              exists). Now routes to /auth via React Router <Link> for SPA nav. */}
+          <Link
+            to="/auth"
             className="text-[0.92rem] text-muted-foreground transition-colors hover:text-foreground"
           >
             Sign in
-          </a>
-          <a
-            href="#cta"
+          </Link>
+          {/* ponytail: 'Start free' was href="#cta" (just scrolled to FinalCTA).
+              Now starts the signup flow via /auth?mode=signup — Auth.tsx reads
+              the mode param and defaults to the signUp step. */}
+          <Link
+            to="/auth?mode=signup"
             className="group inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[0.92rem] font-medium text-primary-foreground transition-all hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_28px_-6px_rgba(43,122,107,0.7)]"
           >
             Start free
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </a>
+          </Link>
         </div>
 
         <button
@@ -143,14 +149,16 @@ export function SiteNav() {
                 </a>
               ))}
               <div className="my-2 h-px bg-border" />
-              <a
-                href="#cta"
+              {/* ponytail: mobile-menu 'Start free' was href="#cta". Now starts
+                  signup flow. onClick still closes the mobile menu after nav. */}
+              <Link
+                to="/auth?mode=signup"
                 onClick={() => setOpen(false)}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-3 text-[0.95rem] font-medium text-primary-foreground"
               >
                 Start free
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </nav>
           </motion.div>
         )}

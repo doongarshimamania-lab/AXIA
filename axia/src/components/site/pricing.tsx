@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ArrowRight, ShieldCheck } from "lucide-react";
+import { Link } from "react-router";
 import { Reveal } from "./reveal";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,8 @@ const TIERS = [
     ],
     cta: "Start free",
     featured: false,
+    // ponytail: href absent on Solo/Agency → renders <Link to="/auth?mode=signup">.
+    href: undefined,
   },
   {
     name: "Agency",
@@ -39,6 +42,8 @@ const TIERS = [
     ],
     cta: "Start free",
     featured: true,
+    // ponytail: href absent on Solo/Agency → renders <Link to="/auth?mode=signup">.
+    href: undefined,
   },
   {
     name: "Scale",
@@ -55,6 +60,9 @@ const TIERS = [
     ],
     cta: "Talk to us",
     featured: false,
+    // ponytail: 'Talk to us' is a sales contact, not self-serve signup —
+    // keep it scrolling to the lead form (#demo) so the sales team can qualify.
+    href: "#demo",
   },
 ] as const;
 
@@ -197,18 +205,38 @@ export function Pricing() {
                   )}
                 </div>
 
-                <a
-                  href="#cta"
-                  className={cn(
-                    "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
-                    t.featured
-                      ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
-                      : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
-                  )}
-                >
-                  {t.cta}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </a>
+                {/* ponytail: Solo + Agency tiers (cta="Start free") now route
+                    to /auth?mode=signup to start the self-serve signup flow.
+                    Scale tier (cta="Talk to us") keeps href="#demo" to scroll
+                    to the lead form for sales qualification. The ternary below
+                    picks <Link> vs <a> based on whether the tier has an href. */}
+                {t.href ? (
+                  <a
+                    href={t.href}
+                    className={cn(
+                      "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
+                      t.featured
+                        ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
+                        : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
+                    )}
+                  >
+                    {t.cta}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </a>
+                ) : (
+                  <Link
+                    to="/auth?mode=signup"
+                    className={cn(
+                      "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
+                      t.featured
+                        ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
+                        : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
+                    )}
+                  >
+                    {t.cta}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                )}
 
                 <ul className="mt-4 space-y-2 border-t border-border pt-6">
                   {t.features.map((f) => (

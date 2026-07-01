@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calculator, TrendingUp, Clock, Layers, ArrowRight } from "lucide-react";
+import { Link } from "react-router";
 import { Reveal } from "./reveal";
 
 function Slider({
@@ -186,13 +187,15 @@ export function RevenueCalculator() {
                 />
               </div>
 
-              <a
-                href="#cta"
+              {/* ponytail: 'Claim this recovery' was href="#cta" (just
+                  scrolled to FinalCTA). Now starts the signup flow. */}
+              <Link
+                to="/auth?mode=signup"
                 className="group mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-[0.95rem] font-medium text-primary-foreground transition-all hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
               >
                 Claim this recovery
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
+              </Link>
               <p className="mt-3 text-center text-[0.72rem] text-muted-foreground">
                 Estimates based on Axia's documented agency benchmarks. Your
                 numbers may vary.

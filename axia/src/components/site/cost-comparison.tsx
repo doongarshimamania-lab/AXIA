@@ -10,6 +10,7 @@ import {
   Check,
   TrendingDown,
 } from "lucide-react";
+import { Link } from "react-router";
 import { Reveal } from "./reveal";
 import { Counter } from "./counter";
 import { cn } from "@/lib/utils";
@@ -192,13 +193,15 @@ export function CostComparison() {
                 <span className="font-medium">recovered</span> when you switch
               </p>
             </div>
-            <a
-              href="#cta"
+            {/* ponytail: 'Consolidate everything' was href="#cta" (just
+                scrolled to FinalCTA). Now starts the signup flow. */}
+            <Link
+              to="/auth?mode=signup"
               className="group inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-[0.88rem] font-medium text-primary-foreground transition-all hover:bg-[var(--axia-teal-bright)]"
             >
               Consolidate everything
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </a>
+            </Link>
           </div>
         </Reveal>
       </div>

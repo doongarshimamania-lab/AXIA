@@ -1,6 +1,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
+import { Link } from "react-router";
 import { Reveal } from "./reveal";
 
 export function FinalCTA() {
@@ -41,13 +42,15 @@ export function FinalCTA() {
               </p>
 
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a
-                  href="#top"
+                {/* ponytail: 'Start free' was href="#top" (just scrolled to the
+                    top of the page — useless). Now starts the signup flow. */}
+                <Link
+                  to="/auth?mode=signup"
                   className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-[0.98rem] font-medium text-primary-foreground transition-all hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_40px_-8px_rgba(43,122,107,0.9)]"
                 >
                   Start free
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </a>
+                </Link>
                 <a
                   href="#pricing"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/50 px-7 py-3.5 text-[0.98rem] font-medium text-foreground transition-all hover:border-[var(--axia-teal)]/50 hover:bg-secondary"

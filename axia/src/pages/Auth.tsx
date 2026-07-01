@@ -75,9 +75,17 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
   const { theme, toggleTheme } = useTheme();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated.
+  // ponytail: previously this only fired when `step === "signIn"`, which meant
+  // an authenticated user who clicked a "Start free" CTA (which routes to
+  // /auth?mode=signup, setting initialStep to "signUp") would see the signup
+  // form instead of being sent to the app. Now we redirect for BOTH "signIn"
+  // and "signUp" string steps, but NOT for the OTP verification step
+  // ({ email: string }) — the user must finish entering their code first.
+  // `typeof step === "string"` is true for "signIn"/"signUp" and false for the
+  // OTP step object.
   useEffect(() => {
-    if (!authLoading && isAuthenticated && step === "signIn") {
+    if (!authLoading && isAuthenticated && typeof step === "string") {
       navigate(redirect);
     }
   }, [authLoading, isAuthenticated, navigate, redirect, step]);

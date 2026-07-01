@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
+import { Link } from "react-router";
 
 /**
  * MobileStickyCTA, a mobile-only bottom CTA bar that appears after the
@@ -54,13 +55,15 @@ export function MobileStickyCTA() {
                 From $99/seat · 14-day trial
               </p>
             </div>
-            <a
-              href="#cta"
+            {/* ponytail: 'Start free' was href="#cta" (just scrolled up to
+                FinalCTA, useless on mobile). Now starts the signup flow. */}
+            <Link
+              to="/auth?mode=signup"
               className="shine-on-hover group inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-[0.84rem] font-medium text-primary-foreground transition-all hover:bg-[var(--axia-teal-bright)]"
             >
               Start free
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </a>
+            </Link>
           </div>
         </motion.div>
       )}
