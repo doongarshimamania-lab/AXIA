@@ -66,8 +66,10 @@ export const getClientsEnriched = query({
 
     // ponytail: workspace-strict filter — same rationale as getClients above.
     // Legacy clients (no workspaceId) are only returned when no workspaceId
-    // is passed, which keeps PaymentPatterns / Dashboard consistent with
+    // is passed, which keeps Dashboard consistent with
     // Invoices (which uses strict by_workspace).
+    // ponytail: PaymentPatterns page was removed — updated this comment to
+    // drop the stale reference.
     if (workspaceId) {
       const membership = await getWorkspaceMembership(ctx, workspaceId, userId);
       if (!membership) return [];

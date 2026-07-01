@@ -1,15 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-// ponytail: RESTORED imports of ClientList + ClientPolicyProfile from
-// @/components/client-protection/. These were deleted per audit item #26
-// (commit a94e296) and the inline replacement (commit 9ccc1db) lost the
-// polished per-card stats grid (Protection Score / Total Hours / Total Value)
-// + the tier-gated Payment Pattern Analysis section + the full Client Policy
-// Profile section. User explicitly asked to restore the previous clients list,
-// so both components are back. ClientPolicyProfile has been patched to render
-// directly from selectedClient (the deleted Convex backend query is not
-// re-introduced). (Audit item #26 partially reverted by user request.)
+// ponytail: ClientPolicyProfile section + component removed per user request.
+// The tier-gated analysis card (Free/Starter/Pro/Expert) and its action
+// toolbar (Share/Transfer/Delete) have been stripped from this page.
+// ClientList is untouched — the per-card stats grid and per-card Share
+// (clientWorkspace token) remain. The ShareDialog + TransferOwnershipDialog
+// at the bottom of this file are retained for potential future re-wiring.
 import { ClientList } from "@/components/client-protection/ClientList";
-import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -368,77 +364,13 @@ export default function Clients() {
               allTags={allTags}
             />
 
-            {/* ponytail: RESTORED "Client Policy Profile" section that lived below
-                the list before audit item #26. The selected-client Share / Transfer
-                / Delete action toolbar sits at the top of this section so it's
-                reachable on both mobile and laptop. The <ClientPolicyProfile>
-                component renders a tier-gated analysis card (Free / Starter / Pro /
-                Expert) using selectedClient data directly — the deleted Convex
-                backend query is NOT re-introduced. */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
-                {selectedClientId && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {(canShareRecords || perms.canShare) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setSharingRecord({
-                            id: selectedClientId!,
-                            type: "client",
-                            sharing: (selectedClient as any)?.sharing || [],
-                          });
-                          setShowShareDialog(true);
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                        Share
-                      </Button>
-                    )}
-                    {perms.isOwner && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                        onClick={() => setShowTransferDialog(true)}
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Transfer Ownership
-                      </Button>
-                    )}
-                    {(canDeleteRecords || perms.canDelete) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete Client
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              {selectedClient ? (
-                <ClientPolicyProfile
-                  selectedClient={selectedClient}
-                  tier={subscriptionTier}
-                />
-              ) : (
-                <Card className="p-6 bg-card rounded-xl border border-border">
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Select a client to view policy profile
-                  </div>
-                </Card>
-              )}
-            </div>
+            {/* ponytail: Client Policy Profile section removed per user request.
+                The tier-gated analysis card (Free/Starter/Pro/Expert) and the
+                Share/Transfer/Delete action toolbar that sat above it have been
+                stripped. ClientList is untouched. The empty-state CTA below
+                remains for the zero-clients case. */}
 
-                        {/* Empty state with CTA */}
+            {/* Empty state with CTA */}
             {!isDemoMode && clients.length === 0 && (
               <Card className="p-8 bg-card rounded-xl border border-border">
                 <div className="text-center space-y-4">
@@ -465,9 +397,7 @@ export default function Clients() {
               </Card>
             )}
 
-            {/* ponytail: Client Policy Profile section was RESTORED above (between
-                the ClientList and this empty-state block). This comment is the
-                only leftover from when audit item #26 removed the section. */}
+            {/* ponytail: Client Policy Profile section was removed above. */}
           </>
         )}
 

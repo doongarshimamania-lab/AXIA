@@ -404,9 +404,7 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                   <button onClick={() => go("/invoices")} className="w-full text-left" type="button">
                     <NavItem icon={FileText} label="Invoices" isExpanded={true} isActive={currentPath === "/invoices" || currentPath === "/invoices/new"} />
                   </button>
-                  <button onClick={() => go("/payment-patterns")} className="w-full text-left" type="button">
-                    <NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} />
-                  </button>
+                  {/* ponytail: Payment Patterns nav removed per user request. */}
                   <button onClick={() => go("/reports")} className="w-full text-left" type="button">
                     <NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} />
                   </button>
@@ -483,9 +481,7 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                 <button onClick={() => go("/invoices")} title="Invoices" className={`p-1.5 rounded-md transition-colors ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <FileText className={`w-4 h-4 ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => go("/payment-patterns")} title="Payment Patterns" className={`p-1.5 rounded-md transition-colors ${currentPath === "/payment-patterns" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
-                  <TrendingUp className={`w-4 h-4 ${currentPath === "/payment-patterns" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
-                </button>
+                {/* ponytail: Payment Patterns nav removed per user request. */}
                 <button onClick={() => go("/reports")} title="Reports" className={`p-1.5 rounded-md transition-colors ${currentPath === "/reports" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <Activity className={`w-4 h-4 ${currentPath === "/reports" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
@@ -615,7 +611,7 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
             <div className="px-2 space-y-0.5 mt-4">
               <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">BILLING</div>
               <button onClick={() => go("/invoices")} className="w-full text-left"><NavItem icon={FileText} label="Invoices" isExpanded={true} isActive={currentPath === "/invoices" || currentPath === "/invoices/new"} /></button>
-              <button onClick={() => go("/payment-patterns")} className="w-full text-left"><NavItem icon={TrendingUp} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} /></button>
+              {/* ponytail: Payment Patterns nav removed per user request. */}
               <button onClick={() => go("/reports")} className="w-full text-left"><NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} /></button>
             </div>
             <div className="px-2 space-y-0.5 mt-4">
