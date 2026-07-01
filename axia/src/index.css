@@ -661,3 +661,309 @@
 .stat-card .stat-trend-down {
   color: var(--color-danger);
 }
+
+/* ============================================================
+   LANDING PAGE BRAND SYSTEM V4 — scoped to .landing-page
+   Source: axia-landing-page-export.tar.gz (Next.js globals.css)
+   Ported to Vite + scoped so it does NOT override the app theme.
+   Inspired by climbx.so: warm paper white, Inter heavy display,
+   subtle grain texture, generous spacing, one confident accent.
+   ============================================================ */
+
+/* Font variables — Inter (body) + Inter Tight (display) + Geist Mono (nums).
+   Loaded via Google Fonts <link> in index.html. Geist Mono also available
+   via @fontsource/geist-mono (already in package.json). */
+.landing-page {
+  --font-inter: "Inter", -apple-system, system-ui, sans-serif;
+  --font-inter-tight: "Inter Tight", "Inter", sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Brand palette */
+  --axia-teal: #2b7a6b;
+  --axia-teal-bright: #1f6353;
+  --axia-teal-soft: #e6f2ef;
+  --axia-charcoal: #0d1218;
+  --axia-charcoal-2: #1a2230;
+  --axia-platinum: #64748b;
+  --axia-cream: #f7f9fa;
+  --axia-emerald: #059669;
+  --axia-amber: #d97706;
+  --axia-red: #dc2626;
+  --axia-blue: #2563eb;
+
+  /* Warm paper white — the high-end SaaS shade, not sterile #fff */
+  --lp-background: #fffcfb;
+  --lp-foreground: #0d1218;
+  --lp-card: #ffffff;
+  --lp-card-foreground: #0d1218;
+  --lp-popover: #ffffff;
+  --lp-popover-foreground: #0d1218;
+  --lp-primary: #2b7a6b;
+  --lp-primary-foreground: #ffffff;
+  --lp-secondary: #f5f2f0;
+  --lp-secondary-foreground: #0d1218;
+  --lp-muted: #f5f2f0;
+  --lp-muted-foreground: #5b6573;
+  --lp-accent: #e6f2ef;
+  --lp-accent-foreground: #1f6353;
+  --lp-destructive: #dc2626;
+  --lp-border: rgba(13, 18, 24, 0.09);
+  --lp-border-strong: rgba(13, 18, 24, 0.14);
+  --lp-input: rgba(13, 18, 24, 0.12);
+  --lp-ring: #2b7a6b;
+  --lp-chart-1: #2b7a6b;
+  --lp-chart-2: #059669;
+  --lp-chart-3: #2563eb;
+  --lp-chart-4: #d97706;
+  --lp-chart-5: #64748b;
+  --lp-radius: 0.75rem;
+  --lp-radius-sm: calc(0.75rem - 4px);
+  --lp-radius-md: calc(0.75rem - 2px);
+  --lp-radius-lg: 0.75rem;
+  --lp-radius-xl: calc(0.75rem + 4px);
+  --lp-radius-2xl: calc(0.75rem + 10px);
+
+  /* Typography tracking */
+  --tracking-display: -0.03em;
+  --tracking-heading: -0.02em;
+  --tracking-body: -0.004em;
+  --tracking-tight: -0.024em;
+
+  /* Override the semantic tokens so Tailwind utilities (bg-background,
+     text-foreground, border-border, etc.) pick up the warm paper palette
+     WITHIN .landing-page. Outside this scope, the app's slate theme wins. */
+  --color-background: var(--lp-background);
+  --color-foreground: var(--lp-foreground);
+  --color-card: var(--lp-card);
+  --color-card-foreground: var(--lp-card-foreground);
+  --color-popover: var(--lp-popover);
+  --color-popover-foreground: var(--lp-popover-foreground);
+  --color-primary: var(--lp-primary);
+  --color-primary-foreground: var(--lp-primary-foreground);
+  --color-secondary: var(--lp-secondary);
+  --color-secondary-foreground: var(--lp-secondary-foreground);
+  --color-muted: var(--lp-muted);
+  --color-muted-foreground: var(--lp-muted-foreground);
+  --color-accent: var(--lp-accent);
+  --color-accent-foreground: var(--lp-accent-foreground);
+  --color-destructive: var(--lp-destructive);
+  --color-border: var(--lp-border);
+  --color-input: var(--lp-input);
+  --color-ring: var(--lp-ring);
+
+  /* Force light mode inside .landing-page — the new design is light-only. */
+  background-color: var(--lp-background);
+  color: var(--lp-foreground);
+  font-family: var(--font-inter);
+  font-feature-settings: "cv01", "cv03", "cv04", "ss01", "tnum";
+  letter-spacing: var(--tracking-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings inside landing page use Inter Tight + tighter tracking */
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.landing-page h4,
+.landing-page h5,
+.landing-page h6 {
+  font-family: var(--font-inter-tight);
+  letter-spacing: var(--tracking-heading);
+  font-feature-settings: "ss01", "cv01";
+}
+
+.landing-page ::selection {
+  background: rgba(43, 122, 107, 0.18);
+  color: #0d1218;
+}
+
+/* ─── Typographic helpers (landing page only) ─── */
+.landing-page .text-balance { text-wrap: balance; }
+.landing-page .text-pretty { text-wrap: pretty; }
+.landing-page .tracking-display { letter-spacing: var(--tracking-display); }
+.landing-page .tracking-tight { letter-spacing: var(--tracking-tight); }
+
+.landing-page .nums {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum", "zero";
+  letter-spacing: -0.02em;
+}
+
+/* Eyebrow label — teal dot prefix for brand cohesion */
+.landing-page .eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--axia-teal-bright);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.landing-page .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--axia-teal);
+  box-shadow: 0 0 0 3px rgba(43, 122, 107, 0.12);
+}
+
+/* ─── Surfaces & depth (landing page light theme) ─── */
+.landing-page .surface {
+  background: #ffffff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-2xl);
+  box-shadow: 0 1px 2px rgba(13, 18, 24, 0.04), 0 1px 3px rgba(13, 18, 24, 0.03);
+}
+.landing-page .surface-hover {
+  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+.landing-page .surface-hover:hover {
+  border-color: rgba(43, 122, 107, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -12px rgba(13, 18, 24, 0.12), 0 0 0 1px rgba(43, 122, 107, 0.10);
+}
+
+.landing-page .surface-elevated {
+  background: #ffffff;
+  border: 1px solid var(--lp-border-strong);
+  border-radius: var(--lp-radius-2xl);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 20px 50px -24px rgba(13, 18, 24, 0.18), 0 4px 12px -4px rgba(13, 18, 24, 0.06);
+}
+
+/* Section background variants */
+.landing-page .section-flat { background: transparent; }
+.landing-page .section-tinted {
+  background: linear-gradient(180deg, rgba(13,18,24,0.015), transparent 40%, rgba(13,18,24,0.015));
+}
+.landing-page .section-recessed {
+  background: #f5f2f0;
+  border-top: 1px solid var(--lp-border);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+/* Frosted glass — light variant */
+.landing-page .glass {
+  background: rgba(255, 252, 251, 0.80);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--lp-border);
+}
+
+.landing-page .verified-glow {
+  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.30), 0 0 20px -8px rgba(5, 150, 105, 0.35);
+}
+
+/* ─── Backgrounds — subtle grain for human warmth ─── */
+.landing-page .bg-dotgrid {
+  background-image: radial-gradient(rgba(13,18,24,0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+.landing-page .bg-linegrid {
+  background-image:
+    linear-gradient(to right, rgba(13,18,24,0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(13,18,24,0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+.landing-page .bg-teal-glow {
+  background: radial-gradient(50% 50% at 50% 20%, rgba(43,122,107,0.08), transparent 70%);
+}
+/* Subtle paper grain — breaks the flat AI feel (climbx.so technique) */
+.landing-page .bg-grain {
+  position: relative;
+}
+.landing-page .bg-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── Animations (landing page) ─── */
+@keyframes axia-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+.landing-page .live-dot { animation: axia-pulse 2.4s ease-in-out infinite; }
+
+@keyframes axia-beam {
+  0% { transform: translateY(-120%); opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+.landing-page .beam { animation: axia-beam 3.6s cubic-bezier(0.4,0,0.2,1) infinite; }
+
+@keyframes axia-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.landing-page .marquee-track {
+  display: flex;
+  width: max-content;
+  animation: axia-marquee 38s linear infinite;
+}
+.landing-page .marquee-track:hover { animation-play-state: paused; }
+
+/* Scrollbar (landing page only) */
+.landing-page ::-webkit-scrollbar { width: 10px; height: 10px; }
+.landing-page ::-webkit-scrollbar-track { background: #fffcfb; }
+.landing-page ::-webkit-scrollbar-thumb {
+  background: rgba(13,18,24,0.15);
+  border-radius: 999px;
+  border: 2px solid #fffcfb;
+}
+.landing-page ::-webkit-scrollbar-thumb:hover { background: rgba(43,122,107,0.5); }
+
+.landing-page .scroll-area::-webkit-scrollbar { width: 6px; }
+.landing-page .scroll-area::-webkit-scrollbar-thumb { background: rgba(13,18,24,0.15); border-radius: 999px; border: none; }
+.landing-page .scroll-area::-webkit-scrollbar-track { background: transparent; }
+
+.landing-page .will-reveal { will-change: transform, opacity; }
+
+.landing-page :focus-visible {
+  outline: 2px solid rgba(43,122,107,0.65);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *, .landing-page *::before, .landing-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .landing-page .live-dot, .landing-page .beam, .landing-page .marquee-track { animation: none !important; }
+  .landing-page .surface-hover:hover { transform: none !important; }
+}
+
+/* Button shine sweep */
+@keyframes axia-shine {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+.landing-page .shine-on-hover { position: relative; overflow: hidden; }
+.landing-page .shine-on-hover::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.20), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  pointer-events: none;
+}
+.landing-page .shine-on-hover:hover::after { animation: axia-shine 0.9s ease-out; }
+
+/* Smooth scroll for the landing page nav anchors */
+.landing-page { scroll-behavior: smooth; }
+.landing-page html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }

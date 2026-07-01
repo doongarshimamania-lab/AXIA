@@ -18,6 +18,7 @@ import { teamTables } from "./tables/teams";
 import { customFieldTables } from "./tables/customFields";
 import { notificationTables } from "./tables/notifications";
 import { manualSendTables } from "./tables/manualSends";
+import { leadTables } from "./tables/leads";
 
 export default defineSchema({
   ...authTables,
@@ -39,4 +40,5 @@ export default defineSchema({
   ...customFieldTables,
   ...notificationTables,
   ...manualSendTables,
+  ...leadTables,
 });
