@@ -276,6 +276,55 @@ export const cancelInvitation = mutation({
   },
 });
 
+// ponytail: NEW mutation — previously the TeamManagement "Resend" button only
+// fired toast.success without touching the DB, so the token + expiry never
+// refreshed. This mutation regenerates the token + extends the expiry by 7
+// days, mirroring the createInvitation flow. Caller-permission check matches
+// the cancelInvitation pattern (owner or manager only).
+export const resendInvitation = mutation({
+  args: { invitationId: v.id("workspaceInvitations") },
+  handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "resendInvitation");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const invitation = await ctx.db.get(args.invitationId);
+    if (!invitation) throw new Error("Invitation not found");
+    if (invitation.status !== "pending") {
+      throw new Error("Can only resend pending invitations");
+    }
+
+    // Verify caller permission (owner or manager of the workspace)
+    const workspace = await ctx.db.get(invitation.workspaceId);
+    if (!workspace) throw new Error("Workspace not found");
+
+    const isOwner = workspace.ownerId === userId;
+    const membership = !isOwner
+      ? await ctx.db
+          .query("workspaceMembers")
+          .withIndex("by_workspace_and_user", (q) =>
+            q.eq("workspaceId", invitation.workspaceId).eq("userId", userId)
+          )
+          .first()
+      : null;
+
+    if (!isOwner && (!membership || membership.role === "member")) {
+      throw new Error("Only owners and managers can resend invitations");
+    }
+
+    // Regenerate token + extend expiry so the recipient gets a fresh link
+    const newToken = crypto.randomUUID().replace(/-/g, "") + Date.now().toString(36);
+    const newExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 more days
+
+    await ctx.db.patch(args.invitationId, {
+      token: newToken,
+      expiresAt: newExpiry,
+    });
+
+    return { success: true, token: newToken };
+  },
+});
+
 /** Expire old pending invitations (can be called by a cron job). */
 export const expireOldInvitations = mutation({
   args: {},

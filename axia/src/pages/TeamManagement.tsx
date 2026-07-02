@@ -151,6 +151,8 @@ export default function TeamManagement() {
   const removeMemberMutation = useMutation(api.workspaces.members.removeMember);
   const updateRoleMutation = useMutation(api.workspaces.members.updateMemberRole);
   const cancelInvitationMutation = useMutation(api.workspaces.invitations.cancelInvitation);
+  // ponytail: NEW — was a no-op toast.success; now calls real resendInvitation mutation
+  const resendInvitationMutation = useMutation(api.workspaces.invitations.resendInvitation);
 
   // Team mutations
   const createTeamMutation = useMutation(api.teams.crud.createTeam);
@@ -318,6 +320,17 @@ export default function TeamManagement() {
       toast.success(`Invitation to ${invitation.email || invitation.name} cancelled`);
     } catch (e: any) {
       toast.error(e.message || "Failed to cancel invitation");
+    }
+  };
+
+  // ponytail: NEW handler — was a no-op toast.success in the button onClick.
+  // Now calls resendInvitation mutation (regenerates token + extends expiry).
+  const handleResendInvitation = async (invitation: any) => {
+    try {
+      await resendInvitationMutation({ invitationId: invitation._id });
+      toast.success(`Invitation resent to ${invitation.email}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to resend invitation");
     }
   };
 
@@ -865,7 +878,7 @@ export default function TeamManagement() {
                           size="sm"
                           className="text-amber-600 hover:text-amber-700"
                           title="Resend invitation"
-                          onClick={() => toast.success(`Invitation resent to ${inv.email}`)}
+                          onClick={() => handleResendInvitation(inv)}
                         >
                           <Mail className="w-4 h-4" />
                         </Button>
