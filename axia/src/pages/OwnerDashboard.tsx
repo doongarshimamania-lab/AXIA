@@ -376,14 +376,15 @@ function PriorityActionsModal({ isOpen, onClose, onComplete }: { isOpen: boolean
   };
 
   const handleSendToAll = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      // Notify parent that this priority action is completed
-      onComplete();
-      setShowSuccess(false);
-      setShowUserModal(false);
-      onClose();
-    }, 2000);
+    // ponytail: was a no-op — just showed a fake success animation without
+    // sending anything. Replaced with an honest "coming soon" toast so the
+    // founder knows broadcast infrastructure isn't wired yet (needs an
+    // owner-authenticated broadcastNotification mutation + Airtable
+    // integration to actually target high-value users).
+    toast.info("Broadcast coming soon", {
+      description:
+        "In-app broadcast requires the owner-authenticated notifications mutation + Airtable integration to target high-value users. Tracked in the audit backlog.",
+    });
   };
 
   return (
@@ -605,10 +606,10 @@ function ComplianceRuleTester() {
       toast.success(`Added ${detectedDomain} to work sites`);
     }
   };
-
-  const handleSaveRule = () => {
-    toast.success("Compliance rules updated successfully");
-  };
+  // ponytail: REMOVED handleSaveRule — was a no-op toast.success. The "Save Rule"
+  // button only appeared AFTER the domain was already in workSites (i.e. after
+  // handleFixRule already persisted it to local state). The button falsely
+  // suggested a separate save step. Removed the button entirely below.
 
   return (
     <Card className="col-span-12 mb-8">
@@ -649,22 +650,16 @@ function ComplianceRuleTester() {
         
         <div className="flex gap-2">
           {showFixRule && (
-            <Button 
+            <Button
               onClick={handleFixRule}
               className="bg-orange-600 hover:bg-orange-700 text-foreground"
             >
               Fix Rule
             </Button>
           )}
-          
-          {workSites.includes(detectedDomain) && detectedDomain && (
-            <Button 
-              onClick={handleSaveRule}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              Save Rule
-            </Button>
-          )}
+          {/* ponytail: REMOVED Save Rule button — was a no-op. handleFixRule
+              already persists the rule to workSites state on click, so a
+              separate Save step was misleading. */}
         </div>
       </CardContent>
     </Card>
@@ -1301,7 +1296,18 @@ function OwnerDashboardContent({ prodConvex, devConvex, auth }: { prodConvex: Co
           <Card className="col-span-12 mb-8">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold text-foreground">Top 3 Priority Actions</CardTitle>
+                <div>
+                  <CardTitle className="text-xl font-semibold text-foreground">Top 3 Priority Actions</CardTitle>
+                  {/* ponytail: previously the hardcoded +$72/+$45/+$28 MRR and
+                      $4.80/$2.25/$0.62 per-min ROI numbers were presented as
+                      real metrics, misleading the founder. Adding an honest
+                      "sample priorities" disclaimer until real ROI tracking
+                      (requires Airtable + Stripe MRR integration) ships. */}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sample priorities — MRR and ROI figures are illustrative estimates,
+                    not live data. Real per-action ROI tracking requires Airtable + Stripe integration.
+                  </p>
+                </div>
                 {/* New: Add Action button */}
                 <Button variant="outline" onClick={addAction} className="text-foreground">
                   + Add Action
