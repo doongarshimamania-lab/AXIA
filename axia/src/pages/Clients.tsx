@@ -157,12 +157,17 @@ export default function Clients() {
 
     setIsCreating(true);
     try {
+      // ponytail: pass customFields through to the mutation. Previously the
+      // user filled out the CustomFieldValues form but the values were
+      // dropped here — createClient accepts customFields: v.optional(v.any())
+      // at clients/crud.ts:149, so we forward them now.
       const newClientId = await createClientMutation({
         clientName,
         platform,
         hourlyRate: Number(hourlyRate),
         contractType,
         riskLevel,
+        customFields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
         ...(workspaceId ? { workspaceId } : {}),
       });
       // ponytail: attach the form's selected tags to the new client via the
@@ -364,11 +369,68 @@ export default function Clients() {
               allTags={allTags}
             />
 
-            {/* ponytail: Client Policy Profile section removed per user request.
-                The tier-gated analysis card (Free/Starter/Pro/Expert) and the
-                Share/Transfer/Delete action toolbar that sat above it have been
-                stripped. ClientList is untouched. The empty-state CTA below
-                remains for the zero-clients case. */}
+            {/* ponytail: re-added action toolbar for the selected client. The
+                Delete/Share/Transfer dialogs at the bottom of this file were
+                rendered but unreachable (no button anywhere called their
+                setters) after the ClientPolicyProfile section was removed.
+                These buttons are gated by perms so they only appear when the
+                user actually can delete/share/transfer the selected client. */}
+            {!isDemoMode && selectedClient && (
+              <Card className="p-3 bg-card rounded-xl border border-border">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {selectedClient.clientName ?? "Selected client"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedClient.platform ?? "—"} · ${selectedClient.hourlyRate ?? 0}/hr
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(canShareRecords || perms.canShare) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          setSharingRecord({
+                            id: selectedClient._id as string,
+                            type: "client",
+                            sharing: (selectedClient as any).sharing || [],
+                          });
+                          setShowShareDialog(true);
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </Button>
+                    )}
+                    {perms.isOwner && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        onClick={() => setShowTransferDialog(true)}
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Transfer Ownership
+                      </Button>
+                    )}
+                    {canDeleteRecords && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Empty state with CTA */}
             {!isDemoMode && clients.length === 0 && (
