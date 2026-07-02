@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -155,6 +156,7 @@ function formatCurrency(amount: number): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Reports() {
+  const navigate = useNavigate();
   const { tier: subscriptionTier, setTier: setSubscriptionTier } = useSubscriptionTier();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -478,10 +480,11 @@ export default function Reports() {
                     size="sm"
                     className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
                     onClick={() => {
-                      setSubscriptionTier("pro");
-                      toast.success("Upgraded to Pro!", {
-                        description: "You now have unlimited report generation.",
-                      });
+                      // ponytail: was setSubscriptionTier("pro") + fake toast —
+                      // pure local state, never persisted. Now routes to the real
+                      // /subscription page (AccountSettings.SubscriptionSection)
+                      // where the user actually completes the upgrade.
+                      navigate("/subscription");
                     }}
                   >
                     <Zap className="mr-1 h-3 w-3" />
@@ -511,10 +514,9 @@ export default function Reports() {
                       action: {
                         label: "Upgrade",
                         onClick: () => {
-                          setSubscriptionTier("pro");
-                          toast.success("Upgraded to Pro!", {
-                            description: "You now have unlimited report generation.",
-                          });
+                          // ponytail: was setSubscriptionTier("pro") + fake toast —
+                          // pure local state. Now routes to real /subscription page.
+                          navigate("/subscription");
                         },
                       },
                     });
@@ -683,10 +685,10 @@ export default function Reports() {
                                       className="bg-amber-600 hover:bg-amber-700 text-white"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setSubscriptionTier("pro");
-                                        toast.success("Upgraded to Pro!", {
-                                          description: "Advanced analysis features are now unlocked.",
-                                        });
+                                        // ponytail: was setSubscriptionTier("pro") +
+                                        // fake toast — pure local state. Now routes
+                                        // to real /subscription page.
+                                        navigate("/subscription");
                                       }}
                                     >
                                       <Zap className="mr-1 h-3 w-3" />
@@ -703,20 +705,15 @@ export default function Reports() {
                                         Advanced Analysis (Pro)
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                      <div className="text-center p-2 bg-background rounded-md border border-border">
-                                        <div className="text-lg font-bold text-emerald-500">92%</div>
-                                        <div className="text-[11px] text-muted-foreground">Evidence Strength</div>
-                                      </div>
-                                      <div className="text-center p-2 bg-background rounded-md border border-border">
-                                        <div className="text-lg font-bold text-foreground">Low</div>
-                                        <div className="text-[11px] text-muted-foreground">Dispute Risk</div>
-                                      </div>
-                                      <div className="text-center p-2 bg-background rounded-md border border-border">
-                                        <div className="text-lg font-bold text-blue-500">87%</div>
-                                        <div className="text-[11px] text-muted-foreground">WCVM Score</div>
-                                      </div>
-                                    </div>
+                                    {/* ponytail: previously showed hardcoded "92% Evidence Strength",
+                                        "Low Dispute Risk", "87% WCVM Score" for EVERY dispute report —
+                                        lying to Pro users. Replaced with an honest status message
+                                        until the real WCVM analysis pipeline ships. */}
+                                    <p className="text-xs text-muted-foreground">
+                                      AI-powered dispute analysis is being calibrated for your account.
+                                      Evidence-strength, dispute-risk, and WCVM scores will appear here
+                                      automatically once analysis is available for this report.
+                                    </p>
                                   </div>
                                 )}
 
