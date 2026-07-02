@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+// ponytail: toast import for upgradeToTeam success/error notifications.
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────
 export type WorkspaceType = "personal" | "team";
@@ -245,16 +247,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [hasCreateApi, createWorkspaceMutation]);
 
+  // ponytail: lift useMutation OUT of the upgradeToTeam useCallback. Calling
+  // useMutation(conditionally) inside the callback violates the Rules of
+  // Hooks — React's hooks-order check crashes in StrictMode and behaves
+  // unpredictably in production. We instantiate it unconditionally at the
+  // top of the provider body and reference it from the callback.
+  const convertToTeamApi = (api as any).workspaces?.crud?.convertToTeamWorkspace ?? null;
+  const convertToTeamMutation = useMutation(convertToTeamApi);
+
   const upgradeToTeam = useCallback(() => {
-    // Use the Convex mutation to convert
-    const convertApi = (api as any).workspaces?.crud?.convertToTeamWorkspace;
-    if (convertApi && activeWorkspace?._id) {
-      useMutation(convertApi)({ workspaceId: activeWorkspace._id, name: (activeWorkspace.name || "My Workspace") + " (Team)" })
-        .catch(() => {});
+    if (convertToTeamMutation && activeWorkspace?._id) {
+      convertToTeamMutation({
+        workspaceId: activeWorkspace._id as any,
+        name: (activeWorkspace.name || "My Workspace") + " (Team)",
+      })
+        .then(() => {
+          toast.success("Workspace upgraded to Team");
+        })
+        .catch((err: any) => {
+          console.warn("[Workspace] upgradeToTeam failed:", err?.message);
+          toast.error(err?.message || "Failed to upgrade workspace");
+        });
     }
     setAccountModeState("team");
     saveToStorage(STORAGE_KEY_MODE, "team");
-  }, [activeWorkspace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- convertToTeamMutation is stable from useMutation
+  }, [activeWorkspace, convertToTeamMutation]);
 
   const refreshWorkspaces = useCallback(() => {
     // Convex queries auto-refresh, but we can force a re-render by toggling
