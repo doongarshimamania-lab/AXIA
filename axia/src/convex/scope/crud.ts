@@ -284,6 +284,56 @@ export const approveChangeOrder = mutation({
   },
 });
 
+// ponytail: rejectChangeOrder — previously the Scope.tsx 'Reject' button
+// (next to the working 'Approve' button) only fired
+// toast.info('Change order rejected') with no mutation. Pending change
+// orders could never be rejected through the UI; they stayed pending
+// forever despite the toast claiming 'rejected'. This mutation mirrors
+// the access checks in approveChangeOrder and patches status to
+// 'rejected'. (Audit item #10.)
+export const rejectChangeOrder = mutation({
+  args: {
+    changeOrderId: v.id("scopeChangeOrders"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, { changeOrderId, reason }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const co = await ctx.db.get(changeOrderId);
+    if (!co) throw new Error("Change order not found");
+
+    // Check workspace access (owner level) or direct ownership — same
+    // gate as approveChangeOrder so a member can't reject an owner's CO.
+    if (co.workspaceId) {
+      await requireRecordAccess(ctx, co, "owner");
+    } else if (co.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Only pending / auto_generated change orders can be rejected —
+    // already-approved or already-rejected ones are immutable.
+    if (co.status !== "pending" && co.status !== "auto_generated") {
+      throw new Error(`Cannot reject a ${co.status} change order`);
+    }
+
+    await ctx.db.patch(changeOrderId, {
+      status: "rejected",
+      // ponytail: store the optional rejection reason on the CO so the
+      // user can later see WHY it was rejected. The scopeChangeOrders
+      // schema doesn't have a dedicated rejectionReason field (and no
+      // updatedAt), so we stash it in the existing `reason` field
+      // (which previously held the SUBMISSION reason). To preserve the
+      // original reason, we append the rejection note.
+      ...(reason
+        ? { reason: `${co.reason ?? ""}\n\n[Rejected]: ${reason}`.trim() }
+        : {}),
+    });
+
+    return { success: true };
+  },
+});
+
 export const approveScopeByClient = mutation({
   args: { approvalToken: v.string() },
   handler: async (ctx, { approvalToken }) => {

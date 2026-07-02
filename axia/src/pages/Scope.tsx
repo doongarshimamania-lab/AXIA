@@ -581,11 +581,24 @@ export default function Scope() {
   const [coDeadlineImpact, setCoDeadlineImpact] = useState("");
   const [coReason, setCoReason] = useState("");
 
-  // ponytail: REMOVED showFormalizeDialog state + 7 formalize form state variables
-  // (formChangeDesc, formOriginalScope, formNewScope, formTimeImpact, formBudgetImpact,
-  // formDeliverableImpact, formClientAck). All 6 "Formalize" buttons + the Formalize
-  // Dialog + handleFormalize were no-ops (toast.info "Formalization will be available
-  // in a future update"). Tracked in audit backlog as item 14.
+  // ponytail: RESTORED Formalize dialog state + handler. The previous commit
+  // (a54fe99) removed all 6 Formalize buttons + the dialog because they were
+  // no-ops. The audit asked us to wire them to the existing
+  // api.projects.scopeFormalization.createFormalization mutation instead of
+  // removing them. We now do that — these 7 state vars feed the 6-field form
+  // (changeDesc, originalScope, newScope, timeImpact, budgetImpact,
+  // deliverableImpact, clientAck) that createFormalization expects.
+  const [showFormalizeDialog, setShowFormalizeDialog] = useState(false);
+  const [formalizeForChangeOrder, setFormalizeForChangeOrder] = useState<ScopeChangeOrder | null>(null);
+  const [formChangeDesc, setFormChangeDesc] = useState("");
+  const [formOriginalScope, setFormOriginalScope] = useState("");
+  const [formNewScope, setFormNewScope] = useState("");
+  const [formTimeImpact, setFormTimeImpact] = useState("");
+  const [formBudgetImpact, setFormBudgetImpact] = useState("");
+  const [formDeliverableImpact, setFormDeliverableImpact] = useState("");
+  const [formClientAck, setFormClientAck] = useState("");
+  const [formalizeProjectId, setFormalizeProjectId] = useState<string>("");
+  const [isFormalizing, setIsFormalizing] = useState(false);
 
   // ─── Convex Queries ──────────────────────────────────────────────────────
   // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
@@ -605,7 +618,19 @@ export default function Scope() {
   const createScopeMutation = useMutation(api.scope.crud.createScopeDefinition);
   const recordRevisionMutation = useMutation(api.scope.crud.recordRevision);
   const approveChangeOrderMutation = useMutation(api.scope.crud.approveChangeOrder);
+  // ponytail: new — wire the Reject button to the real backend mutation
+  // (added in scope/crud.ts). Was previously a toast.info no-op.
+  const rejectChangeOrderMutation = useMutation(api.scope.crud.rejectChangeOrder);
   const deleteScopeMutation = useMutation(api.scope.crud.deleteScopeDefinition);
+  // ponytail: existing createFormalization mutation at
+  // projects/scopeFormalization.ts:7 — used by ProtectionScoreCardPro.tsx
+  // via FormalizeScopeChangeDialog.tsx. The Scope.tsx page previously
+  // had its OWN stale copy of the formalize flow that called a
+  // non-existent mutation and toasted 'coming soon'. We now wire the
+  // page to the SAME mutation the rest of the app uses.
+  const createFormalizationMutation = useMutation(api.projects.scopeFormalization.createFormalization);
+  // ponytail: load projects so the Formalize dialog can pick one.
+  const myProjects = useQuery(api.projects.projectProtection.getMyProjects, {}) as any[] | undefined;
 
   // ─── Aggregated Metrics ──────────────────────────────────────────────────
   const [metricsMap, setMetricsMap] = useState<Record<string, { pendingChanges: number; costAtRisk: number; hoursAtRisk: number }>>({});
@@ -737,6 +762,110 @@ export default function Scope() {
     }
   };
 
+  // ponytail: real Reject handler — was previously
+  // onClick={() => toast.info("Change order rejected")}. Now calls the
+  // new api.scope.crud.rejectChangeOrder mutation, which mirrors the
+  // access checks in approveChangeOrder and patches status to "rejected".
+  // Optional reason is appended to the CO's existing reason field.
+  const [rejectingChangeOrderId, setRejectingChangeOrderId] = useState<string | null>(null);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const handleRejectChangeOrder = async () => {
+    if (!rejectTargetId) return;
+    setRejectingChangeOrderId(rejectTargetId);
+    try {
+      await rejectChangeOrderMutation({
+        changeOrderId: rejectTargetId as any,
+        reason: rejectReason.trim() || undefined,
+      });
+      toast.success("Change order rejected");
+      setShowRejectDialog(false);
+      setRejectTargetId(null);
+      setRejectReason("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to reject change order");
+    } finally {
+      setRejectingChangeOrderId(null);
+    }
+  };
+
+  // ponytail: open the Formalize dialog with the form pre-populated from
+  // the selected change order (if any) and the project picker defaulted
+  // to the scope's project. The dialog calls the REAL
+  // api.projects.scopeFormalization.createFormalization mutation
+  // (the same one ProtectionScoreCardPro + FormalizeScopeChangeDialog use).
+  const openFormalizeDialog = (changeOrder?: ScopeChangeOrder) => {
+    if (changeOrder) {
+      setFormalizeForChangeOrder(changeOrder);
+      setFormChangeDesc(changeOrder.title + (changeOrder.description ? ` — ${changeOrder.description}` : ""));
+      setFormOriginalScope("(original scope baseline — describe what was agreed)");
+      setFormNewScope("(new scope after this change — describe the new boundary)");
+      setFormTimeImpact(`+${changeOrder.impact.hoursAdded}h`);
+      setFormBudgetImpact(`+$${changeOrder.impact.costImpact.toLocaleString()}`);
+      setFormDeliverableImpact(changeOrder.impact.deadlineImpact ? `+${changeOrder.impact.deadlineImpact} days` : "");
+    }
+    // Default the project picker to the selected scope's projectId if we have one.
+    const scopeForProject = scopes?.find(s => s._id === selectedScopeId);
+    if (scopeForProject?.projectId) {
+      setFormalizeProjectId(scopeForProject.projectId as string);
+    } else if (myProjects && myProjects.length > 0) {
+      setFormalizeProjectId(myProjects[0]._id as string);
+    }
+    setShowFormalizeDialog(true);
+  };
+
+  const closeFormalizeDialog = () => {
+    setShowFormalizeDialog(false);
+    setFormalizeForChangeOrder(null);
+    setFormChangeDesc("");
+    setFormOriginalScope("");
+    setFormNewScope("");
+    setFormTimeImpact("");
+    setFormBudgetImpact("");
+    setFormDeliverableImpact("");
+    setFormClientAck("");
+  };
+
+  const handleFormalize = async () => {
+    if (!formalizeProjectId) {
+      toast.error("Please select a project to attach the formalization to");
+      return;
+    }
+    if (!formChangeDesc.trim() || !formOriginalScope.trim() || !formNewScope.trim()) {
+      toast.error("Change description, original scope, and new scope are required");
+      return;
+    }
+    if (!formTimeImpact.trim() || !formBudgetImpact.trim() || !formDeliverableImpact.trim()) {
+      toast.error("All three impact fields (time / budget / deliverable) are required");
+      return;
+    }
+    setIsFormalizing(true);
+    try {
+      await createFormalizationMutation({
+        projectId: formalizeProjectId as any,
+        changeDescription: formChangeDesc.trim(),
+        originalScope: formOriginalScope.trim(),
+        newScope: formNewScope.trim(),
+        impactAssessment: {
+          timeImpact: formTimeImpact.trim(),
+          budgetImpact: formBudgetImpact.trim(),
+          deliverableImpact: formDeliverableImpact.trim(),
+        },
+        clientAcknowledgment: formClientAck.trim() || undefined,
+      } as any);
+      toast.success("Scope change formalized", {
+        description: "A formal record has been created and is pending client acknowledgment.",
+      });
+      closeFormalizeDialog();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to formalize scope change");
+    } finally {
+      setIsFormalizing(false);
+    }
+  };
+
   const handleDeleteScope = async (scopeId: string) => {
     try {
       await deleteScopeMutation({ scopeId: scopeId as any });
@@ -775,7 +904,21 @@ export default function Scope() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {/* ponytail: REMOVED "Formalize Change" header button — was a no-op. */}
+            {/* ponytail: RESTORED "Formalize Change" header button.
+                Previously removed (commit a54fe99) because it was a no-op
+                toast.info. Now it opens the Formalize dialog wired to the
+                real api.projects.scopeFormalization.createFormalization
+                mutation. */}
+            <Button
+              onClick={() => openFormalizeDialog()}
+              size="sm"
+              variant="outline"
+              disabled={!myProjects || myProjects.length === 0}
+              title={!myProjects || myProjects.length === 0 ? "Create a project first to attach formalizations to" : "Formalize a scope change"}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Formalize Change
+            </Button>
             <Button
               onClick={() => setShowCreateScope(true)}
               size="sm"
@@ -856,10 +999,21 @@ export default function Scope() {
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                   You have {totalPendingChanges} pending change{totalPendingChanges !== 1 ? "s" : ""} and {totalUnformalized} unformalized scope change{totalUnformalized !== 1 ? "s" : ""}.
                   Unformalized scope changes put <strong>${totalCostAtRisk.toLocaleString()}</strong> at risk.
-                  {/* ponytail: REMOVED "Formalize changes to create..." line + the "Formalize Now" button below.
-                      Both were no-ops (toast.info "coming soon"). The scope-change Approve flow
-                      (handleApproveChangeOrder) is the real path to closing pending changes. */}
+                  Formalize scope changes to create dispute-proof records.
                 </p>
+                {/* ponytail: RESTORED "Formalize Now" button. Previously
+                    removed (commit a54fe99) because it was a no-op. Now
+                    calls openFormalizeDialog() which wires to the real
+                    createFormalization mutation. */}
+                <Button
+                  size="sm"
+                  className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={() => openFormalizeDialog()}
+                  disabled={!myProjects || myProjects.length === 0}
+                >
+                  <FileText className="w-3.5 h-3.5 mr-1.5" />
+                  Formalize Now
+                </Button>
               </div>
             </div>
           </div>
@@ -879,8 +1033,13 @@ export default function Scope() {
                 <Badge className="ml-1.5 bg-amber-500 text-white text-[10px] h-4 min-w-4 px-1">{totalPendingChanges}</Badge>
               )}
             </TabsTrigger>
-            {/* ponytail: REMOVED "Formalizations" tab — the entire tab body was an
-                empty mock + a "New Formalization" button that opened the no-op dialog. */}
+            {/* ponytail: RESTORED "Formalizations" tab. Previously removed
+                (commit a54fe99) because the body was an empty mock. Now
+                renders the real list from getMyFormalizations. */}
+            <TabsTrigger value="formalizations" className="text-xs">
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              Formalizations
+            </TabsTrigger>
           </TabsList>
 
           {/* ─── Scope Definitions Tab ────────────────────────────────── */}
@@ -1036,27 +1195,82 @@ export default function Scope() {
 
                           {/* Actions */}
                           {co.status === "pending" && (
-                            <div className="mt-3 flex gap-2">
+                            <div className="mt-3 flex gap-2 flex-wrap">
                               <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApproveChangeOrder(co._id)}>
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              {/* ponytail: REMOVED "Formalize" button (was a no-op) +
-                                  "Reject" button (was also a no-op toast.info). Approve is
-                                  the only real action; rejecting is handled via the kebab menu. */}
-                              <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={() => toast.info("Change order rejected")}>
+                              {/* ponytail: RESTORED "Formalize" button — was a no-op
+                                  toast.info. Now calls openFormalizeDialog(co) which
+                                  pre-fills the form from the change order and wires
+                                  to the real createFormalization mutation. */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => openFormalizeDialog(co)}
+                                disabled={!myProjects || myProjects.length === 0}
+                                title={!myProjects || myProjects.length === 0 ? "Create a project first" : "Create a formal record of this change"}
+                              >
+                                <FileText className="w-3 h-3 mr-1" />
+                                Formalize
+                              </Button>
+                              {/* ponytail: wired Reject button to the real
+                                  rejectChangeOrder mutation (was a no-op
+                                  toast.info). Opens a small dialog so the
+                                  user can enter an optional rejection reason. */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs text-red-600 hover:text-red-700"
+                                onClick={() => {
+                                  setRejectTargetId(co._id);
+                                  setRejectReason("");
+                                  setShowRejectDialog(true);
+                                }}
+                              >
                                 <XCircle className="w-3 h-3 mr-1" />
                                 Reject
                               </Button>
                             </div>
                           )}
                           {co.status === "auto_generated" && (
-                            <div className="mt-3 flex gap-2">
+                            <div className="mt-3 flex gap-2 flex-wrap">
                               <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApproveChangeOrder(co._id)}>
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              {/* ponytail: REMOVED "Formalize This Change" button — was a no-op. */}
+                              {/* ponytail: RESTORED "Formalize This Change" button —
+                                  was a no-op. Now calls openFormalizeDialog(co)
+                                  which pre-fills the form from the auto-detected
+                                  change order. */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => openFormalizeDialog(co)}
+                                disabled={!myProjects || myProjects.length === 0}
+                                title={!myProjects || myProjects.length === 0 ? "Create a project first" : "Create a formal record of this change"}
+                              >
+                                <FileText className="w-3 h-3 mr-1" />
+                                Formalize This Change
+                              </Button>
+                              {/* ponytail: auto-generated change orders can also
+                                  be rejected (they were pending before being
+                                  auto-promoted). */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs text-red-600 hover:text-red-700"
+                                onClick={() => {
+                                  setRejectTargetId(co._id);
+                                  setRejectReason("");
+                                  setShowRejectDialog(true);
+                                }}
+                              >
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Reject
+                              </Button>
                             </div>
                           )}
 
@@ -1076,9 +1290,18 @@ export default function Scope() {
             )}
           </TabsContent>
 
-          {/* ponytail: REMOVED entire "Formalizations" TabsContent — was an empty mock
-              ("No Formalizations" card + "New Formalization" button that opened the
-              no-op dialog). The Formalizations tab trigger above is also removed. */}
+          {/* ─── Formalizations Tab ────────────────────────────────────── */}
+          {/* ponytail: RESTORED Formalizations tab body. Previously removed
+              (commit a54fe99) because it was an empty mock with a no-op
+              button. Now renders the REAL list from getMyFormalizations
+              and a "New Formalization" button that opens the wired dialog. */}
+          <TabsContent value="formalizations" className="space-y-4">
+            <FormalizationsTab
+              workspaceId={workspaceId}
+              myProjects={myProjects}
+              onCreateNew={() => openFormalizeDialog()}
+            />
+          </TabsContent>
         </Tabs>
       </PageLayout>
 
@@ -1219,9 +1442,269 @@ export default function Scope() {
         </DialogContent>
       </Dialog>
 
-      {/* ponytail: REMOVED entire Formalize Scope Change Dialog + showFormalizeDialog
-          state. Was a 70-line form that, on submit, only fired
-          toast.info("Formalization will be available in a future update"). */}
+      {/* ─── Reject Change Order Dialog ──────────────────────────────── */}
+      {/* ponytail: small dialog to collect an optional rejection reason
+          before calling rejectChangeOrderMutation. Was previously a
+          bare toast.info("Change order rejected") with no backend call. */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-500" />
+              Reject Change Order
+            </DialogTitle>
+            <DialogDescription>
+              The change order will be marked as rejected. You can optionally record a reason — it will be appended to the change order's existing reason field.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="rejectReason">Reason (optional)</Label>
+              <Textarea
+                id="rejectReason"
+                placeholder="e.g., Client withdrew the request — no longer needed."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={!!rejectingChangeOrderId}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectChangeOrder}
+              disabled={!!rejectingChangeOrderId}
+            >
+              {rejectingChangeOrderId ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Reject Change Order
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Formalize Scope Change Dialog ──────────────────────────── */}
+      {/* ponytail: RESTORED Formalize dialog. Previously removed
+          (commit a54fe99) because its submit handler was a no-op
+          toast.info. Now the submit handler calls the REAL
+          api.projects.scopeFormalization.createFormalization mutation
+          — the same one ProtectionScoreCardPro +
+          FormalizeScopeChangeDialog use elsewhere in the app. */}
+      <Dialog open={showFormalizeDialog} onOpenChange={(open) => { if (!open) closeFormalizeDialog(); }}>
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 min-w-0">
+              <FileText className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Formalize Scope Change</span>
+            </DialogTitle>
+            <DialogDescription>
+              Create a dispute-proof formal record of a scope change. This will be stored on the selected project and tracked until the client acknowledges it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {formalizeForChangeOrder && (
+              <div className="p-3 bg-muted/50 rounded-lg border border-border text-xs">
+                <p className="font-medium text-foreground">Pre-filled from change order:</p>
+                <p className="text-muted-foreground mt-0.5">{formalizeForChangeOrder.title}</p>
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="formalizeProject">Project <span className="text-red-500">*</span></Label>
+              <Select value={formalizeProjectId} onValueChange={setFormalizeProjectId}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Select a project…" /></SelectTrigger>
+                <SelectContent>
+                  {(myProjects ?? []).map((p: any) => (
+                    <SelectItem key={p._id} value={p._id as string}>
+                      {p.projectName ?? "Untitled project"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(!myProjects || myProjects.length === 0) && (
+                <p className="text-xs text-muted-foreground">You need at least one project before you can formalize a scope change.</p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="formChangeDesc">Change Description <span className="text-red-500">*</span></Label>
+              <Textarea id="formChangeDesc" placeholder="Describe what changed…" value={formChangeDesc} onChange={(e) => setFormChangeDesc(e.target.value)} rows={2} />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="formOriginalScope">Original Scope <span className="text-red-500">*</span></Label>
+              <Textarea id="formOriginalScope" placeholder="What was originally agreed…" value={formOriginalScope} onChange={(e) => setFormOriginalScope(e.target.value)} rows={2} />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="formNewScope">New Scope <span className="text-red-500">*</span></Label>
+              <Textarea id="formNewScope" placeholder="What the scope is now after the change…" value={formNewScope} onChange={(e) => setFormNewScope(e.target.value)} rows={2} />
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Impact Assessment</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="formTimeImpact">Time Impact <span className="text-red-500">*</span></Label>
+                  <Input id="formTimeImpact" placeholder="e.g., +16h" value={formTimeImpact} onChange={(e) => setFormTimeImpact(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="formBudgetImpact">Budget Impact <span className="text-red-500">*</span></Label>
+                  <Input id="formBudgetImpact" placeholder="e.g., +$1360" value={formBudgetImpact} onChange={(e) => setFormBudgetImpact(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="formDeliverableImpact">Deliverable Impact <span className="text-red-500">*</span></Label>
+                  <Input id="formDeliverableImpact" placeholder="e.g., +5 days" value={formDeliverableImpact} onChange={(e) => setFormDeliverableImpact(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="formClientAck">Client Acknowledgment (optional)</Label>
+              <Input id="formClientAck" placeholder="e.g., Client confirmed via email on 2025-11-12" value={formClientAck} onChange={(e) => setFormClientAck(e.target.value)} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeFormalizeDialog} disabled={isFormalizing}>Cancel</Button>
+            <Button onClick={handleFormalize} className="bg-primary hover:bg-primary/90" disabled={isFormalizing || !formalizeProjectId}>
+              {isFormalizing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Formalizing...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Formalize Change
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Formalizations Tab Sub-Component ───────────────────────────────────────
+// ponytail: extracted sub-component so the formalizations query only runs
+// when the user opens the Formalizations tab (avoids loading every
+// formalization on the page mount). Renders the real list from
+// getMyFormalizations, with an honest empty state and a "New Formalization"
+// button that opens the wired dialog.
+function FormalizationsTab({
+  workspaceId,
+  myProjects,
+  onCreateNew,
+}: {
+  workspaceId: string | null | undefined;
+  myProjects: any[] | undefined;
+  onCreateNew: () => void;
+}) {
+  const formalizations = useQuery(
+    api.projects.scopeFormalization.getMyFormalizations,
+    workspaceId ? { workspaceId: workspaceId as any } : {}
+  ) as any[] | undefined;
+
+  const projectsById = useMemo(() => {
+    const map: Record<string, any> = {};
+    for (const p of myProjects ?? []) {
+      map[p._id as string] = p;
+    }
+    return map;
+  }, [myProjects]);
+
+  if (formalizations === undefined) {
+    return (
+      <div className="space-y-3">
+        <ChangeOrderSkeleton />
+        <ChangeOrderSkeleton />
+      </div>
+    );
+  }
+
+  if (formalizations.length === 0) {
+    return (
+      <Card className="p-8 bg-card rounded-xl border border-border text-center">
+        <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-foreground mb-2">No Formalizations Yet</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+          Formalize a scope change to create a dispute-proof record with time, budget, and deliverable impacts.
+          Formalizations stay pending until your client acknowledges them.
+        </p>
+        <Button onClick={onCreateNew} className="bg-primary hover:bg-primary/90" disabled={!myProjects || myProjects.length === 0}>
+          <FileText className="w-4 h-4 mr-2" />
+          New Formalization
+        </Button>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{formalizations.length} formalization{formalizations.length !== 1 ? "s" : ""}</p>
+        <Button onClick={onCreateNew} size="sm" className="bg-primary hover:bg-primary/90" disabled={!myProjects || myProjects.length === 0}>
+          <Plus className="w-3 h-3 mr-1" />
+          New Formalization
+        </Button>
+      </div>
+      {formalizations.map((f: any) => {
+        const project = projectsById[f.projectId as string];
+        const statusBadge = f.status === "formalized"
+          ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0 text-xs"><CheckCircle2 className="w-3 h-3 mr-1" />Formalized</Badge>
+          : f.status === "rejected"
+          ? <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-0 text-xs"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>
+          : <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-0 text-xs"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return (
+          <Card key={f._id} className="p-4 border border-border">
+            <div className="flex items-start justify-between mb-2 gap-3">
+              <div className="min-w-0">
+                <h4 className="font-semibold text-sm text-foreground truncate">{f.changeDescription}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {project?.projectName ?? "Unknown project"} · {formatDate(f.createdAt)}
+                </p>
+              </div>
+              {statusBadge}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="p-2 rounded-lg bg-muted/50">
+                <p className="text-muted-foreground">Time</p>
+                <p className="font-medium text-foreground">{f.impactAssessment?.timeImpact ?? "—"}</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <p className="text-muted-foreground">Budget</p>
+                <p className="font-medium text-foreground">{f.impactAssessment?.budgetImpact ?? "—"}</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted/50">
+                <p className="text-muted-foreground">Deliverable</p>
+                <p className="font-medium text-foreground">{f.impactAssessment?.deliverableImpact ?? "—"}</p>
+              </div>
+            </div>
+            {f.clientAcknowledgment && (
+              <div className="mt-2 p-2 rounded-lg bg-muted/30 text-xs">
+                <span className="font-medium text-muted-foreground">Client acknowledgment: </span>
+                <span className="text-foreground">{f.clientAcknowledgment}</span>
+              </div>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }

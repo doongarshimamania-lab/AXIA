@@ -109,12 +109,43 @@ export const getPendingFormalizationsCount = query({
 
     const formalizations = await ctx.db
       .query("scopeFormalizations")
-      .withIndex("by_project_and_status", (q) => 
+      .withIndex("by_project_and_status", (q) =>
         q.eq("projectId", args.projectId).eq("status", "pending")
       )
       .take(1000);
 
     return formalizations.length;
+  },
+});
+
+// ponytail: new — list ALL formalizations for the current user (across
+// all projects). Used by the Scope.tsx 'Formalizations' tab to render
+// a real list instead of the previous empty mock. Filters by user OR
+// workspace membership so team members can see formalizations on
+// shared projects. Returns most-recent-first.
+export const getMyFormalizations = query({
+  args: {
+    workspaceId: v.optional(v.id("workspaces")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    // If a workspaceId is provided, use the by_workspace index so team
+    // members see shared formalizations. Otherwise fall back to by_user.
+    if (args.workspaceId) {
+      const formalizations = await ctx.db
+        .query("scopeFormalizations")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+        .take(1000);
+      return formalizations.sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    const formalizations = await ctx.db
+      .query("scopeFormalizations")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(1000);
+    return formalizations.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
