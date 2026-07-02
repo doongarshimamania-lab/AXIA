@@ -83,7 +83,10 @@ import { ExtensionTokenSection } from "@/components/ExtensionTokenSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewType = "date" | "project" | "type";
+// ponytail: added "client" to the union to match EvidenceItemsList.tsx —
+// the "Client-Wise" button calls setViewMode("client") and the Convex
+// query at evidence/library.ts:14 already accepts the value.
+type ViewType = "date" | "project" | "type" | "client";
 type ExportFormat = "pdf" | "csv" | "json" | "legal";
 type ExportStatus = "completed" | "processing" | "failed";
 

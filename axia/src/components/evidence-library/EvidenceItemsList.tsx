@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, FileText, ChevronLeft, ChevronRight, Mouse, Keyboard, Globe } from "lucide-react";
 
-type ViewType = "date" | "project" | "type";
+// ponytail: added "client" to the union — the "Client-Wise" filter button
+// below calls setViewMode("client") and the Convex backend
+// (evidence/library.ts:14) already accepts it. The TS type was lying.
+type ViewType = "date" | "project" | "type" | "client";
 
 interface EvidenceItem {
   id: string;
@@ -42,36 +46,55 @@ function formatTime(timestamp: number): string {
 }
 
 export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: EvidenceItemsListProps) {
+  // ponytail: month state for the prev/next chevrons — previously the
+  // header showed a hardcoded "Nov 2025" string and the chevrons were
+  // non-functional. Now we track a Date for the currently displayed
+  // month, format it as "Mon YYYY" for the header, and the chevrons
+  // shift it by ±1 month.
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  const shiftMonth = (delta: number) => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  };
+
+  const monthLabel = currentMonth.toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <div className="flex gap-6">
       {/* Filter Sidebar */}
       <Card className="w-64 p-4 bg-[#1E293B] border-[#334155] h-fit">
         <h3 className="font-bold text-white mb-3">Filter Evidence</h3>
         <div className="space-y-1">
-          <Button 
-            variant={viewMode === "date" ? "default" : "ghost"} 
+          <Button
+            variant={viewMode === "date" ? "default" : "ghost"}
             className={`w-full justify-start ${viewMode === "date" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
             onClick={() => setViewMode("date")}
           >
             Date-Wise (Default)
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
             onClick={() => setViewMode("project")}
           >
             Project-Wise
           </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+          <Button
+            variant={viewMode === "client" ? "default" : "ghost"}
+            className={`w-full justify-start ${viewMode === "client" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
             onClick={() => setViewMode("client")}
           >
             Client-Wise
           </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+          <Button
+            variant={viewMode === "type" ? "default" : "ghost"}
+            className={`w-full justify-start ${viewMode === "type" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
             onClick={() => setViewMode("type")}
           >
             Evidence Type
@@ -84,12 +107,26 @@ export function EvidenceItemsList({ evidenceItems, viewMode, setViewMode }: Evid
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold text-2xl text-white">Evidence Library</h3>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-400">Nov 2025</span>
+            {/* ponytail: replaced hardcoded "Nov 2025" with the live month label,
+                and wired the chevrons to shiftMonth(-1) / shiftMonth(+1). */}
+            <span className="text-sm text-slate-400">{monthLabel}</span>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-white"
+                onClick={() => shiftMonth(-1)}
+                aria-label="Previous month"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-white"
+                onClick={() => shiftMonth(1)}
+                aria-label="Next month"
+              >
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
