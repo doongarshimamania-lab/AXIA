@@ -182,7 +182,11 @@ export default function Projects() {
       return;
     }
     try {
-      const newProjectId = await addProjectMutation({
+      // ponytail: addProject returns { projectId, success: true } — extract the ID
+      // before passing it to setEntityTags. Previously the whole object was passed
+      // as entityId, which threw inside setEntityTags (it expects v.id("projects"))
+      // and the error was swallowed by the catch below — silently dropping tags.
+      const addProjectResult = await addProjectMutation({
         projectName: newProject.projectName.trim(),
         clientId: newProject.clientId as any,
         hourlyRate: Number(newProject.hourlyRate) || 50,
@@ -190,6 +194,7 @@ export default function Projects() {
         protectionLevel: newProject.protectionLevel,
         workspaceId,
       } as any);
+      const newProjectId = (addProjectResult as any)?.projectId ?? addProjectResult;
       // ponytail: attach the form's selected tags to the new project via the
       // generic setEntityTags mutation (addProject doesn't accept tagIds).
       if (newProjectId && newProjectTagIds.length > 0) {
