@@ -93,6 +93,27 @@ const AUTO_DETECT_MAP: Record<string, string> = {
   budget: "budget",
   deadline: "deadline",
   "start date": "startDate",
+  // ponytail: invoice fields — auto-detect common CSV column names so the
+  // mapping UI pre-fills them. (Audit item #5.)
+  "invoice number": "invoiceNumber",
+  "invoice no": "invoiceNumber",
+  "inv number": "invoiceNumber",
+  "inv no": "invoiceNumber",
+  "client email": "clientEmail",
+  "issue date": "issueDate",
+  "invoiced date": "issueDate",
+  "due date": "dueDate",
+  subtotal: "subtotal",
+  "sub total": "subtotal",
+  "tax rate": "taxRate",
+  tax: "taxRate",
+  "tax amount": "taxAmount",
+  total: "total",
+  "grand total": "total",
+  amount: "total",
+  currency: "currency",
+  ccy: "currency",
+  terms: "terms",
 };
 
 type ImportStep = "upload" | "mapping" | "importing" | "results";
@@ -133,10 +154,18 @@ export function BulkImportDialog({
 
   // ─── Query DB fields for mapping ────────────────────────────────────────
   // For clients, query the bulkImport API to get available fields
-  const hasBulkImportApi = !!(api as any).clients?.bulkImport?.getClientImportFields;
+  // ponytail: added invoices branch — previously only clients had a
+  // real backend, so the Invoices page's Bulk Import button fell through
+  // to a setTimeout that fabricated {imported, skipped, errors}. (Audit item #5.)
+  const hasClientsBulkImportApi = !!(api as any).clients?.bulkImport?.getClientImportFields;
+  const hasInvoicesBulkImportApi = !!(api as any).billing?.bulkImport?.getInvoiceImportFields;
   const dbFields = useQuery(
-    hasBulkImportApi && tableName === "clients" && isConvexConnected
-      ? (api as any).clients.bulkImport.getClientImportFields
+    isConvexConnected
+      ? tableName === "clients" && hasClientsBulkImportApi
+        ? (api as any).clients.bulkImport.getClientImportFields
+        : tableName === "invoices" && hasInvoicesBulkImportApi
+        ? (api as any).billing.bulkImport.getInvoiceImportFields
+        : "skip"
       : "skip",
     {}
   ) as any[] | undefined;
@@ -151,12 +180,25 @@ export function BulkImportDialog({
   ) as any[] | undefined;
 
   // ─── Mutations ──────────────────────────────────────────────────────────
-  const importMutation = useMutation(
+  // ponytail: pick the right mutation family based on tableName. Was
+  // hardcoded to clients.bulkImport.* — now also handles
+  // billing.bulkImport.importInvoices / bulkImportInvoices.
+  const clientsImportMutation = useMutation(
     (api as any).clients?.bulkImport?.importClients ?? null
   );
-  const legacyImportMutation = useMutation(
+  const clientsLegacyImportMutation = useMutation(
     (api as any).clients?.bulkImport?.bulkImportClients ?? null
   );
+  const invoicesImportMutation = useMutation(
+    (api as any).billing?.bulkImport?.importInvoices ?? null
+  );
+  const invoicesLegacyImportMutation = useMutation(
+    (api as any).billing?.bulkImport?.bulkImportInvoices ?? null
+  );
+  // Compose a single `importMutation` + `legacyImportMutation` pair so the
+  // rest of the dialog doesn't need to know which table it's importing.
+  const importMutation = tableName === "invoices" ? invoicesImportMutation : clientsImportMutation;
+  const legacyImportMutation = tableName === "invoices" ? invoicesLegacyImportMutation : clientsLegacyImportMutation;
 
   // ─── Build field options for mapping dropdowns ──────────────────────────
   const coreFieldOptions = useMemo(() => {
@@ -186,6 +228,23 @@ export function BulkImportDialog({
           { key: "contactEmail", label: "Contact Email" },
           { key: "contactName", label: "Contact Name" },
           { key: "notes", label: "Notes" },
+        ],
+        // ponytail: new — invoice field defaults so the mapping UI shows
+        // real fields even before/without the convex query. (Audit item #5.)
+        invoices: [
+          { key: "invoiceNumber", label: "Invoice Number", required: true },
+          { key: "clientName", label: "Client Name" },
+          { key: "clientEmail", label: "Client Email" },
+          { key: "status", label: "Status" },
+          { key: "issueDate", label: "Issue Date" },
+          { key: "dueDate", label: "Due Date" },
+          { key: "subtotal", label: "Subtotal" },
+          { key: "taxRate", label: "Tax Rate (%)" },
+          { key: "taxAmount", label: "Tax Amount" },
+          { key: "total", label: "Total" },
+          { key: "currency", label: "Currency" },
+          { key: "notes", label: "Notes" },
+          { key: "terms", label: "Terms" },
         ],
         deals: [
           { key: "title", label: "Deal Title", required: true },
@@ -429,6 +488,32 @@ export function BulkImportDialog({
         results = await legacyImportMutation({
           workspaceId,
           clients,
+          skipDuplicates,
+        });
+      } else if (legacyImportMutation && tableName === "invoices") {
+        // ponytail: new — legacy format for invoices (mirrors the clients
+        // branch above). Was previously falling through to the simulated
+        // setTimeout below, so the user saw "Import complete" with zero
+        // new invoices. (Audit item #5.)
+        setImportProgress(40);
+        const invoices = records.map((r) => ({
+          invoiceNumber: r.invoiceNumber,
+          clientName: r.clientName,
+          clientEmail: r.clientEmail,
+          status: r.status,
+          issueDate: r.issueDate,
+          dueDate: r.dueDate,
+          subtotal: r.subtotal ? Number(r.subtotal) : undefined,
+          taxRate: r.taxRate ? Number(r.taxRate) : undefined,
+          taxAmount: r.taxAmount ? Number(r.taxAmount) : undefined,
+          total: r.total ? Number(r.total) : undefined,
+          currency: r.currency,
+          notes: r.notes,
+          terms: r.terms,
+        }));
+        results = await legacyImportMutation({
+          workspaceId,
+          invoices,
           skipDuplicates,
         });
       } else {
