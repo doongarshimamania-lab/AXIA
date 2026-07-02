@@ -815,6 +815,11 @@ export default function Invoices() {
                                     >
                                       <Send className="h-3.5 w-3.5 text-[#8B5CF6]" />
                                     </Button>
+                                    {/* ponytail: previously this button called handleSendInvoice
+                                        which marks the invoice as sent + schedules 3 payment
+                                        reminders — NOT what the tooltip ("Generate shareable
+                                        link") promised. Now opens the ShareDialog (same as
+                                        the InvoiceActions onShare handler at line 884). */}
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -822,7 +827,13 @@ export default function Invoices() {
                                       title="Generate shareable link"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleSendInvoice(invoice._id);
+                                        setSharingRecord({
+                                          id: invoice._id,
+                                          type: "invoice",
+                                          sharing: (invoice as any).sharing || [],
+                                        });
+                                        setShareInvoiceId(invoice._id);
+                                        setShowShareDialog(true);
                                       }}
                                     >
                                       <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1092,6 +1103,10 @@ export default function Invoices() {
                                         <Send className="h-3.5 w-3.5" />
                                         Mark as sent
                                       </Button>
+                                      {/* ponytail: previously this button called handleSendInvoice
+                                          which marks the invoice as sent + schedules reminders
+                                          — NOT what the label "Share link" promises. Now opens
+                                          the ShareDialog (same pattern as Proposals.tsx). */}
                                       <Button
                                         size="sm"
                                         variant="outline"
@@ -1099,7 +1114,13 @@ export default function Invoices() {
                                         title="Generate a shareable public link"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleSendInvoice(invoice._id);
+                                          setSharingRecord({
+                                            id: invoice._id,
+                                            type: "invoice",
+                                            sharing: (invoice as any).sharing || [],
+                                          });
+                                          setShareInvoiceId(invoice._id);
+                                          setShowShareDialog(true);
                                         }}
                                       >
                                         <Share2 className="h-3.5 w-3.5" />
