@@ -77,6 +77,9 @@ import {
 import { exportEvidence } from "@/lib/exportUtils";
 import { trackEvent, AnalyticsEvents } from "@/lib/monitoring";
 import { PageLayout } from "@/components/design-system/PageLayout";
+// ponytail: NEW import — for the extension pairing dialog that replaces the
+// no-op "Install the Axia browser extension" toast.
+import { ExtensionTokenSection } from "@/components/ExtensionTokenSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -327,6 +330,9 @@ export default function EvidenceLibrary() {
   const [selectedEvidenceTypes, setSelectedEvidenceTypes] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // ponytail: NEW state — was a no-op toast. Now opens the ExtensionTokenSection
+  // pairing dialog so the user can generate a pairing token for the browser extension.
+  const [extensionPairingOpen, setExtensionPairingOpen] = useState(false);
   const [recentExports, setRecentExports] = useState<RecentExport[]>([]);
 
   // ── Derived Export Data ──
@@ -586,7 +592,9 @@ export default function EvidenceLibrary() {
                 Start collecting evidence through the browser extension or work sessions.
                 Once you have evidence items, you can export them in various formats.
               </p>
-              <Button onClick={() => toast.info("Install the Axia browser extension to start collecting evidence")}>
+              <Button onClick={() => setExtensionPairingOpen(true)}>
+                {/* ponytail: was toast.info("Install the Axia browser extension...")
+                    no-op. Now opens the extension pairing dialog below. */}
                 <Plus className="h-4 w-4 mr-2" />Start Collecting Evidence
               </Button>
             </motion.div>
@@ -980,7 +988,20 @@ export default function EvidenceLibrary() {
                                   </Button>
                                 )}
                                 {exp.status === "failed" && (
-                                  <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => toast.info("Retry initiated", { description: "Re-attempting export..." })}>
+                                  <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
+                                    // ponytail: was toast.info("Retry initiated") no-op.
+                                    // Now actually re-runs the export with the same params
+                                    // as the original export (same format, project, etc.).
+                                    exportEvidence(exp.format, {
+                                      evidenceTypes: evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id)).map((t) => ({ id: t.id, label: t.label, count: t.count })),
+                                      dateRange: `${dateFrom} to ${dateTo}`,
+                                      project: exp.project,
+                                      client: "All Clients",
+                                      complianceScore,
+                                      totalItems: exp.itemCount,
+                                    });
+                                    toast.success("Retry started", { description: `Re-attempting ${exp.format.toUpperCase()} export…` });
+                                  }}>
                                     Retry
                                   </Button>
                                 )}
@@ -997,6 +1018,22 @@ export default function EvidenceLibrary() {
           )}
         </section>
       </PageLayout>
+
+      {/* ponytail: NEW — Extension pairing dialog. Closes audit item 18 by
+          replacing the no-op "Install the Axia browser extension" toast with
+          a real dialog that hosts the existing ExtensionTokenSection. */}
+      <Dialog open={extensionPairingOpen} onOpenChange={setExtensionPairingOpen}>
+        <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pair the Axia browser extension</DialogTitle>
+            <DialogDescription>
+              Generate a pairing token below, then enter it in the Axia browser
+              extension to start collecting evidence from your work sessions.
+            </DialogDescription>
+          </DialogHeader>
+          <ExtensionTokenSection />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

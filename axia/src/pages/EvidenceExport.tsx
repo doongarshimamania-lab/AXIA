@@ -220,6 +220,10 @@ function DemoModeBanner() {
 
 // --- Empty State ---
 function EmptyEvidenceState() {
+  // ponytail: was a no-op toast ("Install the Axia browser extension...").
+  // Now navigates to /evidence-library where the extension pairing dialog
+  // is properly implemented (so we don't duplicate the pairing UI here).
+  const navigate = useNavigate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -231,10 +235,10 @@ function EmptyEvidenceState() {
       </div>
       <h3 className="text-xl font-semibold text-foreground mb-2">No Evidence Data Yet</h3>
       <p className="text-muted-foreground max-w-md mx-auto mb-6">
-        Start collecting evidence through the browser extension or work sessions. 
+        Start collecting evidence through the browser extension or work sessions.
         Once you have evidence items, you can export them in various formats.
       </p>
-      <Button onClick={() => toast.info("Install the Axia browser extension to start collecting evidence")}>
+      <Button onClick={() => navigate("/evidence-library")}>
         <Plus className="h-4 w-4 mr-2" />
         Start Collecting Evidence
       </Button>
@@ -894,7 +898,20 @@ export default function EvidenceExport() {
                                 </Button>
                               )}
                               {exp.status === "failed" && (
-                                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => toast.info("Retry initiated", { description: "Re-attempting export..." })}>
+                                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
+                                  // ponytail: was toast.info("Retry initiated") no-op.
+                                  // Now actually re-runs the export with the same params
+                                  // as the original export (same format, project, etc.).
+                                  exportEvidence(exp.format, {
+                                    evidenceTypes: evidenceTypes.filter((t) => selectedEvidenceTypes.includes(t.id)).map((t) => ({ id: t.id, label: t.label, count: t.count })),
+                                    dateRange: `${dateFrom} to ${dateTo}`,
+                                    project: exp.project,
+                                    client: "All Clients",
+                                    complianceScore,
+                                    totalItems: exp.itemCount,
+                                  });
+                                  toast.success("Retry started", { description: `Re-attempting ${exp.format.toUpperCase()} export…` });
+                                }}>
                                   Retry
                                 </Button>
                               )}
