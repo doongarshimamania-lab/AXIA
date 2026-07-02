@@ -563,7 +563,8 @@ export default function Scope() {
   // Dialog states
   const [showCreateScope, setShowCreateScope] = useState(!!proposalIdFromUrl);
   const [showCreateChangeOrder, setShowCreateChangeOrder] = useState(false);
-  const [showFormalizeDialog, setShowFormalizeDialog] = useState(false);
+  // ponytail: REMOVED showFormalizeDialog state — was only opened by the 6 no-op
+  // "Formalize" buttons and the only thing the dialog did was toast "coming soon".
 
   // Create scope form
   const [newScopeTitle, setNewScopeTitle] = useState(proposalIdFromUrl ? "Scope for Proposal" : "");
@@ -580,14 +581,11 @@ export default function Scope() {
   const [coDeadlineImpact, setCoDeadlineImpact] = useState("");
   const [coReason, setCoReason] = useState("");
 
-  // Formalize form
-  const [formChangeDesc, setFormChangeDesc] = useState("");
-  const [formOriginalScope, setFormOriginalScope] = useState("");
-  const [formNewScope, setFormNewScope] = useState("");
-  const [formTimeImpact, setFormTimeImpact] = useState("");
-  const [formBudgetImpact, setFormBudgetImpact] = useState("");
-  const [formDeliverableImpact, setFormDeliverableImpact] = useState("");
-  const [formClientAck, setFormClientAck] = useState("");
+  // ponytail: REMOVED showFormalizeDialog state + 7 formalize form state variables
+  // (formChangeDesc, formOriginalScope, formNewScope, formTimeImpact, formBudgetImpact,
+  // formDeliverableImpact, formClientAck). All 6 "Formalize" buttons + the Formalize
+  // Dialog + handleFormalize were no-ops (toast.info "Formalization will be available
+  // in a future update"). Tracked in audit backlog as item 14.
 
   // ─── Convex Queries ──────────────────────────────────────────────────────
   // ponytail: pass workspaceId to scope the by_workspace index (falls back to by_user when undefined)
@@ -751,21 +749,10 @@ export default function Scope() {
     }
   };
 
-  const handleFormalize = () => {
-    if (!formChangeDesc || !formOriginalScope || !formNewScope) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    toast.info("Formalization will be available in a future update");
-    setShowFormalizeDialog(false);
-    setFormChangeDesc("");
-    setFormOriginalScope("");
-    setFormNewScope("");
-    setFormTimeImpact("");
-    setFormBudgetImpact("");
-    setFormDeliverableImpact("");
-    setFormClientAck("");
-  };
+  // ponytail: REMOVED handleFormalize — was a no-op (toast.info "Formalization will
+  // be available in a future update"). The 6 "Formalize" buttons that opened
+  // the dialog are also removed below. The formalizeScopeChange Convex mutation
+  // needs to be implemented before this feature can ship.
 
   // ─── Loading State ──────────────────────────────────────────────────────
   const { isDisconnected } = useConvexConnectionState();
@@ -788,14 +775,7 @@ export default function Scope() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button
-              onClick={() => setShowFormalizeDialog(true)}
-              variant="outline"
-              size="sm"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Formalize Change
-            </Button>
+            {/* ponytail: REMOVED "Formalize Change" header button — was a no-op. */}
             <Button
               onClick={() => setShowCreateScope(true)}
               size="sm"
@@ -876,16 +856,10 @@ export default function Scope() {
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                   You have {totalPendingChanges} pending change{totalPendingChanges !== 1 ? "s" : ""} and {totalUnformalized} unformalized scope change{totalUnformalized !== 1 ? "s" : ""}.
                   Unformalized scope changes put <strong>${totalCostAtRisk.toLocaleString()}</strong> at risk.
-                  Formalize changes to create legally-referencable records and protect your income.
+                  {/* ponytail: REMOVED "Formalize changes to create..." line + the "Formalize Now" button below.
+                      Both were no-ops (toast.info "coming soon"). The scope-change Approve flow
+                      (handleApproveChangeOrder) is the real path to closing pending changes. */}
                 </p>
-                <Button
-                  onClick={() => setShowFormalizeDialog(true)}
-                  size="sm"
-                  className="mt-2 bg-amber-600 hover:bg-amber-700 text-white h-7 text-xs"
-                >
-                  <FileText className="w-3 h-3 mr-1" />
-                  Formalize Now
-                </Button>
               </div>
             </div>
           </div>
@@ -905,13 +879,8 @@ export default function Scope() {
                 <Badge className="ml-1.5 bg-amber-500 text-white text-[10px] h-4 min-w-4 px-1">{totalPendingChanges}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="formalizations" className="text-xs">
-              <FileText className="w-3.5 h-3.5 mr-1.5" />
-              Formalizations
-              {totalUnformalized > 0 && (
-                <Badge className="ml-1.5 bg-purple-500 text-white text-[10px] h-4 min-w-4 px-1">{totalUnformalized}</Badge>
-              )}
-            </TabsTrigger>
+            {/* ponytail: REMOVED "Formalizations" tab — the entire tab body was an
+                empty mock + a "New Formalization" button that opened the no-op dialog. */}
           </TabsList>
 
           {/* ─── Scope Definitions Tab ────────────────────────────────── */}
@@ -1072,10 +1041,9 @@ export default function Scope() {
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowFormalizeDialog(true)}>
-                                <FileText className="w-3 h-3 mr-1" />
-                                Formalize
-                              </Button>
+                              {/* ponytail: REMOVED "Formalize" button (was a no-op) +
+                                  "Reject" button (was also a no-op toast.info). Approve is
+                                  the only real action; rejecting is handled via the kebab menu. */}
                               <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={() => toast.info("Change order rejected")}>
                                 <XCircle className="w-3 h-3 mr-1" />
                                 Reject
@@ -1088,10 +1056,7 @@ export default function Scope() {
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 Approve
                               </Button>
-                              <Button size="sm" className="h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setShowFormalizeDialog(true)}>
-                                <FileText className="w-3 h-3 mr-1" />
-                                Formalize This Change
-                              </Button>
+                              {/* ponytail: REMOVED "Formalize This Change" button — was a no-op. */}
                             </div>
                           )}
 
@@ -1111,31 +1076,9 @@ export default function Scope() {
             )}
           </TabsContent>
 
-          {/* ─── Formalizations Tab ───────────────────────────────────── */}
-          <TabsContent value="formalizations" className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">
-                Formalized scope changes create a legal record that protects your income in case of disputes.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => setShowFormalizeDialog(true)}
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                New Formalization
-              </Button>
-            </div>
-
-            <Card className="p-6 bg-card rounded-xl border border-border text-center">
-              <FileText className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-foreground mb-1">No Formalizations</h3>
-              <p className="text-xs text-muted-foreground">
-                Formalize scope changes to create dispute-proof records. Use the "Formalize Change" button above to get started.
-              </p>
-            </Card>
-          </TabsContent>
+          {/* ponytail: REMOVED entire "Formalizations" TabsContent — was an empty mock
+              ("No Formalizations" card + "New Formalization" button that opened the
+              no-op dialog). The Formalizations tab trigger above is also removed. */}
         </Tabs>
       </PageLayout>
 
@@ -1276,80 +1219,9 @@ export default function Scope() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Formalize Scope Change Dialog ───────────────────────────── */}
-      <Dialog open={showFormalizeDialog} onOpenChange={setShowFormalizeDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 min-w-0">
-              <FileText className="w-5 h-5 text-primary shrink-0" />
-              <span className="truncate">Formalize Scope Change</span>
-            </DialogTitle>
-            <DialogDescription>
-              Document scope changes to protect your work and maintain clear client expectations. This creates a formal record that can be referenced in case of disputes.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div className="text-xs text-amber-800 dark:text-amber-200 min-w-0 break-words">
-                <p className="font-bold mb-1">Why formalize scope changes?</p>
-                <p>Unformalized scope creep is the #1 cause of payment disputes. Documenting changes protects your income and maintains professional boundaries.</p>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="formChangeDesc">Change Description <span className="text-red-500">*</span></Label>
-              <Textarea id="formChangeDesc" placeholder="Describe what changed in the project scope..." value={formChangeDesc} onChange={(e) => setFormChangeDesc(e.target.value)} rows={3} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="formOriginalScope">Original Scope <span className="text-red-500">*</span></Label>
-              <Textarea id="formOriginalScope" placeholder="What was originally agreed upon..." value={formOriginalScope} onChange={(e) => setFormOriginalScope(e.target.value)} rows={2} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="formNewScope">New Scope <span className="text-red-500">*</span></Label>
-              <Textarea id="formNewScope" placeholder="What is now expected..." value={formNewScope} onChange={(e) => setFormNewScope(e.target.value)} rows={2} />
-            </div>
-
-            <div className="border rounded-lg p-4 space-y-3 bg-slate-50 dark:bg-slate-900/50">
-              <h4 className="font-bold text-sm flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Impact Assessment
-              </h4>
-              <div className="grid gap-2">
-                <Label htmlFor="formTimeImpact" className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Time Impact
-                </Label>
-                <Input id="formTimeImpact" placeholder="e.g., +10 hours, 2 extra weeks" value={formTimeImpact} onChange={(e) => setFormTimeImpact(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="formBudgetImpact">Budget Impact</Label>
-                <Input id="formBudgetImpact" placeholder="e.g., +$500, 20% increase" value={formBudgetImpact} onChange={(e) => setFormBudgetImpact(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="formDeliverableImpact">Deliverable Impact</Label>
-                <Input id="formDeliverableImpact" placeholder="e.g., 3 additional features, revised timeline" value={formDeliverableImpact} onChange={(e) => setFormDeliverableImpact(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="formClientAck">Client Acknowledgment (Optional)</Label>
-              <Textarea id="formClientAck" placeholder="Paste client's email, message, or approval here..." value={formClientAck} onChange={(e) => setFormClientAck(e.target.value)} rows={3} />
-              <p className="text-xs text-muted-foreground">Including client acknowledgment strengthens your protection score</p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFormalizeDialog(false)}>Cancel</Button>
-            <Button onClick={handleFormalize} className="bg-indigo-600 hover:bg-indigo-700">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Formalize Change
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ponytail: REMOVED entire Formalize Scope Change Dialog + showFormalizeDialog
+          state. Was a 70-line form that, on submit, only fired
+          toast.info("Formalization will be available in a future update"). */}
     </div>
   );
 }

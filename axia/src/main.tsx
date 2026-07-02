@@ -41,6 +41,9 @@ import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import ClientWorkspace from "./pages/ClientWorkspace.tsx";
 import ClientLogin from "./pages/ClientLogin.tsx";
+// ponytail: NEW import — closes audit item 16. The Scope page's "Copy Approval Link"
+// button copies /scope/approve/:token URLs, but no such route existed.
+import ScopeApproval from "./pages/ScopeApproval.tsx";
 import ClientSignup from "./pages/ClientSignup.tsx";
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
@@ -276,6 +279,11 @@ root.render(
                   {/* Client Portal (Public, No Auth) */}
                   <Route path="/workspace/:token" element={<ClientWorkspace />} />
                   <Route path="/client-login" element={<ClientLogin />} />
+                  {/* ponytail: NEW route — closes audit item 16. The Scope page's
+                      "Copy Approval Link" button copies /scope/approve/:token URLs
+                      that previously 404'd. Now consumes the existing public
+                      getScopeByApprovalToken query + approveScopeByClient mutation. */}
+                  <Route path="/scope/approve/:token" element={<ScopeApproval />} />
                   {/* ponytail: /client-signup moved inside ProtectedRoute below —
                       clientAuth.registerClient requires a logged-in user (used by
                       freelancers to pre-register a client company into their workspace).
