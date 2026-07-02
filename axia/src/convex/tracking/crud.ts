@@ -354,3 +354,75 @@ export const deleteSession = mutation({
     return true;
   },
 });
+
+// ponytail: updateSession — previously the TimeTracking page had an 'Edit'
+// button next to the working 'Delete' button that only fired
+// toast.info('Edit feature coming soon'). The Delete button calls
+// deleteSession above; the Edit button had no backend mutation. This
+// mutation lets the user edit a completed session's projectName,
+// clientName, hourlyRate, notes, and (for manual entries) startTime /
+// endTime. Recomputes totalMinutes when times change. Mirrors the
+// deleteSession access gate. (Audit item #13.)
+export const updateSession = mutation({
+  args: {
+    sessionId: v.id("workSessions"),
+    projectName: v.optional(v.string()),
+    clientName: v.optional(v.string()),
+    hourlyRate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    startTime: v.optional(v.number()),
+    endTime: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateSession");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("User not authenticated");
+
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) throw new Error("Session not found");
+
+    // Same access gate as deleteSession
+    if (session.workspaceId) {
+      const access = await getRecordAccess(ctx, session, userId);
+      if (access !== "owner" && session.userId !== userId) {
+        throw new Error("Not authorized");
+      }
+    } else if (session.userId !== userId) {
+      throw new Error("Session not found or unauthorized");
+    }
+
+    // Don't allow editing a currently-running session's times — that
+    // would corrupt the live timer. The user must stop it first.
+    const isRunning = !session.endTime && session.status === "active";
+    if (isRunning && (args.startTime !== undefined || args.endTime !== undefined)) {
+      throw new Error("Stop the running timer before editing its start/end times");
+    }
+
+    // Validate time range if both are provided
+    const newStart = args.startTime ?? session.startTime;
+    const newEnd = args.endTime ?? session.endTime;
+    if (newEnd !== undefined && newEnd <= newStart) {
+      throw new Error("End time must be after start time");
+    }
+
+    // Recompute totalMinutes if times changed
+    let totalMinutes = session.totalMinutes;
+    if (args.startTime !== undefined || args.endTime !== undefined) {
+      const endForCalc = newEnd ?? Date.now();
+      totalMinutes = Math.floor((endForCalc - newStart) / (1000 * 60));
+    }
+
+    const patch: Record<string, any> = { updatedAt: Date.now() };
+    if (args.projectName !== undefined) patch.projectName = args.projectName;
+    if (args.clientName !== undefined) patch.clientName = args.clientName;
+    if (args.hourlyRate !== undefined) patch.hourlyRate = args.hourlyRate;
+    if (args.notes !== undefined) patch.notes = args.notes;
+    if (args.startTime !== undefined) patch.startTime = args.startTime;
+    if (args.endTime !== undefined) patch.endTime = args.endTime;
+    if (totalMinutes !== session.totalMinutes) patch.totalMinutes = totalMinutes;
+
+    await ctx.db.patch(args.sessionId, patch);
+
+    return { success: true, totalMinutes };
+  },
+});

@@ -13,7 +13,7 @@ import { useNavigate } from "react-router";
 import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
   Calendar, ChevronDown, ChevronUp, Trash2, Loader2,
-  Briefcase, Users,
+  Briefcase, Users, Edit3,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,6 +78,11 @@ export default function TimeTracking() {
   const resumeSessionMutation = useMutation(api.tracking.crud.resumeSession);
   const createManualEntryMutation = useMutation(api.tracking.crud.createManualEntry);
   const deleteSessionMutation = useMutation(api.tracking.crud.deleteSession);
+  // ponytail: new — updateSession mutation for the Edit button. Was previously
+  // a toast.info('Edit feature coming soon') no-op while Delete worked right
+  // next to it. The mutation lets the user edit projectName / clientName /
+  // hourlyRate / notes / startTime / endTime on a completed session.
+  const updateSessionMutation = useMutation(api.tracking.crud.updateSession);
   // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
   // workSession (the create mutations don't accept tagIds directly, so we patch after).
   const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
@@ -381,6 +386,76 @@ export default function TimeTracking() {
       toast.error(err?.message || "Failed to delete entry");
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  // ponytail: edit-session state + handler. Previously the Edit button only
+  // fired toast.info('Edit feature coming soon'). Now we open a dialog
+  // pre-populated with the session's current values and call
+  // api.tracking.crud.updateSession on save. Only completed sessions can
+  // have their start/end times edited — running sessions must be stopped
+  // first (the mutation enforces this too).
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editProject, setEditProject] = useState("");
+  const [editClient, setEditClient] = useState("");
+  const [editHourlyRate, setEditHourlyRate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editStart, setEditStart] = useState("09:00");
+  const [editEnd, setEditEnd] = useState("17:00");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const openEditDialog = (entry: any) => {
+    setEditingEntry(entry);
+    setEditProject(entry.projectName ?? "");
+    setEditClient(entry.clientName ?? "");
+    setEditHourlyRate(entry.hourlyRate != null ? String(entry.hourlyRate) : "");
+    setEditNotes(entry.notes ?? "");
+    const start = new Date(entry.startTime);
+    setEditDate(start.toISOString().slice(0, 10));
+    setEditStart(start.toTimeString().slice(0, 5));
+    if (entry.endTime) {
+      const end = new Date(entry.endTime);
+      setEditEnd(end.toTimeString().slice(0, 5));
+    } else {
+      setEditEnd("17:00");
+    }
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+    if (!editProject.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      // Build the startTime / endTime from the date + time inputs.
+      // Only send them if the session is NOT currently running — the
+      // mutation will reject time edits on a running session anyway,
+      // but we skip sending them so the rest of the fields can still
+      // be saved (project, client, rate, notes).
+      const isRunning = !editingEntry.endTime && editingEntry.status === "active";
+      const startTs = new Date(`${editDate}T${editStart}`).getTime();
+      const endTs = editEnd ? new Date(`${editDate}T${editEnd}`).getTime() : undefined;
+
+      await updateSessionMutation({
+        sessionId: editingEntry._id,
+        projectName: editProject.trim(),
+        clientName: editClient.trim() || undefined,
+        hourlyRate: editHourlyRate ? Number(editHourlyRate) : undefined,
+        notes: editNotes.trim() || undefined,
+        ...(isRunning ? {} : { startTime: startTs, endTime: endTs }),
+      } as any);
+      toast.success("Time entry updated");
+      setShowEditDialog(false);
+      setEditingEntry(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update entry");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -853,12 +928,19 @@ export default function TimeTracking() {
                                       </div>
                                     )}
                                     <div className="flex gap-2 pt-2">
-                                      {/* ponytail: REMOVED "Edit" button — was a placeholder
-                                          that fired toast.info("Edit feature coming soon").
-                                          To edit a time entry, the user can delete + re-add
-                                          (the Delete button below is fully wired to
-                                          handleDeleteEntry). A real edit dialog needs an
-                                          updateWorkSession / updateTimeBlock mutation. */}
+                                      {/* ponytail: RESTORED "Edit" button — was previously
+                                          removed (commit 256fc7c) because it fired
+                                          toast.info('Edit feature coming soon'). Now opens
+                                          a real edit dialog wired to the new
+                                          api.tracking.crud.updateSession mutation. */}
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => openEditDialog(entry)}
+                                      >
+                                        <Edit3 className="h-3 w-3 mr-1" />
+                                        Edit
+                                      </Button>
                                       <Button
                                         variant="outline"
                                         size="sm"
@@ -953,6 +1035,91 @@ export default function TimeTracking() {
               >
                 {isCreatingManual ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
                 Add Entry
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ponytail: Edit Entry Dialog — wired to api.tracking.crud.updateSession.
+            Was previously a toast.info('Edit feature coming soon') no-op while
+            the Delete button right next to it worked. Form is pre-populated
+            from the selected entry. Running sessions can edit project/client/
+            rate/notes but NOT start/end times (the mutation enforces this). */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-[500px] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Edit Time Entry</DialogTitle>
+              <DialogDescription>
+                Update the details of this time entry. {editingEntry && !editingEntry.endTime && (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    This session is currently running — stop it before editing start/end times.
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    disabled={!!editingEntry && !editingEntry.endTime && editingEntry.status === "active"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Project</Label>
+                  <Input placeholder="Project name" value={editProject} onChange={(e) => setEditProject(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Client</Label>
+                <Input placeholder="Client name (optional)" value={editClient} onChange={(e) => setEditClient(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Time</Label>
+                  <Input
+                    type="time"
+                    value={editStart}
+                    onChange={(e) => setEditStart(e.target.value)}
+                    disabled={!!editingEntry && !editingEntry.endTime && editingEntry.status === "active"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Time</Label>
+                  <Input
+                    type="time"
+                    value={editEnd}
+                    onChange={(e) => setEditEnd(e.target.value)}
+                    disabled={!!editingEntry && !editingEntry.endTime && editingEntry.status === "active"}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Hourly Rate ($)</Label>
+                <Input
+                  type="number"
+                  placeholder="75"
+                  value={editHourlyRate}
+                  onChange={(e) => setEditHourlyRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Memo</Label>
+                <Input placeholder="What did you work on?" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isSavingEdit}>Cancel</Button>
+              <Button
+                className="bg-primary hover:bg-primary/90"
+                onClick={handleSaveEdit}
+                disabled={isSavingEdit}
+              >
+                {isSavingEdit ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                Save Changes
               </Button>
             </DialogFooter>
           </DialogContent>
