@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import {
   Clock, Play, Pause, Square, Plus, Timer, TrendingUp,
-  Calendar, ChevronDown, ChevronUp, Trash2, Edit3, Loader2,
+  Calendar, ChevronDown, ChevronUp, Trash2, Loader2,
   Briefcase, Users,
 } from "lucide-react";
 import { useSubscriptionTier } from "@/hooks/use-subscription-tier";
@@ -853,9 +853,12 @@ export default function TimeTracking() {
                                       </div>
                                     )}
                                     <div className="flex gap-2 pt-2">
-                                      <Button variant="outline" size="sm" onClick={() => toast.info("Edit feature coming soon")}>
-                                        <Edit3 className="h-3 w-3 mr-1" /> Edit
-                                      </Button>
+                                      {/* ponytail: REMOVED "Edit" button — was a placeholder
+                                          that fired toast.info("Edit feature coming soon").
+                                          To edit a time entry, the user can delete + re-add
+                                          (the Delete button below is fully wired to
+                                          handleDeleteEntry). A real edit dialog needs an
+                                          updateWorkSession / updateTimeBlock mutation. */}
                                       <Button
                                         variant="outline"
                                         size="sm"
