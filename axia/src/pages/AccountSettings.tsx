@@ -70,7 +70,7 @@ import {
 } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
+import { useQuery, useMutation, useAction, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/design-system/PageLayout";
@@ -230,8 +230,22 @@ export default function AccountSettings() {
 
   const handleSaveProfile = async () => {
     // Persist profile changes to Convex (no more localStorage-only writes).
+    // ponytail: previously the email field was editable but never sent to
+    // the backend — api.users.updateProfile doesn't accept email as an arg
+    // (it would let users bypass the password-verification gate). Now if
+    // the user has changed their email, we call the changeEmail action
+    // (which requires their current password). Since we don't have the
+    // password here in the Profile form, we detect the email change and
+    // route the user to the Security tab where the proper EmailChangeDialog
+    // collects the password. (Audit item #17.)
     setIsSavingProfile(true);
     try {
+      const emailChanged =
+        !!profile &&
+        !!profileEmail &&
+        profile.email !== profileEmail &&
+        profile.email.toLowerCase() !== profileEmail.trim().toLowerCase();
+
       await updateProfileMutation({
         name: profileName.trim() || undefined,
         hourlyRate:
@@ -240,7 +254,19 @@ export default function AccountSettings() {
             : undefined,
         professionalBio: profileBio.trim() || undefined,
       });
-      toast.success("Profile updated successfully");
+
+      if (emailChanged) {
+        toast.info("Email change requires verification", {
+          description:
+            "For security, email changes are verified with your current password. Open the Security tab → Email Address → Change to complete the change.",
+          duration: 8000,
+        });
+        // Don't roll back the field — let the user see what they typed so
+        // they know what they were trying to change. The actual email in
+        // the DB is unchanged until they complete the Security flow.
+      } else {
+        toast.success("Profile updated successfully");
+      }
     } catch (err: any) {
       console.error("Failed to save profile:", err);
       toast.error(err?.message || "Failed to save profile. Please try again.");
@@ -452,6 +478,15 @@ function ProfileSection({
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
+            {/* ponytail: helper text explaining the email-change flow.
+                Previously the email field was editable but never persisted —
+                the user typed a new email, clicked Save, saw 'Profile
+                updated successfully', and the email was silently unchanged.
+                Now we honestly tell the user that email changes require
+                password verification in the Security tab. (Audit item #17.) */}
+            <p className="text-xs text-muted-foreground mt-1.5">
+              To change your email, edit it here then go to <strong>Security → Email Address → Change</strong> to verify with your password.
+            </p>
           </div>
           <div>
             <Label className="text-sm font-medium mb-2 block">Hourly Rate ($)</Label>
@@ -940,6 +975,18 @@ function SecuritySection({
   setShowSignOutConfirm: (v: boolean) => void;
   handleSignOut: () => void;
 }) {
+  // ponytail: real email-change + password-change state. Previously both
+  // 'Change' buttons only fired toast.info pointing the user elsewhere.
+  // Now we open real dialogs that call the new
+  // api.accountSettings.{changeEmail, changePassword} actions, which
+  // verify the current password via Convex Auth's retrieveAccount before
+  // mutating. (Audit items #16, #17.)
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const changeEmailAction = useAction(api.accountSettings.changeEmail);
+  const changePasswordAction = useAction(api.accountSettings.changePassword);
+  const currentEmail = useQuery(api.accountSettings.getCurrentEmail, {});
+
   return (
     <div className="space-y-6">
       {/* Account Security */}
@@ -962,20 +1009,15 @@ function SecuritySection({
                 <div className="text-xs text-muted-foreground">Change your login email</div>
               </div>
             </div>
-            {/* ponytail: previously had no onClick — the button looked
-                clickable but did nothing. Convex Auth doesn't expose an
-                email-change flow (it requires re-verification), so we
-                honestly route the user to support. (Audit item #10) */}
+            {/* ponytail: RESTORED real email-change flow. Previously the
+                button fired toast.info('Email hello@axia.com...') — no
+                actual change happened. Now opens a dialog that collects
+                newEmail + currentPassword and calls the changeEmail action. */}
             <Button
               variant="outline"
               size="sm"
               className="border-border hover:bg-accent"
-              onClick={() =>
-                toast.info("Email change requires verification", {
-                  description:
-                    "Email hello@axia.com from your current address to request an email change.",
-                })
-              }
+              onClick={() => setShowEmailDialog(true)}
             >
               Change
             </Button>
@@ -991,20 +1033,16 @@ function SecuritySection({
                 <div className="text-xs text-muted-foreground">Update your account password</div>
               </div>
             </div>
-            {/* ponytail: previously had no onClick. Convex Auth's standard
-                password-reset flow runs through the /auth page's "Forgot
-                password" link, not from inside the authenticated app.
-                (Audit item #10) */}
+            {/* ponytail: RESTORED real password-change flow. Previously
+                the button fired toast.info('Sign out, then click Forgot
+                password...'). Now opens a dialog that collects
+                currentPassword + newPassword and calls the changePassword
+                action — no sign-out required. */}
             <Button
               variant="outline"
               size="sm"
               className="border-border hover:bg-accent"
-              onClick={() =>
-                toast.info("Password reset", {
-                  description:
-                    "Sign out, then click \"Forgot password\" on the login screen to receive a reset link by email.",
-                })
-              }
+              onClick={() => setShowPasswordDialog(true)}
             >
               Change
             </Button>
@@ -1081,7 +1119,247 @@ function SecuritySection({
           )}
         </CardContent>
       </Card>
+
+      {/* ponytail: Email Change Dialog — wired to api.accountSettings.changeEmail.
+          Previously the 'Change' button only fired toast.info pointing the
+          user at support. Now collects newEmail + currentPassword and calls
+          the changeEmail action, which verifies the password via
+          retrieveAccount, checks the new email isn't taken, patches both
+          authAccounts.providerAccountId + users.email, and invalidates all
+          sessions so the user re-signs-in with the new email. */}
+      <EmailChangeDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        currentEmail={currentEmail ?? ""}
+        changeEmailAction={changeEmailAction}
+        onSignOut={handleSignOut}
+      />
+
+      {/* ponytail: Password Change Dialog — wired to
+          api.accountSettings.changePassword. Previously the 'Change' button
+          only fired toast.info pointing the user at the 'Forgot password'
+          flow. Now collects currentPassword + newPassword and calls the
+          changePassword action, which verifies the current password via
+          retrieveAccount, validates the new password against the same
+          policy enforced at signup (8-16 chars per auth.ts), and calls
+          modifyAccountCredentials to set the new hash. */}
+      <PasswordChangeDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        changePasswordAction={changePasswordAction}
+      />
     </div>
+  );
+}
+
+// ─── Email Change Dialog ────────────────────────────────────────────────────
+function EmailChangeDialog({
+  open,
+  onOpenChange,
+  currentEmail,
+  changeEmailAction,
+  onSignOut,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  currentEmail: string;
+  changeEmailAction: (args: { newEmail: string; currentPassword: string }) => Promise<any>;
+  onSignOut: () => void;
+}) {
+  const [newEmail, setNewEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!newEmail.trim() || !currentPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await changeEmailAction({
+        newEmail: newEmail.trim(),
+        currentPassword,
+      });
+      if (result?.success) {
+        toast.success("Email changed successfully", {
+          description: "For security, you've been signed out. Please sign in with your new email.",
+        });
+        // The action invalidated all sessions, so we sign out locally
+        // and let the auth flow redirect to /auth.
+        onSignOut();
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to change email");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="w-5 h-5 text-primary" />
+            Change Email Address
+          </DialogTitle>
+          <DialogDescription>
+            Enter your new email and current password to confirm. For security, you'll be signed out afterwards and will need to sign in with the new email.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Current email</Label>
+            <Input value={currentEmail} disabled className="bg-muted/50" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newEmail">New email</Label>
+            <Input
+              id="newEmail"
+              type="email"
+              placeholder="your.new@email.com"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="emailCurrentPassword">Current password</Label>
+            <Input
+              id="emailCurrentPassword"
+              type="password"
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <p className="text-xs text-muted-foreground">Required to verify it's really you.</p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !newEmail.trim() || !currentPassword}>
+            {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Change Email
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Password Change Dialog ─────────────────────────────────────────────────
+function PasswordChangeDialog({
+  open,
+  onOpenChange,
+  changePasswordAction,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  changePasswordAction: (args: { currentPassword: string; newPassword: string }) => Promise<any>;
+}) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    if (newPassword.length > 16) {
+      toast.error("New password must be at most 16 characters (DoS protection)");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await changePasswordAction({ currentPassword, newPassword });
+      if (result?.success) {
+        toast.success("Password changed successfully", {
+          description: "All other sessions have been signed out.",
+        });
+        onOpenChange(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to change password");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" />
+            Change Password
+          </DialogTitle>
+          <DialogDescription>
+            Enter your current password to confirm, then choose a new one (8-16 characters).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Current password</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              placeholder="8-16 characters"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm new password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="Re-enter new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}>
+            {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Change Password
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
