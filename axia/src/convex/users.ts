@@ -178,6 +178,54 @@ export const setUserRole = mutation({
   },
 });
 
+// ─── SELF-SERVE TIER UPGRADE (no payment integration yet) ────────────────────
+//
+// ponytail: This mutation exists because there is currently no Stripe /
+// payment integration in the app — the PricingModal.handleUpgradeClick
+// path was showing a "payment integration coming soon" toast and silently
+// dropping the upgrade. Combined with `useSubscriptionTier` only writing
+// to localStorage (never to Convex), this caused the user-reported bug:
+// "when i upgrade to any tier it doesnt stay in the tier and automatically
+// comes down to free" — every time the user record re-fetched from Convex,
+// the (never-persisted) tier reset to `undefined` → 'free'.
+//
+// This mutation lets a signed-in user set ONLY their OWN subscriptionTier.
+// It does NOT grant them any other user's tier, and it does NOT touch the
+// admin-only `setUserTier`/`grantTierByEmail` mutations (those still
+// require `role === "admin"` and are used by the dev tier-switcher for
+// cross-user grants).
+//
+// When real payment integration lands, this mutation should be replaced
+// with a payment-verified upgrade flow (e.g. Stripe webhook →
+// setUserTier), but for the current pre-payment beta it is the only
+// way for a user's upgrade to actually persist across page reloads.
+export const setMyTier = mutation({
+  args: {
+    tier: v.union(
+      v.literal("free"),
+      v.literal("starter"),
+      v.literal("pro"),
+      v.literal("expert"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await rateLimitAuthenticated(ctx, "updateProfile");
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("Not authenticated");
+    }
+    const existing = await ctx.db.get(userId);
+    if (!existing) {
+      throw new Error("User not found");
+    }
+    await ctx.db.patch(userId, {
+      subscriptionTier: args.tier,
+      tierUpgradedAt: Date.now(),
+    });
+    return { success: true, userId, tier: args.tier };
+  },
+});
+
 // Add: Complete onboarding mutation
 export const completeOnboarding = mutation({
   args: {

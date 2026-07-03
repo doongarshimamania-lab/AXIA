@@ -67,7 +67,11 @@ export default function Landing() {
         <SectionDivider variant="beam" className="max-w-5xl mx-auto" />
 
         <Comparison />
-        <Testimonials />
+        {/* ponytail: Testimonials section (social proof + case study) hidden per
+            user request — "hide that whole section do not remove it just hide it
+            so it doesnt show on frontend". The component import + JSX are kept
+            so it can be re-enabled by removing the {false && } guard. */}
+        {false && <Testimonials />}
         <Pricing />
         <SecurityBadges />
         <LeadForm />

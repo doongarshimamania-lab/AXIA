@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
-import { toast } from "sonner";
+// ponytail: `import { toast } from "sonner"` removed — the only `toast.*`
+// call in this file was the "payment integration coming soon!" early-return
+// in handleUpgradeClick, which is gone now that upgrades persist via
+// api.users.setMyTier. Removing the unused import keeps tsc --noEmit clean.
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -48,14 +51,17 @@ export function PricingModal({
   const displaySavings = highlightSavings || potentialSavings;
 
   const handleUpgradeClick = (tier: string) => {
-    const pricing = TIER_PRICING[tier as keyof typeof TIER_PRICING];
-    if (pricing > 0) {
-      // SECURITY: Don't redirect to fake Stripe URLs. Instead, show a toast
-      // indicating payment integration is coming soon. Fake payment redirects
-      // could trick users into thinking they've paid when they haven't.
-      toast.info(`${tier.charAt(0).toUpperCase() + tier.slice(1)} plan — payment integration coming soon!`);
-      return;
-    }
+    // ponytail: previously this early-returned with a "payment integration
+    // coming soon!" toast for any paid tier (starter/pro/expert), which
+    // silently dropped the upgrade. Combined with `useSubscriptionTier`
+    // only writing to localStorage (never Convex), this caused the
+    // user-reported bug: "when i upgrade to any tier it doesnt stay in the
+    // tier and automatically comes down to free".
+    //
+    // Fix: route ALL tier selections through `onUpgrade(tier)` — the
+    // caller (Dashboard.handleUpgrade) now persists to the backend via
+    // `api.users.setMyTier`. When real Stripe/payment integration lands,
+    // gate paid tiers behind a checkout flow here.
     onUpgrade(tier);
   };
 

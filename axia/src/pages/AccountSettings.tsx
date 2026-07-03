@@ -275,9 +275,18 @@ export default function AccountSettings() {
     }
   };
 
-  const handleTierChange = (newTier: TierKey) => {
-    setSubscriptionTier(newTier);
-    toast.success(`Subscription changed to ${newTier}`);
+  const handleTierChange = async (newTier: TierKey) => {
+    // ponytail: now awaits the result of `setMyTier` (was fire-and-forget,
+    // which combined with the localStorage-only `updateTier` caused upgrades
+    // to silently fail and revert on next backend sync).
+    const result = await setSubscriptionTier(newTier);
+    if (result.ok) {
+      toast.success(`Subscription changed to ${newTier}`);
+    } else {
+      toast.error(`Failed to change to ${newTier}`, {
+        description: "Your tier was rolled back. Please try again.",
+      });
+    }
   };
 
   const handleThemeToggle = (enabled: boolean) => {

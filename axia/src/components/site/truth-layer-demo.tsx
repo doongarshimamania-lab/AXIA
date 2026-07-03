@@ -46,13 +46,16 @@ export function TruthLayerDemo() {
   useEffect(() => {
     if (!playing) return;
     if (shown >= SCRIPT.length) {
-      // pause at end, then reset after a beat
-      timer.current = setTimeout(() => {
-        setShown(0);
-      }, 2600);
-      return () => {
-        if (timer.current) clearTimeout(timer.current);
-      };
+      // ponytail: previously this auto-reset `shown` to 0 after 2600ms, which
+      // made the replay loop forever. User asked: "the video of the agency
+      // work, replayed actually stops after the whole video is finished at it
+      // is not a loop so unless a person presses the replay button it doesnt
+      // start." Fix: when the script ends, STOP playing (so the "Workstream
+      // complete" badge stays visible) and DO NOT reset `shown`. The Replay
+      // button (RotateCcw) below already does `setShown(0); setPlaying(true);`
+      // — that's the only path back to playback.
+      setPlaying(false);
+      return;
     }
     timer.current = setTimeout(() => {
       setShown((s) => s + 1);

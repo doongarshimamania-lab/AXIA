@@ -307,10 +307,24 @@ export default function Dashboard() {
     }
   };
 
-  const handleUpgrade = (tier: string) => {
-    toast.success(`Upgrading to ${tier}...`, { description: "You'll be redirected to Stripe checkout" });
-    setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
+  const handleUpgrade = async (tier: string) => {
+    // ponytail: previously this only called `setSubscriptionTier(...)` which
+    // (before today's fix) only wrote to localStorage — so the upgrade
+    // vanished on the next user-record re-fetch. Now `setSubscriptionTier`
+    // returns `{ ok, error? }` from the `api.users.setMyTier` mutation, and
+    // we toast on either outcome.
+    toast.success(`Upgrading to ${tier}...`, { description: "Activating your subscription" });
+    const result = await setSubscriptionTier(tier as "free" | "starter" | "pro" | "expert");
     setShowPricingModal(false);
+    if (!result.ok) {
+      toast.error(`Failed to upgrade to ${tier}`, {
+        description: "Your tier was rolled back. Please try again.",
+      });
+    } else {
+      toast.success(`You're now on ${tier} tier`, {
+        description: "Your subscription is active.",
+      });
+    }
   };
 
   // ─── Auth loading gate ──────────────────────────────────────────────────

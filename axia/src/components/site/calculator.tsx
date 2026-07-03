@@ -1,10 +1,16 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calculator, TrendingUp, Clock, Layers, ArrowRight } from "lucide-react";
+import { Calculator, TrendingUp, Clock, Layers, ArrowRight, AlertTriangle, ClipboardList } from "lucide-react";
 import { Link } from "react-router";
 import { Reveal } from "./reveal";
 
+// ponytail: Slider track was invisible on the landing page because the inline
+// `style` referenced `var(--secondary)`, which is undefined inside the
+// `.landing-page` scope (that scope only defines `--color-secondary`, mapped
+// from `--lp-secondary`). The result: only the thumb dot was visible — the
+// bar itself was transparent. Switched both gradient stops to
+// `var(--color-secondary)` so the unfilled portion of the track renders.
 function Slider({
   label,
   value,
@@ -45,7 +51,7 @@ function Slider({
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--axia-teal-bright)] [&::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(43,122,107,0.18)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--axia-teal-bright)]"
         style={{
-          background: `linear-gradient(to right, var(--axia-teal) 0%, var(--axia-teal) ${pct}%, var(--secondary) ${pct}%, var(--secondary) 100%)`,
+          background: `linear-gradient(to right, var(--axia-teal) 0%, var(--axia-teal) ${pct}%, var(--color-secondary) ${pct}%, var(--color-secondary) 100%)`,
         }}
       />
     </div>
@@ -53,27 +59,53 @@ function Slider({
 }
 
 export function RevenueCalculator() {
+  // ponytail: replaced the `Monthly revenue` input (the user asked to drop it)
+  // with two new drivers the user asked for: `Scope creep` and `Time in admin
+  // tasks`. Net result = 4 working sliders:
+  //   1. Team size (seats)        — kept
+  //   2. Average billable rate    — kept
+  //   3. Scope creep / month      — NEW (user-entered $)
+  //   4. Time in admin tasks / wk — NEW (user-entered hrs)
   const [seats, setSeats] = useState(12);
   const [rate, setRate] = useState(125);
-  const [revenue, setRevenue] = useState(75000);
+  const [scopeCreep, setScopeCreep] = useState(4200);       // $ of unbilled scope creep / mo
+  const [adminHrs, setAdminHrs] = useState(8);              // hrs/wk each seat spends on admin
 
   const result = useMemo(() => {
-    // scope creep recovery: ~$3,800/mo baseline at typical agency, scales w/ seats & revenue
-    const scopeRecovery = Math.round(
-      3800 * (seats / 10) * (0.6 + (revenue / 100000) * 0.5)
-    );
-    // late payment recovery: 71% fewer late pays on invoices that used to sit unpaid
-    const lateRecovery = Math.round(revenue * 0.06);
-    // tools consolidated: $200 to $400/mo + 6 to 8 hrs/wk * rate * 4.33
-    const toolsSaved = 300 + Math.round(7 * rate * 4.33);
-    // hours saved/wk across team (verification, chasing, syncing, context switching)
-    const hoursSaved = Math.round(seats * 1.4 + 9);
+    // scope creep recovered = the full unbilled $ the agency admits to (slider).
+    // Axia converts ~85% of that into change orders (industry benchmark).
+    const scopeRecovery = Math.round(scopeCreep * 0.85);
 
-    const monthly = scopeRecovery + lateRecovery + toolsSaved;
+    // late payment recovery: derived from team size + billable rate (a proxy
+    // for monthly revenue, since the user removed the explicit revenue slider).
+    // Approx monthly revenue = seats * rate * 140 billable hrs/mo.
+    const impliedRevenue = seats * rate * 140;
+    const lateRecovery = Math.round(impliedRevenue * 0.06);
+
+    // tools consolidated: $200 to $400/mo baseline + 6 to 8 hrs/wk * rate * 4.33
+    const toolsSaved = 300 + Math.round(7 * rate * 4.33);
+
+    // admin hours recovered / week = adminHrs * seats * 0.6 (Axia automates ~60%)
+    // converted to $ using the billable rate, then * 4.33 weeks/mo.
+    const adminRecovered = Math.round(adminHrs * seats * 0.6 * rate * 4.33);
+
+    // total hours saved / week across team (verification, chasing, syncing,
+    // context switching, plus the admin automation above).
+    const hoursSaved = Math.round(seats * 1.4 + 9 + adminHrs * seats * 0.6);
+
+    const monthly = scopeRecovery + lateRecovery + toolsSaved + adminRecovered;
     const annual = monthly * 12;
 
-    return { scopeRecovery, lateRecovery, toolsSaved, hoursSaved, monthly, annual };
-  }, [seats, rate, revenue]);
+    return {
+      scopeRecovery,
+      lateRecovery,
+      toolsSaved,
+      adminRecovered,
+      hoursSaved,
+      monthly,
+      annual,
+    };
+  }, [seats, rate, scopeCreep, adminHrs]);
 
   return (
     <section id="calculator" className="relative scroll-mt-24 py-10 sm:py-14">
@@ -125,14 +157,28 @@ export function RevenueCalculator() {
                   format={(v) => `$${v}`}
                   suffix="/hr"
                 />
+                {/* ponytail: replaced `Monthly revenue` slider with `Scope creep / month`
+                    per user request. This is the $ of unbilled scope creep the agency
+                    admits to losing each month — Axia recovers ~85% of it. */}
                 <Slider
-                  label="Monthly revenue"
-                  value={revenue}
-                  min={10000}
-                  max={500000}
-                  step={5000}
-                  onChange={setRevenue}
+                  label="Scope creep / month"
+                  value={scopeCreep}
+                  min={0}
+                  max={20000}
+                  step={100}
+                  onChange={setScopeCreep}
                   format={(v) => `$${v.toLocaleString("en-US")}`}
+                />
+                {/* ponytail: NEW 4th slider — Time spent in admin tasks / week per seat.
+                    Drives the admin-task recovery row in the result panel. */}
+                <Slider
+                  label="Time in admin tasks / wk (per seat)"
+                  value={adminHrs}
+                  min={0}
+                  max={20}
+                  step={1}
+                  onChange={setAdminHrs}
+                  suffix=" hrs"
                 />
               </div>
             </div>
@@ -165,7 +211,7 @@ export function RevenueCalculator() {
 
               <div className="mt-4 space-y-2">
                 <Row
-                  icon={Layers}
+                  icon={AlertTriangle}
                   label="Scope creep recovered"
                   value={`$${result.scopeRecovery.toLocaleString("en-US")}`}
                 />
@@ -178,6 +224,13 @@ export function RevenueCalculator() {
                   icon={Layers}
                   label="Tools consolidated"
                   value={`$${result.toolsSaved.toLocaleString("en-US")}`}
+                />
+                {/* ponytail: NEW result row — admin-task recovery $, driven by the
+                    new 4th slider (`Time in admin tasks / wk`). */}
+                <Row
+                  icon={ClipboardList}
+                  label="Admin time recovered"
+                  value={`$${result.adminRecovered.toLocaleString("en-US")}`}
                 />
                 <Row
                   icon={Clock}
