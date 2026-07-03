@@ -702,7 +702,7 @@ function SubscriptionSection({
               <div className="text-2xl font-bold capitalize">{subscriptionTier}</div>
             </div>
             <Badge className="bg-primary/20 text-primary border-0 capitalize text-sm">
-              {subscriptionTier === "free" ? "Free Tier" : subscriptionTier === "starter" ? "Starter" : subscriptionTier === "pro" ? "Pro" : subscriptionTier === "expert" ? "Expert" : "Client"}
+              {subscriptionTier === "free" ? "Free Tier" : subscriptionTier === "starter" ? "Starter" : subscriptionTier === "pro" ? "Pro" : subscriptionTier === "expert" ? "Expert" : "Free Tier"}
             </Badge>
           </div>
         </CardContent>
@@ -819,7 +819,7 @@ function SubscriptionSection({
             Switch between tiers for development and testing. In production, this would connect to a payment provider.
           </p>
           <div className="flex gap-2 flex-wrap">
-            {(["free", "starter", "pro", "expert", "client"] as const).map((t) => (
+            {(["free", "starter", "pro", "expert"] as const).map((t) => (
               <Button
                 key={t}
                 size="sm"

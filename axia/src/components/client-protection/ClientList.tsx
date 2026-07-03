@@ -136,7 +136,8 @@ export function ClientList({
 
   // PRO+ feature: Client Payment Pattern Analysis
   const getTierLevel = (tier: string) => {
-    const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3, client: 0 };
+    // ponytail: 'client' tier removed — only free/starter/pro/expert remain.
+    const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3 };
     return levels[tier] || 0;
   };
   const hasPaymentPatternAccess = getTierLevel(subscriptionTier) >= getTierLevel("pro");

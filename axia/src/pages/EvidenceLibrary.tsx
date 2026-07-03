@@ -125,7 +125,8 @@ const STATUS_CONFIG: Record<ExportStatus, { label: string; icon: React.ReactNode
 };
 
 function getTierLevel(tier: string): number {
-  const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3, client: 0 };
+  // ponytail: 'client' tier removed — only free/starter/pro/expert remain.
+  const levels: Record<string, number> = { free: 0, starter: 1, pro: 2, expert: 3 };
   return levels[tier] ?? 0;
 }
 

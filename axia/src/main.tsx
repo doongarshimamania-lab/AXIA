@@ -16,7 +16,9 @@ import "./index.css";
 import Landing from "./pages/Landing.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import OwnerDashboard from "./pages/OwnerDashboard.tsx";
-import ClientDashboard from "./pages/ClientDashboard.tsx";
+// ponytail: ClientDashboard, ClientLogin, ClientSignup deleted — the user-
+// account 'client' tier is removed. The no-login client portal lives at
+// /workspace/:token (ClientWorkspace) and is untouched.
 import WaitlistSuccess from "./pages/WaitlistSuccess.tsx";
 import { ProfileModal } from "@/components/ProfileModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -40,11 +42,8 @@ import ProposalBuilder from "./pages/ProposalBuilder.tsx";
 import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import ClientWorkspace from "./pages/ClientWorkspace.tsx";
-import ClientLogin from "./pages/ClientLogin.tsx";
-// ponytail: NEW import — closes audit item 16. The Scope page's "Copy Approval Link"
-// button copies /scope/approve/:token URLs, but no such route existed.
-import ScopeApproval from "./pages/ScopeApproval.tsx";
-import ClientSignup from "./pages/ClientSignup.tsx";
+// ponytail: ClientLogin + ClientSignup deleted — no client sign-up / sign-in.
+// Clients access the portal via /workspace/:token only (token-based, no auth).
 import Scope from "./pages/Scope.tsx";
 import AccountSettings from "./pages/AccountSettings.tsx";
 import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
@@ -265,7 +264,9 @@ root.render(
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
-                  <Route path="/client-dashboard" element={<ClientDashboard />} />
+                  {/* ponytail: /client-dashboard route removed — there is no
+                      client user-account tier. Clients access the portal via
+                      /workspace/:token below (token-based, no auth). */}
                   <Route path="/auth" element={<Auth redirectAfterAuth="/dashboard" />} />
 
                   {/* Onboarding flow (auth-guarded) — step 1: user info, step 2: acquisition source.
@@ -276,18 +277,13 @@ root.render(
                     <Route path="/onboarding-source" element={<OnboardingSource />} />
                   </Route>
 
-                  {/* Client Portal (Public, No Auth) */}
+                  {/* Client Portal (Public, No Auth) — token-based, no login.
+                      Freelancer generates a token via the Clients page; client
+                      opens the link to see their deliverable progress. */}
                   <Route path="/workspace/:token" element={<ClientWorkspace />} />
-                  <Route path="/client-login" element={<ClientLogin />} />
-                  {/* ponytail: NEW route — closes audit item 16. The Scope page's
-                      "Copy Approval Link" button copies /scope/approve/:token URLs
-                      that previously 404'd. Now consumes the existing public
-                      getScopeByApprovalToken query + approveScopeByClient mutation. */}
-                  <Route path="/scope/approve/:token" element={<ScopeApproval />} />
-                  {/* ponytail: /client-signup moved inside ProtectedRoute below —
-                      clientAuth.registerClient requires a logged-in user (used by
-                      freelancers to pre-register a client company into their workspace).
-                      Public client self-registration happens via /workspace/:token. */}
+                  {/* ponytail: /client-login + /client-signup routes removed —
+                      no client sign-up / sign-in. The user-account 'client'
+                      tier is gone; clients use /workspace/:token only. */}
 
                   {/* Dashboard Routes (With Sidebar + Auth Guard) */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -312,8 +308,8 @@ root.render(
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scope" element={<Scope />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
-                    {/* ponytail: moved from public routes — requires auth */}
-                    <Route path="/client-signup" element={<ClientSignup />} />
+                    {/* ponytail: /client-signup route removed — no client
+                        sign-up. Clients access the portal via /workspace/:token. */}
                     {/* Legacy redirects — these pages are now consolidated */}
                     <Route path="/platform-integrations" element={<AccountSettings />} />
                     <Route path="/subscription" element={<AccountSettings />} />

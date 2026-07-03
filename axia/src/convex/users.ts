@@ -112,7 +112,10 @@ export const setUserTier = mutation({
       v.literal("starter"),
       v.literal("pro"),
       v.literal("expert"),
-      v.literal("client"),
+      // ponytail: 'client' tier removed — clients access the portal via
+      // /workspace/:token (no login), not via a user-account subscription.
+      // The Clients sidebar page (/clients) and ClientWorkspace portal are
+      // untouched; only the user-account 'client' subscription tier is gone.
     ),
   },
   handler: async (ctx, args) => {
@@ -139,7 +142,7 @@ export const grantTierByEmail = mutation({
       v.literal("starter"),
       v.literal("pro"),
       v.literal("expert"),
-      v.literal("client"),
+      // ponytail: 'client' tier removed — see setUserTier above.
     ),
   },
   handler: async (ctx, args) => {
