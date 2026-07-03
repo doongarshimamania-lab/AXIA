@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-// ponytail: ClientPolicyProfile section + component removed per user request.
-// The tier-gated analysis card (Free/Starter/Pro/Expert) and its action
-// toolbar (Share/Transfer/Delete) have been stripped from this page.
-// ClientList is untouched — the per-card stats grid and per-card Share
-// (clientWorkspace token) remain. The ShareDialog + TransferOwnershipDialog
-// at the bottom of this file are retained for potential future re-wiring.
+// ponytail: ClientPolicyProfile section + component RESTORED per user request
+// (commit 9ceeee6 had stripped it; user asked to reverse that immediately).
+// The tier-gated analysis card (Free/Starter/Pro/Expert) and the
+// Share/Transfer/Delete action toolbar are back. ClientList is untouched.
 import { ClientList } from "@/components/client-protection/ClientList";
+import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -157,17 +156,12 @@ export default function Clients() {
 
     setIsCreating(true);
     try {
-      // ponytail: pass customFields through to the mutation. Previously the
-      // user filled out the CustomFieldValues form but the values were
-      // dropped here — createClient accepts customFields: v.optional(v.any())
-      // at clients/crud.ts:149, so we forward them now.
       const newClientId = await createClientMutation({
         clientName,
         platform,
         hourlyRate: Number(hourlyRate),
         contractType,
         riskLevel,
-        customFields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
         ...(workspaceId ? { workspaceId } : {}),
       });
       // ponytail: attach the form's selected tags to the new client via the
@@ -369,23 +363,17 @@ export default function Clients() {
               allTags={allTags}
             />
 
-            {/* ponytail: re-added action toolbar for the selected client. The
-                Delete/Share/Transfer dialogs at the bottom of this file were
-                rendered but unreachable (no button anywhere called their
-                setters) after the ClientPolicyProfile section was removed.
-                These buttons are gated by perms so they only appear when the
-                user actually can delete/share/transfer the selected client. */}
-            {!isDemoMode && selectedClient && (
-              <Card className="p-3 bg-card rounded-xl border border-border">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {selectedClient.clientName ?? "Selected client"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedClient.platform ?? "—"} · ${selectedClient.hourlyRate ?? 0}/hr
-                    </p>
-                  </div>
+            {/* ponytail: RESTORED "Client Policy Profile" section that lived
+                here before commit 9ceeee6 stripped it. The selected-client
+                Share / Transfer / Delete action toolbar sits at the top of
+                this section so it's reachable on both mobile and laptop.
+                The <ClientPolicyProfile> component renders a tier-gated
+                analysis card (Free / Starter / Pro / Expert) using
+                selectedClient data directly. */}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
+                {selectedClientId && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {(canShareRecords || perms.canShare) && (
                       <Button
@@ -394,9 +382,9 @@ export default function Clients() {
                         className="gap-2"
                         onClick={() => {
                           setSharingRecord({
-                            id: selectedClient._id as string,
+                            id: selectedClientId!,
                             type: "client",
-                            sharing: (selectedClient as any).sharing || [],
+                            sharing: (selectedClient as any)?.sharing || [],
                           });
                           setShowShareDialog(true);
                         }}
@@ -416,21 +404,34 @@ export default function Clients() {
                         Transfer Ownership
                       </Button>
                     )}
-                    {canDeleteRecords && (
+                    {(canDeleteRecords || perms.canDelete) && (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2 text-destructive hover:text-destructive"
+                        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                         onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete
+                        Delete Client
                       </Button>
                     )}
                   </div>
-                </div>
-              </Card>
-            )}
+                )}
+              </div>
+              {selectedClient ? (
+                <ClientPolicyProfile
+                  selectedClient={selectedClient}
+                  tier={subscriptionTier}
+                />
+              ) : (
+                <Card className="p-6 bg-card rounded-xl border border-border">
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Select a client to view policy profile
+                  </div>
+                </Card>
+              )}
+            </div>
 
             {/* Empty state with CTA */}
             {!isDemoMode && clients.length === 0 && (
@@ -459,7 +460,7 @@ export default function Clients() {
               </Card>
             )}
 
-            {/* ponytail: Client Policy Profile section was removed above. */}
+            {/* ponytail: Client Policy Profile section was restored above. */}
           </>
         )}
 
