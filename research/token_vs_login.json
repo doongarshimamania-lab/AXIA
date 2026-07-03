@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://www.loginradius.com/blog/identity/token-based-authentication-vs-session-authentication",
+    "name": "Token-Based Authentication vs Sessions: What Actually Scales",
+    "snippet": "In contrast to sessions, token based authentication removes server-side memory and replaces it with lifecycle management. And whether that trade ...",
+    "host_name": "www.loginradius.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.pingidentity.com/en/resources/blog/post/ultimate-guide-token-based-authentication.html",
+    "name": "Ultimate Guide to Token-based Authentication - Ping Identity",
+    "snippet": "Token-based authentication is an advanced authentication method where instead of traditional user credentials like passwords, a secure token is exchanged ...",
+    "host_name": "www.pingidentity.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://curity.io/resources/learn/zero-trust-overview",
+    "name": "What is Zero Trust Architecture? - Curity Identity Server",
+    "snippet": "A token-based approach is much more dynamic and flexible in nature in the sense that a service or user is taken through a flow to request a ...",
+    "host_name": "curity.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supertokens.com/blog/token-based-authentication-vs-session-based-authentication",
+    "name": "Token Based Authentication vs Session Based Authentication",
+    "snippet": "Token-based authentication is a protocol where a client receives a token upon successful authentication, which it uses to access protected resources.",
+    "host_name": "supertokens.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/AskProgramming/comments/15eha34/what_are_the_advantages_of_using_a_certificate",
+    "name": "What are the advantages of using a certificate over token based",
+    "snippet": "I have been asked to look into setting up certificate based authorization for each client as I have been told this is more secure and better handles revocation ...",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2507.16870",
+    "name": "Building a robust OAuth token based API Security - arXiv",
+    "snippet": "Token based authentication through OAuth 2.0 framework currently acts as the de facto standard for securing APIs. OAuth 2.0 introduces a ...",
+    "host_name": "arxiv.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

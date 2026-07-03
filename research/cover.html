@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Axia Client Portal — Deep Research & Implementation Blueprint</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Inter+Tight:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --c-bg:       #f0f0ef;
+    --c-text:     #232320;
+    --c-muted:    #908e87;
+    --c-mid:      #554f3c;
+    --c-accent:   #9f832d;
+    --c-accent2:  #3d9ebf;
+    --c-surface:  #eae9e4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .poster {
+    position: relative;
+    width: 794px;
+    height: 1123px;
+    overflow: hidden;
+    background: var(--c-bg);
+  }
+
+  /* Layer 1: subtle grid pattern at 2% opacity */
+  .layer-1 {
+    position: absolute; inset: 0; z-index: 1;
+    overflow: hidden;
+    background-image:
+      linear-gradient(to right, rgba(85, 79, 60, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(85, 79, 60, 0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* Layer 2: thick vertical anchor line on the left (Template 01 signature) */
+  .layer-2 { position: absolute; inset: 0; z-index: 2; }
+  .anchor-line {
+    position: absolute;
+    left: 95px;       /* 0.12 * 794 ≈ 95 */
+    top: 112px;       /* 0.10 * 1123 ≈ 112 */
+    bottom: 112px;    /* 0.10 * 1123 ≈ 112 */
+    width: 6px;
+    background: var(--c-mid);
+  }
+  /* Tiny corner crop marks */
+  .crop-tl, .crop-tr, .crop-bl, .crop-br {
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: var(--c-muted);
+    border-style: solid;
+    opacity: 0.5;
+  }
+  .crop-tl { top: 36px; left: 36px; border-width: 1.5px 0 0 1.5px; }
+  .crop-tr { top: 36px; right: 36px; border-width: 1.5px 1.5px 0 0; }
+  .crop-bl { bottom: 36px; left: 36px; border-width: 0 0 1.5px 1.5px; }
+  .crop-br { bottom: 36px; right: 36px; border-width: 0 1.5px 1.5px 0; }
+
+  /* Layer 3: content */
+  .layer-3 {
+    position: absolute;
+    left: 125px;        /* 95 + 30 offset from anchor line */
+    right: 95px;
+    top: 0; bottom: 0;
+    z-index: 3;
+  }
+
+  /* Drawer A — Kicker (Y ~ 0.15H = 168px) */
+  .kicker {
+    position: absolute;
+    top: 168px;
+    left: 0;
+    right: 0;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: var(--c-muted);
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  /* Drawer B — Hero Title (Y ~ 0.30H = 337px) */
+  .hero {
+    position: absolute;
+    top: 280px;
+    left: 0;
+    right: 0;
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--c-text);
+    max-width: 560px;
+  }
+  .hero .accent-word {
+    color: var(--c-accent);
+  }
+
+  /* Drawer C — Summary (Y ~ 0.50H = 562px) */
+  .summary {
+    position: absolute;
+    top: 560px;
+    left: 0;
+    max-width: 540px;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--c-text);
+    opacity: 0.88;
+  }
+  .summary strong {
+    color: var(--c-mid);
+    font-weight: 600;
+  }
+
+  /* Drawer D — Meta (Y ~ 0.75H = 842px) */
+  .meta {
+    position: absolute;
+    top: 842px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .meta-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-size: 14px;
+    color: var(--c-text);
+    opacity: 0.85;
+  }
+  .meta-row .label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    min-width: 80px;
+  }
+  .meta-row .value {
+    font-weight: 500;
+  }
+
+  /* Footer (Y ~ 0.92H = 1033px) */
+  .footer {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--c-muted);
+    opacity: 0.7;
+  }
+
+  /* Small accent tag near the title */
+  .tag-row {
+    position: absolute;
+    top: 240px;
+    left: 0;
+    display: flex;
+    gap: 8px;
+  }
+  .tag {
+    padding: 4px 10px;
+    border: 1px solid var(--c-accent);
+    color: var(--c-accent);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    background: rgba(159, 131, 45, 0.05);
+  }
+  .tag.alt {
+    border-color: var(--c-accent2);
+    color: var(--c-accent2);
+    background: rgba(61, 158, 191, 0.05);
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <!-- Layer 1: subtle grid -->
+  <div class="layer-1"></div>
+
+  <!-- Layer 2: structural elements -->
+  <div class="layer-2">
+    <div class="anchor-line"></div>
+    <div class="crop-tl"></div>
+    <div class="crop-tr"></div>
+    <div class="crop-bl"></div>
+    <div class="crop-br"></div>
+  </div>
+
+  <!-- Layer 3: content -->
+  <div class="layer-3">
+    <div class="kicker">Deep Research &amp; Implementation Blueprint</div>
+
+    <div class="tag-row">
+      <div class="tag">Research</div>
+      <div class="tag alt">Blueprint</div>
+    </div>
+
+    <div class="hero">
+      Axia<br>
+      Client<br>
+      <span class="accent-word">Portal.</span>
+    </div>
+
+    <div class="summary">
+      A deep research deliverable covering how <strong>200+ agency types</strong> &mdash; marketing,
+      creative, ad, web development &mdash; can use a token-based client portal to
+      <strong>save hours, cut cost, and protect scope creep</strong>. Includes competitor
+      teardowns across 5 categories, an ideal-state architecture, prioritized feature
+      backlog, and a 12-week implementation roadmap scoped against the current
+      <strong>/workspace/:token</strong> MVP.
+    </div>
+
+    <div class="meta">
+      <div class="meta-row">
+        <span class="label">Prepared by</span>
+        <span class="value">Z.ai</span>
+      </div>
+      <div class="meta-row">
+        <span class="label">Date</span>
+        <span class="value">July 2026</span>
+      </div>
+      <div class="meta-row">
+        <span class="label">Audience</span>
+        <span class="value">Founder &amp; Engineering</span>
+      </div>
+      <div class="meta-row">
+        <span class="label">Version</span>
+        <span class="value">1.0</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Axia &middot; Confidential</span>
+      <span>Document 001</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
