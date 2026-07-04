@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react";
 // Share/Transfer/Delete action toolbar are back. ClientList is untouched.
 import { ClientList } from "@/components/client-protection/ClientList";
 import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
+// ponytail: P0 — generate/ revoke client portal JWT links from the Clients page
+import { PortalLinkDialog } from "@/components/portal/PortalLinkDialog";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -375,6 +377,12 @@ export default function Clients() {
                 <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
                 {selectedClientId && (
                   <div className="flex items-center gap-2 flex-wrap">
+                    {/* ponytail: P0 — generate JWT portal link for this client */}
+                    <PortalLinkDialog
+                      clientId={selectedClientId}
+                      clientName={(selectedClient as any)?.clientName ?? (selectedClient as any)?.name ?? "Client"}
+                      contactEmail={(selectedClient as any)?.contactEmail ?? (selectedClient as any)?.email}
+                    />
                     {(canShareRecords || perms.canShare) && (
                       <Button
                         variant="outline"

@@ -9,6 +9,7 @@ export const configureCORS = (response: Response): Response => {
   const allowedOrigins = [
     "https://preview-81.space-z.ai",
     "https://preview-1936221977589032.space.chatglm.site",
+    "https://preview-cd675404-3f02-4d5d-bb7a-234bbf26b6a6.space-z.ai",
     "https://veracious-zebra-519.convex.cloud",
     "https://artful-civet-344.convex.cloud",
     "http://localhost:5173",
@@ -19,8 +20,60 @@ export const configureCORS = (response: Response): Response => {
   response.headers.set('Access-Control-Allow-Origin', allowOrigin);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // ponytail: P0 Phase 7 — attach strict CSP + security headers to EVERY HTTP
+  // response (including auth + extension + AI + payment webhook routes).
+  applySecurityHeaders(response);
   return response;
 };
+
+/**
+ * SECURITY (P0 Phase 7): Defense-in-depth HTTP headers.
+ *
+ *   Content-Security-Policy:
+ *     - default-src 'self'         → no cross-origin loads by default
+ *     - script-src 'self'           → no inline scripts (XSS defense)
+ *     - style-src 'self' 'unsafe-inline' → Tailwind needs inline styles
+ *     - img-src 'self' data: https: → allow data URIs + https images
+ *     - connect-src 'self' <convex> → Convex WebSocket + fetch only
+ *     - frame-ancestors 'none'      → clickjacking defense (no iframes)
+ *     - base-uri 'self'             → no <base> hijack
+ *     - form-action 'self'          → no form exfil
+ *
+ *   X-Content-Type-Options: nosniff    → MIME sniffing defense
+ *   X-Frame-Options: DENY              → legacy clickjacking defense
+ *   Referrer-Policy: strict-origin-when-cross-origin
+ *   Permissions-Policy: geolocation=(), microphone=(), camera=()
+ *
+ * NOTE: This is set on Convex HTTP routes (auth, webhooks). The Caddyfile
+ * (or Vercel config) sets the SAME headers on static asset responses so the
+ * policy applies site-wide. See Caddyfile for the matching config.
+ */
+function applySecurityHeaders(response: Response): void {
+  // ponytail: CSP allows 'unsafe-inline' for styles only because Tailwind v4
+  // injects inline styles for dynamic utility classes. Scripts are locked to
+  // 'self' — no inline scripts anywhere in the bundle.
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.convex.cloud https://api.resend.com wss://*.convex.cloud",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+
+  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  // ponytail: HSTS only meaningful on HTTPS — Convex serves HTTPS, so set it
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+}
 
 /**
  * SECURITY: Validate extension token against the database.
@@ -487,6 +540,66 @@ Provide: Score (0-100), brief reasoning, and recommended next evidence type (scr
       );
     } catch (e: any) {
       return sanitizeError(e, "AI prediction failed");
+    }
+  }),
+});
+
+// ─── P0 Phase 6: PAYMENT WEBHOOK ─────────────────────────────────────────────
+// POST /api/payments/webhook
+// Body: provider-specific (Stripe: {type, data: {object: {...}}})
+//
+// SECURITY:
+//   - Provider signature verified via getPaymentProvider().verifyWebhookSignature
+//   - Body size capped at 64KB (Stripe events are typically <10KB)
+//   - Idempotency: markPaymentCompleted is idempotent (re-delivery safe)
+//   - Audit logged via portalAuditLog (in markPaymentCompleted)
+http.route({
+  path: "/api/payments/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    try {
+      const sizeErr = checkBodySize(req, 64_000);
+      if (sizeErr) return sizeErr;
+
+      const payload = await req.text();
+      const signature = req.headers.get("Stripe-Signature") ?? req.headers.get("X-Signature") ?? "";
+
+      const { getPaymentProvider } = await import("./lib/paymentProvider");
+      const provider = getPaymentProvider();
+
+      const valid = await provider.verifyWebhookSignature(payload, signature);
+      if (!valid) {
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Parse provider-agnostic event
+      const event = JSON.parse(payload) as {
+        type?: string;
+        data?: { object?: { id?: string; client_reference_id?: string; metadata?: { paymentId?: string } } };
+      };
+
+      // Stripe checkout.session.completed → mark payment completed
+      if (provider.name === "stripe" && event.type === "checkout.session.completed") {
+        const sessionId = event.data?.object?.id;
+        const paymentId = event.data?.object?.client_reference_id ?? event.data?.object?.metadata?.paymentId;
+        if (paymentId && sessionId) {
+          await ctx.runMutation(api.portal.payments.markPaymentCompleted, {
+            paymentId: paymentId as any,
+            providerPaymentId: sessionId,
+          });
+        }
+      }
+      // Mock provider: no webhook needed (payment completes synchronously)
+
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e: any) {
+      return sanitizeError(e, "Webhook processing failed");
     }
   }),
 });
