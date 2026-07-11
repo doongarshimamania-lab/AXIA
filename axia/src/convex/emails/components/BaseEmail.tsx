@@ -4,7 +4,7 @@
 // Uses @react-email/components (type-safe React → HTML email renderer).
 
 import React from "react";
-import { Html, Body, Container, Section, PreviewText } from "@react-email/components";
+import { Html, Body, Container, Section, Preview } from "@react-email/components";
 
 interface BaseEmailProps {
   previewText: string;
@@ -50,7 +50,7 @@ export const styles = {
   } as const,
 };
 
-export default function BaseEmail({
+export function BaseEmail({
   previewText,
   brandName = "Axia",
   brandTagline = "Client portal for freelancers & agencies",
@@ -68,7 +68,7 @@ export default function BaseEmail({
           padding: "0",
         }}
       >
-        <PreviewText>{previewText}</PreviewText>
+        <Preview>{previewText}</Preview>
         <Container
           style={{
             maxWidth: "560px",

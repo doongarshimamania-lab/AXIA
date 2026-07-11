@@ -117,3 +117,45 @@ export async function getBetterAuthUser(ctx: QueryCtx | MutationCtx) {
 export async function getAuth(ctx: MutationCtx) {
   return await authComponent.getAuth(createAuth, ctx);
 }
+
+// ─── Public API: createAccount (compatibility shim for seed scripts) ─────────
+// Replaces @convex-dev/auth's createAccount. Used by seedTeamUsers.ts to
+// provision test users with email+password. Creates a BA user + account
+// record (password hashed by BA's scrypt config) and links the users-table
+// record via ensureLinkedUser.
+//
+// ponytail: only used by dev seed scripts — not on the hot path. The shape
+// mirrors the old createAccount so seedTeamUsers.ts works without changes.
+export async function createAccount(
+  ctx: MutationCtx,
+  args: {
+    provider: "password";
+    account: { id: string; secret: string };
+    profile: { email: string; name?: string; emailVerificationTime?: number };
+    shouldLinkViaEmail?: boolean;
+    shouldLinkViaPhone?: boolean;
+  },
+): Promise<{ user: { _id: Id<"users"> } }> {
+  const { auth } = await getAuth(ctx);
+  // ponytail: BA's signUpEmail creates user + account records in the BA
+  // component tables (user, account, session). We then call ensureLinkedUser
+  // to create/lookup the corresponding app users-table record.
+  const signUpResult = await auth.api.signUpEmail({
+    body: {
+      email: args.profile.email,
+      password: args.account.secret,
+      name: args.profile.name ?? args.profile.email.split("@")[0],
+    },
+  });
+  if (!signUpResult?.user?.id) {
+    throw new Error(`createAccount: signUpEmail failed for ${args.profile.email}`);
+  }
+  const userId = await ensureLinkedUser(ctx, {
+    id: signUpResult.user.id,
+    email: signUpResult.user.email,
+    name: signUpResult.user.name,
+    image: signUpResult.user.image,
+    emailVerified: Boolean(args.profile.emailVerificationTime),
+  });
+  return { user: { _id: userId } };
+}

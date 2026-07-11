@@ -8,14 +8,15 @@
  * @module
  */
 
+import type * as accountSettings from "../accountSettings.js";
 import type * as adminListAll from "../adminListAll.js";
 import type * as adminSeed from "../adminSeed.js";
 import type * as ai_disputePrediction from "../ai/disputePrediction.js";
 import type * as ai_disputePredictionNode from "../ai/disputePredictionNode.js";
 import type * as audit_storeConsentAudit from "../audit/storeConsentAudit.js";
 import type * as auth from "../auth.js";
-import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as autoSeed from "../autoSeed.js";
+import type * as billing_bulkImport from "../billing/bulkImport.js";
 import type * as billing_crud from "../billing/crud.js";
 import type * as billing_reminders from "../billing/reminders.js";
 import type * as clientAuth from "../clientAuth.js";
@@ -34,6 +35,12 @@ import type * as customFields_validate from "../customFields/validate.js";
 import type * as deals from "../deals.js";
 import type * as debug from "../debug.js";
 import type * as disputeReports from "../disputeReports.js";
+import type * as email from "../email.js";
+import type * as emails_components_BaseEmail from "../emails/components/BaseEmail.js";
+import type * as emails_magicLink from "../emails/magicLink.js";
+import type * as emails_resetPassword from "../emails/resetPassword.js";
+import type * as emails_verifyEmail from "../emails/verifyEmail.js";
+import type * as emails_verifyOTP from "../emails/verifyOTP.js";
 import type * as evidence from "../evidence.js";
 import type * as evidence_analytics from "../evidence/analytics.js";
 import type * as evidence_extension from "../evidence/extension.js";
@@ -43,6 +50,16 @@ import type * as extensionRotate from "../extensionRotate.js";
 import type * as goals_crud from "../goals/crud.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
+import type * as leads from "../leads.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as lib_email from "../lib/email.js";
+import type * as lib_emailTemplates from "../lib/emailTemplates.js";
+import type * as lib_paymentProvider from "../lib/paymentProvider.js";
+import type * as lib_paymentProviders_mock from "../lib/paymentProviders/mock.js";
+import type * as lib_paymentProviders_stripe from "../lib/paymentProviders/stripe.js";
+import type * as lib_portalAuditLog from "../lib/portalAuditLog.js";
+import type * as lib_portalAuth from "../lib/portalAuth.js";
+import type * as lib_scopeCreepDetector from "../lib/scopeCreepDetector.js";
 import type * as manualSends from "../manualSends.js";
 import type * as messaging_channelMutations from "../messaging/channelMutations.js";
 import type * as messaging_channels from "../messaging/channels.js";
@@ -64,6 +81,14 @@ import type * as platforms_platformConnections from "../platforms/platformConnec
 import type * as platforms_platformImport from "../platforms/platformImport.js";
 import type * as platforms_upworkComplianceCheck from "../platforms/upworkComplianceCheck.js";
 import type * as policies_clientPolicies from "../policies/clientPolicies.js";
+import type * as portal_changeOrders from "../portal/changeOrders.js";
+import type * as portal_deliverables from "../portal/deliverables.js";
+import type * as portal_invoices from "../portal/invoices.js";
+import type * as portal_messages from "../portal/messages.js";
+import type * as portal_payments from "../portal/payments.js";
+import type * as portal_rateLimit from "../portal/rateLimit.js";
+import type * as portal_self from "../portal/self.js";
+import type * as portal_tokens from "../portal/tokens.js";
 import type * as premium_crossPlatformVerification from "../premium/crossPlatformVerification.js";
 import type * as premium_protectionAdvisor from "../premium/protectionAdvisor.js";
 import type * as premium_protectionPlans from "../premium/protectionPlans.js";
@@ -106,11 +131,13 @@ import type * as tables_customFields from "../tables/customFields.js";
 import type * as tables_evidence from "../tables/evidence.js";
 import type * as tables_features from "../tables/features.js";
 import type * as tables_goals from "../tables/goals.js";
+import type * as tables_leads from "../tables/leads.js";
 import type * as tables_manualSends from "../tables/manualSends.js";
 import type * as tables_messaging from "../tables/messaging.js";
 import type * as tables_notifications from "../tables/notifications.js";
 import type * as tables_pipeline from "../tables/pipeline.js";
 import type * as tables_platform from "../tables/platform.js";
+import type * as tables_portal from "../tables/portal.js";
 import type * as tables_projects from "../tables/projects.js";
 import type * as tables_proposals from "../tables/proposals.js";
 import type * as tables_scope from "../tables/scope.js";
@@ -145,14 +172,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountSettings: typeof accountSettings;
   adminListAll: typeof adminListAll;
   adminSeed: typeof adminSeed;
   "ai/disputePrediction": typeof ai_disputePrediction;
   "ai/disputePredictionNode": typeof ai_disputePredictionNode;
   "audit/storeConsentAudit": typeof audit_storeConsentAudit;
   auth: typeof auth;
-  "auth/emailOtp": typeof auth_emailOtp;
   autoSeed: typeof autoSeed;
+  "billing/bulkImport": typeof billing_bulkImport;
   "billing/crud": typeof billing_crud;
   "billing/reminders": typeof billing_reminders;
   clientAuth: typeof clientAuth;
@@ -171,6 +199,12 @@ declare const fullApi: ApiFromModules<{
   deals: typeof deals;
   debug: typeof debug;
   disputeReports: typeof disputeReports;
+  email: typeof email;
+  "emails/components/BaseEmail": typeof emails_components_BaseEmail;
+  "emails/magicLink": typeof emails_magicLink;
+  "emails/resetPassword": typeof emails_resetPassword;
+  "emails/verifyEmail": typeof emails_verifyEmail;
+  "emails/verifyOTP": typeof emails_verifyOTP;
   evidence: typeof evidence;
   "evidence/analytics": typeof evidence_analytics;
   "evidence/extension": typeof evidence_extension;
@@ -180,6 +214,16 @@ declare const fullApi: ApiFromModules<{
   "goals/crud": typeof goals_crud;
   http: typeof http;
   invoices: typeof invoices;
+  leads: typeof leads;
+  "lib/auth": typeof lib_auth;
+  "lib/email": typeof lib_email;
+  "lib/emailTemplates": typeof lib_emailTemplates;
+  "lib/paymentProvider": typeof lib_paymentProvider;
+  "lib/paymentProviders/mock": typeof lib_paymentProviders_mock;
+  "lib/paymentProviders/stripe": typeof lib_paymentProviders_stripe;
+  "lib/portalAuditLog": typeof lib_portalAuditLog;
+  "lib/portalAuth": typeof lib_portalAuth;
+  "lib/scopeCreepDetector": typeof lib_scopeCreepDetector;
   manualSends: typeof manualSends;
   "messaging/channelMutations": typeof messaging_channelMutations;
   "messaging/channels": typeof messaging_channels;
@@ -201,6 +245,14 @@ declare const fullApi: ApiFromModules<{
   "platforms/platformImport": typeof platforms_platformImport;
   "platforms/upworkComplianceCheck": typeof platforms_upworkComplianceCheck;
   "policies/clientPolicies": typeof policies_clientPolicies;
+  "portal/changeOrders": typeof portal_changeOrders;
+  "portal/deliverables": typeof portal_deliverables;
+  "portal/invoices": typeof portal_invoices;
+  "portal/messages": typeof portal_messages;
+  "portal/payments": typeof portal_payments;
+  "portal/rateLimit": typeof portal_rateLimit;
+  "portal/self": typeof portal_self;
+  "portal/tokens": typeof portal_tokens;
   "premium/crossPlatformVerification": typeof premium_crossPlatformVerification;
   "premium/protectionAdvisor": typeof premium_protectionAdvisor;
   "premium/protectionPlans": typeof premium_protectionPlans;
@@ -243,11 +295,13 @@ declare const fullApi: ApiFromModules<{
   "tables/evidence": typeof tables_evidence;
   "tables/features": typeof tables_features;
   "tables/goals": typeof tables_goals;
+  "tables/leads": typeof tables_leads;
   "tables/manualSends": typeof tables_manualSends;
   "tables/messaging": typeof tables_messaging;
   "tables/notifications": typeof tables_notifications;
   "tables/pipeline": typeof tables_pipeline;
   "tables/platform": typeof tables_platform;
+  "tables/portal": typeof tables_portal;
   "tables/projects": typeof tables_projects;
   "tables/proposals": typeof tables_proposals;
   "tables/scope": typeof tables_scope;
@@ -302,4 +356,7 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
+  resend: import("@convex-dev/resend/_generated/component.js").ComponentApi<"resend">;
+};

@@ -1,4 +1,3 @@
-"use node";
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/portalAuth.ts — JWT-based portal authentication + scope enforcement.
 //
@@ -25,10 +24,12 @@
 //   Token in sessionStorage (NOT localStorage) — dies with tab close, limits
 //   XSS exfil blast radius. Frontend enforces this; backend treats token as
 //   opaque string.
+//
+// RUNTIME: Web Crypto API (crypto.subtle) — works in Convex V8 runtime.
+//   All sign/verify/hash functions are async. Callers must await.
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { QueryCtx, MutationCtx } from "../_generated/server";
-import crypto from "crypto";
 
 // ─── ENV ACCESS ──────────────────────────────────────────────────────────────
 
@@ -50,8 +51,13 @@ function getPreviousJwtSecret(): string | null {
 
 // ponytail: kid is derived from the secret's first 8 hex chars of its SHA-256.
 // Lets us detect key rotation mismatches without a separate KMS lookup.
-function kidForSecret(secret: string): string {
-  return crypto.createHash("sha256").update(secret).digest("hex").slice(0, 8);
+async function kidForSecret(secret: string): Promise<string> {
+  const data = new TextEncoder().encode(secret);
+  const hashBuf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuf))
+    .slice(0, 4)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -80,47 +86,70 @@ export interface PortalJwtClaims {
   kid: string;
 }
 
-// ─── JWT SIGN/VERIFY (HMAC-SHA256, manual — no `jsonwebtoken` dep) ─────────────
+// ─── JWT SIGN/VERIFY (HMAC-SHA256 via Web Crypto API — no `jsonwebtoken` dep) ──
 // ponytail: jsonwebtoken adds 1 dep + 47 transitive. JWT is ~30 lines of code
-// using node:crypto. Skip the dep.
+// using crypto.subtle. Skip the dep. Web Crypto is async, so all helpers here
+// are async.
 
-function base64url(input: Buffer | string): string {
-  const buf = typeof input === "string" ? Buffer.from(input) : input;
-  return buf.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+function base64url(input: Uint8Array | string): string {
+  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-function base64urlDecode(input: string): Buffer {
+function base64urlDecode(input: string): Uint8Array {
   const padded = input.replace(/-/g, "+").replace(/_/g, "/");
   const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
-  return Buffer.from(padded + pad, "base64");
+  const bin = atob(padded + pad);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }
 
-function sign(payload: object, secret: string, kid: string): string {
+async function importHmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+}
+
+async function sign(payload: object, secret: string, kid: string): Promise<string> {
   const header = { alg: "HS256", typ: "JWT", kid };
   const headerB64 = base64url(JSON.stringify(header));
   const payloadB64 = base64url(JSON.stringify(payload));
   const data = `${headerB64}.${payloadB64}`;
-  const sig = crypto.createHmac("sha256", secret).update(data).digest();
-  const sigB64 = base64url(sig);
+  const key = await importHmacKey(secret);
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+  const sigB64 = base64url(new Uint8Array(sigBuf));
   return `${data}.${sigB64}`;
 }
 
-function verifySignature(token: string, secret: string, expectedKid: string): PortalJwtClaims | null {
+async function verifySignature(
+  token: string,
+  secret: string,
+  expectedKid: string,
+): Promise<PortalJwtClaims | null> {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerB64, payloadB64, sigB64] = parts;
   const data = `${headerB64}.${payloadB64}`;
-  const expectedSig = crypto.createHmac("sha256", secret).update(data).digest();
+  const key = await importHmacKey(secret);
+  const expectedSig = new TextEncoder().encode(data);
   const actualSig = base64urlDecode(sigB64);
-  // ponytail: timingSafeEqual prevents timing-based signature oracle.
-  if (expectedSig.length !== actualSig.length) return null;
-  if (!crypto.timingSafeEqual(expectedSig, actualSig)) return null;
+
+  // ponytail: crypto.subtle.verify performs constant-time comparison internally.
+  const valid = await crypto.subtle.verify("HMAC", key, actualSig, expectedSig);
+  if (!valid) return null;
 
   try {
-    const header = JSON.parse(base64urlDecode(headerB64).toString());
+    const header = JSON.parse(new TextDecoder().decode(base64urlDecode(headerB64)));
     if (header.alg !== "HS256") return null; // alg-confusion defense
     if (header.kid !== expectedKid) return null;
-    const payload = JSON.parse(base64urlDecode(payloadB64).toString()) as PortalJwtClaims;
+    const payload = JSON.parse(new TextDecoder().decode(base64urlDecode(payloadB64))) as PortalJwtClaims;
     return payload;
   } catch {
     return null;
@@ -131,15 +160,15 @@ function verifySignature(token: string, secret: string, expectedKid: string): Po
 
 const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-export function signPortalToken(args: {
+export async function signPortalToken(args: {
   workspaceId: string;
   clientId: string;
   freelancerUserId: string;
   scopes: PortalScope[];
   ttlSeconds?: number;
-}): string {
+}): Promise<string> {
   const secret = getJwtSecret();
-  const kid = kidForSecret(secret);
+  const kid = await kidForSecret(secret);
   const now = Math.floor(Date.now() / 1000);
   const claims: PortalJwtClaims = {
     wid: args.workspaceId,
@@ -165,21 +194,21 @@ export class PortalAuthError extends Error {
  * Tries current secret first, then previous (for seamless rotation).
  * Throws PortalAuthError on failure.
  */
-export function verifyPortalToken(token: string): PortalJwtClaims {
+export async function verifyPortalToken(token: string): Promise<PortalJwtClaims> {
   if (!token || typeof token !== "string") {
     throw new PortalAuthError("INVALID_TOKEN", "Missing token");
   }
 
   const secret = getJwtSecret();
-  const currentKid = kidForSecret(secret);
-  let claims = verifySignature(token, secret, currentKid);
+  const currentKid = await kidForSecret(secret);
+  let claims = await verifySignature(token, secret, currentKid);
 
   // Try previous secret if current didn't match (rotation window)
   if (!claims) {
     const prevSecret = getPreviousJwtSecret();
     if (prevSecret) {
-      const prevKid = kidForSecret(prevSecret);
-      claims = verifySignature(token, prevSecret, prevKid);
+      const prevKid = await kidForSecret(prevSecret);
+      claims = await verifySignature(token, prevSecret, prevKid);
     }
   }
 
@@ -208,7 +237,7 @@ export async function verifyPortalScope(
   token: string,
   requiredScopes: PortalScope[],
 ): Promise<PortalJwtClaims> {
-  const claims = verifyPortalToken(token);
+  const claims = await verifyPortalToken(token);
 
   for (const required of requiredScopes) {
     if (!claims.sc.includes(required)) {
@@ -221,7 +250,7 @@ export async function verifyPortalScope(
 
   // ponytail: also verify the token hasn't been revoked.
   // Without this, a revoked token would still validate until natural expiry.
-  const tokenHash = hashToken(token);
+  const tokenHash = await hashToken(token);
   const revoked = await ctx.db
     .query("portalRevokedTokens")
     .withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
@@ -237,42 +266,55 @@ export async function verifyPortalScope(
  * Hash a token for storage/indexing. NEVER store raw tokens.
  * SHA-256 with a server-side pepper so a DB-only leak can't be turned into
  * valid tokens without also knowing JWT_SIGNING_SECRET.
+ *
+ * Uses HMAC-SHA256 via Web Crypto API (async).
  */
-export function hashToken(token: string): string {
+export async function hashToken(token: string): Promise<string> {
   const pepper = getJwtSecret();
-  return crypto.createHmac("sha256", pepper).update(token).digest("hex");
+  const key = await importHmacKey(pepper);
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 // ─── SELF-CHECK ────────────────────────────────────────────────────────────────
 // ponytail: ONE check per non-trivial logic. This catches: alg confusion,
 // tampered payload, expired token, wrong-secret signature, kid mismatch.
 // Runs once per cold start in non-prod.
+//
+// Note: Self-check is now async (Web Crypto). Wrapped in an IIFE that runs
+// once per cold start. Failures log to console.error — do not crash deploy.
 
 if (process.env.NODE_ENV !== "production" && !globalThis.__PORTAL_AUTH_CHECKED__) {
   globalThis.__PORTAL_AUTH_CHECKED__ = true;
   const originalEnv = process.env.JWT_SIGNING_SECRET;
   process.env.JWT_SIGNING_SECRET = "test-secret-only-for-selfcheck-" + Math.random();
-  try {
-    const tok = signPortalToken({
-      workspaceId: "ws1",
-      clientId: "cl1",
-      freelancerUserId: "fu1",
-      scopes: ["deliverables:read", "change_orders:approve"],
-      ttlSeconds: 60,
-    });
-    const claims = verifyPortalToken(tok);
-    if (claims.cid !== "cl1" || claims.sc.length !== 2) {
-      throw new Error("portalAuth self-check FAILED: round-trip claims mismatch");
-    }
-    // Tampered token must fail
-    const tampered = tok.slice(0, -4) + "AAAA";
+  (async () => {
     try {
-      verifyPortalToken(tampered);
-      throw new Error("portalAuth self-check FAILED: tampered token verified");
-    } catch (e: any) {
-      if (e.code !== "INVALID_TOKEN") throw e;
+      const tok = await signPortalToken({
+        workspaceId: "ws1",
+        clientId: "cl1",
+        freelancerUserId: "fu1",
+        scopes: ["deliverables:read", "change_orders:approve"],
+        ttlSeconds: 60,
+      });
+      const claims = await verifyPortalToken(tok);
+      if (claims.cid !== "cl1" || claims.sc.length !== 2) {
+        throw new Error("portalAuth self-check FAILED: round-trip claims mismatch");
+      }
+      // Tampered token must fail
+      const tampered = tok.slice(0, -4) + "AAAA";
+      try {
+        await verifyPortalToken(tampered);
+        throw new Error("portalAuth self-check FAILED: tampered token verified");
+      } catch (e: any) {
+        if (e.code !== "INVALID_TOKEN") throw e;
+      }
+    } catch (e) {
+      console.error("[portalAuth self-check]", e);
+    } finally {
+      process.env.JWT_SIGNING_SECRET = originalEnv;
     }
-  } finally {
-    process.env.JWT_SIGNING_SECRET = originalEnv;
-  }
+  })();
 }

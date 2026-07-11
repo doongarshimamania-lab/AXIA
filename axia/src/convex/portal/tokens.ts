@@ -72,7 +72,8 @@ export const issueToken = mutation({
     }
 
     // Issue the JWT (signed offline via lib/portalAuth.ts)
-    const token = signPortalToken({
+    // ponytail: signPortalToken is now async (Web Crypto API)
+    const token = await signPortalToken({
       workspaceId: (client.workspaceId as any) ?? user._id,
       clientId: client._id,
       freelancerUserId: user._id,
@@ -93,8 +94,9 @@ export const issueToken = mutation({
     );
 
     // Insert new token record (HASH only — raw token only lives in the JWT)
+    // ponytail: hashToken is now async (Web Crypto API)
     await ctx.db.insert("clientWorkspaceTokens", {
-      token: hashToken(token),
+      token: await hashToken(token),
       clientId: client._id,
       clientName: client.clientName,
       contactEmail: client.contactEmail,

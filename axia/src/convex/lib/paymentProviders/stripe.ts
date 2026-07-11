@@ -1,4 +1,3 @@
-"use node";
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/paymentProviders/stripe.ts — Stripe payment provider (stub for future).
 //
@@ -9,10 +8,13 @@
 //
 // Until then, this file throws a clear error if accessed, so the mock provider
 // is used by default.
+//
+// RUNTIME: Web Crypto API (crypto.subtle) — works in Convex V8 runtime.
+// No "use node" directive — this file must be callable from query/mutation
+// handlers that run in the Convex V8 runtime.
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { PaymentProvider, CheckoutSessionArgs, CheckoutSessionResult } from "../paymentProvider";
-import crypto from "crypto";
 
 async function ensureConfigured(): Promise<void> {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -24,15 +26,36 @@ async function ensureConfigured(): Promise<void> {
   }
 }
 
+async function importHmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+}
+
+async function hmacHex(secret: string, data: string): Promise<string> {
+  const key = await importHmacKey(secret);
+  const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(sigBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export const stripeProvider: PaymentProvider = {
   name: "stripe",
 
   async createCheckoutSession(args: CheckoutSessionArgs): Promise<CheckoutSessionResult> {
     await ensureConfigured();
 
-    // ponytail: dynamic import so the Stripe SDK isn't loaded in mock mode
-    // (saves ~2MB bundle in dev)
-    const Stripe = (await import("stripe")).default;
+    // ponytail: dynamic import via variable so the bundler doesn't try to
+    // statically resolve "stripe" (the package is only installed when the
+    // user actually switches to Stripe). If PORTAL_PAYMENT_PROVIDER=stripe
+    // is set without installing "stripe", this throws a clear runtime error.
+    const moduleName = "stripe";
+    const Stripe = (await import(/* @vite-ignore */ moduleName)).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2024-06-20" as any,
     });
@@ -77,16 +100,16 @@ export const stripeProvider: PaymentProvider = {
 
     const t = tElement.substring(2);
     const v1 = v1Element.substring(3);
-    const expectedSig = crypto
-      .createHmac("sha256", process.env.STRIPE_WEBHOOK_SECRET)
-      .update(`${t}.${payload}`)
-      .digest("hex");
+    const expectedSig = await hmacHex(process.env.STRIPE_WEBHOOK_SECRET!, `${t}.${payload}`);
 
-    // ponytail: timingSafeEqual prevents timing-based signature oracle
-    const a = Buffer.from(v1, "hex");
-    const b = Buffer.from(expectedSig, "hex");
-    if (a.length !== b.length) return false;
-    return crypto.timingSafeEqual(a, b);
+    // ponytail: constant-time comparison via custom hex compare (Web Crypto
+    // doesn't expose timingSafeEqual; we use a length-checked XOR compare).
+    if (v1.length !== expectedSig.length) return false;
+    let diff = 0;
+    for (let i = 0; i < v1.length; i++) {
+      diff |= v1.charCodeAt(i) ^ expectedSig.charCodeAt(i);
+    }
+    return diff === 0;
   },
 };
 
