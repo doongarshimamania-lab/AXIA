@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://better-auth.com/pricing",
+    "name": "Pricing - Better Auth",
+    "snippet": "The Better Auth framework is free and open source. $20/ month Unlimited seats ・ $50/month per connection ・ $0.09 per SMS Email ・ $50/month per connection",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.openreplay.com/betterauth-explained-rapid-developer-adoption",
+    "name": "BetterAuth Explained: What It Is and Its Rapid Developer Adoption",
+    "snippet": "BetterAuth stores all authentication data in your own database. This means no vendor lock-in, no surprise pricing changes, and complete ...",
+    "host_name": "blog.openreplay.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com",
+    "name": "Better Auth",
+    "snippet": "The most comprehensive authentication framework for TypeScript. Better Auth with a dashboard, audit logs, security detection, enterprise features, and more.",
+    "host_name": "better-auth.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.better-stack.ai/p/blog/open-source-auth-libraries-in-2026",
+    "name": "Comparing Top Open-Source Auth Libraries in 2026 - BTST",
+    "snippet": "This article reviews the top free, open-source authentication libraries used by modern web. Better Auth is the most flexible, modern option if ...",
+    "host_name": "www.better-stack.ai",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/top-better-auth-alternatives-secure-authentication-2026",
+    "name": "Top 5 Better Auth alternatives for secure authentication in 2026",
+    "snippet": "Better Auth has quickly become a popular TypeScript-first authentication library, Open source: Self-hostable for compliance or data residency ...",
+    "host_name": "workos.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supastarter.dev/blog/better-auth-vs-nextauth-vs-clerk",
+    "name": "better-auth vs NextAuth vs Clerk — Authentication Comparison 2026",
+    "snippet": "better-auth is a modern, open-source authentication library built for full-stack TypeScript applications. Pricing can scale quickly — costs ...",
+    "host_name": "supastarter.dev",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.pkgpulse.com/guides/lucia-auth-v3-vs-better-auth-vs-stack-auth-self-hosted-2026",
+    "name": "Lucia Auth v3 vs Better Auth vs Stack Auth 2026 — PkgPulse Guides",
+    "snippet": "Auth is open-source — self-host or use their managed cloud ($0 to start) All three are TypeScript-first — full type safety end to end",
+    "host_name": "www.pkgpulse.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth",
+    "name": "GitHub - better-auth/better-auth: The most comprehensive authentication",
+    "snippet": "Better Auth is a free and open source project licensed under the MIT License. You are free to do whatever you want with it.",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

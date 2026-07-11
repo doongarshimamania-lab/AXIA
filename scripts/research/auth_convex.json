@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://github.com/get-convex/convex-auth/issues/193",
+    "name": "Fix Google OAuth session persistence after page refresh · Issue #193",
+    "snippet": "When logging in via Google authentication, the user session doesn't persist after refreshing the browser page. Convex logs show the error message \"Invalid ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/auth/config/oauth",
+    "name": "OAuth - Convex Auth",
+    "snippet": "This authentication method has two steps: Convex Auth ensures a secure exchange of secrets between the third-party provider and your backend.",
+    "host_name": "labs.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=ZvlmSy85bj4",
+    "name": "Setting up Convex Auth in 3 minutes and 50 seconds  - YouTube",
+    "snippet": "Get the code: https://github.com/get-convex/convex-auth-with-role-based-permissions It's time to walk through Convex Auth, step-by-step and ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/convex-auth/issues/286",
+    "name": "Google OAuth shows “Access blocked” even after correct setup #286",
+    "snippet": "I'm trying to use Convex Auth with Google OAuth, but I'm consistently getting an “Access blocked: This app's request is invalid” error from ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/better-auth",
+    "name": "get-convex/better-auth - GitHub",
+    "snippet": "Built-in support for email and password authentication, with session and account management features. Social Sign-on. Support multiple OAuth providers. Allow ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@rentierdigital/authentication-in-convex-a-developers-quest-for-the-holy-grail-spoiler-it-s-not-in-a-cave-2753d7807cf8",
+    "name": "Convex Authentication Guide: Clerk, Auth0, and Custom Auth",
+    "snippet": "Setting up authentication in Convex with Clerk and other providers. The gotchas, workarounds, and patterns that actually work in production.",
+    "host_name": "medium.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://amirbrooks.com.au/guides/tutorial-convex-auth-for-ai-apps",
+    "name": "Convex Auth for AI Apps (GitHub + Google OAuth) | Amir Brooks",
+    "snippet": "Add GitHub and Google OAuth authentication to your AI app using Convex, with protected routes, session management, and role-based access for ...",
+    "host_name": "amirbrooks.com.au",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://masteringconvex.com/authentication/convex-auth",
+    "name": "Convex Auth",
+    "snippet": "It supports three authentication methods: OAuth - social login with GitHub, Google, Apple, and more; Magic links & OTPs - email-based passwordless ...",
+    "host_name": "masteringconvex.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

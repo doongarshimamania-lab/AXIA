@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://auth0.com/pricing",
+    "name": "Pricing - Auth0",
+    "snippet": "Flexible pricing for developers and enterprises incl. a free forever dev plan. Essentials $35/ month",
+    "host_name": "auth0.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://auth0.com/blog/upcoming-pricing-changes-for-the-customer-identity-cloud",
+    "name": "Pricing Changes for Auth0 by Okta",
+    "snippet": "Our free plan now supports up to 7,500 MAUs vs the previous 7,000. Essentials pricing now starts at $35/Mo. Essentials pricing now starts at $150/Mo for 500 ...",
+    "host_name": "auth0.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.okta.com/pricing",
+    "name": "Plans and Pricing - Okta",
+    "snippet": "Okta offers a variety of products and price points across our Okta and Auth0 Platforms. Browse our pricing page to find the right solution for you.",
+    "host_name": "www.okta.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.trulycritic.com/blog/best-identity-management-software-2026",
+    "name": "5 Best Identity Management Tools 2026 (Ranked) - TrulyCritic",
+    "snippet": "Auth0 pricing is usage-based a free tier (7,000 active users), Essential at $35/month, and scaling up for higher volumes. Okta is typically ...",
+    "host_name": "www.trulycritic.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.siit.io/tools/comparison/auth0-vs-okta",
+    "name": "Auth0 vs Okta Comparison Guide 2026 - Siit",
+    "snippet": "Starting price $35/month for 500 MAUs (B2C) $6/user/month (Workforce Identity starter tier) 7,000+ pre-built enterprise app. Auth0's MAU-based pricing. Okta's ...",
+    "host_name": "www.siit.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ssojet.com/white-papers/auth0-pricing-alternatives-comparison",
+    "name": "Auth0 Pricing Alternatives Comparison - SSOJet",
+    "snippet": "Free · Business/Productivity Auth0 offers up to 7,500 MAUs at no cost, Okta's enterprise pricing often exceeds Auth0's, typically starting at $6-12 per user per month for workforce ...",
+    "host_name": "ssojet.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://auth0.com/blog/comparing-different-plans-from-auth0-by-okta",
+    "name": "Comparing Different Plans from Auth0",
+    "snippet": "we've upgraded our Free plan which now offers Unlimited* Social and Okta Connections, 1 Custom Domain, and up to 25,000 MAUs. the Free plan is limited to 1 ...",
+    "host_name": "auth0.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://reintech.io/blog/auth0-vs-okta-vs-keycloak-identity-provider-comparison-2026",
+    "name": "Auth0 vs Okta vs Keycloak: Identity Provider Comparison 2026 - Reintech",
+    "snippet": "Auth0: Free tier covers you initially, then $240/month on Essentials; Okta: ~$10,000-15,000 annually for customer identity; Keycloak: ~$200 ...",
+    "host_name": "reintech.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

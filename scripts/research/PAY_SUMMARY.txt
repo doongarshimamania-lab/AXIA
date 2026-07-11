@@ -1,0 +1,393 @@
+============================================
+=== pay_lemon_squeezy ===
+============================================
+• [www.lemonsqueezy.com] Merchant of Record - Lemon Squeezy
+   Global sales tax & compliance handled for you. Lemon Squeezy is a Merchant of Record, which means digital sales taxes and compliance are taken care of for you.
+   https://www.lemonsqueezy.com/reporting/merchant-of-record
+
+• [www.lemonsqueezy.com] Merchant of Record — What is it and why do you need to know?
+   A merchant of record takes on the risks associated with accepting payments, taxes, VAT, and more. Learn to avoid this costly task altogether.
+A merchant of record takes on the risks associated with accepting payments, taxes, VAT, and more. Lemon Squeezy 2026 Update: Easy peasy pricing for every Lemo
+   https://www.lemonsqueezy.com/blog/merchant-of-record
+
+• [www.transactbridge.com] 7 Best Global Merchant of Record Platforms for International
+   For example, Lemon Squeezy's advertised 5% pricing can move closer to 8% for international transactions, while Stripe's lower processing fee ...
+   https://www.transactbridge.com/blog/best-global-merchant-of-record-platforms-2026
+
+• [www.lemonsqueezy.com] SaaS Billing Software: Lemon Squeezy, The Ultimate Solution
+   How Much Does Lemon Squeezy Cost? · Monthly fees: $0 per month. · Transaction fees: 5% + 50c. · Chargeback fees: $15 per dispute. · Subscription ...
+   https://www.lemonsqueezy.com/blog/saas-billing-software
+
+• [grow.cleverbridge.com] Top Merchant of Record (MoR) Providers of 2026 - Cleverbridge
+   Best MoR provider for early-stage creators & indie developers: Lemon Squeezy. Overview. Lemon Squeezy (acquired by Stripe in 2024) is positioned ...
+   https://grow.cleverbridge.com/blog/top-merchant-of-record-providers-2026
+
+============================================
+=== pay_paddle ===
+============================================
+• [www.paddle.com] Which countries does Paddle charge sales tax or VAT for? - Help Center
+   Which countries does Paddle charge sales tax or VAT for? ; Malaysia, 8%, SST ; Mexico, 16%, VAT ; Moldova, 20%, VAT ; New Zealand, 15%, GST ...
+   https://www.paddle.com/help/sell/tax/which-countries-does-paddle-charge-sales-tax-or-vat-for
+
+• [www.fastforex.io] How fastforex.io billing is changing - Our move to Paddle
+   Paddle is a Merchant of Record (MoR) - a company that handles billing, tax compliance, and payment processing on behalf of software businesses.
+   https://www.fastforex.io/hub/paddle-billing-update
+
+• [unibee.dev] Paddle Review 2026: Features, Pricing, Pros & Cons - UniBee
+   27 Feb 2026
+   https://unibee.dev/blog/paddle-review-features-pricing-pros-cons
+
+• [fintechspecs.com] Stripe vs Paddle vs Lemon Squeezy vs Polar 2026: MoR Guide - Fintechspecs
+   At $10k MRR, Paddle's 5% fee costs roughly $500/month more than Stripe's base rate. Paddle acts as merchant of record and remits VAT, sales tax ...
+   https://fintechspecs.com/blog/stripe-vs-paddle-vs-lemon-squeezy-vs-polar-merchant-of-record-b2b-saas
+
+• [www.paddle.com] What is a merchant of record (MoR) + why use one for payments and sales tax? - Paddle
+   A merchant of record (MoR) is a legal entity responsible for selling goods or services to an end customer. They manage all payments and take on the associated ...
+   https://www.paddle.com/blog/what-is-merchant-of-record
+
+============================================
+=== pay_razorpay ===
+============================================
+• [razorpay.com] Payment Gateway Charges - Simple & Transparent Pricing - Razorpay
+   Razorpay offers robust, easy-to-use APIs and simple economic pricing designed for startups, SMEs and large enterprises. Choose the trusted payment solutions ...
+   https://razorpay.com/pricing
+
+• [dodopayments.com] Razorpay Review 2026: Features, Pricing, Limits for SaaS
+   Yes, Razorpay can handle international payments. The key limitation is that international payment acceptance is not the same as full cross- ...
+   https://dodopayments.com/blogs/razorpay-review
+
+• [www.facebook.com] Say no to high fees. Accept global cards at just 3%* with Razorpay
+   With Razorpay International Payments, you pay just 3% fees on every transaction. It's not just that you can accept our major payment methods ...
+   https://www.facebook.com/Razorpay/posts/say-no-to-high-fees-accept-global-cards-at-just-3-with-razorpay-international-pa/1468220555350247
+
+• [www.xflowpay.com] Razorpay vs PayPal: Best for International Payments - Xflow
+   Free · Finance 2 days ago · Razorpay's MoneySaver Export Account and Xflow both cost around 1% or less and settle in rupees the next business day. PayPal's all-in cost ...
+   https://www.xflowpay.com/blog/razorpay-vs-paypal
+
+• [razorpay.com] Accept International Payments for Global Business - Razorpay
+   Multi-Currency Accounts. Accept international business payments in USD, EUR, GBP and more. ; Save up to 75% on bank fees! Zero forex markup. No hidden charges.
+   https://razorpay.com/accept-international-payments
+
+============================================
+=== pay_mollie ===
+============================================
+• [www.mollie.com] Scaling Europe: The Payments Report 2026 - Mollie
+   Simplify payments and money management. Drive revenue, reduce costs, and manage funds with Mollie. Start now.
+   https://www.mollie.com/papers/european-payment-report
+
+• [www.mollie.com] Payment Gateway & Solutions for SaaS Platforms - Mollie
+   Leading European payment methods. Offer 35+ global and local payment options to optimise conversion rates for your customers, all through one integration.
+   https://www.mollie.com/solutions/embedded-payments-for-saas-platforms
+
+• [www.european-saas.eu] Mollie vs European Payment Processing Alternatives (2026)
+   Mollie is the payment provider many European teams land on first for good reason. It gives you strong local payment methods, a clean API, ...
+   https://www.european-saas.eu/blog/mollie-vs-european-payment-processing-alternatives-2026
+
+• [www.mgsoftware.nl] Stripe vs Mollie in 2026 - MG Software
+   Stripe charges 2.9% + 30 cents, Mollie charges 1.8% + 25 cents on iDEAL. We process payments through both and compare actual fees, payout speed, API quality and ...
+   https://www.mgsoftware.nl/en/vergelijking/stripe-vs-mollie
+
+• [www.mollie.com] Mollie boost Romanian companies with simplified payments
+   Empowering Romania's ambitious businesses with a modern payment platform designed for European scale and success. April 13, 2026.
+   https://www.mollie.com/news/mollie-launches-romania
+
+============================================
+=== pay_adyen ===
+============================================
+• [www.adyen.com] Pricing for supported payment methods - Adyen
+   We charge a fixed processing fee + a fee determined by the payment method. Other Adyen products, besides payment methods, are priced separately.
+   https://www.adyen.com/pricing
+
+• [todapay.com] Adyen Fees in 2026: The True Cost for High-Volume Merchants - TODA Pay
+   This is typically around €0.10 per transaction plus a percentage (0.6% or higher depending on volume). While Interchange++ is generally cheaper ...
+   https://todapay.com/blog/adyen-fees-in-2026-the-true-cost-for-high-volume-merchants
+
+• [www.adyen.com] Cross-border payments: Everything you need to know - Adyen
+   Cross-border payments are transactions where money is sent from one country to another. These involve individuals, businesses, or financial ...
+   https://www.adyen.com/knowledge-hub/cross-border-payments
+
+• [www.adyen.com] Adyen: Fintech platform for enterprises - Adyen
+   Run payments, manage your data, and offer financial products in one platform. Adyen is purpose-built for the world's leading businesses.
+   https://www.adyen.com
+
+• [www.chargeflow.io] Stripe vs Adyen 2026: Fees, Features & Which Wins - Chargeflow
+   Adyen wins for large, omnichannel and international enterprises with its transparent Interchange++ pricing and unified online/in-store platform.
+   https://www.chargeflow.io/blog/stripe-vs-adyen
+
+============================================
+=== pay_braintree ===
+============================================
+• [www.paypal.com] PayPal Braintree Fees & Pricing
+   Custom flat rates, interchange plus pricing, and discounted rates are available for established businesses based on business model and processing volume.
+   https://www.paypal.com/us/enterprise/paypal-braintree-fees
+
+• [dodopayments.com] Braintree vs Stripe: Which Payment Gateway Is Better for SaaS in
+   Braintree does not charge a monthly fee at standard tiers. PayPal transactions through Braintree cost 3.49% + $0.49, which is worth noting if a ...
+   https://dodopayments.com/blogs/braintree-vs-stripe
+
+• [developer.paypal.com] April 2026 RELEASE GUIDE - Braintree SDK Docs
+   For Europe, the fee applies to intra-European transactions and international transactions. Visa is raising the fee 5bps over the next 3 years. Fee Name. Thru.
+   https://developer.paypal.com/braintree/articles/risk-and-security/compliance/network-updates/2026
+
+• [www.index.dev] Braintree vs PayPal vs Stripe for Payment Processing in 2026
+   Transparent flat-rate pricing at 2.9% plus 30 cents per transaction … $117,000 in annual fees or $9,750/month in transaction fees alone. Braintree matches at 2 ...
+   https://www.index.dev/skill-vs-skill/payment-processing-paypal-vs-braintree-vs-stripe
+
+• [www.airwallex.com] Stripe vs Braintree - Full comparison for Australian businesses (2026)
+   Braintree charges 3.9% + A$0.30 (incl. GST) for international card transactions; PayPal's own FX margin applies separately on PayPal-funded ...
+   https://www.airwallex.com/en-au/blog/comparison-stripe-vs-braintree
+
+============================================
+=== pay_paypal_direct ===
+============================================
+• [neontri.com] Payment Gateway Comparison 2026: Best Options, Fees & Features
+   Fees: US cards and third-party digital wallets cost 2.89% + $0.29 per transaction. Venmo costs 3.49% + $0.49 and is available in the US only. ...
+   https://neontri.com/blog/payment-gateways-comparison
+
+• [www.paypal.com] PayPal Consumer Fees
+   A minimum international fee of 0.99 USD; A maximum international fee of 4.99 USD. Fees charged in different currencies for sending payments ...
+   https://www.paypal.com/us/digital-wallet/paypal-consumer-fees
+
+• [gocardless.com] The Top 10 International Payment Gateways for Global Businesses
+   Pricing is on the expensive side with a base of 2.7% + 30p per transaction, with a cross-border surcharge added of between 0.4% - 1.5%. At the top end, this ...
+   https://gocardless.com/guides/posts/top-international-payment-gateways
+
+• [connectpay.com] 10 Best International Payment Gateways (2026) - ConnectPay
+   PayPal's transaction and cross-border fees may be higher compared to some other international payment gateway providers, particularly for ...
+   https://connectpay.com/blog/international-payment-gateways
+
+• [elogic.co] Payment Gateway Comparison 2026: Fees & Tips | Elogic Commerce
+   Transaction fees: 2.9% + $0.30 for US transactions, and 3.9% plus a standard fee for international payments.
+   https://elogic.co/blog/payment-gateway-comparison-a-comprehensive-guide
+
+============================================
+=== pay_2checkout ===
+============================================
+• [www.2checkout.com] 2Checkout: Merchant of Record for Online Payment Processing
+   Power your global sales with online payment processing and merchant of record services. Accept credit cards, debit, PayPal - and scale globally!
+   https://www.2checkout.com
+
+• [www.2checkout.com] Pricing - 2Checkout
+   Available for 2Monetize at additional cost. ; 2Bill. For Complex Subscription Management · Available for ...
+   https://www.2checkout.com/pricing
+
+• [fastspring.com] 2Checkout vs. Stripe vs. FastSpring: Payments, Taxes, Platforms
+   2Checkout is a payment service provider with an upgrade option to make them your merchant of record (MoR), and FastSpring is a comprehensive merchant of record ...
+   https://fastspring.com/blog/2checkout-vs-stripe-vs-fastspring
+
+• [www.2checkout.com] What Is a Merchant of Record (MoR)? The Complete Guide | 2Checkout
+   A merchant of record (MoR) handles payments, tax, compliance, and fraud so you don't have to. Learn what an MoR is, how it works, and how to choose the ...
+   https://www.2checkout.com/lp/merchant-of-record-guide
+
+• [www.2checkout.com] Start Your eCommerce Business in 2026 Step-by-Step | 2Checkout
+   Learn how to start an eCommerce business from scratch. Set up your store, choose products, and create a brand that stands out.
+   https://www.2checkout.com/lp/how-to-start-an-ecommerce-business
+
+============================================
+=== pay_fastspring ===
+============================================
+• [fastspring.com] Merchant of Record - FastSpring
+   Learn how using a merchant of record (MoR) works and why FastSpring is the premier MoR for SaaS, software, and digital goods businesses.
+   https://fastspring.com/merchant-of-record
+
+• [www.transactbridge.com] 7 Best Global Merchant of Record Platforms for International
+   Compare top 7 Merchant of Record platforms for global expansion in 2026 : Paddle, FastSpring, Lemon Squeezy, Stripe & more. Pricing, features,
+   https://www.transactbridge.com/blog/best-global-merchant-of-record-platforms-2026
+
+• [fastspring.com] FastSpring Pricing: All-in-One Pricing. No Additional Fees.
+   We offer simple, flat-rate pricing that empowers you to manage payment processing, subscriptions, global tax collection and remittance, localized payment ...
+FastSpring is more than payment processing. We’re your merchant of record. FastSpring’s merchant of record model is a unique service available
+   https://fastspring.com/pricing
+
+• [fastspring.com] What Is a Merchant of Record? (And Why Should You Care?)
+   Learn why thousands of companies trust FastSpring to act as their merchant of record (MOR) and securely process payments on their behalf.
+   https://fastspring.com/blog/what-is-a-merchant-of-record-and-why-you-should-care
+
+• [grow.cleverbridge.com] Top Merchant of Record (MoR) Providers of 2026 - Cleverbridge
+   Pricing. Pay-as-you-go model (5% + $0.50 per transaction) with custom pricing also available. Reviews.
+   https://grow.cleverbridge.com/blog/top-merchant-of-record-providers-2026
+
+============================================
+=== pay_gumroad ===
+============================================
+• [gumroad.com] Gumroad pricing: 10% flat fee
+   10% + $0.50 Per transaction for all sales through your profile or direct links to your customers. 30% Per transaction when new customers find and buy from you.
+   https://gumroad.com/pricing
+
+• [mydesigns.io] Gumroad for Selling Digital Products: Honest 2026 Review
+   Gumroad Pricing Breakdown. Gumroad simplified their pricing in 2023, and it is now straightforward: 10% flat fee on every transaction (no ...
+   https://mydesigns.io/blog/gumroad-for-selling-digital-products
+
+• [checkoutpage.com] Gumroad fee calculator: fees, pricing & take-home (2026)
+   Gumroad charges a flat 10% plus $0.50 on every direct sale, with card processing (around 2.9% + $0.30) on top. On a $40 product you keep about $34.04. Sales ...
+   https://checkoutpage.com/tools/gumroad-fee-calculator?srsltid=AfmBOorNWdS-bbsVJT8TMavUxlECm0tAGLQnVoWzoUD14RFOoPy35vKl
+
+• [fungies.io] 10 Best Gumroad Alternatives for Digital Product Sellers in 2026
+   Heres an uncomfortable truth: if youre selling digital products on Gumroad in 2026, youre probably paying around 13% of every sale in fees.
+   https://fungies.io/best-gumroad-alternatives-2026
+
+• [www.youtube.com] How to set price on Gumroad full guide 2026 - YouTube
+   ... and start pricing your Gumroad products like a pro! #GumroadPricing #GumroadTutorial #SellOnline2026 #DigitalProducts #MakeMoneyOnline2026.
+   https://www.youtube.com/watch?v=1yrOEbVcols
+
+============================================
+=== pay_dodo_payments ===
+============================================
+• [dodopayments.com] Best Stripe Alternatives in India (2026) - Dodo Payments
+   May 1, 2026. Stripe Managed Payments Fees Explained: The Real Cost of 6.4%+ in 2026 · Fees Merchant of Record Stripe. Run Your Business on the ...
+   https://dodopayments.com/blogs/stripe-alternatives-india
+
+• [www.microgaps.com] Stripe Billing Alternatives for Solo Developers in 2026 - MicroGaps
+   Pricing: 4% + $0.40 per transaction. No monthly fee. Dodo Payments is the newest MoR on this list, explicitly targeting indie hackers and early- ...
+   https://www.microgaps.com/blog/stripe-billing-alternative-solo-developers-2026
+
+• [www.tinyaffiliate.com] Stripe vs Dodo Payments for micro-SaaS: tax, MoR, refunds, affiliates
+   Pick Dodo Payments if you want a more packaged merchant-of-record style setup with simpler tax handling and broader built-in payment coverage.
+   https://www.tinyaffiliate.com/blog/stripe-vs-dodopayments-for-micro-saas-payments
+
+• [medium.com] SaaS Payment Provider: Four Options Compared - Medium
+   I started with Creem. EU entity, lowest fees of the Merchant of Record options (3.9% + $0.40), and that Better Auth plugin. On paper, perfect.
+   https://medium.com/@vuhrmeister/two-weeks-four-providers-one-decision-1194dc845455
+
+• [fungies.io] Paddle vs Stripe vs Merchant of Record in 2026 - Fungies.io
+   Fee Breakdown: What You Actually Pay in 2026 ; Stripe, 2.9% + $0.30, +1.5% ; Paddle, 5% + $0.50, Included ; Dodo Payments, 4% + $0.40, +1.5% intl.
+   https://fungies.io/paddle-vs-stripe-vs-merchant-of-record-2026
+
+============================================
+=== pay_creem ===
+============================================
+• [www.creem.io] 7 Best Stripe Alternatives for SaaS in 2026 (Fees, Taxes & Features
+   CREEM. Type: Merchant of Record Pricing: 3.9% + $0.40 per transaction. No setup fees, no monthly fees. CREEM is a Merchant of Record built ...
+   https://www.creem.io/blog/stripe-alternatives-top-providers-2026
+
+• [www.creem.io] 7 Best LemonSqueezy Alternatives in 2026 (Post-Stripe Acquisition)
+   CREEM is a Merchant of Record built specifically for indie hackers ... Paddle is the most established Merchant of Record in the SaaS space.
+   https://www.creem.io/blog/lemonsqueezy-alternatives-after-stripe-acquisition
+
+• [www.creem.io] Best Merchant of Record for SaaS in 2026: The Definitive Guide
+   Lemon Squeezy (now Stripe-owned). Best for: Creators selling digital products. Pricing: 5% + $0.50 per transaction. Lemon Squeezy was the ...
+   https://www.creem.io/blog/best-merchant-of-record-saas-2026
+
+• [www.creem.io] Stripe Alternatives for SaaS: 7 Options That Handle Tax | Creem
+   Lemon Squeezy popularized the MoR model for indie makers and was acquired by Stripe in 2024. It covers tax, subscriptions, and digital product ...
+   https://www.creem.io/blog/stripe-alternatives-for-saas
+
+• [affonso.io] Top Stripe Alternatives in 2026: Compare the Best Payment Platforms
+   ... Creem or Lemon Squeezy, there's a Stripe alternative that fits nearly every SaaS use case. And for those prioritizing growth via affiliates ...
+   https://affonso.io/blog/stripe-alternatives-for-saas
+
+============================================
+=== pay_square ===
+============================================
+• [johngalt-finance.com] Stripe vs Square 2026: Which Payment Processor Wins?
+   Per-transaction fees are nearly identical for the standard product (~2.9% + $0.30 online), but the products around them — checkout, hardware, payouts, payroll, ...
+   https://johngalt-finance.com/stripe-vs-square-payment-processor-2026
+
+• [squareup.com] Square Processing Fees, Plans, and Software Pricing
+   If you process over $250,000 per year, talk to our team to see if you're eligible for custom pricing and processing fees. You can also ask about hardware ...
+   https://squareup.com/us/en/pricing
+
+• [squareup.com] Learn about Square fees | Square Support Center - United States
+   International transaction fees apply to in-person, online, card-not-present (CNP), and Square API transactions, as well as all Square pricing tiers.
+   https://squareup.com/help/us/en/article/5068-what-are-square-s-fees
+
+• [unibee.dev] Square vs. Stripe: 2026 Payment Gateway Comparison - UniBee
+   Deciding between Stripe and Square? Our in-depth 2026 comparison breaks down fees, features, and limitations.
+   https://unibee.dev/blog/stripe-vs-square-comparison
+
+• [checkthat.ai] Best Payment Processors 2026: Stripe, Square & More | CheckThat.ai
+   Domestic card payments run 2.80% + 30¢, international 4.30% + 30¢, with Explore at $0, Grow at $12 per active spend user monthly, and custom Accelerate pricing.
+   https://checkthat.ai/answers/what-are-the-best-payment-processing-solutions
+
+============================================
+=== pay_mercadopago ===
+============================================
+• [www.ebanx.com] What is Mercado Pago? Discover the Latin American digital wallet
+   Mercado Pago primarily functions as a digital wallet, allowing users to store funds, make purchases, and transfer money securely and ...
+   https://www.ebanx.com/en/insights/articles/what-is-mercado-pago
+
+• [payatlas.com] Mercado Pago – Coverage, Adoption & Payment Details | PayAtlas
+   As of 2023, Mercado Pago commands around 12% of the total payment method market in Latin America, trailing behind established players like Visa ...
+   https://payatlas.com/payment-method/mercado-pago-5109
+
+• [www.linkedin.com] How Mercado Pago Is Reshaping Mobile Payments in Latin America
+   Launched in 2003, Mercado Pago is a digital payment platform available to consumers and businesses exclusively in Latin America.
+   https://www.linkedin.com/pulse/how-mercado-pago-reshaping-mobile-payments-latin-america-ceurvels
+
+• [www.rfp.wiki] Mercado Pago vs Barclaycard Payments Comparison - RFP.wiki
+   -Limited acceptance outside of Latin America, restricting global reach. -Currency conversion fees can be high for international transactions. -Some users ...
+   https://www.rfp.wiki/vendors/mercado-pago/barclaycard-payments
+
+• [www.photonpay.com] Mercado Pago: The Heart of E-Commerce in Latin America
+   Learn about Mercado Pago's features and benefits. Explore local payment trends in Latin America to boost your cross-border business growth.
+   https://www.photonpay.com/hk/blog/article/mercado-pago?lang=en
+
+============================================
+=== pay_stripes_global_alternatives ===
+============================================
+• [www.paddle.com] Stripe Alternatives | Top 7 Providers in 2026 - Paddle
+   We've analyzed seven alternatives to Stripe, ranging from PSPs and payment gateways to more modern payment solutions like a merchant of record.
+   https://www.paddle.com/alternatives/stripe
+
+• [tiun.io] Stripe alternatives with Merchant of Record built in - tiun
+   Paddle is the most established Merchant of Record built specifically for SaaS. It handles payments, global tax compliance, subscription ...
+   https://tiun.io/blog/stripe-alternatives-merchant-of-record
+
+• [grow.cleverbridge.com] Stripe Alternative for SaaS: When to Consider a Merchant of Record
+   Stripe works well for accepting payments, but growing software companies often need more support for tax, compliance, billing, renewals, and global commerce ...
+   https://grow.cleverbridge.com/blog/stripe-alternative-merchant-of-record
+
+• [dodopayments.com] Is Stripe a Merchant of Record? Best Alternative in 2026 - Dodo Payments
+   Dodo Payments is an excellent Stripe alternative for Micro-SaaS founders who are looking for a Merchant of Record solution. Manages all aspects ...
+   https://dodopayments.com/blogs/stripe-vs-merchant-of-records
+
+• [www.betterlaunch.co] Stripe Alternatives in 2026: 12 Real Options Compared | Better Launch
+   Paddle and Lemon Squeezy are the top 2026 alternatives for indie SaaS because they act as Merchant of Record (MoR), handling global sales tax ( ...
+   https://www.betterlaunch.co/blog/stripe-alternatives
+
+============================================
+=== pay_paddle_vs_lemon ===
+============================================
+• [www.globalsolo.global] Stripe vs Paddle vs Lemon Squeezy vs Gumroad - Global Solo
+   Stripe charges 2.9% + 30¢ per transaction but you handle sales tax yourself. Paddle and Lemon Squeezy charge 5% + 50¢ and act as your ...
+   https://www.globalsolo.global/blog/stripe-vs-paddle-vs-lemon-squeezy-2026
+
+• [fungies.io] Paddle vs FastSpring vs Lemon Squeezy - Fungies.io
+   Yes. Paddle, FastSpring, and Lemon Squeezy all act as Merchant of Record, handling EU VAT, US sales tax, GST, and other global consumption taxes.
+   https://fungies.io/paddle-vs-fastspring-vs-lemon-squeezy
+
+• [www.beehiiv.com] Lemon Squeezy Alternatives: Best & Worst Options (2026) - Beehiiv
+   Lemon Squeezy Alternatives Comparison Table. Table comparing payment platforms for SaaS and digital products, highlighting Paddle, FastSpring, ...
+   https://www.beehiiv.com/blog/lemon-squeezy-alternatives?srsltid=AfmBOoqBAM6tvRPL54xpE_E3-tpfLmC-HHiwq08Dnnym52_6K8ixzLkf
+
+• [solodevstack.com] Paddle vs Lemon Squeezy for Solo Developers | SoloDevStack
+   Honest comparison of Paddle vs Lemon Squeezy for solo developers. Which is better for your project? Real pros, cons, and recommendations.
+   https://solodevstack.com/blog/paddle-vs-lemonsqueezy-solo-developers
+
+• [dodopayments.com] Top 7 Merchant of Record Platforms 2026: Paddle, LemonSqueezy
+   Compared 7 MoR platforms on real fees, tax coverage (VAT, GST, sales tax), payout speed, and SaaS fit. Pick the right Merchant of Record for ...
+   https://dodopayments.com/blogs/best-merchant-of-record-platforms
+
+============================================
+=== pay_razorpay_eligibility ===
+============================================
+• [razorpay.com] Payment Gateways for SaaS Startups: 2026 Decision Guide
+   Razorpay offers both clean APIs and no-code integration options, allowing non-technical SaaS teams to set up payment acceptance without ...
+   https://razorpay.com/blog/payment-gateways-saas-startups-decision
+
+• [razorpay.com] Accept International Payments for Global Business - Razorpay
+   Accept international payments in 130+ currencies with Razorpay. Take cards, local bank transfers, and Apple Pay to grow globally. Enjoy the wide payment ...
+   https://razorpay.com/accept-international-payments
+
+• [dodopayments.com] Razorpay Review 2026: Features, Pricing, Limits for SaaS
+   Yes, Razorpay can handle international payments. The key limitation is that international payment acceptance is not the same as full cross- ...
+   https://dodopayments.com/blogs/razorpay-review
+
+• [razorpay.com] Why Global SaaS businesses choose Razorpay when Expanding
+   Razorpay provides a centralized dashboard and API that give global businesses real-time visibility and control over their cross-border ...
+   https://razorpay.com/blog/why-razorpay-is-the-1-payments-partner-for-global-saas-businesses-expanding-into-india
+
+• [razorpay.com] Complete Guide to International Subscriptions from India 2026
+   Razorpay's Import Flow enables businesses based outside India to accept payments from Indian customers through localized payment methods ...
+   https://razorpay.com/blog/international-subscriptions-india
+

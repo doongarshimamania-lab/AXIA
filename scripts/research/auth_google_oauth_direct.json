@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://developers.google.com/identity/protocols/oauth2",
+    "name": "Using OAuth 2.0 to Access Google APIs | Authorization",
+    "snippet": "1. Obtain OAuth 2.0 credentials from the Google API Console. · 2. Obtain an access token from the Google Authorization Server. · 3. Examine scopes ...",
+    "host_name": "developers.google.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1ej5au3/oauth_with_google_without_using_any_third_party",
+    "name": "OAuth with Google without using any third party library / solution - Reddit",
+    "snippet": "Is there any way / resource on how to implement authentication using google-auth-libary in nextjs just like you would do in node js or express server.",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@elijahsoladoye/enabling-sign-in-with-google-without-third-party-auth-providers-in-web-apps-aa9e3f11c9f1",
+    "name": "Enabling Sign in with Google Without Third-Party Auth Providers - Medium",
+    "snippet": "Step 1: Create a Project · Step 2: Configure OAuth Consent Screen · Step 3: Create a Google OAuth 2.0 Client · Step 4: Add the Google Sign-In ...",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/idrisakintobi/a-step-by-step-guide-to-google-oauth2-authentication-with-javascript-and-bun-4he7",
+    "name": "A Step-by-Step Guide to Google OAuth2 Authentication with",
+    "snippet": "Navigate to API & Services > OAuth Consent Screen to configure your application. · Fill in the necessary details like app name and support email.",
+    "host_name": "dev.to",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.unipile.com/google-oauth-playground-guide",
+    "name": "Google OAuth Playground — Complete Guide to Testing Scopes",
+    "snippet": "Master Google OAuth Playground in 2026: test scopes, generate access + refresh tokens, debug API calls. Plus the production-ready ...",
+    "host_name": "www.unipile.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/identity/protocols/oauth2/web-server",
+    "name": "Using OAuth 2.0 for Web Server Applications | Authorization",
+    "snippet": "This document explains how web server applications use Google API Client Libraries or Google OAuth 2.0 endpoints to implement OAuth 2.0 authorization to access ... Missing: free | Show results with: free",
+    "host_name": "developers.google.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.google.com/googleapi/answer/6158849?hl=en",
+    "name": "Setting up OAuth 2.0 - API Console Help - Google Help",
+    "snippet": "This page is no longer up-to-date. For current instructions on how to set up and manage your Google OAuth Client, please see the Manage OAuth Clients article. Missing: direct free 2026",
+    "host_name": "support.google.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/21108765/connect-to-google-api-without-library",
+    "name": "Connect to google api without library - oauth 2.0 - Stack Overflow",
+    "snippet": "I would like to use the Google Calendar API. To do this I need an authorization token, which I want to obtain using simple http requests.",
+    "host_name": "stackoverflow.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

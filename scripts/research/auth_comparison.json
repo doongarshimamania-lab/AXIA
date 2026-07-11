@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.devtoolreviews.com/reviews/clerk-vs-auth0-vs-supabase-auth-2026",
+    "name": "Clerk vs Auth0 vs Supabase Auth (2026): Complete Comparison",
+    "snippet": "Clerk $800 340ms ~1 day ~4 hours (Pro plan) Auth0 $3,010 410ms. Supabase Auth is essentially free for 50K users. Clerk's cost is noticeable but ...",
+    "host_name": "www.devtoolreviews.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://agenticschool.dev/compare/clerk-vs-auth0-vs-supabase-auth",
+    "name": "Clerk vs Auth0 vs Supabase Auth: 2026 | Agentic School",
+    "snippet": "Pricing is as of 2026 and moves over time. The honest rule of thumb: Clerk for developer experience, Auth0 for enterprise needs, Supabase Auth ...",
+    "host_name": "agenticschool.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=OkUp_SPdugk",
+    "name": "Clerk vs Supabase Auth vs Auth0 (2026) - Which One Is BEST?",
+    "snippet": "... pricing, security, scalability, integrations ... and Auth0 are • Clerk vs Supabase Auth vs Auth0 full comparison (2026) • Authentication ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://zuplo.com/learning-center/api-authentication-pricing",
+    "name": "Auth Pricing Wars: Cognito vs Auth0 vs Firebase vs Supabase vs Clerk",
+    "snippet": "Auth0 recently expanded its free tier to 25,000 MAU. Clerk's free tier is 10,000 MAU with “First Day Free” counting. Supabase costs just $25/ ...",
+    "host_name": "zuplo.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@rameshkannanyt0078/fastapi-authentication-2026-auth0-vs-supabase-vs-clerk-vs-firebase-full-benchmark-cost-b8844977fff4",
+    "name": "FastAPI Authentication 2026: Auth0 vs Supabase vs Clerk  - Medium",
+    "snippet": "Supabase Auth gives you 50,000 monthly active users for free. roughly $0.003 per additional MAU. Clerk offers 10,000 free MAUs, then charges ...",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/webdev/comments/1riskc6/clerk_vs_supabase_vs_nextauth_postgres_best",
+    "name": "Clerk vs Supabase vs NextAuth + Postgres!! Best Choice for SaaS?",
+    "snippet": "Personally, I'm leaning toward Supabase Auth since it provides both database and authentication, and it seems more affordable in the long run. BetterAuth vs Supabase Auth: Which One Do You Prefer and Why? How do startups choose between Supabase, Firebase, Auth0, and ... More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://daily.dev/posts/better-auth-vs-clerk-vs-supabase-auth-2026-guide--xya3hrvkv",
+    "name": "Better Auth vs Clerk vs Supabase Auth (2026 Guide) | daily.dev",
+    "snippet": "Clerk wins on UI polish and org features but has real lock-in and per-user pricing that scales poorly. Supabase Auth is the natural choice when ...",
+    "host_name": "daily.dev",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://makerkit.dev/blog/tutorials/better-auth-vs-clerk",
+    "name": "Better Auth vs Clerk vs NextAuth vs Supabase Auth - MakerKit",
+    "snippet": "Clerk overhauled its pricing in February 2026. The Pro plan starts at $25/mo and adds $0.02 per MAU above 50,000. Tier Better Auth Clerk (Pro) ...",
+    "host_name": "makerkit.dev",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

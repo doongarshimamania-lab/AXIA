@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://supabase.com/pricing",
+    "name": "Pricing & Fees - Supabase",
+    "snippet": "Everything in the Free Plan, plus: 100K monthly active users. 8 GB disk size per project. 250 GB bandwidth. Daily backups (7 day retention). Email support. Missing: 2026 GoTrue",
+    "host_name": "supabase.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aiagencyplus.com/supabase-free-tier-limits",
+    "name": "Supabase Free Tier Limits: What You Actually Get In 2026 - AI Agency Plus",
+    "snippet": "Supabase Auth: 50,000 Monthly Active Users. This is one of the most generous limits on the free plan and one that developers often underestimate ...",
+    "host_name": "aiagencyplus.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://butterbase.ai/blog/supabase-pricing-2026",
+    "name": "Supabase Pricing in 2026: When It's Worth It (And When to Switch)",
+    "snippet": "Supabase has clean, honest pricing on the surface: a free tier, $25 a month for Pro, $599 a month for Team. The sticker price is not where ... Missing: GoTrue | Show results with: GoTrue",
+    "host_name": "butterbase.ai",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/pockit_tools/supabase-vs-firebase-in-2026-the-honest-comparison-after-using-both-in-production-3e5",
+    "name": "Supabase vs Firebase in 2026: The Honest Comparison After Using",
+    "snippet": "The MAU Trap: Once you exceed 100K monthly active users on Pro, overages hit at $3.25 per 1,000 users. A 200K MAU app adds $325/month just for ...",
+    "host_name": "dev.to",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://techsy.io/en/blog/supabase-vs-firebase",
+    "name": "Supabase vs Firebase: We Migrated, Here's Why | TECHSY",
+    "snippet": "Supabase uses tier-based pricing. The free tier includes 500MB database, 50,000 monthly active users (MAU) for auth, and 1GB storage. The Pro plan costs $25/ ...",
+    "host_name": "techsy.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.metacto.com/blogs/the-true-cost-of-supabase-a-comprehensive-guide-to-pricing-integration-and-maintenance",
+    "name": "Supabase Pricing 2026: Real Costs Exposed | $25 Pro vs $599 Team vs",
+    "snippet": "Supabase pricing explained: Free tier (500MB, 50K MAUs), Pro ($25+usage), Team ($599). See real monthly bills, compute add-ons ($12-$3730), ...",
+    "host_name": "www.metacto.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.buildmvpfast.com/blog/supabase-pricing-hidden-costs-scale-alternatives-2026",
+    "name": "Supabase Pricing Hidden Costs at Scale | 2026 Guide",
+    "snippet": "Auth MAU: The Freemium Tax. Supabase Auth charges based on monthly active users. The free tier covers 50,000 MAU, which is generous. But for ... Missing: GoTrue | Show results with: GoTrue",
+    "host_name": "www.buildmvpfast.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://horizon.dev/blog/supabase-vs-firebase-startups",
+    "name": "Supabase vs Firebase (2026): Pricing, SQL, and Scaling Compared",
+    "snippet": "Supabase starts free with 500MB database storage and 2GB bandwidth. Pro plan is $25/month per project. Firebase's Spark plan is free up to 1GB ...",
+    "host_name": "horizon.dev",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://stytch.com/pricing",
+    "name": "Modern authentication pricing - Stytch",
+    "snippet": "If you surpass the 10,000 MAUs, 5 SSO or SCIM connections, 1000 M2M tokens, or 10,000 fingerprints included in our free tier, you'll pay for only what you use ...",
+    "host_name": "stytch.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.buildmvpfast.com/alternatives/stytch",
+    "name": "Best Stytch Alternatives (2026): Passwordless Auth Pricing",
+    "snippet": "Pricing is MAU-based. The free tier covers 10,000 monthly active users, which is enough for most early-stage products. After that, Essentials ...",
+    "host_name": "www.buildmvpfast.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/stytch-alternatives",
+    "name": "5 best Stytch alternatives in 2026 - WorkOS",
+    "snippet": "Pricing · Free: Covers small apps and early-stage B2B use cases. · Growth: Approximately $150 per month, with unlimited SSO connections included.",
+    "host_name": "workos.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.rfp.wiki/it-security/access-management/stytch/auth0",
+    "name": "Stytch vs Auth0 (2026): Comprehensive comparison",
+    "snippet": "+Public free tier and entry pricing are easy to find. +Tiered plans give buyers a starting point for evaluation. Cons. -Pricing can scale up quickly as usage ...",
+    "host_name": "www.rfp.wiki",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://securityboulevard.com/2025/11/stytch-alternatives-for-passwordless-authentication",
+    "name": "Stytch Alternatives for Passwordless Authentication - Security Boulevard",
+    "snippet": "Advantages over Stytch. Full data ownership and backend control. Free tier and community-driven support. Ideal for self-hosted projects ...",
+    "host_name": "securityboulevard.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://logto.io/framer/compare/stytch",
+    "name": "Stytch Alternative: Unify B2C and B2B Auth with Logto",
+    "snippet": "How does Logto pricing compare to Stytch at scale? Stytch's free tier covers 10K MAU; Logto's covers 50K. Beyond that, Stytch bills MAU, M2M tokens, and SSO ...",
+    "host_name": "logto.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://startwithidentity.com/articles/top-7-passwordless-authentication-platforms",
+    "name": "Top 7 Passwordless Authentication Platforms in 2026 | StartWithIdentity",
+    "snippet": "Pricing Free: up to 7,500 MAU. Starter: $0.05/MAU over 7,500. Business: custom pricing with SCIM, advanced SSO, and dedicated support.",
+    "host_name": "startwithidentity.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://bubble.io/plugin/stytch-passwordless-login-1705061654345x956232912259514400",
+    "name": "Stytch Passwordless Login Plugin - Bubble",
+    "snippet": "It's a passwordless authentication plugin that lets users access their accounts with just a few clicks by logging in via GitHub, Twitter, Discord, or phone ...",
+    "host_name": "bubble.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

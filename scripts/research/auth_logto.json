@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.opensourcealternatives.to/blog/best-open-source-authentication-tools",
+    "name": "Best Open Source Authentication Tools in 2026",
+    "snippet": "Self-hosted auth costs roughly $10–40/month regardless of user count; the savings are $800–1,200/month. Self-hosted version is free and fully functional;",
+    "host_name": "www.opensourcealternatives.to",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.authgear.com/post/top-open-source-auth0-alternatives",
+    "name": "Top Open-Source Auth0 Alternatives in 2026: Secure & Self-Hosted",
+    "snippet": "Unlike Auth0's MAU-based pricing, self-hosting provides predictable costs without per-user billing. Authgear stands out as a modern, Auth0-like ...",
+    "host_name": "www.authgear.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.logto.io/logto-oss-vs-logto-cloud",
+    "name": "Auth provider: Logto OSS vs. Logto Cloud",
+    "snippet": "Transparent Pricing: Free plan: 50,000 MAU, basic auth, passwordless, user management. Pro plan: $16/month + usage-based pricing for MFA, ...",
+    "host_name": "blog.logto.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/logto-io/logto",
+    "name": "Logto - GitHub",
+    "snippet": "Logto is the modern, open-source auth infrastructure for SaaS and AI apps. It takes the pain out of OIDC and OAuth 2.1 and makes it easy to build secure, Full ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cerbos.dev/blog/best-open-source-auth-tools-and-software-for-enterprises-2026",
+    "name": "Best Open Source Auth Tools & Auth Software for Enterprises [2026]",
+    "snippet": "Authentik is a self-hosted identity provider that handles authentication with MFA, SSO, and protocols (OIDC, OAuth2, SAML, LDAP). It can also ...",
+    "host_name": "www.cerbos.dev",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.logto.io/simplify-outline-authentication-with-logto",
+    "name": "Simplify Outline authentication with Logto",
+    "snippet": "In this article, we will demonstrate how to use Logto as an OpenID Connect (OIDC) identity provider for Outline.",
+    "host_name": "blog.logto.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/selfhosted/comments/wmskps/logto_opensource_alternative_to_auth0_prettified",
+    "name": "Logto: Open-source alternative to Auth0, prettified - Reddit",
+    "snippet": "Logto self-hosted options. A delightful sign-in experience for end-users and an OIDC-based identity service. Fully open-sourced, Best self hosted authentication solution for platform? Logto v1.12.0 - Organizations, SSO, and MFA : r/selfhosted More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://skycloak.io/blog/open-source-authentication-comparison-2026",
+    "name": "Open Source Authentication in 2026: Complete Comparison",
+    "snippet": "Cost of Self-Hosting vs Managed. All solutions listed are free to run yourself, but self-hosting has real costs: infrastructure, monitoring, ...",
+    "host_name": "skycloak.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

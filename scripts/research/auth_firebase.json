@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://firebase.google.com/pricing",
+    "name": "Firebase Pricing - Google",
+    "snippet": "Authentication Phone Auth - No-cost up to 50 MAUs. No-cost up to 1 No-cost up to 50K update units/day … estimate assumes Tier 1 regional pricing.",
+    "host_name": "firebase.google.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supertokens.com/blog/firebase-pricing",
+    "name": "Firebase Pricing–The Complete Guide - SuperTokens",
+    "snippet": "Free for up to 50 MAUs. Phone Authentication (SMS) Not available Billed per SMS, typically $0.01–$0.06/SMS depending on region",
+    "host_name": "supertokens.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/Firebase/comments/1lsv6jy/confused_about_firebase_auth_free_tier_limits",
+    "name": "Confused about Firebase Auth Free Tier Limits (MAUs & OTPs) - Reddit",
+    "snippet": "free plan includes 50K MAUs — , it mentions 10K free SMS verifications (OTP) There is no free SMS verification tier anymore, There is no fixed ... Firebase new SMS auth costs! Firebase Authentication SMS Verification Limits More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.metacto.com/blogs/the-complete-guide-to-firebase-auth-costs-setup-integration-and-maintenance",
+    "name": "Firebase Auth Pricing 2026: Complete Cost Guide (Free Tier to Enterprise)",
+    "snippet": "Updated May 2026: Firebase Auth is free for 50K MAUs. See the new tiered pricing ($0.0055-$0.0025/MAU), SMS costs by country, SAML/OIDC fees ...",
+    "host_name": "www.metacto.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://firebase.google.com/docs/auth/limits",
+    "name": "Firebase Authentication Limits - Google",
+    "snippet": "The following limits are daily usage limits for users of Firebase Authentication no-cost Spark plan. less Limit Tier 1 Daily Active Users 3000 per day Tier 2 ...",
+    "host_name": "firebase.google.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.logto.io/firebase-authentication-pricing",
+    "name": "2025 Firebase Authentication's latest pricing explained and the best",
+    "snippet": "Tier 1 (Email, Phone, Anonymous, Prebuilt Social) Quota limits: Up to 50k MAU, 3k DAU, 100 million. Pricing: $0/MAU(0 … $0.0032 (1m - 10m), $0. ...",
+    "host_name": "blog.logto.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cloud.google.com/identity-platform/pricing",
+    "name": "Identity Platform pricing | Google Cloud",
+    "snippet": "The table breaks down costs by authentication method. Phone and multi-factor charges are listed as Firebase Authentication. View usage metrics. To view ...",
+    "host_name": "cloud.google.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.b4x.com/android/forum/threads/firebase-phone-number-authentication-have-a-cost.114222",
+    "name": "Firebase phone number authentication have a cost? - B4X",
+    "snippet": "Free Authentication Phone Auth - US, Canada, and India help Phone. Authentication services 10k/month 10k/month check $0.01/verification $0.06/ ...",
+    "host_name": "www.b4x.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

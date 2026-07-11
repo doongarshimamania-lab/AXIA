@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://supertokens.com/pricing",
+    "name": "Pricing & Features for SuperTokens",
+    "snippet": "Self hosting the open source features is free without any limits! Cloud Self-hosted $0.02 per MAU. Authentication Price / MAU: $0.01 (Minimum $100)Price",
+    "host_name": "supertokens.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supertokens.com/blog/supertokens-vs-auth0",
+    "name": "Supertokens Vs AuthO: Self-Hosted Vs. Managed Solutions",
+    "snippet": "SuperTokens is an open source solution, so you can self-host the service and use the core feature set for free for an unlimited number of users ...",
+    "host_name": "supertokens.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supertokens.medium.com/self-hosted-authentication-56e6f0b26a57",
+    "name": "Self-hosted Authentication. by Supertokens Team - Medium",
+    "snippet": "SSO runs from $138/month to $3,600/month. Starter plan at $125/month, Essentials at $850/month, and Enterprise at $3,300/month. A self-hosted ...",
+    "host_name": "supertokens.medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://northflank.com/guides/how-to-self-host-authentication-with-supertokens-on-northflank",
+    "name": "How to self-host authentication with SuperTokens on Northflank",
+    "snippet": "SuperTokens is an open-source authentication solution designed to simplify these challenges while offering flexibility and scalability.",
+    "host_name": "northflank.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://devtune.ai/verticals/authentication-identity/supertokens",
+    "name": "SuperTokens AI search visibility, competitors, reviews, and pricing",
+    "snippet": "Pricing Self-hosted (open-source): completely free with no MAU limits. Managed cloud (SuperTokens hosts the core): free up to 5,000 MAUs, then $0.02 per MAU.",
+    "host_name": "devtune.ai",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://skycloak.io/blog/keycloak-vs-supertokens-comparison",
+    "name": "Keycloak vs SuperTokens: Which Open Source Auth to Choose?",
+    "snippet": "A key pricing difference: Keycloak (self-hosted or Skycloak) has no per-MAU charges. SuperTokens Cloud scales linearly with MAUs. At high user ...",
+    "host_name": "skycloak.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cerbos.dev/blog/best-open-source-auth-tools-and-software-for-enterprises-2026",
+    "name": "Best Open Source Auth Tools & Auth Software for Enterprises [2026]",
+    "snippet": "SuperTokens is an open source authentication solution focused on delivering simple login flows. It provides backend SDKs",
+    "host_name": "www.cerbos.dev",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://gautamkhorana.com/authentication/supertokens",
+    "name": "SuperTokens — Authentication Service Review (2026) | Gautam",
+    "snippet": "SuperTokens is open-source auth designed for self-hosting in the same database your app uses. paid for support, free for self-hosting. a price range you can ...",
+    "host_name": "gautamkhorana.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://workos.com/pricing",
+    "name": "Pricing - WorkOS",
+    "snippet": "Pricing. Up to 1 million users. Free. Per additional 1M users. $2,500 / mo. Single Sign-On. Enterprise single sign-on with SAML and OIDC support. Get started. 0 ...",
+    "host_name": "workos.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scalekit.com/blog/workos-alternatives",
+    "name": "WorkOS Alternatives for Enterprise Readiness in 2026 - Scalekit",
+    "snippet": "SSO connections beyond the 5 included in the free tier cost $125 each, matching WorkOS's base rate. SCIM connections are priced identically ...",
+    "host_name": "www.scalekit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/top-propelauth-alternatives-secure-authentication-in-2026",
+    "name": "Top 5 PropelAuth alternatives for secure authentication in 2026",
+    "snippet": "WorkOS is ideal for B2B SaaS companies that need enterprise-grade authentication without feature gating. Where PropelAuth locks SCIM and ...",
+    "host_name": "workos.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.propelauth.com/post/6-auth-platforms-enterprise-sso-support",
+    "name": "6 Auth Platforms With Enterprise SSO Support for B2B SaaS in 2026",
+    "snippet": "Enterprise SSO with SAML and OIDC is included on paid plans without per-connection fees, and the free tier covers up to 10,500 monthly active ...",
+    "host_name": "www.propelauth.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/stytch-alternatives",
+    "name": "5 best Stytch alternatives in 2026 - WorkOS",
+    "snippet": "Pricing · Free: Covers small apps and early-stage B2B use cases. · Growth: Approximately $150 per month, with unlimited SSO connections included.",
+    "host_name": "workos.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.buildmvpfast.com/alternatives/workos",
+    "name": "Best WorkOS Alternatives (2026): Enterprise Auth, SSO",
+    "snippet": "Free tier · 1M MAUs · 25K MAUs ; SSO pricing · $125/connection · Enterprise plan only ; SCIM directory sync · $125/connection · Enterprise only ; Pre- ...",
+    "host_name": "www.buildmvpfast.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/workos-vs-betterauth-vs-clerk",
+    "name": "WorkOS vs. BetterAuth vs. Clerk: Which should you choose?",
+    "snippet": "Pricing · User Management (AuthKit): Free for first 1M MAUs, then $2,500 per additional 1M MAUs · SSO: $125/month per connection · Directory Sync: ...",
+    "host_name": "workos.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://guptadeepak.com/auth0-vs-okta-vs-stytch-vs-workos-vs-ssojet-2026-a-buyer-stage-framework",
+    "name": "Auth0 vs Okta vs Stytch vs WorkOS: CIAM Buyer-Stage Guide",
+    "snippet": "The Enterprise SSO economics are the standout: per-organization pricing materially below WorkOS, with a 100k MAU free tier on the underlying ...",
+    "host_name": "guptadeepak.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

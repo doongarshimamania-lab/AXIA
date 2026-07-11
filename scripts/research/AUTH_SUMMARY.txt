@@ -1,0 +1,322 @@
+============================================
+=== auth_clerk ===
+============================================
+• [clerk.com] Pricing — Free Up to 50K Users | Plans from $0/mo - Clerk
+   Clerk pricing starts free for up to 50000 monthly retained users. Pro plans from $20/mo. No credit card required. Compare all plans and features.
+   https://clerk.com/pricing
+
+• [www.buildmvpfast.com] Clerk Pricing Calculator (2026) | BuildMVPFast
+   Free tier excludes MFA/RBAC. Enterprise pricing for 10K+ MAU. Auto-calculated usage. 1 MAUs per user x 1,000 users. 1,000.
+   https://www.buildmvpfast.com/tools/api-pricing-estimator/clerk
+
+• [www.reddit.com] 7-11K MAU a month, what will Clerk Cost me? : r/nextjs - Reddit
+   It's $20 for every 1K MAU after included plus the plan price. Hobby could between 145-225 and business would be between 219 and 299 (if 1K included) Is Clerk's pricing really that insane or am I missing something? PSA: Clerk free tier forces all users to re-login every 7 days More results from www.r
+   https://www.reddit.com/r/nextjs/comments/17r39b5/711k_mau_a_month_what_will_clerk_cost_me
+
+• [workos.com] Clerk pricing: How it works and compares to WorkOS
+   The Pro plan has a base cost of $25/month and charges $0.02 per MAU after you use up your initial 10,000 MAUs. ... Moreover, WorkOS's free tier ...
+   https://workos.com/blog/clerk-pricing
+
+• [clerk.com] Updated Pricing: 10,000 MAUs Free, and a new “Pro Plan” - Clerk
+   Introducing NEW pricing for Clerk – a Pro Plan with additional features, Pro Add-Ons to fit your application's use case, and 10000 MAUs free ...
+   https://clerk.com/blog/new-pricing-plans
+
+============================================
+=== auth_convex ===
+============================================
+• [github.com] Fix Google OAuth session persistence after page refresh · Issue #193
+   When logging in via Google authentication, the user session doesn't persist after refreshing the browser page. Convex logs show the error message "Invalid ...
+   https://github.com/get-convex/convex-auth/issues/193
+
+• [labs.convex.dev] OAuth - Convex Auth
+   This authentication method has two steps: Convex Auth ensures a secure exchange of secrets between the third-party provider and your backend.
+   https://labs.convex.dev/auth/config/oauth
+
+• [www.youtube.com] Setting up Convex Auth in 3 minutes and 50 seconds  - YouTube
+   Get the code: https://github.com/get-convex/convex-auth-with-role-based-permissions It's time to walk through Convex Auth, step-by-step and ...
+   https://www.youtube.com/watch?v=ZvlmSy85bj4
+
+• [github.com] Google OAuth shows “Access blocked” even after correct setup #286
+   I'm trying to use Convex Auth with Google OAuth, but I'm consistently getting an “Access blocked: This app's request is invalid” error from ...
+   https://github.com/get-convex/convex-auth/issues/286
+
+• [github.com] get-convex/better-auth - GitHub
+   Built-in support for email and password authentication, with session and account management features. Social Sign-on. Support multiple OAuth providers. Allow ...
+   https://github.com/get-convex/better-auth
+
+============================================
+=== auth_auth0 ===
+============================================
+• [auth0.com] Pricing - Auth0
+   Flexible pricing for developers and enterprises incl. a free forever dev plan. Essentials $35/ month
+   https://auth0.com/pricing
+
+• [auth0.com] Pricing Changes for Auth0 by Okta
+   Our free plan now supports up to 7,500 MAUs vs the previous 7,000. Essentials pricing now starts at $35/Mo. Essentials pricing now starts at $150/Mo for 500 ...
+   https://auth0.com/blog/upcoming-pricing-changes-for-the-customer-identity-cloud
+
+• [www.okta.com] Plans and Pricing - Okta
+   Okta offers a variety of products and price points across our Okta and Auth0 Platforms. Browse our pricing page to find the right solution for you.
+   https://www.okta.com/pricing
+
+• [www.trulycritic.com] 5 Best Identity Management Tools 2026 (Ranked) - TrulyCritic
+   Auth0 pricing is usage-based a free tier (7,000 active users), Essential at $35/month, and scaling up for higher volumes. Okta is typically ...
+   https://www.trulycritic.com/blog/best-identity-management-software-2026
+
+• [www.siit.io] Auth0 vs Okta Comparison Guide 2026 - Siit
+   Starting price $35/month for 500 MAUs (B2C) $6/user/month (Workforce Identity starter tier) 7,000+ pre-built enterprise app. Auth0's MAU-based pricing. Okta's ...
+   https://www.siit.io/tools/comparison/auth0-vs-okta
+
+============================================
+=== auth_supabase ===
+============================================
+• [supabase.com] Pricing & Fees - Supabase
+   Everything in the Free Plan, plus: 100K monthly active users. 8 GB disk size per project. 250 GB bandwidth. Daily backups (7 day retention). Email support. Missing: 2026 GoTrue
+   https://supabase.com/pricing
+
+• [aiagencyplus.com] Supabase Free Tier Limits: What You Actually Get In 2026 - AI Agency Plus
+   Supabase Auth: 50,000 Monthly Active Users. This is one of the most generous limits on the free plan and one that developers often underestimate ...
+   https://aiagencyplus.com/supabase-free-tier-limits
+
+• [butterbase.ai] Supabase Pricing in 2026: When It's Worth It (And When to Switch)
+   Supabase has clean, honest pricing on the surface: a free tier, $25 a month for Pro, $599 a month for Team. The sticker price is not where ... Missing: GoTrue | Show results with: GoTrue
+   https://butterbase.ai/blog/supabase-pricing-2026
+
+• [dev.to] Supabase vs Firebase in 2026: The Honest Comparison After Using
+   The MAU Trap: Once you exceed 100K monthly active users on Pro, overages hit at $3.25 per 1,000 users. A 200K MAU app adds $325/month just for ...
+   https://dev.to/pockit_tools/supabase-vs-firebase-in-2026-the-honest-comparison-after-using-both-in-production-3e5
+
+• [techsy.io] Supabase vs Firebase: We Migrated, Here's Why | TECHSY
+   Supabase uses tier-based pricing. The free tier includes 500MB database, 50,000 monthly active users (MAU) for auth, and 1GB storage. The Pro plan costs $25/ ...
+   https://techsy.io/en/blog/supabase-vs-firebase
+
+============================================
+=== auth_nextauth ===
+============================================
+• [next-auth.js.org] NextAuth.js
+   Open Source. Full Stack. Own Your Data. ; Easy. Built in support for popular services (Google, Facebook, Auth0, Apple…) Built in email / passwordless / magic ...
+   https://next-auth.js.org
+
+• [authjs.dev] Auth.js | Authentication for the Web
+   Source. Express Logo Next.js Logo Qwik Logo ... Configuring OAuth providersCustomize a built-in one or set up your own ...
+   https://authjs.dev
+
+• [workos.com] Top 5 NextAuth alternatives for secure authentication in 2026 - WorkOS
+   Better Auth is an open-source, TypeScript-first authentication library that emerged as a modern alternative to NextAuth. It provides a framework ...
+   https://workos.com/blog/top-nextauth-alternatives-secure-authentication-2026
+
+• [www.cerbos.dev] Best Open Source Auth Tools & Auth Software for Enterprises [2026]
+   Authentik. Authentik is a self-hosted identity provider that handles authentication with MFA, SSO, and protocols (OIDC, OAuth2, SAML, LDAP).
+   https://www.cerbos.dev/blog/best-open-source-auth-tools-and-software-for-enterprises-2026
+
+• [blog.logrocket.com] I tested every major auth library for Next.js in 2026 - LogRocket Blog
+   For most new self-hosted Next.js projects in 2026, Better Auth is the strongest default. It gives you full ownership, immediate session ...
+   https://blog.logrocket.com/best-auth-library-nextjs-2026
+
+============================================
+=== auth_firebase ===
+============================================
+• [firebase.google.com] Firebase Pricing - Google
+   Authentication Phone Auth - No-cost up to 50 MAUs. No-cost up to 1 No-cost up to 50K update units/day … estimate assumes Tier 1 regional pricing.
+   https://firebase.google.com/pricing
+
+• [supertokens.com] Firebase Pricing–The Complete Guide - SuperTokens
+   Free for up to 50 MAUs. Phone Authentication (SMS) Not available Billed per SMS, typically $0.01–$0.06/SMS depending on region
+   https://supertokens.com/blog/firebase-pricing
+
+• [www.reddit.com] Confused about Firebase Auth Free Tier Limits (MAUs & OTPs) - Reddit
+   free plan includes 50K MAUs — , it mentions 10K free SMS verifications (OTP) There is no free SMS verification tier anymore, There is no fixed ... Firebase new SMS auth costs! Firebase Authentication SMS Verification Limits More results from www.reddit.com
+   https://www.reddit.com/r/Firebase/comments/1lsv6jy/confused_about_firebase_auth_free_tier_limits
+
+• [www.metacto.com] Firebase Auth Pricing 2026: Complete Cost Guide (Free Tier to Enterprise)
+   Updated May 2026: Firebase Auth is free for 50K MAUs. See the new tiered pricing ($0.0055-$0.0025/MAU), SMS costs by country, SAML/OIDC fees ...
+   https://www.metacto.com/blogs/the-complete-guide-to-firebase-auth-costs-setup-integration-and-maintenance
+
+• [firebase.google.com] Firebase Authentication Limits - Google
+   The following limits are daily usage limits for users of Firebase Authentication no-cost Spark plan. less Limit Tier 1 Daily Active Users 3000 per day Tier 2 ...
+   https://firebase.google.com/docs/auth/limits
+
+============================================
+=== auth_better_auth ===
+============================================
+• [better-auth.com] Pricing - Better Auth
+   The Better Auth framework is free and open source. $20/ month Unlimited seats ・ $50/month per connection ・ $0.09 per SMS Email ・ $50/month per connection
+   https://better-auth.com/pricing
+
+• [blog.openreplay.com] BetterAuth Explained: What It Is and Its Rapid Developer Adoption
+   BetterAuth stores all authentication data in your own database. This means no vendor lock-in, no surprise pricing changes, and complete ...
+   https://blog.openreplay.com/betterauth-explained-rapid-developer-adoption
+
+• [better-auth.com] Better Auth
+   The most comprehensive authentication framework for TypeScript. Better Auth with a dashboard, audit logs, security detection, enterprise features, and more.
+   https://better-auth.com
+
+• [www.better-stack.ai] Comparing Top Open-Source Auth Libraries in 2026 - BTST
+   This article reviews the top free, open-source authentication libraries used by modern web. Better Auth is the most flexible, modern option if ...
+   https://www.better-stack.ai/p/blog/open-source-auth-libraries-in-2026
+
+• [workos.com] Top 5 Better Auth alternatives for secure authentication in 2026
+   Better Auth has quickly become a popular TypeScript-first authentication library, Open source: Self-hostable for compliance or data residency ...
+   https://workos.com/blog/top-better-auth-alternatives-secure-authentication-2026
+
+============================================
+=== auth_workos ===
+============================================
+• [workos.com] Pricing - WorkOS
+   Pricing. Up to 1 million users. Free. Per additional 1M users. $2,500 / mo. Single Sign-On. Enterprise single sign-on with SAML and OIDC support. Get started. 0 ...
+   https://workos.com/pricing
+
+• [www.scalekit.com] WorkOS Alternatives for Enterprise Readiness in 2026 - Scalekit
+   SSO connections beyond the 5 included in the free tier cost $125 each, matching WorkOS's base rate. SCIM connections are priced identically ...
+   https://www.scalekit.com/blog/workos-alternatives
+
+• [workos.com] Top 5 PropelAuth alternatives for secure authentication in 2026
+   WorkOS is ideal for B2B SaaS companies that need enterprise-grade authentication without feature gating. Where PropelAuth locks SCIM and ...
+   https://workos.com/blog/top-propelauth-alternatives-secure-authentication-in-2026
+
+• [www.propelauth.com] 6 Auth Platforms With Enterprise SSO Support for B2B SaaS in 2026
+   Enterprise SSO with SAML and OIDC is included on paid plans without per-connection fees, and the free tier covers up to 10,500 monthly active ...
+   https://www.propelauth.com/post/6-auth-platforms-enterprise-sso-support
+
+• [workos.com] 5 best Stytch alternatives in 2026 - WorkOS
+   Pricing · Free: Covers small apps and early-stage B2B use cases. · Growth: Approximately $150 per month, with unlimited SSO connections included.
+   https://workos.com/blog/stytch-alternatives
+
+============================================
+=== auth_stytch ===
+============================================
+• [stytch.com] Modern authentication pricing - Stytch
+   If you surpass the 10,000 MAUs, 5 SSO or SCIM connections, 1000 M2M tokens, or 10,000 fingerprints included in our free tier, you'll pay for only what you use ...
+   https://stytch.com/pricing
+
+• [www.buildmvpfast.com] Best Stytch Alternatives (2026): Passwordless Auth Pricing
+   Pricing is MAU-based. The free tier covers 10,000 monthly active users, which is enough for most early-stage products. After that, Essentials ...
+   https://www.buildmvpfast.com/alternatives/stytch
+
+• [workos.com] 5 best Stytch alternatives in 2026 - WorkOS
+   Pricing · Free: Covers small apps and early-stage B2B use cases. · Growth: Approximately $150 per month, with unlimited SSO connections included.
+   https://workos.com/blog/stytch-alternatives
+
+• [www.rfp.wiki] Stytch vs Auth0 (2026): Comprehensive comparison
+   +Public free tier and entry pricing are easy to find. +Tiered plans give buyers a starting point for evaluation. Cons. -Pricing can scale up quickly as usage ...
+   https://www.rfp.wiki/it-security/access-management/stytch/auth0
+
+• [securityboulevard.com] Stytch Alternatives for Passwordless Authentication - Security Boulevard
+   Advantages over Stytch. Full data ownership and backend control. Free tier and community-driven support. Ideal for self-hosted projects ...
+   https://securityboulevard.com/2025/11/stytch-alternatives-for-passwordless-authentication
+
+============================================
+=== auth_logto ===
+============================================
+• [www.opensourcealternatives.to] Best Open Source Authentication Tools in 2026
+   Self-hosted auth costs roughly $10–40/month regardless of user count; the savings are $800–1,200/month. Self-hosted version is free and fully functional;
+   https://www.opensourcealternatives.to/blog/best-open-source-authentication-tools
+
+• [www.authgear.com] Top Open-Source Auth0 Alternatives in 2026: Secure & Self-Hosted
+   Unlike Auth0's MAU-based pricing, self-hosting provides predictable costs without per-user billing. Authgear stands out as a modern, Auth0-like ...
+   https://www.authgear.com/post/top-open-source-auth0-alternatives
+
+• [blog.logto.io] Auth provider: Logto OSS vs. Logto Cloud
+   Transparent Pricing: Free plan: 50,000 MAU, basic auth, passwordless, user management. Pro plan: $16/month + usage-based pricing for MFA, ...
+   https://blog.logto.io/logto-oss-vs-logto-cloud
+
+• [github.com] Logto - GitHub
+   Logto is the modern, open-source auth infrastructure for SaaS and AI apps. It takes the pain out of OIDC and OAuth 2.1 and makes it easy to build secure, Full ...
+   https://github.com/logto-io/logto
+
+• [www.cerbos.dev] Best Open Source Auth Tools & Auth Software for Enterprises [2026]
+   Authentik is a self-hosted identity provider that handles authentication with MFA, SSO, and protocols (OIDC, OAuth2, SAML, LDAP). It can also ...
+   https://www.cerbos.dev/blog/best-open-source-auth-tools-and-software-for-enterprises-2026
+
+============================================
+=== auth_super_tokens ===
+============================================
+• [supertokens.com] Pricing & Features for SuperTokens
+   Self hosting the open source features is free without any limits! Cloud Self-hosted $0.02 per MAU. Authentication Price / MAU: $0.01 (Minimum $100)Price
+   https://supertokens.com/pricing
+
+• [supertokens.com] Supertokens Vs AuthO: Self-Hosted Vs. Managed Solutions
+   SuperTokens is an open source solution, so you can self-host the service and use the core feature set for free for an unlimited number of users ...
+   https://supertokens.com/blog/supertokens-vs-auth0
+
+• [supertokens.medium.com] Self-hosted Authentication. by Supertokens Team - Medium
+   SSO runs from $138/month to $3,600/month. Starter plan at $125/month, Essentials at $850/month, and Enterprise at $3,300/month. A self-hosted ...
+   https://supertokens.medium.com/self-hosted-authentication-56e6f0b26a57
+
+• [northflank.com] How to self-host authentication with SuperTokens on Northflank
+   SuperTokens is an open-source authentication solution designed to simplify these challenges while offering flexibility and scalability.
+   https://northflank.com/guides/how-to-self-host-authentication-with-supertokens-on-northflank
+
+• [devtune.ai] SuperTokens AI search visibility, competitors, reviews, and pricing
+   Pricing Self-hosted (open-source): completely free with no MAU limits. Managed cloud (SuperTokens hosts the core): free up to 5,000 MAUs, then $0.02 per MAU.
+   https://devtune.ai/verticals/authentication-identity/supertokens
+
+============================================
+=== auth_kinde ===
+============================================
+• [kinde.com] Kinde Pricing
+   Rating 4.7 (40) Upgrade when you want, cancel anytime. $25 USD per month. 10,500 MAU free ... Every plan includes a free tier of 10,500 monthly active users (MAU), with ...
+   https://kinde.com/pricing
+
+• [kinde.com] 2026 Best Auth Providers: Top 5 Compared - Kinde
+   Transparent pricing starts free for up to 10,500 monthly active users. The free tier includes all core features: organizations, custom domains, ...
+   https://kinde.com/comparisons/top-authentication-providers-2026
+
+• [kinde.com] Kinde Authentication providers for consumer software apps compared
+   The free tier supports up to 10,500 MAU with all core features included. ... A notable 2026 update expanded the free tier to 25,000 MAUs and ...
+   https://kinde.com/comparisons/authentication-providers-for-consumer-software-apps-compared-top-10-options-in-2026
+
+• [www.buildmvpfast.com] Best Kinde Alternatives (2026): Auth + Feature Flags Pricing
+   Kinde Plans & Pricing ; Free. $0. Generous free tier. 10,500 MAU; Unlimited apps and APIs; Social login, email, passwordless ; Pro. $25/mo + ...
+   https://www.buildmvpfast.com/alternatives/kinde
+
+• [kinde.com] 2026 Authentication Software with SAML SSO Support: Top 10 Options
+   Free tier includes 10,500 monthly active users, unlimited organizations, and core features including SAML SSO. Paid plans add advanced features ...
+   https://kinde.com/comparisons/2026-authentication-software-with-saml-sso-support-top-10-options
+
+============================================
+=== auth_comparison ===
+============================================
+• [www.devtoolreviews.com] Clerk vs Auth0 vs Supabase Auth (2026): Complete Comparison
+   Clerk $800 340ms ~1 day ~4 hours (Pro plan) Auth0 $3,010 410ms. Supabase Auth is essentially free for 50K users. Clerk's cost is noticeable but ...
+   https://www.devtoolreviews.com/reviews/clerk-vs-auth0-vs-supabase-auth-2026
+
+• [agenticschool.dev] Clerk vs Auth0 vs Supabase Auth: 2026 | Agentic School
+   Pricing is as of 2026 and moves over time. The honest rule of thumb: Clerk for developer experience, Auth0 for enterprise needs, Supabase Auth ...
+   https://agenticschool.dev/compare/clerk-vs-auth0-vs-supabase-auth
+
+• [www.youtube.com] Clerk vs Supabase Auth vs Auth0 (2026) - Which One Is BEST?
+   ... pricing, security, scalability, integrations ... and Auth0 are • Clerk vs Supabase Auth vs Auth0 full comparison (2026) • Authentication ...
+   https://www.youtube.com/watch?v=OkUp_SPdugk
+
+• [zuplo.com] Auth Pricing Wars: Cognito vs Auth0 vs Firebase vs Supabase vs Clerk
+   Auth0 recently expanded its free tier to 25,000 MAU. Clerk's free tier is 10,000 MAU with “First Day Free” counting. Supabase costs just $25/ ...
+   https://zuplo.com/learning-center/api-authentication-pricing
+
+• [medium.com] FastAPI Authentication 2026: Auth0 vs Supabase vs Clerk  - Medium
+   Supabase Auth gives you 50,000 monthly active users for free. roughly $0.003 per additional MAU. Clerk offers 10,000 free MAUs, then charges ...
+   https://medium.com/@rameshkannanyt0078/fastapi-authentication-2026-auth0-vs-supabase-vs-clerk-vs-firebase-full-benchmark-cost-b8844977fff4
+
+============================================
+=== auth_google_oauth_direct ===
+============================================
+• [developers.google.com] Using OAuth 2.0 to Access Google APIs | Authorization
+   1. Obtain OAuth 2.0 credentials from the Google API Console. · 2. Obtain an access token from the Google Authorization Server. · 3. Examine scopes ...
+   https://developers.google.com/identity/protocols/oauth2
+
+• [www.reddit.com] OAuth with Google without using any third party library / solution - Reddit
+   Is there any way / resource on how to implement authentication using google-auth-libary in nextjs just like you would do in node js or express server.
+   https://www.reddit.com/r/nextjs/comments/1ej5au3/oauth_with_google_without_using_any_third_party
+
+• [medium.com] Enabling Sign in with Google Without Third-Party Auth Providers - Medium
+   Step 1: Create a Project · Step 2: Configure OAuth Consent Screen · Step 3: Create a Google OAuth 2.0 Client · Step 4: Add the Google Sign-In ...
+   https://medium.com/@elijahsoladoye/enabling-sign-in-with-google-without-third-party-auth-providers-in-web-apps-aa9e3f11c9f1
+
+• [dev.to] A Step-by-Step Guide to Google OAuth2 Authentication with
+   Navigate to API & Services > OAuth Consent Screen to configure your application. · Fill in the necessary details like app name and support email.
+   https://dev.to/idrisakintobi/a-step-by-step-guide-to-google-oauth2-authentication-with-javascript-and-bun-4he7
+
+• [www.unipile.com] Google OAuth Playground — Complete Guide to Testing Scopes
+   Master Google OAuth Playground in 2026: test scopes, generate access + refresh tokens, debug API calls. Plus the production-ready ...
+   https://www.unipile.com/google-oauth-playground-guide
+

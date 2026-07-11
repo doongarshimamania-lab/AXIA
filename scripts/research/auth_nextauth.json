@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://next-auth.js.org",
+    "name": "NextAuth.js",
+    "snippet": "Open Source. Full Stack. Own Your Data. ; Easy. Built in support for popular services (Google, Facebook, Auth0, Apple…) Built in email / passwordless / magic ...",
+    "host_name": "next-auth.js.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://authjs.dev",
+    "name": "Auth.js | Authentication for the Web",
+    "snippet": "Source. Express Logo Next.js Logo Qwik Logo ... Configuring OAuth providersCustomize a built-in one or set up your own ...",
+    "host_name": "authjs.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/top-nextauth-alternatives-secure-authentication-2026",
+    "name": "Top 5 NextAuth alternatives for secure authentication in 2026 - WorkOS",
+    "snippet": "Better Auth is an open-source, TypeScript-first authentication library that emerged as a modern alternative to NextAuth. It provides a framework ...",
+    "host_name": "workos.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cerbos.dev/blog/best-open-source-auth-tools-and-software-for-enterprises-2026",
+    "name": "Best Open Source Auth Tools & Auth Software for Enterprises [2026]",
+    "snippet": "Authentik. Authentik is a self-hosted identity provider that handles authentication with MFA, SSO, and protocols (OIDC, OAuth2, SAML, LDAP).",
+    "host_name": "www.cerbos.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.logrocket.com/best-auth-library-nextjs-2026",
+    "name": "I tested every major auth library for Next.js in 2026 - LogRocket Blog",
+    "snippet": "For most new self-hosted Next.js projects in 2026, Better Auth is the strongest default. It gives you full ownership, immediate session ...",
+    "host_name": "blog.logrocket.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=bMYZSi_LZ2w",
+    "name": "Next-Auth V5 Tutorial (OAuth, Email, Server Actions, Server  - YouTube",
+    "snippet": "Learn authentication with Next-auth/Auth.js 5.0 for Next.js in this one tutorial. You will learn: - How to set up Next-auth 5 in a Next.js ...",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/nextauthjs/next-auth/discussions/9480",
+    "name": "Using custom provider in next-auth v5. #9480 - GitHub",
+    "snippet": "I want to migrate my app to next-auth v5 (while on early stage). So I used my old custom OAuth provider (particularly, lichess oauth) , but it doesn't work.",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mgsoftware.nl/en/vergelijking/nextauth-vs-clerk",
+    "name": "NextAuth vs Clerk in 2026 - MG Software",
+    "snippet": "NextAuth (Auth.js) is free, Clerk costs $25/month and up. We built the same auth flow in both: setup time, monthly bill at 10k MAU, GDPR compliance and...",
+    "host_name": "www.mgsoftware.nl",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

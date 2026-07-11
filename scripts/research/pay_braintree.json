@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.paypal.com/us/enterprise/paypal-braintree-fees",
+    "name": "PayPal Braintree Fees & Pricing",
+    "snippet": "Custom flat rates, interchange plus pricing, and discounted rates are available for established businesses based on business model and processing volume.",
+    "host_name": "www.paypal.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dodopayments.com/blogs/braintree-vs-stripe",
+    "name": "Braintree vs Stripe: Which Payment Gateway Is Better for SaaS in",
+    "snippet": "Braintree does not charge a monthly fee at standard tiers. PayPal transactions through Braintree cost 3.49% + $0.49, which is worth noting if a ...",
+    "host_name": "dodopayments.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.paypal.com/braintree/articles/risk-and-security/compliance/network-updates/2026",
+    "name": "April 2026 RELEASE GUIDE - Braintree SDK Docs",
+    "snippet": "For Europe, the fee applies to intra-European transactions and international transactions. Visa is raising the fee 5bps over the next 3 years. Fee Name. Thru.",
+    "host_name": "developer.paypal.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.index.dev/skill-vs-skill/payment-processing-paypal-vs-braintree-vs-stripe",
+    "name": "Braintree vs PayPal vs Stripe for Payment Processing in 2026",
+    "snippet": "Transparent flat-rate pricing at 2.9% plus 30 cents per transaction … $117,000 in annual fees or $9,750/month in transaction fees alone. Braintree matches at 2 ...",
+    "host_name": "www.index.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.airwallex.com/en-au/blog/comparison-stripe-vs-braintree",
+    "name": "Stripe vs Braintree - Full comparison for Australian businesses (2026)",
+    "snippet": "Braintree charges 3.9% + A$0.30 (incl. GST) for international card transactions; PayPal's own FX margin applies separately on PayPal-funded ...",
+    "host_name": "www.airwallex.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mindk.com/blog/payment-gateway-comparison-stripe-vs-paypal-vs-braintree",
+    "name": "Stripe vs. PayPal vs. Braintree: Choosing a Payment Gateway",
+    "snippet": "* Both PayPal and Braintree work with third-party merchant accounts. With its extra fees and higher international rates, PayPal is the most expensive option.",
+    "host_name": "www.mindk.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://merchantinsiders.com/blogs/braintree-fees",
+    "name": "Braintree Fees Explained: Complete 2026 Guide - Merchant Insiders",
+    "snippet": "PayPal transactions through Braintree cost 3.49% + 49¢, Additional fees apply for international cards (+2%), chargebacks ($15), and currency.  ...",
+    "host_name": "merchantinsiders.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://softwaredecisions.net/paypal-vs-braintree",
+    "name": "PayPal vs Braintree (2026): Which Payment Platform Is Better?",
+    "snippet": "This guide compares PayPal and Braintree across setup, customization, subscriptions, international payments, pricing, and long-term business fit to help you ...",
+    "host_name": "softwaredecisions.net",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
