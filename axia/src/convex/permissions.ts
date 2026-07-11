@@ -1,6 +1,6 @@
 import { QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 import { ACCESS_HIERARCHY, AccessLevel } from "./sharedValidators";
 
 /**

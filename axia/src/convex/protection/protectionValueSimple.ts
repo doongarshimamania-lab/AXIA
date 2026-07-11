@@ -1,5 +1,5 @@
 import { query } from "../_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 
 // Simplified wrapper to avoid deep type instantiation
 export const getMetrics = query({

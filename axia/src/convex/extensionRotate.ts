@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // Helper: generate cryptographically secure random token (64-character hex = 32 bytes)

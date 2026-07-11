@@ -2,7 +2,7 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // ═════════════════════════════════════════════

@@ -1,6 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // SECURITY: storeConsentAudit now requires auth and can only log for the authenticated user

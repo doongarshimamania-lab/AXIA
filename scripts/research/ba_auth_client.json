@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/concepts/client",
+    "name": "Client | Better Auth",
+    "snippet": "Usage · Hooks · Session Options",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/basic-usage",
+    "name": "Basic Usage | Better Auth",
+    "snippet": "Better Auth provides a useSession hook to easily access session data on the client side. This hook is implemented using nanostore and has support for each ...",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/3123",
+    "name": "Better Auth's React hooks fail when used with Next.js 15 App Router",
+    "snippet": "This is a compatibility issue between Better Auth's React hooks and the Next.js 15 App Router. The error occurs because Better Auth's hooks ( ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://context7.com/better-auth/better-auth",
+    "name": "Better Auth - Context7",
+    "snippet": "Better Auth is a framework-agnostic authentication and authorization library for TypeScript, offering a comprehensive feature set and a plugin ecosystem for ...",
+    "host_name": "context7.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.better-auth.com/docs/installation",
+    "name": "Installation | Better Auth",
+    "snippet": "Call the function to create your client. · Pass the base URL ...",
+    "host_name": "www.better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

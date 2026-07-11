@@ -1,3 +1,4 @@
+"use node";
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/portalAuth.ts — JWT-based portal authentication + scope enforcement.
 //
@@ -25,8 +26,6 @@
 //   XSS exfil blast radius. Frontend enforces this; backend treats token as
 //   opaque string.
 // ──────────────────────────────────────────────────────────────────────────────
-
-"use node";
 
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import crypto from "crypto";

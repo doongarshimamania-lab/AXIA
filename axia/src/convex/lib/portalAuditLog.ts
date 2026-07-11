@@ -1,3 +1,4 @@
+"use node";
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/portalAuditLog.ts — Append-only audit log helper for portal actions.
 //

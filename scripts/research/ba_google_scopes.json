@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://developers.google.com/identity/protocols/oauth2/scopes",
+    "name": "OAuth 2.0 Scopes for Google APIs",
+    "snippet": "This document lists the OAuth 2.0 scopes that you might need to request to access Google APIs, depending on the level of access you need.",
+    "host_name": "developers.google.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/concepts/oauth",
+    "name": "OAuth | Better Auth",
+    "snippet": "Better Auth comes with built-in support for OAuth 2.0 and OpenID Connect. This allows you to authenticate users via popular OAuth providers like Google, ...",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/4459",
+    "name": "How to get email when user does social login for example with Google",
+    "snippet": "For instance, verify that your Google app and Better Auth social provider configuration include the “email” scope so that Google returns the ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/47695697/difference-between-profile-and-email-scope-in-google-oauth-2-flow",
+    "name": "Difference between profile and email scope in Google OAuth 2 flow",
+    "snippet": "email: View your email address. openid: Authenticate using OpenID Connect. Basic Profile: ID, Full name, Given Name, Family Name, Image URL. Google OAuth API to get user's email address? - Stack Overflow oAuth 2.0 scope for user ID from Google account - Stack Overflow More results from stackoverflow.com",
+    "host_name": "stackoverflow.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/plugins/generic-oauth",
+    "name": "Generic OAuth | Better Auth",
+    "snippet": "It supports both OAuth 2.0 and OpenID Connect (OIDC) flows, allowing you to easily add social login or custom OAuth authentication to your application.",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

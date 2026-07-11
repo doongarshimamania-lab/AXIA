@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { auth } from "./auth";
+import { authComponent, createAuth } from "./auth";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
@@ -130,7 +130,14 @@ function checkBodySize(req: Request, maxBytes: number = 100_000): Response | nul
 
 const http = httpRouter();
 
-auth.addHttpRoutes(http);
+// Better Auth route registration (replaces prior `auth.addHttpRoutes(http)`).
+// registerRoutesLazy defers BA initialization until first request — prevents
+// OOM errors during deploy. CORS is required for client-side frameworks (Vite SPA).
+authComponent.registerRoutesLazy(http, createAuth, {
+  basePath: "/api/auth",
+  cors: true,
+  trustedOrigins: [process.env.SITE_URL!],
+});
 
 // Add: Extension HTTPS endpoints
 

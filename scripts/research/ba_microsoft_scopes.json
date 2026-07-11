@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc",
+    "name": "Scopes and permissions in the Microsoft identity platform",
+    "snippet": "Learn about openID connect scopes and permissions in the Microsoft identity platform endpoint.",
+    "host_name": "learn.microsoft.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/zpg6/better-auth-microsoft-graph",
+    "name": "zpg6/better-auth-microsoft-graph - GitHub",
+    "snippet": "Seamlessly integrate better-auth with Microsoft Graph API to access user profile, calendar, contacts, mail, OneDrive, and more!",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/72121247/whats-the-difference-between-user-read-and-openidprofileemail-scopes",
+    "name": "azure active directory - What's the difference between User.Read and",
+    "snippet": "User.Read is a scope intended to be used when requesting an access token for the Microsoft Graph API. It grants privileges to read the profile of the signed-in ... Why is Microsoft Oauth2 API changing the scope of authorization requests? How to retrieve a list of OAuth scopes for authorized Azure AD ... More results from stackoverflow.com",
+    "host_name": "stackoverflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/concepts/oauth",
+    "name": "OAuth | Better Auth",
+    "snippet": "Better Auth allows you to pass additional data through the OAuth flow without storing it in the database. This is useful for scenarios like tracking referral ...",
+    "host_name": "better-auth.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://learn.microsoft.com/en-us/answers/questions/1060125/how-to-get-email-from-microsoft-graph-api-oidc-use",
+    "name": "How to get email from Microsoft graph api oidc/userinfo endpoint",
+    "snippet": "The documentation suggests that in order for email to be returned in the response it requires the email scope.",
+    "host_name": "learn.microsoft.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

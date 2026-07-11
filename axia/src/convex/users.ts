@@ -1,4 +1,4 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 import { query, QueryCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";

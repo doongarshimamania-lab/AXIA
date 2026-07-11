@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/integrations/convex",
+    "name": "Convex Integration - Better Auth",
+    "snippet": "Run convex dev. Running the CLI during setup will initialize your Convex ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.convex.dev/components/better-auth",
+    "name": "Better Auth | Convex Components",
+    "snippet": "This component provides an integration layer for using Better Auth with Convex, enabling framework-agnostic authentication across React, Vue, Svelte, Next.js, ...",
+    "host_name": "www.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.npmjs.com/package/@convex-dev/better-auth",
+    "name": "convex-dev/better-auth - NPM",
+    "snippet": "A Better Auth component for Convex.. Latest version: 0.12.5, last published: 2 days ago. Start using @convex-dev/better-auth in your project ...",
+    "host_name": "www.npmjs.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth",
+    "name": "Getting Started | Convex + Better Auth",
+    "snippet": "To use Convex + Better Auth, you'll first need a Convex project. If you don't have one, run npm create convex@latest to get started, and check out the docs to ...",
+    "host_name": "labs.convex.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://context7.com/better-auth/better-auth",
+    "name": "Better Auth - Context7",
+    "snippet": "Better Auth is a framework-agnostic authentication and authorization library for TypeScript, offering a comprehensive feature set and a plugin ecosystem for ...",
+    "host_name": "context7.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

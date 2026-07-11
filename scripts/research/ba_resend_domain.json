@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://resend.com/docs/dashboard/domains/introduction",
+    "name": "Managing Domains - Resend",
+    "snippet": "Resend sends emails using a domain you own (not a shared or public domain). You must add and verify at least one domain to send and receive emails with Resend.",
+    "host_name": "resend.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://resend.com/docs/dashboard/receiving/custom-domains",
+    "name": "Custom Receiving Domains - Resend",
+    "snippet": "Besides using Resend-managed domains, you can also receive emails using your own custom domain, such as yourdomain.tld . ​. Enabling receiving for a new domain.",
+    "host_name": "resend.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=Avp1OOMH2Z0",
+    "name": "How to use Resend with Anything - YouTube",
+    "snippet": "Learn more about the integration at https://resend ... How to configure Supabase to send emails from your domain. Resend•49K ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://resend.com",
+    "name": "Resend · Email for developers",
+    "snippet": "A simple, elegant interface so you can start sending emails in minutes. It fits right into your code with SDKs for your favorite programming languages.",
+    "host_name": "resend.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/resend/resend-node/issues/454",
+    "name": "Is it possible to send mails using resend if i dont have a personal",
+    "snippet": "Based on the documentation, you cannot send emails using Resend without having a verified domain. You can find more about it here: https:// ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

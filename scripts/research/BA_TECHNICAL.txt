@@ -1,0 +1,228 @@
+============================================
+=== ba_install ===
+============================================
+• [better-auth.com] Convex Integration - Better Auth
+   Run convex dev. Running the CLI during setup will initialize your Convex ...
+   https://better-auth.com/docs/integrations/convex
+
+• [www.convex.dev] Better Auth | Convex Components
+   This component provides an integration layer for using Better Auth with Convex, enabling framework-agnostic authentication across React, Vue, Svelte, Next.js, ...
+   https://www.convex.dev/components/better-auth
+
+• [www.npmjs.com] convex-dev/better-auth - NPM
+   A Better Auth component for Convex.. Latest version: 0.12.5, last published: 2 days ago. Start using @convex-dev/better-auth in your project ...
+   https://www.npmjs.com/package/@convex-dev/better-auth
+
+• [labs.convex.dev] Getting Started | Convex + Better Auth
+   To use Convex + Better Auth, you'll first need a Convex project. If you don't have one, run npm create convex@latest to get started, and check out the docs to ...
+   https://labs.convex.dev/better-auth
+
+============================================
+=== ba_schema_convex ===
+============================================
+• [www.convex.dev] Better Auth | Convex Components
+   Better Auth handles the authentication logic, session management, and OAuth provider integrations, while the component ensures all user data, sessions, and ...
+   https://www.convex.dev/components/better-auth
+
+• [github.com] udecode/better-auth-convex: Moved to https://github.com  - GitHub
+   The official @convex-dev/better-auth component stores auth tables in a component schema. This package provides an alternative approach with ...
+   https://github.com/udecode/better-auth-convex
+
+• [better-auth.com] Convex Integration - Better Auth
+   Add Convex auth config. Add a convex/auth.config.ts file to configure Better Auth as an authentication provider.
+   https://better-auth.com/docs/integrations/convex
+
+• [labs.convex.dev] Local Install | Convex + Better Auth
+   Convex functions within your Better Auth component directory can access the component's tables directly, and can then be run from outside the component via ctx.
+   https://labs.convex.dev/better-auth/features/local-install
+
+============================================
+=== ba_http_routes ===
+============================================
+• [better-auth.com] Convex Integration - Better Auth
+   Run convex dev. Running the CLI during setup will initialize your Convex ...
+   https://better-auth.com/docs/integrations/convex
+
+• [labs.convex.dev] Migrate to 0.10 | Convex + Better Auth
+   Update Convex Better Auth plugin config. The Convex Better Auth plugin now requires the auth config object. This helps minimize configuration and ensure ...
+   https://labs.convex.dev/better-auth/migrations/migrate-to-0-10
+
+• [github.com] get-convex/better-auth - GitHub
+   Authentication. Email & Password Authentication. Built-in support for email and password authentication, with session and account management features.
+   https://github.com/get-convex/better-auth
+
+• [better-auth.dracodev.me] Convex + Better Auth
+   Register Better Auth route handlers on your Convex deployment. convex/http.ts. import { httpRouter } from "convex/server";. import { betterAuthComponent, ...
+   https://better-auth.dracodev.me
+
+============================================
+=== ba_getAuthUserId ===
+============================================
+• [better-auth.com] Convex Integration - Better Auth
+   Run convex dev. Running the CLI during setup will initialize your Convex ...
+   https://better-auth.com/docs/integrations/convex
+
+• [labs.convex.dev] Migrate to 0.10 | Convex + Better Auth
+   The Convex Better Auth plugin now requires the auth config object. This helps minimize configuration and ensure accuracy. Additionally, as this new ...
+   https://labs.convex.dev/better-auth/migrations/migrate-to-0-10
+
+• [github.com] udecode/better-auth-convex: Moved to https://github.com  - GitHub
+   The official @convex-dev/better-auth component stores auth tables in a component schema. This package provides an alternative approach with ...
+   https://github.com/udecode/better-auth-convex
+
+• [www.better-convex.com] Server - Better Convex
+   Auth Contract · Refresh Auth-Owned Schema · Triggers
+   https://www.better-convex.com/docs/auth/server
+
+============================================
+=== ba_react_provider ===
+============================================
+• [labs.convex.dev] React (Vite SPA) | Convex + Better Auth
+   Install the component, a pinned version of Better Auth, and ensure the latest version of Convex. This component requires Convex 1.25.0 or later. Missing: useSession | Show results with: useSession
+   https://labs.convex.dev/better-auth/framework-guides/react
+
+• [labs.convex.dev] Authorization | Convex + Better Auth
+   Better Auth will reflect an authenticated user before Convex does, as the Convex client must subsequently validate the token provided by Better Auth. Missing: ConvexBetterAuthProvider | Show results with: ConvexBetterAuthProvider
+   https://labs.convex.dev/better-auth/basic-usage/authorization
+
+• [github.com] Issue #393 · get-convex/better-auth - GitHub
+   This may be related to the AuthClient type exported from @convex-dev/better-auth/react not preserving the session type returned by ...
+   https://github.com/get-convex/better-auth/issues/393
+
+• [labs.convex.dev] Expo (React Native) | Convex + Better Auth
+   Install and configure Convex + Better Auth for Expo. Better Auth as an authentication provider. Set up Convex client provider Wrap your app with the ... Missing: useSession | Show results with: useSession
+   https://labs.convex.dev/better-auth/framework-guides/expo
+
+============================================
+=== ba_resend ===
+============================================
+• [www.better-auth.com] Email - Better Auth
+   Require Email Verification · Verifying the Email
+   https://www.better-auth.com/docs/concepts/email
+
+• [better-auth.com] Email & Password - Better Auth
+   Require Email Verification · Email Enumeration Protection
+   https://better-auth.com/docs/authentication/email-password
+
+• [dev.to] Email verification using better_auth, nextjs and resend
+   Resend is a service for sending transactional emails like password resets and email verifications. Install the Resend SDK. Add the Resend ...
+   https://dev.to/daanish2003/email-verification-using-betterauth-nextjs-and-resend-37gn
+
+• [better-auth.com] Email Service | Better Auth
+   Send verification emails, password resets, invitations, and more without managing email infrastructure. ... Integration with Better Auth. The email service ...
+   https://better-auth.com/docs/infrastructure/services/email
+
+============================================
+=== ba_google_scopes ===
+============================================
+• [developers.google.com] OAuth 2.0 Scopes for Google APIs
+   This document lists the OAuth 2.0 scopes that you might need to request to access Google APIs, depending on the level of access you need.
+   https://developers.google.com/identity/protocols/oauth2/scopes
+
+• [better-auth.com] OAuth | Better Auth
+   Better Auth comes with built-in support for OAuth 2.0 and OpenID Connect. This allows you to authenticate users via popular OAuth providers like Google, ...
+   https://better-auth.com/docs/concepts/oauth
+
+• [github.com] How to get email when user does social login for example with Google
+   For instance, verify that your Google app and Better Auth social provider configuration include the “email” scope so that Google returns the ...
+   https://github.com/better-auth/better-auth/issues/4459
+
+• [stackoverflow.com] Difference between profile and email scope in Google OAuth 2 flow
+   email: View your email address. openid: Authenticate using OpenID Connect. Basic Profile: ID, Full name, Given Name, Family Name, Image URL. Google OAuth API to get user's email address? - Stack Overflow oAuth 2.0 scope for user ID from Google account - Stack Overflow More results from stackoverflow.com
+   https://stackoverflow.com/questions/47695697/difference-between-profile-and-email-scope-in-google-oauth-2-flow
+
+============================================
+=== ba_microsoft_scopes ===
+============================================
+• [learn.microsoft.com] Scopes and permissions in the Microsoft identity platform
+   Learn about openID connect scopes and permissions in the Microsoft identity platform endpoint.
+   https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc
+
+• [github.com] zpg6/better-auth-microsoft-graph - GitHub
+   Seamlessly integrate better-auth with Microsoft Graph API to access user profile, calendar, contacts, mail, OneDrive, and more!
+   https://github.com/zpg6/better-auth-microsoft-graph
+
+• [stackoverflow.com] azure active directory - What's the difference between User.Read and
+   User.Read is a scope intended to be used when requesting an access token for the Microsoft Graph API. It grants privileges to read the profile of the signed-in ... Why is Microsoft Oauth2 API changing the scope of authorization requests? How to retrieve a list of OAuth scopes for authorized Azure AD ... More results from stackoverflow.com
+   https://stackoverflow.com/questions/72121247/whats-the-difference-between-user-read-and-openidprofileemail-scopes
+
+• [better-auth.com] OAuth | Better Auth
+   Better Auth allows you to pass additional data through the OAuth flow without storing it in the database. This is useful for scenarios like tracking referral ...
+   https://better-auth.com/docs/concepts/oauth
+
+============================================
+=== ba_resend_domain ===
+============================================
+• [resend.com] Managing Domains - Resend
+   Resend sends emails using a domain you own (not a shared or public domain). You must add and verify at least one domain to send and receive emails with Resend.
+   https://resend.com/docs/dashboard/domains/introduction
+
+• [resend.com] Custom Receiving Domains - Resend
+   Besides using Resend-managed domains, you can also receive emails using your own custom domain, such as yourdomain.tld . ​. Enabling receiving for a new domain.
+   https://resend.com/docs/dashboard/receiving/custom-domains
+
+• [www.youtube.com] How to use Resend with Anything - YouTube
+   Learn more about the integration at https://resend ... How to configure Supabase to send emails from your domain. Resend•49K ...
+   https://www.youtube.com/watch?v=Avp1OOMH2Z0
+
+• [resend.com] Resend · Email for developers
+   A simple, elegant interface so you can start sending emails in minutes. It fits right into your code with SDKs for your favorite programming languages.
+   https://resend.com
+
+============================================
+=== ba_emailOtp_plugin ===
+============================================
+• [better-auth.com] Email OTP - Better Auth
+   Add the client plugin · Sign In with OTP
+   https://better-auth.com/docs/plugins/email-otp
+
+• [github.com] Signup with email OTP · Issue #2160 · better-auth/better-auth - GitHub
+   It seems you can leverage the emailVerification.autoSignInAfterVerification: true flag in the betterAuth configuration. When this is enabled, ...
+   https://github.com/better-auth/better-auth/issues/2160
+
+• [better-auth.com] Options | Better Auth
+   List of all the available options for configuring Better Auth. See Better Auth Options. appName. The name of your application. Defaults to "Better Auth" .
+   https://better-auth.com/docs/reference/options
+
+• [github.com] The sendVerificationOTP in the Email OTP plugin dosen't provide
+   The sendVerificationOTP in the Email OTP plugin dosen't provide the user object as the og link based method. This is preventing us to create a ...
+   https://github.com/better-auth/better-auth/issues/3761
+
+============================================
+=== ba_magicLink_plugin ===
+============================================
+• [better-auth.com] Magic link - Better Auth
+   Add the client Plugin
+   https://better-auth.com/docs/plugins/magic-link
+
+• [github.com] MagicLink api unresolved #6104 - better-auth/better-auth - GitHub
+   Your issue is almost certainly caused by the MagicLink plugin not being properly registered in your Better Auth server config at the point where ...
+   https://github.com/better-auth/better-auth/issues/6104
+
+• [dev.to] Magic link authentication using Better_Auth, Next.js, Shadcn, Prisma
+   In this guide, we will implement Magic Link Authentication for a modern web application using a secure and developer-friendly stack.
+   https://dev.to/daanish2003/magic-link-authentication-using-betterauth-nextjs-shadcn-prisma-resend-tailwindcss-1hjl
+
+• [better-auth-ui.com] Magic Link - Plugins - Better Auth UI
+   The magic-link plugin adds a passwordless email sign-in flow. The user enters their email, receives a one-time link, and is signed in when they click it.
+   https://better-auth-ui.com/docs/shadcn/plugins/magic-link
+
+============================================
+=== ba_auth_client ===
+============================================
+• [better-auth.com] Client | Better Auth
+   Usage · Hooks · Session Options
+   https://better-auth.com/docs/concepts/client
+
+• [better-auth.com] Basic Usage | Better Auth
+   Better Auth provides a useSession hook to easily access session data on the client side. This hook is implemented using nanostore and has support for each ...
+   https://better-auth.com/docs/basic-usage
+
+• [github.com] Better Auth's React hooks fail when used with Next.js 15 App Router
+   This is a compatibility issue between Better Auth's React hooks and the Next.js 15 App Router. The error occurs because Better Auth's hooks ( ...
+   https://github.com/better-auth/better-auth/issues/3123
+
+• [context7.com] Better Auth - Context7
+   Better Auth is a framework-agnostic authentication and authorization library for TypeScript, offering a comprehensive feature set and a plugin ecosystem for ...
+   https://context7.com/better-auth/better-auth
+

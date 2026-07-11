@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/email-otp",
+    "name": "Email OTP - Better Auth",
+    "snippet": "Add the client plugin · Sign In with OTP",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/2160",
+    "name": "Signup with email OTP · Issue #2160 · better-auth/better-auth - GitHub",
+    "snippet": "It seems you can leverage the emailVerification.autoSignInAfterVerification: true flag in the betterAuth configuration. When this is enabled, ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/reference/options",
+    "name": "Options | Better Auth",
+    "snippet": "List of all the available options for configuring Better Auth. See Better Auth Options. appName. The name of your application. Defaults to \"Better Auth\" .",
+    "host_name": "better-auth.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/3761",
+    "name": "The sendVerificationOTP in the Email OTP plugin dosen't provide",
+    "snippet": "The sendVerificationOTP in the Email OTP plugin dosen't provide the user object as the og link based method. This is preventing us to create a ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/authentication/email-password",
+    "name": "Email & Password - Better Auth",
+    "snippet": "To enable email and password authentication, you need to set the emailAndPassword.enabled option to true in the auth configuration. auth.ts.",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

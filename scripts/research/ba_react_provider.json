@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://labs.convex.dev/better-auth/framework-guides/react",
+    "name": "React (Vite SPA) | Convex + Better Auth",
+    "snippet": "Install the component, a pinned version of Better Auth, and ensure the latest version of Convex. This component requires Convex 1.25.0 or later. Missing: useSession | Show results with: useSession",
+    "host_name": "labs.convex.dev",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth/basic-usage/authorization",
+    "name": "Authorization | Convex + Better Auth",
+    "snippet": "Better Auth will reflect an authenticated user before Convex does, as the Convex client must subsequently validate the token provided by Better Auth. Missing: ConvexBetterAuthProvider | Show results with: ConvexBetterAuthProvider",
+    "host_name": "labs.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/better-auth/issues/393",
+    "name": "Issue #393 · get-convex/better-auth - GitHub",
+    "snippet": "This may be related to the AuthClient type exported from @convex-dev/better-auth/react not preserving the session type returned by ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth/framework-guides/expo",
+    "name": "Expo (React Native) | Convex + Better Auth",
+    "snippet": "Install and configure Convex + Better Auth for Expo. Better Auth as an authentication provider. Set up Convex client provider Wrap your app with the ... Missing: useSession | Show results with: useSession",
+    "host_name": "labs.convex.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.convex.dev/components/better-auth",
+    "name": "Better Auth | Convex Components",
+    "snippet": "This component provides an integration layer for using Better Auth with Convex, enabling framework-agnostic authentication across React, Vue, Svelte, Next.js, Missing: ConvexBetterAuthProvider useSession",
+    "host_name": "www.convex.dev",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

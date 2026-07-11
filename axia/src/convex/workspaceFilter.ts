@@ -2,7 +2,7 @@
 import { QueryCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { getWorkspaceMembership, getUserTeamIds, isCrossTeamMember } from "./permissions";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 
 /**
  * Get the list of team IDs and visibility scope for a user in a workspace.

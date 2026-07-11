@@ -8,7 +8,8 @@ import { PremiumNetwork } from "@/components/PremiumNetwork.tsx";
 import TeamManagement from "@/pages/TeamManagement";
 import { WorkspaceProvider } from "@/hooks/use-workspace";
 import { ConvexReactClient, ConvexProvider } from "convex/react";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { authClient } from "@/lib/auth-client";
 import { Component, StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation, Outlet } from "react-router";
@@ -250,7 +251,7 @@ root.render(
     <ThemeProvider>
       <InstrumentationProvider>
         <ConvexProvider client={convex}>
-          <ConvexAuthProvider client={convex}>
+          <ConvexBetterAuthProvider client={convex} authClient={authClient}>
           <BrowserRouter>
             <RouteSyncer />
             <ConvexErrorBoundary>
@@ -323,7 +324,7 @@ root.render(
             </ConvexErrorBoundary>
             <Toaster />
           </BrowserRouter>
-          </ConvexAuthProvider>
+          </ConvexBetterAuthProvider>
         </ConvexProvider>
       </InstrumentationProvider>
     </ThemeProvider>

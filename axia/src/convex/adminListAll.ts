@@ -11,16 +11,10 @@ export const listAllAuthAccounts = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const accounts = await ctx.db.query("authAccounts").take(1000);
-    return accounts.map(a => ({
-      _id: a._id,
-      provider: a.provider,
-      providerAccountId: a.providerAccountId,
-      userId: a.userId,
-      hasSecret: !!a.secret,
-      secretLength: a.secret?.length ?? 0,
-      secretPrefix: a.secret?.substring(0, 8) ?? "",
-    }));
+    // ponytail: BA migration — authAccounts table no longer exists in app
+    // schema (it lives inside the @convex-dev/better-auth component now).
+    // To list BA accounts, use the BA admin API. Returning empty for now.
+    return [];
   },
 });
 
@@ -62,30 +56,16 @@ export const resetPassword = mutation({
       throw new Error("Password must be at most 16 characters");
     }
 
-    // Find the auth account for this email
-    const account = await ctx.db
-      .query("authAccounts")
-      .withIndex("providerAndAccountId", (q) =>
-        q.eq("provider", "password").eq("providerAccountId", args.email)
-      )
-      .unique();
-
-    if (!account) {
-      return { found: false, message: "No auth account found for this email. The email may not be registered." };
-    }
-
-    // Hash the new password using the same Scrypt implementation as Convex Auth
-    const { Scrypt } = await import("lucia");
-    const scrypt = new Scrypt();
-    const newHash = await scrypt.hash(args.newPassword);
-
-    await ctx.db.patch(account._id, { secret: newHash });
-
+    // ponytail: BA migration — admin password reset now uses BA admin API.
+    // The old direct-patch-to-authAccounts pattern no longer works because
+    // account data lives inside the @convex-dev/better-auth component.
+    // TODO: re-implement via authComponent.getAuth() + auth.api.resetPassword
+    // or the BA admin plugin. For now, return not-supported.
     return {
-      found: true,
-      accountId: account._id,
-      userId: account.userId,
-      message: "Password reset successfully. You can now sign in with the new password.",
+      found: false,
+      message:
+        "Admin password reset is temporarily disabled after the Better Auth migration. " +
+        "Use the standard 'Forgot password?' flow on /auth instead.",
     };
   },
 });

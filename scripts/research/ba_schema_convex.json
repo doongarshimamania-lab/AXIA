@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.convex.dev/components/better-auth",
+    "name": "Better Auth | Convex Components",
+    "snippet": "Better Auth handles the authentication logic, session management, and OAuth provider integrations, while the component ensures all user data, sessions, and ...",
+    "host_name": "www.convex.dev",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/udecode/better-auth-convex",
+    "name": "udecode/better-auth-convex: Moved to https://github.com  - GitHub",
+    "snippet": "The official @convex-dev/better-auth component stores auth tables in a component schema. This package provides an alternative approach with ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/integrations/convex",
+    "name": "Convex Integration - Better Auth",
+    "snippet": "Add Convex auth config. Add a convex/auth.config.ts file to configure Better Auth as an authentication provider.",
+    "host_name": "better-auth.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth/features/local-install",
+    "name": "Local Install | Convex + Better Auth",
+    "snippet": "Convex functions within your Better Auth component directory can access the component's tables directly, and can then be run from outside the component via ctx.",
+    "host_name": "labs.convex.dev",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.better-auth.com/docs/concepts/database",
+    "name": "Database | Better Auth",
+    "snippet": "Better Auth provides a type-safe way to extend the user and session schemas. You can add custom fields to your auth config, and the CLI will automatically ...",
+    "host_name": "www.better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

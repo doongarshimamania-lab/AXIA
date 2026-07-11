@@ -1,5 +1,5 @@
 import { mutation } from "../_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 

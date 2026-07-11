@@ -1,7 +1,7 @@
 import { query } from "../_generated/server";
 import type { QueryCtx } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 import { Id } from "../_generated/dataModel";
 
 const VALID_TIERS = ["free", "starter", "pro", "expert"] as const;

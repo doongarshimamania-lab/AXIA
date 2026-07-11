@@ -1,7 +1,7 @@
 // @ts-nocheck — uses runtime string table names for taggable entities (see TAGGABLE_TABLES)
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 import { getRecordAccess } from "../permissions";
 
 // ─── ENTITY REGISTRY ──────────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 import { defineSchema } from "convex/server";
-import { authTables } from "@convex-dev/auth/server";
+// ponytail: removed `authTables` import — Better Auth tables (user, session,
+// account, verification) now live INSIDE the @convex-dev/better-auth Convex
+// Component, not in our app schema. See convex/convex.config.ts.
 import { users } from "./tables/users";
 import { complianceTables } from "./tables/compliance";
 import { trackingTables } from "./tables/tracking";
@@ -22,7 +24,7 @@ import { leadTables } from "./tables/leads";
 import { portalTables } from "./tables/portal";
 
 export default defineSchema({
-  ...authTables,
+  // ponytail: no authTables spread — Better Auth tables live in the component.
   users,
   ...workspaceTables,
   ...teamTables,

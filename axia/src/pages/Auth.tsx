@@ -104,30 +104,26 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       return;
     }
     try {
-      const formData = new FormData();
-      formData.set("email", email);
-      formData.set("password", password);
-      formData.set("flow", "signIn");
-      await signIn("password", formData);
+      // Better Auth: signIn("password", { email, password, flow: "signIn" })
+      await signIn("password", { email, password, flow: "signIn" });
       toast.success("Signed in successfully!");
       navigate(redirect);
     } catch (err: any) {
       console.error("Sign-in error:", err);
-      // Convex Auth returns these internal error codes as the raw error message:
-      //   "InvalidSecret"     → email exists, but password is wrong
-      //   "InvalidAccountId"  → no account exists for that email
-      //   "TooManyFailedAttempts" → rate-limited after too many wrong guesses
-      // We translate all of these to a single friendly message that does NOT
-      // reveal whether the email exists (security best practice — prevents
-      // user-enumeration attacks).
+      // Better Auth returns error.message that's already user-friendly.
+      // Common messages: "Invalid email or password", "Too many requests".
+      // We map known auth failures to a generic anti-enumeration message.
       const rawMessage = String(err?.message ?? "");
       let friendlyMessage: string;
       if (
-        rawMessage.includes("InvalidSecret") ||
-        rawMessage.includes("InvalidAccountId")
+        rawMessage.toLowerCase().includes("invalid") ||
+        rawMessage.toLowerCase().includes("credential")
       ) {
         friendlyMessage = "Incorrect email or password. Please try again.";
-      } else if (rawMessage.includes("TooManyFailedAttempts")) {
+      } else if (
+        rawMessage.toLowerCase().includes("rate") ||
+        rawMessage.toLowerCase().includes("many")
+      ) {
         friendlyMessage =
           "Too many failed sign-in attempts. Please wait a few minutes and try again.";
       } else {
@@ -162,12 +158,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     }
 
     try {
-      const formData = new FormData();
-      formData.set("email", email);
-      formData.set("password", password);
-      formData.set("name", name);
-      formData.set("flow", "signUp");
-      await signIn("password", formData);
+      // Better Auth: signIn("password", { email, password, name, flow: "signUp" })
+      await signIn("password", { email, password, name, flow: "signUp" });
       toast.success("Account created successfully!");
       navigate(redirect);
     } catch (err: any) {
@@ -184,9 +176,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     setIsLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.set("email", email);
-      await signIn("email-otp", formData);
+      // Better Auth: signIn("emailOtp", { email }) sends a 6-digit code.
+      await signIn("emailOtp", { email });
       setStep({ email });
       setIsLoading(false);
     } catch (err: any) {
@@ -202,10 +193,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     setIsLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.set("email", (step as { email: string }).email);
-      formData.set("code", otp);
-      await signIn("email-otp", formData);
+      // Better Auth: signIn("emailOtp", { email, otp }) verifies the 6-digit code.
+      await signIn("emailOtp", { email: (step as { email: string }).email, otp });
       toast.success("Signed in successfully!");
       navigate(redirect);
     } catch (err: any) {
@@ -217,12 +206,34 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     }
   };
 
-  // OAuth sign-in handlers removed (2026-06-22).
-  // The Google and GitHub providers are commented out in convex/auth.config.ts
-  // because AUTH_GOOGLE_ID / AUTH_GITHUB_ID env vars are not set. Calling
-  // signIn("google") or signIn("github") would throw a confusing error.
-  // To re-enable: set the env vars, uncomment the providers in auth.config.ts,
-  // and re-add the OAuth buttons here.
+  // OAuth sign-in handlers (Better Auth).
+  // Google + Microsoft enabled. GMail sign-in is just Google sign-in.
+  // The providers are wired in convex/auth.ts based on env vars
+  // GOOGLE_CLIENT_ID / MICROSOFT_CLIENT_ID being set on Convex.
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn("google");
+      // BA redirects to Google → callback → navigate happens automatically.
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      setError(err?.message || "Failed to start Google sign-in.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn("microsoft");
+    } catch (err: any) {
+      console.error("Microsoft sign-in error:", err);
+      setError(err?.message || "Failed to start Microsoft sign-in.");
+      setIsLoading(false);
+    }
+  };
 
   // OTP verification step
   if (typeof step === "object" && "email" in step) {
@@ -372,10 +383,54 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         </CardHeader>
 
         <CardContent>
-          {/* OAuth buttons removed (2026-06-22): Google/GitHub providers are not
-              configured in convex/auth.config.ts. To re-enable, set the env vars
-              (AUTH_GOOGLE_ID / AUTH_GITHUB_ID + secrets), uncomment the providers,
-              and re-add the OAuth button JSX here. */}
+          {/* OAuth sign-in buttons (Better Auth): Google + Microsoft.
+              GMail sign-in is just Google sign-in — no separate provider.
+              Providers are wired in convex/auth.ts based on env vars
+              GOOGLE_CLIENT_ID / MICROSOFT_CLIENT_ID set on Convex. */}
+          <div className="space-y-2 mb-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 bg-background border-border"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              Continue with Google
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 bg-background border-border"
+              onClick={handleMicrosoftSignIn}
+              disabled={isLoading}
+            >
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23" aria-hidden="true">
+                <path fill="#F25022" d="M1 1h10v10H1z" />
+                <path fill="#7FBA00" d="M12 1h10v10H12z" />
+                <path fill="#00A4EF" d="M1 12h10v10H1z" />
+                <path fill="#FFB900" d="M12 12h10v10H12z" />
+              </svg>
+              Continue with Microsoft
+            </Button>
+          </div>
 
           {/* Divider */}
           <div className="relative my-4">
@@ -383,7 +438,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">sign in or create account</span>
+              <span className="bg-card px-2 text-muted-foreground">or sign in with email</span>
             </div>
           </div>
 

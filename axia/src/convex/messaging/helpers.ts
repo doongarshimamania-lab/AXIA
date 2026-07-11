@@ -1,5 +1,5 @@
 import { QueryCtx, MutationCtx } from "../_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 
 export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);

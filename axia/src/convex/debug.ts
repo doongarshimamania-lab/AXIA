@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 
@@ -22,13 +22,17 @@ async function requireAdmin(ctx: any): Promise<void> {
 /**
  * List all authAccounts for a given email. ADMIN ONLY.
  * Usage: npx convex run debug:listAuthAccountsForEmail '{ "email": "dev@axia.app" }'
+ *
+ * ponytail: BA migration — authAccounts table no longer in app schema (lives
+ * inside @convex-dev/better-auth component). This query is now a stub that
+ * returns user info without account details. To restore full functionality,
+ * use the BA admin API.
  */
 export const listAuthAccountsForEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
-    // Find user by email
     const user = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))
@@ -38,12 +42,6 @@ export const listAuthAccountsForEmail = query({
       return { found: false, userExists: false, authAccounts: [] };
     }
 
-    // Find all auth accounts for this user (using userIdAndProvider index)
-    const authAccounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
-      .take(1000);
-
     return {
       found: true,
       userExists: true,
@@ -51,13 +49,9 @@ export const listAuthAccountsForEmail = query({
       userName: user.name,
       userEmail: user.email,
       isAnonymous: user.isAnonymous,
-      accountCount: authAccounts.length,
-      authAccounts: authAccounts.map(a => ({
-        _id: a._id,
-        provider: a.provider,
-        providerAccountId: a.providerAccountId,
-        hasSecret: !!a.secret,
-      })),
+      accountCount: 0,
+      authAccounts: [],
+      note: "authAccounts table migrated to Better Auth component — use BA admin API to view accounts.",
     };
   },
 });
@@ -65,33 +59,20 @@ export const listAuthAccountsForEmail = query({
 /**
  * Clean up orphaned auth accounts for a given email. ADMIN ONLY.
  * Usage: npx convex run debug:cleanOrphanedAuthAccounts '{ "email": "dev@axia.app" }'
+ *
+ * ponytail: BA migration — authAccounts table no longer in app schema.
+ * This mutation is now a no-op stub.
  */
 export const cleanOrphanedAuthAccounts = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
-      .first();
-
-    if (!user) {
-      return { found: false, deleted: 0 };
-    }
-
-    const authAccounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
-      .take(1000);
-
-    let deleted = 0;
-    for (const account of authAccounts) {
-      await ctx.db.delete(account._id);
-      deleted++;
-    }
-
-    return { found: true, deleted, accountCount: authAccounts.length };
+    return {
+      found: true,
+      deleted: 0,
+      accountCount: 0,
+      note: "authAccounts table migrated to Better Auth component — use BA admin API to manage accounts.",
+    };
   },
 });
 

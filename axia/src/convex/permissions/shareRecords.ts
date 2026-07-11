@@ -6,7 +6,7 @@
  */
 import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 
 /**
  * Get all records shared with or by the current user in a workspace.

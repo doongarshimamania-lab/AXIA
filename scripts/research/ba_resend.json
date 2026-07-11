@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.better-auth.com/docs/concepts/email",
+    "name": "Email - Better Auth",
+    "snippet": "Require Email Verification · Verifying the Email",
+    "host_name": "www.better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/authentication/email-password",
+    "name": "Email & Password - Better Auth",
+    "snippet": "Require Email Verification · Email Enumeration Protection",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/daanish2003/email-verification-using-betterauth-nextjs-and-resend-37gn",
+    "name": "Email verification using better_auth, nextjs and resend",
+    "snippet": "Resend is a service for sending transactional emails like password resets and email verifications. Install the Resend SDK. Add the Resend ...",
+    "host_name": "dev.to",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/infrastructure/services/email",
+    "name": "Email Service | Better Auth",
+    "snippet": "Send verification emails, password resets, invitations, and more without managing email infrastructure. ... Integration with Better Auth. The email service ...",
+    "host_name": "better-auth.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=psEbIHyuutk",
+    "name": "Add Email Verification with Better Auth & Resend: Easy Tutorial!",
+    "snippet": "In this video, learn how to implement email verification using Better Auth and Resend.",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { generateReferralCode, calculatePosition } from "./waitlistHelpers";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 export const addToWaitlist = mutation({

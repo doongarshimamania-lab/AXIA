@@ -1,3 +1,4 @@
+"use node";
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/paymentProviders/stripe.ts — Stripe payment provider (stub for future).
 //

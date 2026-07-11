@@ -1,7 +1,7 @@
 import { action } from "../_generated/server";
 import { mutation, query, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 import { api, internal } from "../_generated/api";
 import { obfuscateToken, simpleUserIdHash } from "../security/utils";
 

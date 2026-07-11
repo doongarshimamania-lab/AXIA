@@ -68,7 +68,6 @@ import {
   CircleDot,
   Sparkles,
 } from "lucide-react";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useAction, useConvexAuth, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";

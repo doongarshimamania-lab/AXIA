@@ -5,7 +5,7 @@ import { Doc, Id } from "./_generated/dataModel";
 import { getCurrentUser } from "./users";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requireRecordAccess } from "./permissions";
 import { getUserVisibility, isRecordVisible } from "./workspaceFilter";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "./lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "./security/rateLimit";
 // Start evidence collection for a work session

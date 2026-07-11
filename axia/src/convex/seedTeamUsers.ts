@@ -11,7 +11,7 @@
  */
 import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { createAccount } from "@convex-dev/auth/server";
+import { createAccount } from "./lib/auth";
 import { Scrypt } from "lucia";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./security/rateLimit";

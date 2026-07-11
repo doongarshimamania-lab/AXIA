@@ -11,7 +11,12 @@ export const users = defineTable({
     isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
 
     role: v.optional(roleValidator), // role of the user. do not remove
-    
+
+    // Better Auth linkage — the BA user ID (from the component's `user` table).
+    // Used by lib/auth.ts:getAuthUserId() to map BA session → this users-table record.
+    // Populated by lib/auth.ts:ensureLinkedUser() on first sign-in.
+    betterAuthUserId: v.optional(v.string()),
+
     // TimeStop specific fields
     subscriptionTier: v.optional(v.string()), // "free" | "starter" | "pro" | "expert"
     tierUpgradedAt: v.optional(v.number()),
@@ -38,4 +43,6 @@ export const users = defineTable({
     // Add: Platform integration fields
     connectedPlatforms: v.optional(v.array(v.string())),
     platformSyncStatus: v.optional(v.any()),
-  }).index("email", ["email"]);
+  })
+  .index("email", ["email"])
+  .index("by_betterAuthUserId", ["betterAuthUserId"]);

@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/integrations/convex",
+    "name": "Convex Integration - Better Auth",
+    "snippet": "Run convex dev. Running the CLI during setup will initialize your Convex ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth/migrations/migrate-to-0-10",
+    "name": "Migrate to 0.10 | Convex + Better Auth",
+    "snippet": "Update Convex Better Auth plugin config. The Convex Better Auth plugin now requires the auth config object. This helps minimize configuration and ensure ...",
+    "host_name": "labs.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/better-auth",
+    "name": "get-convex/better-auth - GitHub",
+    "snippet": "Authentication. Email & Password Authentication. Built-in support for email and password authentication, with session and account management features.",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.dracodev.me",
+    "name": "Convex + Better Auth",
+    "snippet": "Register Better Auth route handlers on your Convex deployment. convex/http.ts. import { httpRouter } from \"convex/server\";. import { betterAuthComponent, ...",
+    "host_name": "better-auth.dracodev.me",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://get-convex-better-auth.mintlify.app/framework-guides/nextjs",
+    "name": "Next.js - Convex + Better Auth",
+    "snippet": "Install and configure Convex + Better Auth for Next.js with SSR, server components, and route handlers.",
+    "host_name": "get-convex-better-auth.mintlify.app",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthUserId } from "../lib/auth";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // Create or update public freelancer profile (requires auth + can only edit own profile)

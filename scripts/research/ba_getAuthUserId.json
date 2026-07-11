@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/integrations/convex",
+    "name": "Convex Integration - Better Auth",
+    "snippet": "Run convex dev. Running the CLI during setup will initialize your Convex ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/better-auth/migrations/migrate-to-0-10",
+    "name": "Migrate to 0.10 | Convex + Better Auth",
+    "snippet": "The Convex Better Auth plugin now requires the auth config object. This helps minimize configuration and ensure accuracy. Additionally, as this new ...",
+    "host_name": "labs.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/udecode/better-auth-convex",
+    "name": "udecode/better-auth-convex: Moved to https://github.com  - GitHub",
+    "snippet": "The official @convex-dev/better-auth component stores auth tables in a component schema. This package provides an alternative approach with ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.better-convex.com/docs/auth/server",
+    "name": "Server - Better Convex",
+    "snippet": "Auth Contract · Refresh Auth-Owned Schema · Triggers",
+    "host_name": "www.better-convex.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://labs.convex.dev/auth/authz",
+    "name": "Authorization - Convex Auth",
+    "snippet": "Now that you have set up and configured authentication with Convex Auth, learn how to use the authentication state in your frontend and backend.",
+    "host_name": "labs.convex.dev",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/magic-link",
+    "name": "Magic link - Better Auth",
+    "snippet": "Add the client Plugin",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/6104",
+    "name": "MagicLink api unresolved #6104 - better-auth/better-auth - GitHub",
+    "snippet": "Your issue is almost certainly caused by the MagicLink plugin not being properly registered in your Better Auth server config at the point where ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/daanish2003/magic-link-authentication-using-betterauth-nextjs-shadcn-prisma-resend-tailwindcss-1hjl",
+    "name": "Magic link authentication using Better_Auth, Next.js, Shadcn, Prisma",
+    "snippet": "In this guide, we will implement Magic Link Authentication for a modern web application using a secure and developer-friendly stack.",
+    "host_name": "dev.to",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth-ui.com/docs/shadcn/plugins/magic-link",
+    "name": "Magic Link - Plugins - Better Auth UI",
+    "snippet": "The magic-link plugin adds a passwordless email sign-in flow. The user enters their email, receives a one-time link, and is signed in when they click it.",
+    "host_name": "better-auth-ui.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/reference/options",
+    "name": "Options | Better Auth",
+    "snippet": "List of all the available options for configuring Better Auth. See Better Auth Options. appName. The name of your application. Defaults to \"Better Auth\" .",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
