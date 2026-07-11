@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://labs.convex.dev/better-auth/migrations/migrate-to-0-8",
+    "name": "Migrate to 0.8 | Convex + Better Auth",
+    "snippet": "Migrate to 0.8. Migrate to @convex-dev/better-auth@0.8. To use Local Install, complete this migration guide first and then follow the Local Install guide.",
+    "host_name": "labs.convex.dev",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1rp3g09/confused_about_convex_and_betterauth_auth",
+    "name": "Confused about Convex and BetterAuth auth functions - Reddit",
+    "snippet": "Migrating to Better Auth from Next Auth and It's a nightmare · r/nextjs. • 4mo ago. Migrating to Better Auth from Next Auth and It's a nightmare. migration from auth.js to better-auth : r/nextjs Convex vs Better Auth + Neon For My Next JS? : r/nextjs More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.convex.dev/components/better-auth",
+    "name": "Better Auth | Convex Components",
+    "snippet": "Migrating from another auth solution to Better Auth while keeping your existing Convex database schema and functions intact; Building SSR applications with ...",
+    "host_name": "www.convex.dev",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/better-auth",
+    "name": "get-convex/better-auth - GitHub",
+    "snippet": "Authentication. Email & Password Authentication. Built-in support for email and password authentication, with session and account management features.",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/guides/next-auth-migration-guide",
+    "name": "Migrating from Auth.js to Better Auth",
+    "snippet": "In this guide, we'll walk through the steps to migrate a project from Auth.js (formerly NextAuth.js) to Better Auth. Since these projects have different design ...",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

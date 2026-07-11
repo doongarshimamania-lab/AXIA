@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/reference/security",
+    "name": "Security | Better Auth",
+    "snippet": "Secure Cookie Settings Session cookies use the SameSite=Lax attribute by default, preventing browsers from sending cookies with most cross-site requests.",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://supertokens.com/blog/better-auth",
+    "name": "What Is Better Auth and Who's It For?",
+    "snippet": "Better Auth provides functional session management suitable for standard use cases. Sessions are stored in cookies or custom backends, and basic ...",
+    "host_name": "supertokens.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://security.stackexchange.com/questions/179487/store-splitted-jwt-for-csrf-protection-and-refresh-strategy",
+    "name": "Store splitted JWT for CSRF protection and refresh strategy",
+    "snippet": "Upon user successfully logged in (provided email and password), a JWT is created for that user and split into two different cookies in order to ... CSRF and XSS protection via Header & Cookie-based JWT (tokens)? CSRF tokens for a JWT-auth system using cookies More results from security.stackexchange.com",
+    "host_name": "security.stackexchange.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://skills.re/zh-Hans/skills/better-auth/skills/better-auth-security-best-practices",
+    "name": "better-auth-security-best-practices — skills.re",
+    "snippet": "The auth secret is the foundation of Better Auth's security. It's used for signing session tokens, encrypting sensitive data, and generating secure cookies.",
+    "host_name": "skills.re",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@iam-abdulmoiz/authentication-in-remix-with-better-auth-actually-understanding-it-before-you-use-it-c5eca2a96245",
+    "name": "Authentication in Remix with Better Auth — Actually Understanding It",
+    "snippet": "Cookie Flags — Four Small Settings That Matter Enormously. When Better Auth creates your session cookie, it attaches four security flags.",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

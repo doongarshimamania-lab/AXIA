@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/organization",
+    "name": "Organization | Better Auth",
+    "snippet": "The organization plugin allows you to manage your organization's members and teams.",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.askcodi.com/marketplace/skills/better-auth-organization",
+    "name": "Better Auth Organization Plugin - Skill | AskCodi Marketplace",
+    "snippet": "This skill helps you configure multi-tenant organizations with Better Auth. It covers organization setup, member and invitation management, defining custom ...",
+    "host_name": "www.askcodi.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=grvwy4qySVI",
+    "name": "Better Auth Organizations – The Basics (Part 1) - YouTube",
+    "snippet": "... organization switcher. Whether you're building a SaaS platform, a team-based dashboard, or any app with multi-tenant support — this series ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.claudepluginhub.com/skills/pleaseai-better-auth-plugins-better-auth/organization-best-practices",
+    "name": "organization-best-practices | better-auth - ClaudePluginHub",
+    "snippet": "Configures multi-tenant organizations using Better Auth plugin: manage members, invitations, custom roles, permissions, teams, and RBAC.",
+    "host_name": "www.claudepluginhub.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/discussions/5165",
+    "name": "Scenario: Cross-Realm Organization Management in Multi-Tenant",
+    "snippet": "Better Auth does not currently support admin-level access to all organizations without explicit membership—organization APIs like ... Multi tenancy and multi tier organisations #8504 - GitHub How to Implement Multi-Account System ？   #7170 - GitHub More results from github.com",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

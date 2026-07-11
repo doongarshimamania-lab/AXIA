@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.better-auth.com/docs/concepts/database",
+    "name": "Database | Better Auth",
+    "snippet": "Better Auth provides a type-safe way to extend the user and session schemas. You can add custom fields to your auth config, and the CLI will automatically ...",
+    "host_name": "www.better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/concepts/users-accounts",
+    "name": "User & Accounts | Better Auth",
+    "snippet": "Authentication Requirements",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/3774",
+    "name": "Better Auth Hardcodes \"user\" Table Name Instead of Using Configuration",
+    "snippet": "Better Auth ignores the tables configuration and hardcodes \"user\" as the table name in its internal code, causing database connection errors ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/concepts/session-management",
+    "name": "Session Management | Better Auth",
+    "snippet": "Session Freshness · Update Session",
+    "host_name": "better-auth.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/79316331/how-to-extend-the-core-user-schema-in-better-auth",
+    "name": "How to extend the core user schema in better-auth - Stack Overflow",
+    "snippet": "I'm trying to extend the shema of a user account in better-auth (I'm using NextJS and MongoDB). I tried to follow the steps in the documentation, but at the ...",
+    "host_name": "stackoverflow.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

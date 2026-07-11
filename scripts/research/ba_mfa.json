@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/2fa",
+    "name": "Two-Factor Authentication (2FA) - Better Auth",
+    "snippet": "Better Auth follows standard practice by accepting TOTP codes from one period before and one after the current code, ensuring users can authenticate even with ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://mcpmarket.com/tools/skills/better-auth-two-factor-authentication",
+    "name": "Better Auth Two-Factor (2FA) Setup | Claude Code Skill - MCP Market",
+    "snippet": "This skill provides full-lifecycle support for setting up and managing TOTP authenticator apps, configuring custom OTP delivery via Email or SMS ...",
+    "host_name": "mcpmarket.com",
+    "rank": 1,
+    "date": "Jul 9, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://stytch.com/blog/totp-vs-sms",
+    "name": "TOTP vs SMS: Which one is better for two-factor authentication (2FA)?",
+    "snippet": "TOTP-based 2FA is considered to be more secure than SMS-based 2FA because it is less susceptible to intercepts and spoofing.",
+    "host_name": "stytch.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/discussions/5667",
+    "name": "Questions about enabling 2FA with SMS only #5667 - GitHub",
+    "snippet": "You can enable SMS-only 2FA in Better Auth by configuring the phone number plugin and disabling TOTP in your two-factor plugin options. The ... How to automatically enable Email OTP for new users, and trust ... Two Factor - OTP Workflow #5861 - GitHub More results from github.com",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.turbostarter.dev/docs/web/auth/2fa",
+    "name": "Two-Factor Authentication (2FA) - TurboStarter",
+    "snippet": "Add two-factor authentication with TOTP and backup codes via Better Auth. Secure enrollment, verification, and recovery flows for your web app.",
+    "host_name": "www.turbostarter.dev",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

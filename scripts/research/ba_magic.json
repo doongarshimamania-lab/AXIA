@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.scalekit.com/blog/otp-vs-magic-links-passwordless-authentication",
+    "name": "OTP vs Magic link: Choosing the right passwordless authentication method",
+    "snippet": "Magic links remove the step of typing, which can reduce user friction: no risk of mistyping a code or password, just a tap to log in. This low- ...\nBoth eliminate the need for a user-created password, but they work in different ways: with OTP, the user is sent a code (via SMS, email, or app) which they must manually enter, whereas a magic link lets the user authenticate with a single click on a unique URL.",
+    "host_name": "www.scalekit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/webdev/comments/1bfr2yi/what_are_the_downsides_if_any_of_passwordless",
+    "name": "What are the downsides (if any) of passwordless auth (magic link",
+    "snippet": "Magic links that also create a TOTP handshake to the original session mitigates a part of this concern. You have your session open, you use your ... Passwordless login via email OTP is that a good option? - Reddit Magic Link Auth Code in verification email with free tier? : r/Supabase More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.answeroverflow.com/m/1352646845146337341",
+    "name": "Server email OTP authentication - Better Auth - Answer Overflow",
+    "snippet": "It appears, from reading the docs, that email-and-password can be done if you're doing server-side auth only, however email-OTP is not currently supported. can i use better-auth in a passwordless way? Is there a way to send both Magic Link and OTP together in one email? More results from www.answeroverflow.com",
+    "host_name": "www.answeroverflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.authgear.com/post/passwordless-authentication-magic-links-passkeys-otp",
+    "name": "Passwordless Authentication: Magic Links vs Passkeys vs OTP - Authgear",
+    "snippet": "Compare magic links, passkeys, and OTP for passwordless authentication. Learn how each works, their security trade-offs, and best practices ...",
+    "host_name": "www.authgear.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/infrastructure/services/email",
+    "name": "Email Service | Better Auth",
+    "snippet": "sign-in-otp · verify-email-otp · magic-link",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

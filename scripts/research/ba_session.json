@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/concepts/session-management",
+    "name": "Session Management | Better Auth",
+    "snippet": "Learn about session management in Better Auth, including session expiration, freshness, cookie caching strategies, secondary storage, stateless sessions, and ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@iam-abdulmoiz/authentication-in-remix-with-better-auth-actually-understanding-it-before-you-use-it-c5eca2a96245",
+    "name": "Authentication in Remix with Better Auth — Actually Understanding It",
+    "snippet": "When a user logs out, Better Auth removes their session from Redis. The token is immediately dead. No waiting for anything to expire. Sliding ...",
+    "host_name": "medium.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/golang/comments/8su92z/user_authentication_how_often_to_refresh_the_user",
+    "name": "how often to refresh the user session token ? Also how do  - Reddit",
+    "snippet": "One technique is to use a sliding window to refresh the token. You refresh the time if you are within some time limit that is close to its ... Session Based Auth vs JWT + Refresh Tokens for a Mobile Fintech ... What's the best way to manage Refresh Tokens securely ... - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/7394",
+    "name": "Stateless session and refresh token · Issue #7394 · better-auth/better",
+    "snippet": "It looks like you're having issues with refreshing tokens in Better Auth, particularly regarding the session cookies not being updated with the ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.answeroverflow.com/m/1408161205889007756",
+    "name": "Does Better Auth Support Session/Token Rotation? - Answer Overflow",
+    "snippet": "A session token rotation system would mean that the user wouldn't know the new token when it's rotated (of course), which would mean they would ... Any way to use split Access Tokens and Refresh Tokens - Better Auth Short lived AccessTokens - Better Auth - Answer Overflow More results from www.answeroverflow.com",
+    "host_name": "www.answeroverflow.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

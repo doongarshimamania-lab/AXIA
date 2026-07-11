@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/generic-oauth",
+    "name": "Generic OAuth | Better Auth",
+    "snippet": "The Generic OAuth plugin provides a flexible way to integrate authentication with any OAuth provider. It supports both OAuth 2.0 and OpenID Connect (OIDC) ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/plugins/sso",
+    "name": "Single Sign-On (SSO) - Better Auth",
+    "snippet": "The SSO plugin validates SAML assertion timestamps ( NotBefore and NotOnOrAfter ) to prevent acceptance of expired or future-dated assertions. This validation ...",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/plugins/oauth-provider",
+    "name": "OAuth 2.1 Provider - Better Auth",
+    "snippet": "OAuth 2.1 Provider Plugin that allows you to turn your authentication server into an OAuth provider with OIDC compatibility allowing users and other services ...",
+    "host_name": "better-auth.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/5773",
+    "name": "how to setup an genericOAuth provider · Issue #5773 · better-auth",
+    "snippet": "For genericOAuth to work with a custom provider like Autodesk, you need to explicitly set the authorizationUrl , tokenUrl , and userInfoUrl in ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/plugins/oidc-provider",
+    "name": "OIDC Provider | Better Auth",
+    "snippet": "The OIDC Provider Plugin enables you to build and manage your own OpenID Connect (OIDC) provider, granting full control over user authentication",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

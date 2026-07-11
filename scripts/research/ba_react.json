@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1q441rt/nextjs_better_auth_strategy_for_accessing_session",
+    "name": "Next.js + Better Auth - strategy for accessing session in client  - Reddit",
+    "snippet": "For the user menu, I'd use the use session on client hook with a suspense and fallback skeleton. This will avoid any shifting for the user ( ... How to access user session on nextjs14 with next-auth? [HELP] Better-Auth Client-side Session return NULL More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/concepts/client",
+    "name": "Client | Better Auth",
+    "snippet": "Usage · Hooks · Session Options",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=ngzLhaT3IzQ",
+    "name": "Better Auth with Next.js: A very good introduction - YouTube",
+    "snippet": "Master Better Auth in just 20 minutes. In this step-by-step Next.js tutorial, we cover the 20% of Better Auth features you'll use 80% of the ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://next-auth.js.org/getting-started/client",
+    "name": "Client API - NextAuth.js",
+    "snippet": "The useSession() React Hook in the NextAuth.js client is the easiest way to check if someone is signed in. Make sure that  is added to pages/_ ...",
+    "host_name": "next-auth.js.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/4105",
+    "name": "`useSession()` no longer working on Next.js · Issue #4105 - GitHub",
+    "snippet": "The TypeScript error happens because you're importing createAuthClient from \"better-auth/client\" , which gives you an atom-like object for ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

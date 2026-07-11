@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/concepts/oauth",
+    "name": "OAuth | Better Auth",
+    "snippet": "This allows you to authenticate users via popular OAuth providers like Google, Facebook, GitHub, and more. If your desired provider isn't directly supported, ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/authentication/other-social-providers",
+    "name": "Other Social Providers | Better Auth",
+    "snippet": "Better Auth provides support for any social provider that implements the OAuth2 protocol or OpenID Connect (OIDC) flows through the Generic OAuth Plugin.",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/nextjs/comments/1czeon2/what_providers_for_authentication_do_you_use",
+    "name": "What providers for authentication do you use? : r/nextjs - Reddit",
+    "snippet": "Supabase for Auth Provider; support for OAuth via Facebook, Google, X, and Github, and then standard registration with email and password if ...",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/directus/directus/discussions/24868",
+    "name": "Allow logging-in to same account via multiple auth providers #24868",
+    "snippet": "We'll also need a way for authenticated users to \"connect\" multiple different installed auth providers (if admins have configured this to be allowed), so they ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com",
+    "name": "Better Auth",
+    "snippet": "Social sign-on. Google, GitHub, Apple, Discord, and more.",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

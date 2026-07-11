@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/authentication/email-password",
+    "name": "Email & Password - Better Auth",
+    "snippet": "Sign In · Email Verification · Require Email Verification\nTo allow users to reset a password first you need to provide sendResetPassword function to the email and password authenticator. The sendResetPassword function takes a data object with the following properties:",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=dZpHdVkKYcs",
+    "name": "Build a Secure Forgot Password Feature with Better Auth, Resend",
+    "snippet": "Perfect for developers looking to enhance their authentication flows with a professional and user-friendly password reset system. Follow ...",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/better_auth/comments/1kefgl4/customizing_forget_password_flow",
+    "name": "Customizing forget password flow : r/better_auth - Reddit",
+    "snippet": "I've been able to successfully implement the forgot password functionality in my Next.js app using better-auth's forgetPassword function.",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/better-auth/better-auth/issues/2082",
+    "name": "Forget Password Flow doesn't work. · Issue #2082 · better-auth",
+    "snippet": "To Reproduce. Try to implement forget password flow as described in the docs. Current vs. Expected behavior. The problem ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.answeroverflow.com/m/1356493370901659741",
+    "name": "Password not updating on resetPassword - Better Auth",
+    "snippet": "I have started to face a weird issue related to the forget/reset password flow that I haven't been able to exactly pin down.",
+    "host_name": "www.answeroverflow.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

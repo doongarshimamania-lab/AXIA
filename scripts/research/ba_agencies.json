@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/plugins/sso",
+    "name": "Single Sign-On (SSO) - Better Auth",
+    "snippet": "Single Sign-On (SSO) allows users to authenticate with multiple applications using a single set of credentials. This plugin supports OpenID Connect (OIDC), ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://workos.com/blog/top-better-auth-alternatives-secure-authentication-2026",
+    "name": "Top 5 Better Auth alternatives for secure authentication in 2026",
+    "snippet": "Better Auth has quickly become a popular TypeScript-first authentication library, offering a modern alternative to NextAuth with a clean ...",
+    "host_name": "workos.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.propelauth.com/post/6-best-auth-platforms-b2b-saas",
+    "name": "6 Best Authentication Platforms for B2B SaaS in 2026 | PropelAuth",
+    "snippet": "AuthKit now offers user management with organizations, RBAC, social login ... It also offers enterprise features including SAML SSO and a free ...",
+    "host_name": "www.propelauth.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/blog/1-5",
+    "name": "Better Auth 1.5",
+    "snippet": "It lets you use a full user management and analytics dashboard, security and protection tooling, audit logs, a self-service SSO UI, and more, ...",
+    "host_name": "better-auth.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com",
+    "name": "Better Auth",
+    "snippet": "Connect to our infrastructure and power your self-hosted Better Auth with a dashboard, audit logs, security detection, enterprise features, and more. dash.",
+    "host_name": "better-auth.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

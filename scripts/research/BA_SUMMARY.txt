@@ -1,0 +1,306 @@
+============================================
+=== ba_providers ===
+============================================
+• [better-auth.com] OAuth | Better Auth
+   This allows you to authenticate users via popular OAuth providers like Google, Facebook, GitHub, and more. If your desired provider isn't directly supported, ...
+   https://better-auth.com/docs/concepts/oauth
+
+• [better-auth.com] Other Social Providers | Better Auth
+   Better Auth provides support for any social provider that implements the OAuth2 protocol or OpenID Connect (OIDC) flows through the Generic OAuth Plugin.
+   https://better-auth.com/docs/authentication/other-social-providers
+
+• [www.reddit.com] What providers for authentication do you use? : r/nextjs - Reddit
+   Supabase for Auth Provider; support for OAuth via Facebook, Google, X, and Github, and then standard registration with email and password if ...
+   https://www.reddit.com/r/nextjs/comments/1czeon2/what_providers_for_authentication_do_you_use
+
+• [github.com] Allow logging-in to same account via multiple auth providers #24868
+   We'll also need a way for authenticated users to "connect" multiple different installed auth providers (if admins have configured this to be allowed), so they ...
+   https://github.com/directus/directus/discussions/24868
+
+============================================
+=== ba_convex ===
+============================================
+• [better-auth.com] Convex Integration - Better Auth
+   Run convex dev. Running the CLI during setup will initialize your Convex ...
+   https://better-auth.com/docs/integrations/convex
+
+• [www.convex.dev] Better Auth | Convex Components
+   The integration works by configuring Better Auth to use Convex functions for data persistence operations. When users sign up, sign in, or manage their accounts, ...
+   https://www.convex.dev/components/better-auth
+
+• [github.com] get-convex/better-auth - GitHub
+   Email & Password Authentication. Built-in support for email and password authentication, with session and account management features. Social Sign-on.
+   https://github.com/get-convex/better-auth
+
+• [grokipedia.com] Better Auth with Convex in TanStack Start - Grokipedia
+   The integration is detailed in Convex's official documentation as of late 2025, providing step-by-step guidance on installing and configuring the components, ...
+   https://grokipedia.com/page/Better_Auth_with_Convex_in_TanStack_Start
+
+============================================
+=== ba_db_schema ===
+============================================
+• [www.better-auth.com] Database | Better Auth
+   Better Auth provides a type-safe way to extend the user and session schemas. You can add custom fields to your auth config, and the CLI will automatically ...
+   https://www.better-auth.com/docs/concepts/database
+
+• [better-auth.com] User & Accounts | Better Auth
+   Authentication Requirements
+   https://better-auth.com/docs/concepts/users-accounts
+
+• [github.com] Better Auth Hardcodes "user" Table Name Instead of Using Configuration
+   Better Auth ignores the tables configuration and hardcodes "user" as the table name in its internal code, causing database connection errors ...
+   https://github.com/better-auth/better-auth/issues/3774
+
+• [better-auth.com] Session Management | Better Auth
+   Session Freshness · Update Session
+   https://better-auth.com/docs/concepts/session-management
+
+============================================
+=== ba_password ===
+============================================
+• [stytch.com] Argon2 vs bcrypt vs. scrypt: which hashing algorithm is right for you?
+   A look at the hashing algorithms Argon2, bcrypt, and scrypt – their benefits, differences, and how to choose the right one for your product.
+   https://stytch.com/blog/argon2-vs-bcrypt-vs-scrypt
+
+• [medium.com] Password Hashing: Scrypt, Bcrypt and ARGON2 | by Michele Preziuso
+   SCrypt is a better choice today: better design than BCrypt (especially in regards to memory hardness) and has been in the field for 10 years.
+   https://medium.com/@mpreziuso/password-hashing-pbkdf2-scrypt-bcrypt-and-argon2-e25aaf41598e
+
+• [better-auth.com] Security | Better Auth
+   Password Hashing. Better Auth uses the scrypt algorithm to hash passwords by default. This algorithm is designed to be memory-hard and CPU-intensive, making ...
+   https://better-auth.com/docs/reference/security
+
+• [reintech.io] Password Hashing in 2026: Argon2 vs bcrypt vs scrypt - Reintech
+   Argon2 combines the best aspects of both bcrypt and scrypt. It's memory-hard like scrypt but offers more flexibility in configuration. The ...
+   https://reintech.io/blog/password-hashing-2026-argon2-bcrypt-scrypt-comparison
+
+============================================
+=== ba_reset ===
+============================================
+• [better-auth.com] Email & Password - Better Auth
+   Sign In · Email Verification · Require Email Verification
+To allow users to reset a password first you need to provide sendResetPassword function to the email and password authenticator. The sendResetPassword function takes a data object with the following properties:
+   https://better-auth.com/docs/authentication/email-password
+
+• [www.youtube.com] Build a Secure Forgot Password Feature with Better Auth, Resend
+   Perfect for developers looking to enhance their authentication flows with a professional and user-friendly password reset system. Follow ...
+   https://www.youtube.com/watch?v=dZpHdVkKYcs
+
+• [www.reddit.com] Customizing forget password flow : r/better_auth - Reddit
+   I've been able to successfully implement the forgot password functionality in my Next.js app using better-auth's forgetPassword function.
+   https://www.reddit.com/r/better_auth/comments/1kefgl4/customizing_forget_password_flow
+
+• [github.com] Forget Password Flow doesn't work. · Issue #2082 · better-auth
+   To Reproduce. Try to implement forget password flow as described in the docs. Current vs. Expected behavior. The problem ...
+   https://github.com/better-auth/better-auth/issues/2082
+
+============================================
+=== ba_email ===
+============================================
+• [www.better-auth.com] Email - Better Auth
+   Better Auth provides email and password authentication out of the box, and a lot of utilities to help you manage email verification, password reset, and more.
+   https://www.better-auth.com/docs/concepts/email
+
+• [better-auth.com] Email Service | Better Auth
+   Send verification emails, password resets, invitations, and more without managing email infrastructure ... Multiple provider support (AWS SES, SendGrid, Resend) ...
+   https://better-auth.com/docs/infrastructure/services/email
+
+• [docs.logto.io] Set up email verification with SendGrid Email - Logto docs
+   Go to the SendGrid console page and sign in with your SendGrid account. Senders indicate the addresses our verification code email will be sent from.
+   https://docs.logto.io/integrations/sendgrid-email
+
+• [www.youtube.com] Add Email Verification with Better Auth & Resend: Easy Tutorial!
+   In this video, learn how to implement email verification using Better Auth and Resend.
+   https://www.youtube.com/watch?v=psEbIHyuutk
+
+============================================
+=== ba_security ===
+============================================
+• [better-auth.com] Security | Better Auth
+   Secure Cookie Settings Session cookies use the SameSite=Lax attribute by default, preventing browsers from sending cookies with most cross-site requests.
+   https://better-auth.com/docs/reference/security
+
+• [supertokens.com] What Is Better Auth and Who's It For?
+   Better Auth provides functional session management suitable for standard use cases. Sessions are stored in cookies or custom backends, and basic ...
+   https://supertokens.com/blog/better-auth
+
+• [security.stackexchange.com] Store splitted JWT for CSRF protection and refresh strategy
+   Upon user successfully logged in (provided email and password), a JWT is created for that user and split into two different cookies in order to ... CSRF and XSS protection via Header & Cookie-based JWT (tokens)? CSRF tokens for a JWT-auth system using cookies More results from security.stackexchange.com
+   https://security.stackexchange.com/questions/179487/store-splitted-jwt-for-csrf-protection-and-refresh-strategy
+
+• [skills.re] better-auth-security-best-practices — skills.re
+   The auth secret is the foundation of Better Auth's security. It's used for signing session tokens, encrypting sensitive data, and generating secure cookies.
+   https://skills.re/zh-Hans/skills/better-auth/skills/better-auth-security-best-practices
+
+============================================
+=== ba_oauth ===
+============================================
+• [better-auth.com] Generic OAuth | Better Auth
+   The Generic OAuth plugin provides a flexible way to integrate authentication with any OAuth provider. It supports both OAuth 2.0 and OpenID Connect (OIDC) ...
+   https://better-auth.com/docs/plugins/generic-oauth
+
+• [better-auth.com] Single Sign-On (SSO) - Better Auth
+   The SSO plugin validates SAML assertion timestamps ( NotBefore and NotOnOrAfter ) to prevent acceptance of expired or future-dated assertions. This validation ...
+   https://better-auth.com/docs/plugins/sso
+
+• [better-auth.com] OAuth 2.1 Provider - Better Auth
+   OAuth 2.1 Provider Plugin that allows you to turn your authentication server into an OAuth provider with OIDC compatibility allowing users and other services ...
+   https://better-auth.com/docs/plugins/oauth-provider
+
+• [github.com] how to setup an genericOAuth provider · Issue #5773 · better-auth
+   For genericOAuth to work with a custom provider like Autodesk, you need to explicitly set the authorizationUrl , tokenUrl , and userInfoUrl in ...
+   https://github.com/better-auth/better-auth/issues/5773
+
+============================================
+=== ba_mfa ===
+============================================
+• [better-auth.com] Two-Factor Authentication (2FA) - Better Auth
+   Better Auth follows standard practice by accepting TOTP codes from one period before and one after the current code, ensuring users can authenticate even with ...
+   https://better-auth.com/docs/plugins/2fa
+
+• [mcpmarket.com] Better Auth Two-Factor (2FA) Setup | Claude Code Skill - MCP Market
+   This skill provides full-lifecycle support for setting up and managing TOTP authenticator apps, configuring custom OTP delivery via Email or SMS ...
+   https://mcpmarket.com/tools/skills/better-auth-two-factor-authentication
+
+• [stytch.com] TOTP vs SMS: Which one is better for two-factor authentication (2FA)?
+   TOTP-based 2FA is considered to be more secure than SMS-based 2FA because it is less susceptible to intercepts and spoofing.
+   https://stytch.com/blog/totp-vs-sms
+
+• [github.com] Questions about enabling 2FA with SMS only #5667 - GitHub
+   You can enable SMS-only 2FA in Better Auth by configuring the phone number plugin and disabling TOTP in your two-factor plugin options. The ... How to automatically enable Email OTP for new users, and trust ... Two Factor - OTP Workflow #5861 - GitHub More results from github.com
+   https://github.com/better-auth/better-auth/discussions/5667
+
+============================================
+=== ba_magic ===
+============================================
+• [www.scalekit.com] OTP vs Magic link: Choosing the right passwordless authentication method
+   Magic links remove the step of typing, which can reduce user friction: no risk of mistyping a code or password, just a tap to log in. This low- ...
+Both eliminate the need for a user-created password, but they work in different ways: with OTP, the user is sent a code (via SMS, email, or app) which they must manually enter, whereas a magic link lets
+   https://www.scalekit.com/blog/otp-vs-magic-links-passwordless-authentication
+
+• [www.reddit.com] What are the downsides (if any) of passwordless auth (magic link
+   Magic links that also create a TOTP handshake to the original session mitigates a part of this concern. You have your session open, you use your ... Passwordless login via email OTP is that a good option? - Reddit Magic Link Auth Code in verification email with free tier? : r/Supabase More results from www.reddit.com
+   https://www.reddit.com/r/webdev/comments/1bfr2yi/what_are_the_downsides_if_any_of_passwordless
+
+• [www.answeroverflow.com] Server email OTP authentication - Better Auth - Answer Overflow
+   It appears, from reading the docs, that email-and-password can be done if you're doing server-side auth only, however email-OTP is not currently supported. can i use better-auth in a passwordless way? Is there a way to send both Magic Link and OTP together in one email? More results from www.answeroverflow.com
+   https://www.answeroverflow.com/m/1352646845146337341
+
+• [www.authgear.com] Passwordless Authentication: Magic Links vs Passkeys vs OTP - Authgear
+   Compare magic links, passkeys, and OTP for passwordless authentication. Learn how each works, their security trade-offs, and best practices ...
+   https://www.authgear.com/post/passwordless-authentication-magic-links-passkeys-otp
+
+============================================
+=== ba_orgs ===
+============================================
+• [better-auth.com] Organization | Better Auth
+   The organization plugin allows you to manage your organization's members and teams.
+   https://better-auth.com/docs/plugins/organization
+
+• [www.askcodi.com] Better Auth Organization Plugin - Skill | AskCodi Marketplace
+   This skill helps you configure multi-tenant organizations with Better Auth. It covers organization setup, member and invitation management, defining custom ...
+   https://www.askcodi.com/marketplace/skills/better-auth-organization
+
+• [www.youtube.com] Better Auth Organizations – The Basics (Part 1) - YouTube
+   ... organization switcher. Whether you're building a SaaS platform, a team-based dashboard, or any app with multi-tenant support — this series ...
+   https://www.youtube.com/watch?v=grvwy4qySVI
+
+• [www.claudepluginhub.com] organization-best-practices | better-auth - ClaudePluginHub
+   Configures multi-tenant organizations using Better Auth plugin: manage members, invitations, custom roles, permissions, teams, and RBAC.
+   https://www.claudepluginhub.com/skills/pleaseai-better-auth-plugins-better-auth/organization-best-practices
+
+============================================
+=== ba_session ===
+============================================
+• [better-auth.com] Session Management | Better Auth
+   Learn about session management in Better Auth, including session expiration, freshness, cookie caching strategies, secondary storage, stateless sessions, and ...
+   https://better-auth.com/docs/concepts/session-management
+
+• [medium.com] Authentication in Remix with Better Auth — Actually Understanding It
+   When a user logs out, Better Auth removes their session from Redis. The token is immediately dead. No waiting for anything to expire. Sliding ...
+   https://medium.com/@iam-abdulmoiz/authentication-in-remix-with-better-auth-actually-understanding-it-before-you-use-it-c5eca2a96245
+
+• [www.reddit.com] how often to refresh the user session token ? Also how do  - Reddit
+   One technique is to use a sliding window to refresh the token. You refresh the time if you are within some time limit that is close to its ... Session Based Auth vs JWT + Refresh Tokens for a Mobile Fintech ... What's the best way to manage Refresh Tokens securely ... - Reddit More results from www.reddit.com
+   https://www.reddit.com/r/golang/comments/8su92z/user_authentication_how_often_to_refresh_the_user
+
+• [github.com] Stateless session and refresh token · Issue #7394 · better-auth/better
+   It looks like you're having issues with refreshing tokens in Better Auth, particularly regarding the session cookies not being updated with the ...
+   https://github.com/better-auth/better-auth/issues/7394
+
+============================================
+=== ba_react ===
+============================================
+• [www.reddit.com] Next.js + Better Auth - strategy for accessing session in client  - Reddit
+   For the user menu, I'd use the use session on client hook with a suspense and fallback skeleton. This will avoid any shifting for the user ( ... How to access user session on nextjs14 with next-auth? [HELP] Better-Auth Client-side Session return NULL More results from www.reddit.com
+   https://www.reddit.com/r/nextjs/comments/1q441rt/nextjs_better_auth_strategy_for_accessing_session
+
+• [better-auth.com] Client | Better Auth
+   Usage · Hooks · Session Options
+   https://better-auth.com/docs/concepts/client
+
+• [www.youtube.com] Better Auth with Next.js: A very good introduction - YouTube
+   Master Better Auth in just 20 minutes. In this step-by-step Next.js tutorial, we cover the 20% of Better Auth features you'll use 80% of the ...
+   https://www.youtube.com/watch?v=ngzLhaT3IzQ
+
+• [next-auth.js.org] Client API - NextAuth.js
+   The useSession() React Hook in the NextAuth.js client is the easiest way to check if someone is signed in. Make sure that  is added to pages/_ ...
+   https://next-auth.js.org/getting-started/client
+
+============================================
+=== ba_migration ===
+============================================
+• [labs.convex.dev] Migrate to 0.8 | Convex + Better Auth
+   Migrate to 0.8. Migrate to @convex-dev/better-auth@0.8. To use Local Install, complete this migration guide first and then follow the Local Install guide.
+   https://labs.convex.dev/better-auth/migrations/migrate-to-0-8
+
+• [www.reddit.com] Confused about Convex and BetterAuth auth functions - Reddit
+   Migrating to Better Auth from Next Auth and It's a nightmare · r/nextjs. • 4mo ago. Migrating to Better Auth from Next Auth and It's a nightmare. migration from auth.js to better-auth : r/nextjs Convex vs Better Auth + Neon For My Next JS? : r/nextjs More results from www.reddit.com
+   https://www.reddit.com/r/nextjs/comments/1rp3g09/confused_about_convex_and_betterauth_auth
+
+• [www.convex.dev] Better Auth | Convex Components
+   Migrating from another auth solution to Better Auth while keeping your existing Convex database schema and functions intact; Building SSR applications with ...
+   https://www.convex.dev/components/better-auth
+
+• [github.com] get-convex/better-auth - GitHub
+   Authentication. Email & Password Authentication. Built-in support for email and password authentication, with session and account management features.
+   https://github.com/get-convex/better-auth
+
+============================================
+=== ba_pricing ===
+============================================
+• [better-auth.com] Pricing - Better Auth
+   Connect to our infrastructure and power your self-hosted Better Auth with a dashboard, audit logs, security, and more. StarterFree. Pro$20/month. Enterprise ...
+   https://better-auth.com/pricing
+
+• [workos.com] Top 5 Better Auth alternatives for secure authentication in 2026
+   Ory Network: Managed cloud version with a free tier for getting started. Self-hostable: Full control over your infrastructure and data if ...
+   https://workos.com/blog/top-better-auth-alternatives-secure-authentication-2026
+
+• [snapdeploy.dev] Every Free Cloud Deploy Platform in 2026 — Ranked [Full List]
+   Use Coolify or CapRover on a VPS. For $5-10/month, you get more compute, memory, and storage than any free tier. The Honest Truth About Free ...
+   https://snapdeploy.dev/blog/free-cloud-deployment-platforms-2026-comparison
+
+• [fusionauth.io] FusionAuth Pricing | Free and Flexible Plans for Your Authentication Needs
+   Self-host FusionAuth on your own infrastructure for free. Host with us. Starter. Starting at: $. 162. /mo. Billed annually. Starter adds Premium features ...
+   https://fusionauth.io/pricing
+
+============================================
+=== ba_agencies ===
+============================================
+• [better-auth.com] Single Sign-On (SSO) - Better Auth
+   Single Sign-On (SSO) allows users to authenticate with multiple applications using a single set of credentials. This plugin supports OpenID Connect (OIDC), ...
+   https://better-auth.com/docs/plugins/sso
+
+• [workos.com] Top 5 Better Auth alternatives for secure authentication in 2026
+   Better Auth has quickly become a popular TypeScript-first authentication library, offering a modern alternative to NextAuth with a clean ...
+   https://workos.com/blog/top-better-auth-alternatives-secure-authentication-2026
+
+• [www.propelauth.com] 6 Best Authentication Platforms for B2B SaaS in 2026 | PropelAuth
+   AuthKit now offers user management with organizations, RBAC, social login ... It also offers enterprise features including SAML SSO and a free ...
+   https://www.propelauth.com/post/6-best-auth-platforms-b2b-saas
+
+• [better-auth.com] Better Auth 1.5
+   It lets you use a full user management and analytics dashboard, security and protection tooling, audit logs, a self-service SSO UI, and more, ...
+   https://better-auth.com/blog/1-5
+

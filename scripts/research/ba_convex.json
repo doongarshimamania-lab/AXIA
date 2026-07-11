@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://better-auth.com/docs/integrations/convex",
+    "name": "Convex Integration - Better Auth",
+    "snippet": "Run convex dev. Running the CLI during setup will initialize your Convex ...",
+    "host_name": "better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.convex.dev/components/better-auth",
+    "name": "Better Auth | Convex Components",
+    "snippet": "The integration works by configuring Better Auth to use Convex functions for data persistence operations. When users sign up, sign in, or manage their accounts, ...",
+    "host_name": "www.convex.dev",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/get-convex/better-auth",
+    "name": "get-convex/better-auth - GitHub",
+    "snippet": "Email & Password Authentication. Built-in support for email and password authentication, with session and account management features. Social Sign-on.",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://grokipedia.com/page/Better_Auth_with_Convex_in_TanStack_Start",
+    "name": "Better Auth with Convex in TanStack Start - Grokipedia",
+    "snippet": "The integration is detailed in Convex's official documentation as of late 2025, providing step-by-step guidance on installing and configuring the components, ...",
+    "host_name": "grokipedia.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=ZvlmSy85bj4",
+    "name": "Setting up Convex Auth in 3 minutes and 50 seconds  - YouTube",
+    "snippet": "Get the code: https://github.com/get-convex/convex-auth-with-role-based-permissions It's time to walk through Convex Auth, step-by-step and ...",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

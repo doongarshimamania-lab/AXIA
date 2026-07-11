@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.better-auth.com/docs/concepts/email",
+    "name": "Email - Better Auth",
+    "snippet": "Better Auth provides email and password authentication out of the box, and a lot of utilities to help you manage email verification, password reset, and more.",
+    "host_name": "www.better-auth.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://better-auth.com/docs/infrastructure/services/email",
+    "name": "Email Service | Better Auth",
+    "snippet": "Send verification emails, password resets, invitations, and more without managing email infrastructure ... Multiple provider support (AWS SES, SendGrid, Resend) ...",
+    "host_name": "better-auth.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.logto.io/integrations/sendgrid-email",
+    "name": "Set up email verification with SendGrid Email - Logto docs",
+    "snippet": "Go to the SendGrid console page and sign in with your SendGrid account. Senders indicate the addresses our verification code email will be sent from.",
+    "host_name": "docs.logto.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=psEbIHyuutk",
+    "name": "Add Email Verification with Better Auth & Resend: Easy Tutorial!",
+    "snippet": "In this video, learn how to implement email verification using Better Auth and Resend.",
+    "host_name": "www.youtube.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.sendgrid.com/hc/en-us/articles/37189720963227-Troubleshooting-Sender-Not-Verified-We-were-unable-to-verify-your-sender-identity-Please-resend-the-verification-email-and-try-again-Error",
+    "name": "Troubleshooting 'Sender Not Verified. We were unable to verify your",
+    "snippet": "Navigate to Settings > Sender Authentication and delete the e-mail previously added. Then add it again; · Once you receive the ...",
+    "host_name": "support.sendgrid.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
