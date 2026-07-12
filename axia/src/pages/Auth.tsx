@@ -27,6 +27,7 @@ import { Sun, Moon, Mail, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react"
 import { Suspense, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -73,7 +74,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   // Redirect if already authenticated.
   // ponytail: previously this only fired when `step === "signIn"`, which meant
@@ -238,25 +239,16 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   // OTP verification step
   if (typeof step === "object" && "email" in step) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="absolute top-6 right-6">
-          <button
-            aria-label="Toggle theme"
-            className="w-[52px] h-[28px] rounded-full bg-muted p-1 flex items-center transition-colors"
-            onClick={toggleTheme}
-          >
-            <span
-              className={`w-5 h-5 rounded-full bg-background shadow flex items-center justify-center transform transition-transform ${
-                theme === "dark" ? "translate-x-[24px]" : "translate-x-0"
-              }`}
-            >
-              {theme === "dark" ? (
-                <Moon className="w-3.5 h-3.5 text-primary" />
-              ) : (
-                <Sun className="w-3.5 h-3.5 text-primary" />
-              )}
-            </span>
-          </button>
+      <div className="min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4">
+        {/* Theme toggle — matches onboarding pages (Sun+Switch+Moon pill, fixed) */}
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2 shadow-sm">
+          <Sun className={`h-4 w-4 ${theme === "light" ? "text-primary" : "text-muted-foreground"}`} />
+          <Switch
+            checked={theme === "dark"}
+            onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+            aria-label="Toggle dark mode"
+          />
+          <Moon className={`h-4 w-4 ${theme === "dark" ? "text-primary" : "text-muted-foreground"}`} />
         </div>
 
         <Card className="w-full max-w-md border border-border shadow-none rounded-2xl bg-card">
@@ -324,12 +316,6 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             </CardFooter>
           </form>
 
-          <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
-            Secured by{" "}
-            <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
-              vly.ai
-            </a>
-          </div>
         </Card>
       </div>
     );
@@ -337,26 +323,16 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
   // Main sign-in / sign-up form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      {/* Theme toggle */}
-      <div className="absolute top-6 right-6">
-        <button
-          aria-label="Toggle theme"
-          className="w-[52px] h-[28px] rounded-full bg-muted p-1 flex items-center transition-colors"
-          onClick={toggleTheme}
-        >
-          <span
-            className={`w-5 h-5 rounded-full bg-background shadow flex items-center justify-center transform transition-transform ${
-              theme === "dark" ? "translate-x-[24px]" : "translate-x-0"
-            }`}
-          >
-            {theme === "dark" ? (
-              <Moon className="w-3.5 h-3.5 text-primary" />
-            ) : (
-              <Sun className="w-3.5 h-3.5 text-primary" />
-            )}
-          </span>
-        </button>
+    <div className="min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4">
+      {/* Theme toggle — matches onboarding pages (Sun+Switch+Moon pill, fixed) */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2 shadow-sm">
+        <Sun className={`h-4 w-4 ${theme === "light" ? "text-primary" : "text-muted-foreground"}`} />
+        <Switch
+          checked={theme === "dark"}
+          onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+          aria-label="Toggle dark mode"
+        />
+        <Moon className={`h-4 w-4 ${theme === "dark" ? "text-primary" : "text-muted-foreground"}`} />
       </div>
 
       <Card className="w-full max-w-md border border-border shadow-none rounded-2xl bg-card">
@@ -642,11 +618,15 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           </div>
         </CardContent>
 
-        {/* Footer branding */}
+        {/* Footer — Better Auth branding (replaces prior vly.ai attribution) */}
         <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
           Secured by{" "}
-          <a href="https://vly.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
-            vly.ai
+          <a href="https://better-auth.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Better Auth
+          </a>{" "}
+          · Powered by{" "}
+          <a href="https://convex.dev" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Convex
           </a>
         </div>
       </Card>

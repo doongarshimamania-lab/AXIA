@@ -92,7 +92,21 @@ async function ensureLinkedUser(
 export async function getAuthUserId(
   ctx: QueryCtx | MutationCtx
 ): Promise<Id<"users"> | null> {
-  const baUser = await authComponent.getAuthUser(ctx);
+  // ponytail: use safeGetAuthUser (returns undefined for unauthenticated)
+  // instead of getAuthUser (throws ConvexError("Unauthenticated")).
+  // The throw-based version breaks the contract that 68 callers rely on —
+  // they expect null for "no session" so the sign-in page can render
+  // without a server error popup. Self-check: if BA ever removes the
+  // safe variant, catch the ConvexError here as a fallback.
+  let baUser;
+  try {
+    baUser = await authComponent.safeGetAuthUser(ctx);
+  } catch (err: any) {
+    // Defense-in-depth: if safeGetAuthUser ever starts throwing too
+    // (e.g. BA removes it in a major version), treat as "no session".
+    console.warn("getAuthUserId: safeGetAuthUser threw, treating as unauthenticated", err?.message);
+    return null;
+  }
   if (!baUser) return null;
 
   // ponytail: self-check — BA user must have an ID.
@@ -107,8 +121,9 @@ export async function getAuthUserId(
 // ─── Public API: getBetterAuthUser ──────────────────────────────────────────
 // Returns the raw Better Auth user record (id, email, name, image, etc.)
 // for callers that need BA fields directly (rare — most should use getAuthUserId).
+// Returns null when unauthenticated (does NOT throw).
 export async function getBetterAuthUser(ctx: QueryCtx | MutationCtx) {
-  return await authComponent.getAuthUser(ctx);
+  return (await authComponent.safeGetAuthUser(ctx)) ?? null;
 }
 
 // ─── Public API: getAuth + headers (for BA API calls from mutations) ────────
