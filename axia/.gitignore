@@ -54,3 +54,8 @@ coverage/
 .cache/
 *.tmp
 tool-results/
+
+# ─── Secrets vault (NEVER track — chmod 600 local-only) ───
+# Defense-in-depth: even if someone copies the axia/ folder out,
+# any keys/ subfolder stays ignored.
+/keys/

@@ -76,3 +76,8 @@ resources/backups/*.zip
 
 # ─── Convex auth config (auto-generated, may contain dev keys) ───
 axia/.convex/
+
+# ─── Secrets vault (NEVER track — chmod 600 local-only) ───
+# Local plaintext store for OAuth/API keys. Used for recovery only.
+# Real production secrets live on Convex (encrypted at rest).
+/keys/
