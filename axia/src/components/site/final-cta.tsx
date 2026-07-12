@@ -60,7 +60,7 @@ export function FinalCTA() {
               </div>
 
               <p className="mt-6 text-[0.78rem] text-muted-foreground">
-                14-day trial · No credit card · Cancel anytime
+                30-day free beta trial · No credit card · Cancel anytime
               </p>
             </div>
           </div>

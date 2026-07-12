@@ -1,10 +1,17 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ArrowRight, ShieldCheck } from "lucide-react";
+import { Check, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router";
 import { Reveal } from "./reveal";
 import { cn } from "@/lib/utils";
+
+// ponytail: BETA_TRIAL flag controls the 30-day free beta offer. When true,
+// every tier shows a $0 trial price with the original price struck through,
+// so visitors see the real value of what they're getting. Flip to false after
+// the beta window ends — the pricing section reverts to the normal layout.
+const BETA_TRIAL = true;
+const BETA_TRIAL_DAYS = 30;
 
 // Numeric prices for toggle math. Annual = 2 months free (10/12 of monthly).
 const TIERS = [
@@ -94,6 +101,27 @@ export function Pricing() {
             </p>
           </Reveal>
 
+          {/* 30-day free beta trial banner */}
+          {BETA_TRIAL && (
+            <Reveal delay={0.14}>
+              <div className="mx-auto mt-6 inline-flex max-w-2xl items-center gap-3 rounded-2xl border border-[var(--axia-teal)]/40 bg-gradient-to-r from-[var(--axia-teal-soft)]/60 to-white px-5 py-3 text-left shadow-[0_8px_28px_-12px_rgba(43,122,107,0.35)]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--axia-teal)] text-white">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-[0.92rem] font-semibold text-foreground">
+                    {BETA_TRIAL_DAYS}-day free beta trial — every plan, $0 today.
+                  </p>
+                  <p className="text-[0.78rem] text-muted-foreground">
+                    No credit card. Full feature access. After the beta, your
+                    plan auto-converts to its listed price — cancel anytime
+                    before then and pay nothing.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          )}
+
           {/* billing toggle */}
           <Reveal delay={0.16}>
             <div
@@ -177,6 +205,21 @@ export function Pricing() {
 
                 {/* animated price */}
                 <div className="mt-6 flex items-baseline gap-1.5">
+                  {BETA_TRIAL && (
+                    <AnimatePresence mode="popLayout">
+                      <motion.span
+                        key={"strike-" + billing + t.name}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                        className="nums text-2xl font-medium tracking-tight text-muted-foreground/70 line-through"
+                        aria-label={`original price ${priceFor(t.monthly)} dollars per seat per month`}
+                      >
+                        ${priceFor(t.monthly)}
+                      </motion.span>
+                    </AnimatePresence>
+                  )}
                   <AnimatePresence mode="popLayout">
                     <motion.span
                       key={billing + t.name}
@@ -186,15 +229,19 @@ export function Pricing() {
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       className="nums text-5xl font-semibold tracking-tight text-foreground"
                     >
-                      ${priceFor(t.monthly)}
+                      {BETA_TRIAL ? "$0" : `$${priceFor(t.monthly)}`}
                     </motion.span>
                   </AnimatePresence>
                   <span className="text-[0.82rem] text-muted-foreground">
-                    /seat / mo
+                    {BETA_TRIAL ? `/seat · ${BETA_TRIAL_DAYS} days` : "/seat / mo"}
                   </span>
                 </div>
                 <div className="mt-1 h-5">
-                  {billing === "annual" ? (
+                  {BETA_TRIAL ? (
+                    <p className="text-[0.74rem] font-medium text-[var(--axia-teal-bright)]">
+                      Then ${priceFor(t.monthly)}/seat/mo{billing === "annual" ? " · billed annually" : ""}
+                    </p>
+                  ) : billing === "annual" ? (
                     <p className="text-[0.72rem] text-emerald-700/90">
                       Billed annually · ${t.monthly * 10}/yr per seat
                     </p>
@@ -220,7 +267,7 @@ export function Pricing() {
                         : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
                     )}
                   >
-                    {t.cta}
+                    {BETA_TRIAL && !t.href ? `Start ${BETA_TRIAL_DAYS}-day free beta` : t.cta}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </a>
                 ) : (
@@ -233,7 +280,7 @@ export function Pricing() {
                         : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
                     )}
                   >
-                    {t.cta}
+                    {BETA_TRIAL ? `Start ${BETA_TRIAL_DAYS}-day free beta` : t.cta}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 )}
@@ -261,8 +308,15 @@ export function Pricing() {
 
         <Reveal delay={0.12}>
           <p className="mx-auto mt-10 max-w-xl text-center text-[0.82rem] text-muted-foreground">
-            All plans include a 14-day trial. No credit card. Cancel anytime.
-            Switch from your stack in under a day.
+            {BETA_TRIAL ? (
+              <>
+                Beta trial: <span className="font-medium text-foreground">{BETA_TRIAL_DAYS} days free</span> on every plan. No credit card. Cancel anytime. Switch from your stack in under a day.
+              </>
+            ) : (
+              <>
+                All plans include a 14-day trial. No credit card. Cancel anytime. Switch from your stack in under a day.
+              </>
+            )}
           </p>
         </Reveal>
       </div>

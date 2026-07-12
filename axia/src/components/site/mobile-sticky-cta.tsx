@@ -52,7 +52,7 @@ export function MobileStickyCTA() {
                 Stop juggling 5 tabs.
               </p>
               <p className="truncate text-[0.7rem] text-muted-foreground">
-                From $99/seat · 14-day trial
+                30-day free beta · Then from $29/seat
               </p>
             </div>
             {/* ponytail: 'Start free' was href="#cta" (just scrolled up to
