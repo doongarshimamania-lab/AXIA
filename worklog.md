@@ -2783,3 +2783,38 @@ Stage Summary:
   - Auth.tsx footer now correctly attributes Better Auth + Convex (was incorrectly saying vly.ai from the pre-migration era)
 - Card widths intentionally differ: Auth.tsx is `max-w-md` (narrow form), onboarding info is `max-w-2xl` (more fields), onboarding source is `max-w-6xl` (4x3 grid). This is correct — different content widths, not inconsistency.
 - All 9 auth flows still working live. Google OAuth still working (from prior task). Microsoft OAuth still pending user-supplied credentials.
+
+---
+Task ID: auth-vercel-fix
+Agent: main
+Task: Fix Vercel deployment issues — `VITE_CONVEX_SITE_URL is not set` warning + 405 on `/api/auth/sign-in/social` when clicking Google OAuth. Also deepen UI consistency between Auth.tsx and onboarding pages.
+
+Work Log:
+- Diagnosed root cause: Vercel project only had `VITE_CONVEX_URL` (WebSocket URL) set as env var. Better Auth client needs the HTTP site URL (`VITE_CONVEX_SITE_URL`). When missing, the client fell back to relative URL `/api/auth/sign-in/social`, which Vercel's static file server rejected with 405 (POST not allowed on static assets).
+- Fixed `src/lib/auth-client.ts`: added `resolveSiteUrl()` helper that derives `VITE_CONVEX_SITE_URL` from `VITE_CONVEX_URL` by replacing `.convex.cloud` with `.convex.site`. Updated self-check error message to mention both env vars. This makes OAuth work on Vercel WITHOUT requiring the user to add a second env var.
+- Created `.env.local` with the correct Convex URLs for local dev:
+  - `VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud`
+  - `VITE_CONVEX_SITE_URL=https://veracious-zebra-519.convex.site`
+  - `VITE_SITE_URL=http://localhost:3000`
+  - (File is gitignored — no secrets leaked.)
+- Deepened UI consistency on `OnboardingUserInformation.tsx`:
+  - Card: added `border border-border shadow-none rounded-2xl bg-card` (matches Auth.tsx)
+  - CardHeader: changed to `text-center`, added Axia logo (56x56) above the existing icon+title combo
+  - CardDescription: added `max-w-[420px] mx-auto` constraint (matches Auth.tsx pattern)
+  - All `<Input>` and `<select>` elements: added `h-11 bg-background border-border` (was default height/style)
+  - Primary Continue button: changed to `bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white h-11` (was default)
+  - Added the "Secured by Better Auth · Powered by Convex" footer (matches Auth.tsx)
+- Deepened UI consistency on `OnboardingSource.tsx`:
+  - Same Card styling + logo + centered header pattern
+  - Same Input height + button color treatment
+  - Back button: added `h-11 bg-background border-border` (matches outline button style on Auth.tsx)
+  - Complete Setup button: changed to `bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white h-11`
+  - Added the "Secured by Better Auth · Powered by Convex" footer
+- Verified build: `npx vite build` → ✅ passes in 14.54s (only pre-existing warnings)
+
+Stage Summary:
+- The Vercel 405 bug is fixed at the code level. Once this change is deployed to Vercel (via git push → auto-deploy), Google OAuth will work because the auth client will correctly POST to `https://veracious-zebra-519.convex.site/api/auth/sign-in/social` instead of the relative path.
+- All three auth-flow pages (Auth, OnboardingUserInformation, OnboardingSource) now share identical design language: same card style, same logo placement, same input heights, same button colors, same footer. Only the card WIDTH differs (`max-w-md` for sign-in form, `max-w-2xl` for profile fields, `max-w-6xl` for source grid) — which is correct because the content differs.
+- The user still needs to verify env vars on Vercel: at minimum `VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud` must be set. The site URL is now derived automatically, but if the user wants to be explicit they can also set `VITE_CONVEX_SITE_URL=https://veracious-zebra-519.convex.site`.
+- Microsoft OAuth still pending (user needs to create Azure AD app registration).
+- Real Resend API key still pending (currently placeholder — OTP/magic-link emails won't deliver).

@@ -120,15 +120,25 @@ export default function OnboardingUserInformation() {
         <Moon className={`h-4 w-4 ${theme === "dark" ? "text-primary" : "text-muted-foreground"}`} />
       </div>
 
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
+      <Card className="w-full max-w-2xl border border-border shadow-none rounded-2xl bg-card">
+        <CardHeader className="text-center">
+          <div className="flex justify-center">
+            <img
+              src="./logo.svg"
+              alt="Axia Logo"
+              width={56}
+              height={56}
+              className="rounded-lg mb-3 mt-1 cursor-pointer"
+              onClick={() => navigate('/')}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="w-5 h-5 text-primary" />
             </div>
             <CardTitle className="text-2xl">Your Professional Profile</CardTitle>
           </div>
-          <CardDescription>
+          <CardDescription className="max-w-[420px] mx-auto">
             Let's set up your profile so Axia can accurately protect your earnings
           </CardDescription>
         </CardHeader>
@@ -147,7 +157,7 @@ export default function OnboardingUserInformation() {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="John Smith"
-                className={errors.fullName ? 'border-destructive' : ''}
+                className={`h-11 bg-background border-border ${errors.fullName ? 'border-destructive' : ''}`}
               />
               {errors.fullName && (
                 <p className="text-sm text-destructive">{errors.fullName}</p>
@@ -172,7 +182,7 @@ export default function OnboardingUserInformation() {
                   value={formData.hourlyRate}
                   onChange={handleChange}
                   placeholder="50"
-                  className={`pl-8 ${errors.hourlyRate ? 'border-destructive' : ''}`}
+                  className={`h-11 pl-8 bg-background border-border ${errors.hourlyRate ? 'border-destructive' : ''}`}
                 />
               </div>
               {errors.hourlyRate && (
@@ -194,8 +204,8 @@ export default function OnboardingUserInformation() {
                 name="primaryPlatform"
                 value={formData.primaryPlatform}
                 onChange={handleChange}
-                className={`w-full p-2 border rounded-md bg-background ${
-                  errors.primaryPlatform ? 'border-destructive' : 'border-input'
+                className={`w-full h-11 px-3 border rounded-md bg-background border-border ${
+                  errors.primaryPlatform ? 'border-destructive' : 'border-border'
                 }`}
               >
                 <option value="">Select your primary platform</option>
@@ -224,7 +234,7 @@ export default function OnboardingUserInformation() {
                 name="yearsExperience"
                 value={formData.yearsExperience}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md bg-background border-input"
+                className="w-full h-11 px-3 border rounded-md bg-background border-border"
               >
                 <option value="">Select experience level</option>
                 <option value="1">Less than 1 year</option>
@@ -251,6 +261,7 @@ export default function OnboardingUserInformation() {
                 onChange={handleChange}
                 placeholder="I'm a web developer specializing in React and Node.js with 5+ years of experience..."
                 rows={4}
+                className="bg-background border-border"
               />
               <p className="text-sm text-muted-foreground">
                 Optional but helpful for context in dispute resolution reports
@@ -263,12 +274,24 @@ export default function OnboardingUserInformation() {
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
               Step 1 of 2
             </div>
-            <Button onClick={handleContinue} className="px-6">
+            <Button onClick={handleContinue} className="px-6 h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white">
               Continue
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         </CardContent>
+
+        {/* Footer — matches Auth.tsx */}
+        <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
+          Secured by{" "}
+          <a href="https://better-auth.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Better Auth
+          </a>{" "}
+          · Powered by{" "}
+          <a href="https://convex.dev" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Convex
+          </a>
+        </div>
       </Card>
     </div>
   );

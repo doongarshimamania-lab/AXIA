@@ -171,15 +171,25 @@ export default function OnboardingSource() {
         <Moon className={`h-4 w-4 ${theme === "dark" ? "text-primary" : "text-muted-foreground"}`} />
       </div>
 
-      <Card className="w-full max-w-6xl">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
+      <Card className="w-full max-w-6xl border border-border shadow-none rounded-2xl bg-card">
+        <CardHeader className="text-center">
+          <div className="flex justify-center">
+            <img
+              src="./logo.svg"
+              alt="Axia Logo"
+              width={56}
+              height={56}
+              className="rounded-lg mb-3 mt-1 cursor-pointer"
+              onClick={() => navigate('/')}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Globe className="w-5 h-5 text-primary" />
             </div>
             <CardTitle className="text-2xl">How Did You Find Us?</CardTitle>
           </div>
-          <CardDescription>
+          <CardDescription className="max-w-[420px] mx-auto">
             Help us understand how agencies discover Axia so we can better serve you
           </CardDescription>
         </CardHeader>
@@ -232,7 +242,7 @@ export default function OnboardingSource() {
                     ? "Friend's name or email" 
                     : sources.find(s => s.id === selectedSource)?.detailPrompt || "Please specify"
                 }
-                className="w-full"
+                className="w-full h-11 bg-background border-border"
               />
               {selectedSource === 'friend_referral' && (
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -243,10 +253,10 @@ export default function OnboardingSource() {
           )}
           
           <div className="flex justify-between items-center">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => navigate('/onboarding-user-information')}
-              className="px-4"
+              className="px-4 h-11 bg-background border-border"
               disabled={isSubmitting}
             >
               Back
@@ -257,16 +267,28 @@ export default function OnboardingSource() {
               Step 2 of 2
             </div>
             
-            <Button 
+            <Button
               onClick={handleContinue}
               disabled={!selectedSource || isSubmitting}
-              className="px-6"
+              className="px-6 h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
             >
               {isSubmitting ? 'Completing...' : 'Complete Setup'}
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         </CardContent>
+
+        {/* Footer — matches Auth.tsx */}
+        <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-background border-t border-border rounded-b-lg">
+          Secured by{" "}
+          <a href="https://better-auth.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Better Auth
+          </a>{" "}
+          · Powered by{" "}
+          <a href="https://convex.dev" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">
+            Convex
+          </a>
+        </div>
       </Card>
     </div>
   );
