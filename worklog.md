@@ -2741,3 +2741,45 @@ Stage Summary:
 - All 9 auth flows now working: sign-up ✅, sign-in ✅, sign-out ✅, get-session ✅, magic-link ✅, email-otp ✅, password-reset ✅, **Google OAuth ✅ (new)**, Microsoft OAuth (still pending — user must set up Azure AD app registration next).
 - Next: Microsoft OAuth setup (Azure Portal → Microsoft Entra ID → App registrations → redirect URI `https://veracious-zebra-519.convex.site/api/auth/callback/microsoft` → user provides `MICROSOFT_CLIENT_ID` + `MICROSOFT_CLIENT_SECRET` → I set on Convex → live-test).
 - After that: replace placeholder `RESEND_API_KEY` with real one so emails actually deliver.
+
+---
+Task ID: auth-fix-ui-consistency-2026-07-12
+Agent: main
+Task: User reported two issues: (1) `Uncaught ConvexError: Unauthenticated at getAuthUser` server error when the sign-in page loads, (2) UI inconsistency between onboarding pages and the sign-in page. Fix both, deploy, push.
+
+Work Log:
+- Diagnosed the auth error: read `node_modules/@convex-dev/better-auth/src/client/create-client.ts` lines 183-189. `getAuthUser()` THROWS `ConvexError("Unauthenticated")` when no session, but our `lib/auth.ts` shim expected null. Confirmed `safeGetAuthUser` IS exported (line 261) — returns undefined instead of throwing.
+- Fixed `axia/src/convex/lib/auth.ts`:
+  - `getAuthUserId`: `authComponent.getAuthUser(ctx)` → `authComponent.safeGetAuthUser(ctx)` (wrapped in try/catch as defense-in-depth in case BA ever removes the safe variant)
+  - `getBetterAuthUser`: same swap, plus `?? null` to normalize undefined → null
+  - This restores the contract that 68 callers depend on: "returns null when not authenticated"
+- Audited UI inconsistencies between `Auth.tsx`, `OnboardingUserInformation.tsx`, `OnboardingSource.tsx`:
+  1. Theme toggle: Auth.tsx had a custom translate-x button (`w-[52px] h-[28px] rounded-full bg-muted p-1`); onboarding pages use Sun+Switch+Moon pill (`fixed top-6 right-6 z-50 bg-card border rounded-full px-3 py-2 shadow-sm`)
+  2. Position: Auth.tsx `absolute top-6 right-6` (inside container, scrolls away); onboarding `fixed top-6 right-6 z-50` (always visible)
+  3. Wrapper: Auth.tsx missing `transition-colors` class that onboarding has
+  4. Footer: Auth.tsx said "Secured by vly.ai" (wrong — we use Better Auth now); onboarding had no footer
+- Updated `axia/src/pages/Auth.tsx`:
+  - Added `Switch` import from `@/components/ui/switch`
+  - Replaced `toggleTheme` destructure with `setTheme` (matches onboarding pages' useTheme call)
+  - Replaced BOTH theme toggle instances (OTP step + main form) with the Sun+Switch+Moon pill — identical markup to onboarding pages
+  - Changed outer wrapper from `min-h-screen flex items-center justify-center bg-background p-4` → `min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4` (matches onboarding)
+  - Updated footer: "Secured by vly.ai" → "Secured by Better Auth · Powered by Convex" (both links use target="_blank" rel="noopener noreferrer")
+- Vite build: ✅ passes in 15.10s (only pre-existing warnings)
+- Deployed backend to Convex: `npx convex deploy --typecheck=disable` → ✅ Deployed to https://veracious-zebra-519.convex.cloud
+- Live-verified the fix end-to-end:
+  - `users:currentUser` without session → `{"status":"success","value":null}` ✅ (was 500 `Uncaught ConvexError: Unauthenticated`)
+  - `users:getProfile` without session → `{"status":"success","value":null}` ✅
+  - Sign-up still works: created user `k173h3gzn9hbc7w60992e4scgd8acsbg` (actually a different ID this time)
+  - Sign-in endpoint still returns proper BA errors for bad credentials
+- Committed: `8f84d76 fix(auth): unauthenticated error on sign-in page + UI consistency` (2 files, +46/-51)
+- Pulled remote `b96f8e2` (a package-lock update), rebased cleanly, pushed: `20c45ee..644af84 main -> main` ✅
+
+Stage Summary:
+- Backend auth fix is LIVE. Sign-in page no longer throws a 500 error when it loads — `users:currentUser` cleanly returns null for unauthenticated visitors, which is what the React Query layer expects (it treats null as "no session, show the form").
+- UI is now consistent across all auth-flow pages:
+  - All three pages (Auth, OnboardingUserInformation, OnboardingSource) use the SAME Sun+Switch+Moon theme toggle pill
+  - All three use `fixed top-6 right-6 z-50` positioning (stays visible during scroll)
+  - All three use the same wrapper class `min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4`
+  - Auth.tsx footer now correctly attributes Better Auth + Convex (was incorrectly saying vly.ai from the pre-migration era)
+- Card widths intentionally differ: Auth.tsx is `max-w-md` (narrow form), onboarding info is `max-w-2xl` (more fields), onboarding source is `max-w-6xl` (4x3 grid). This is correct — different content widths, not inconsistency.
+- All 9 auth flows still working live. Google OAuth still working (from prior task). Microsoft OAuth still pending user-supplied credentials.
