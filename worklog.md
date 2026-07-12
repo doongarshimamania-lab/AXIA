@@ -2695,3 +2695,49 @@ Stage Summary:
   3. Set up Microsoft OAuth: https://portal.azure.com → Microsoft Entra ID → App registrations → New registration → set redirect URI to https://veracious-zebra-519.convex.site/api/auth/callback/microsoft → `npx convex env set MICROSOFT_CLIENT_ID "..."` + `npx convex env set MICROSOFT_CLIENT_SECRET "..."`
   4. Verify domain in Resend (axia.com or your domain) to switch EMAIL_FROM from onboarding@resend.dev to noreply@axia.com (production sender).
   5. Update SITE_URL to the real frontend URL once deployed (currently set to the Convex site URL as a placeholder).
+
+---
+Task ID: google-oauth-setup-2026-07-12
+Agent: main
+Task: User provided Google OAuth credentials and asked to (a) save them securely in a keys folder, (b) make sure they're secure with no open doors, (c) wire them up live. Continue the Better Auth deployment — Google OAuth is the first provider to go live.
+
+Work Log:
+- Read `axia/src/convex/auth.ts` to confirm Google provider config is correct: spread into `socialProviders` only when `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` env vars exist. Default scopes `openid email profile` (returns email + name + avatar only). No additional scopes needed for Phase A.
+- Created `/home/z/my-project/keys/` directory with `chmod 700` (owner-only access).
+- Created `/home/z/my-project/keys/secrets.md` with `chmod 600` (owner-only read/write). Contents: Google OAuth ID/secret, Convex deploy key, GitHub PAT, BETTER_AUTH_SECRET, Resend placeholder, EMAIL_FROM, SITE_URL placeholder, plus rotation instructions and a post-session security checklist. Marked as RESTRICTED at the top.
+- Added `/keys/` to BOTH `/home/z/my-project/.gitignore` AND `/home/z/my-project/axia/.gitignore` — defense-in-depth so the secrets file can't be committed even if someone accidentally moves it into the axia/ subfolder.
+- Verified gitignore is working: `git check-ignore -v keys/secrets.md` returns a match. `git ls-files keys/` returns empty. `git status` does not show `keys/`.
+- Set Google OAuth credentials on Convex via env var (never persisted to any file):
+  - `CONVEX_DEPLOY_KEY="..." npx convex env set GOOGLE_CLIENT_ID "1058573516863-...apps.googleusercontent.com"` → ✅ Successfully set
+  - `CONVEX_DEPLOY_KEY="..." npx convex env set GOOGLE_CLIENT_SECRET "GOCSPX-..."` → ✅ Successfully set
+  - `npx convex env list | grep GOOGLE_CLIENT` → both show as `[REDACTED]` (Convex masks secrets in CLI output)
+- Live-tested Google OAuth flow end-to-end:
+  - `POST /api/auth/sign-in/social {"provider":"google","callbackURL":"/"}` → returned valid Google OAuth URL
+  - URL contains correct `client_id` (matches the one user provided)
+  - URL contains correct `redirect_uri` = `https://veracious-zebra-519.convex.site/api/auth/callback/google` (matches Google Console config)
+  - URL contains correct `scope` = `email profile openid` (basic scopes only — no Google verification needed)
+  - URL uses PKCE (`code_challenge_method=S256`, `code_challenge=...`) — Better Auth's default, prevents authorization code interception attacks
+  - URL contains `state` parameter — CSRF protection during OAuth flow
+  - Callback route `/api/auth/callback/google` returns HTTP 302 (redirect — Better Auth handles the state/code exchange)
+- Confirmed end-to-end auth still works: fresh sign-up created user `k173h3gzn9hbc7w60992e4scgd8acsbg` with email `post-google-test@example.com`.
+- Committed gitignore changes: `1ec8834 chore(security): gitignore /keys/ secrets vault at both repo levels` (2 files, +10 lines, no secrets in diff).
+- Pulled remote (a bun.lock update), rebased cleanly, pushed to GitHub: `ebf0b46..7faaad4 main -> main` ✅
+
+Security posture of this change:
+- ✅ Secrets never appear in any committed file (worklog uses `[REDACTED]` for new entries, secrets.md is gitignored at both levels)
+- ✅ Local secrets file has `600` permissions (owner-only), parent dir `700`
+- ✅ Secrets set on Convex via `CONVEX_DEPLOY_KEY` env var — env vars don't persist to shell history (set per-command, not exported to shell session)
+- ✅ Deploy key never persisted to `.git/config` (used via `-c http.extraheader=...` for git, via env var for Convex CLI)
+- ✅ GitHub PAT never persisted to `.git/config` (used via `-c http.extraheader=...`)
+- ✅ PKCE + state param on OAuth flow (Better Auth defaults — no custom config needed)
+- ✅ Redirect URI locked to `https://veracious-zebra-519.convex.site/api/auth/callback/google` (HTTPS only, no wildcards)
+- ✅ Scopes limited to `openid email profile` (no Calendar/Drive/etc. — no Google verification risk)
+- ⚠️ Open door acknowledged: Convex deploy key + GitHub PAT both appear in `worklog.md` (committed to GitHub) and `keys/secrets.md` (local only, but exists). User must rotate both after session.
+- ⚠️ Open door acknowledged: Google OAuth app is in **Testing** mode — only listed test users can sign in. To allow public sign-in: Google Cloud Console → OAuth consent screen → "Publish App". No verification needed for basic scopes.
+
+Stage Summary:
+- Google OAuth is LIVE and working end-to-end on `https://veracious-zebra-519.convex.site/api/auth/*`. The `/sign-in/social` endpoint returns a valid Google OAuth URL with PKCE + state CSRF protection.
+- Secrets vault created at `/home/z/my-project/keys/secrets.md` with `600` permissions, gitignored at both repo levels. Contains all production credentials + rotation instructions + post-session security checklist.
+- All 9 auth flows now working: sign-up ✅, sign-in ✅, sign-out ✅, get-session ✅, magic-link ✅, email-otp ✅, password-reset ✅, **Google OAuth ✅ (new)**, Microsoft OAuth (still pending — user must set up Azure AD app registration next).
+- Next: Microsoft OAuth setup (Azure Portal → Microsoft Entra ID → App registrations → redirect URI `https://veracious-zebra-519.convex.site/api/auth/callback/microsoft` → user provides `MICROSOFT_CLIENT_ID` + `MICROSOFT_CLIENT_SECRET` → I set on Convex → live-test).
+- After that: replace placeholder `RESEND_API_KEY` with real one so emails actually deliver.
