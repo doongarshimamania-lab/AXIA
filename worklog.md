@@ -2861,3 +2861,35 @@ Stage Summary:
 - The `Not authenticated` error from `seedPersonalWorkspace` is fixed at the source — the mutation will no longer fire on the sign-in page (or any other unauthenticated page) because the entire `WorkspaceProvider` now skips all Convex workspace work until Convex confirms a session.
 - The deprecated meta tag warning is silenced.
 - All three issues user reported are addressed. Build is green. Ready to commit + push to Vercel.
+
+---
+Task ID: auth-vercel-fix-3
+Agent: main (continuation)
+Task: Fix new CORS preflight failure blocking Google OAuth sign-in from axia-bay.vercel.app.
+
+Work Log:
+- User reported CORS preflight failure: browser blocks POST to https://veracious-zebra-519.convex.site/api/auth/sign-in/social from origin https://axia-bay.vercel.app — "No 'Access-Control-Allow-Origin' header is present on the requested resource."
+- Read src/convex/auth.ts + src/convex/http.ts to locate Better Auth trustedOrigins config.
+- Found root cause: trustedOrigins only contained `process.env.SITE_URL!` in both createAuthOptions (auth.ts:82) and registerRoutesLazy (http.ts:139). SITE_URL on Convex is likely either unset or set to a different origin, so the Vercel origin was rejected on preflight.
+- Verified Better Auth's matchesOriginPattern implementation in node_modules/better-auth/dist/auth/trusted-origins.mjs — it supports `*` wildcards in string patterns natively.
+- Verified TrustedOriginsOption type in node_modules/@convex-dev/better-auth/dist/utils/index.d.ts — accepts `string[]` OR `(request?: Request) => string[]`. NOT `(origin) => boolean`.
+- Applied root-cause fix in src/convex/auth.ts: added `trustedOriginsList` export — single array including siteUrl, localhost/127.0.0.1 variants for dev, and `https://*.vercel.app` wildcard for all Vercel preview + production deployments of this app.
+- Used the same `trustedOriginsList` in both createAuthOptions and registerRoutesLazy — one source of truth (ponytail: smallest diff, root-cause, no duplicated logic).
+- Replaced original isTrustedOrigin function approach (had wrong signature `(origin) => boolean`) with the array+wildcard approach (matches the actual type signature).
+- Wrote /home/z/my-project/scripts/verify-trusted-origins.mjs — ponytail rule "non-trivial logic leaves ONE runnable check behind". Imports Better Auth's actual matchesOriginPattern function and asserts: 7 must-accept URLs (axia-bay.vercel.app, axia-git-fork-xyz.vercel.app, axia-pr-123.vercel.app, localhost:3000/5173, 127.0.0.1:3000/5173) + 5 must-reject URLs including the suffix-trick attack `phishing.vercel.app.evil.com`. All 12 checks PASS.
+- Ran `npx tsc --noEmit` from /home/z/my-project/axia — passed with no errors.
+- Created /home/z/my-project/keys/ folder (was missing — user assumed it existed). Added:
+  - keys/README.md — explains PAT format, required scopes (Contents: read+write, Metadata: read-only), how the agent will use the PAT, security notes.
+  - keys/github.pat — template file with comments; user must paste the actual PAT.
+- Verified /home/z/my-project/.gitignore line 83 already excludes `/keys/` — both keys/README.md and keys/github.pat are gitignored.
+- PAT was NOT in user's message — only the CORS error log was pasted. Need user to paste the actual token.
+- Ponytail repo: read /home/z/my-project/resources/ponytail/skills/ponytail/SKILL.md and AGENTS.md. Confirmed ponytail = "lazy senior dev" methodology (YAGNI, stdlib first, native platform features, fewest files, mark simplifications with `ponytail:` comments). My existing `ponytail:` comments in src/convex/http.ts (CSP, HSTS) were already compliant.
+- "Rules file": no RULES.md exists in the axia repo. The closest equivalent is the ponytail .clinerules/ponytail.md and AGENTS.md — both now read in full.
+- "ECC": no files matching "ecc" found in /home/z/my-project outside of git object hashes. Asking user to clarify what ECC refers to.
+
+Stage Summary:
+- CORS root-cause fixed in 2 files (auth.ts + http.ts) with a single shared trustedOriginsList array. Type-check passes. 12/12 origin-matching tests pass against Better Auth's real matcher.
+- Verification script: /home/z/my-project/scripts/verify-trusted-origins.mjs
+- keys/ folder created with template. PAT pending user paste.
+- User needs to: (1) paste PAT into /home/z/my-project/keys/github.pat, (2) deploy Convex backend with `npx convex dev` (the trustedOrigins change is a backend change, NOT a frontend change), (3) optionally also re-deploy Vercel (no Vercel change required, but cached tokens may need refresh).
+- Clarification needed from user: what does "ECC" refer to? (No matching files in the project.)

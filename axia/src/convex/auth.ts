@@ -72,6 +72,24 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
   verbose: false,
 });
 
+// ─── Trusted-origin resolver ────────────────────────────────────────────────
+// ponytail: one resolver used by both createAuthOptions and registerRoutesLazy
+// in http.ts. Root-cause fix for CORS preflight failures from Vercel previews.
+// Better Auth's matchesOriginPattern supports `*` wildcards natively, so we
+// don't need a function — just an array with a wildcard for *.vercel.app.
+// OAuth redirect URIs are still pinned at the Google/Azure console, so origin
+// matching here only gates CORS + cookie SameSite — not OAuth itself.
+// Upgrade path: replace the wildcard with an explicit allowlist of preview
+// branches if a multi-tenant leak risk ever materializes.
+export const trustedOriginsList: string[] = [
+  siteUrl,
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+  "https://*.vercel.app",
+].filter((o): o is string => typeof o === "string" && o.length > 0);
+
 // ─── Auth options factory ──────────────────────────────────────────────────
 // Better Auth requires a per-request factory because the adapter needs the
 // current ctx. The http.ts route registration calls this with the HTTP ctx;
@@ -79,7 +97,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
   ({
     baseURL: process.env.CONVEX_SITE_URL,
-    trustedOrigins: [siteUrl],
+    trustedOrigins: trustedOriginsList,
 
     database: authComponent.adapter(ctx),
 

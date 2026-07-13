@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { authComponent, createAuth } from "./auth";
+import { authComponent, createAuth, trustedOriginsList } from "./auth";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
@@ -133,10 +133,12 @@ const http = httpRouter();
 // Better Auth route registration (replaces prior `auth.addHttpRoutes(http)`).
 // registerRoutesLazy defers BA initialization until first request — prevents
 // OOM errors during deploy. CORS is required for client-side frameworks (Vite SPA).
+// ponytail: trustedOriginsList is the same array used in createAuthOptions —
+// one source of truth for both route registration and the BA instance itself.
 authComponent.registerRoutesLazy(http, createAuth, {
   basePath: "/api/auth",
   cors: true,
-  trustedOrigins: [process.env.SITE_URL!],
+  trustedOrigins: trustedOriginsList,
 });
 
 // Add: Extension HTTPS endpoints
