@@ -2818,3 +2818,46 @@ Stage Summary:
 - The user still needs to verify env vars on Vercel: at minimum `VITE_CONVEX_URL=https://veracious-zebra-519.convex.cloud` must be set. The site URL is now derived automatically, but if the user wants to be explicit they can also set `VITE_CONVEX_SITE_URL=https://veracious-zebra-519.convex.site`.
 - Microsoft OAuth still pending (user needs to create Azure AD app registration).
 - Real Resend API key still pending (currently placeholder — OTP/magic-link emails won't deliver).
+
+---
+Task ID: auth-vercel-fix-2
+Agent: main
+Task: Fix Vercel deployment issues round 2 — 404 on `veracious-zebra-519.convex.cloud/api/auth/get-session` and `sign-in/social` (auth client still using the WebSocket URL despite env var being set), plus `Not authenticated` error from `seedPersonalWorkspace` mutation firing on the unauthenticated sign-in page.
+
+Work Log:
+- Live-tested both Convex hosts to confirm root cause:
+  - `POST https://veracious-zebra-519.convex.site/api/auth/sign-in/social` → 200, returns valid Google OAuth URL with PKCE ✅
+  - `GET https://veracious-zebra-519.convex.site/api/auth/get-session` → 200, returns `null` for unauthenticated ✅
+  - `POST https://veracious-zebra-519.convex.cloud/api/auth/get-session` → 404 (Better Auth HTTP routes ONLY exist on .convex.site)
+- Diagnosed: user set `VITE_CONVEX_SITE_URL` on Vercel but to the WRONG value — the WebSocket URL `.convex.cloud` instead of the HTTP site URL `.convex.site`. My previous fix only kicked in when the env var was MISSING, not when it was set incorrectly.
+- Hardened `src/lib/auth-client.ts`:
+  - Added `toSiteUrl()` helper that always rewrites `.convex.cloud` → `.convex.site` and strips trailing slashes
+  - `resolveSiteUrl()` now runs `toSiteUrl()` on the explicit value too — so even a misconfigured `VITE_CONVEX_SITE_URL` gets auto-corrected
+  - Added a `console.warn` that fires when the explicit value was auto-corrected, so the user knows their Vercel env var is wrong (without the warning being fatal)
+- Wrote and ran a 4-case unit test for the URL resolver — all pass:
+  1. SITE_URL missing → derived from CONVEX_URL ✅
+  2. SITE_URL set to .convex.cloud → auto-corrected to .convex.site ✅
+  3. SITE_URL set correctly → used as-is ✅
+  4. SITE_URL with trailing slash → slash stripped ✅
+- Fixed `Not authenticated` error in `seedPersonalWorkspace`:
+  - Root cause: `WorkspaceProvider` is mounted GLOBALLY in `src/main.tsx` (line 258), including on the `/auth` route. When an unauthenticated visitor lands on /auth, the provider mounts → calls `getMyWorkspaces` query → backend returns `[]` (the query returns [] for unauth) → the seed effect treats [] as "user has no workspaces, seed one" → fires `seedPersonalWorkspace` mutation → throws "Not authenticated"
+  - Fix in `src/hooks/use-workspace.tsx`:
+    - Added `import { useConvexAuth } from "convex/react"`
+    - Added `const { isLoading: authLoading, isAuthenticated } = useConvexAuth();` at top of provider
+    - Gated the `getMyWorkspaces` query: pass `"skip"` when `!isAuthenticated` (returns undefined instead of [], which the seed effect treats as "still loading")
+    - Gated the `seedPersonalWorkspace` mutation: pass `null` when `!isAuthenticated` (disables the mutation)
+    - Gated the `createWorkspace` mutation: same treatment
+    - Added `if (!isAuthenticated) return;` and `if (authLoading) return;` as the first two checks in the seed effect (triple-guarded)
+- Fixed deprecated `apple-mobile-web-app-capable` meta tag in `index.html`: added `<meta name="mobile-web-app-capable" content="yes" />` (kept the Apple-specific one too for older Safari)
+- Verified build: `npx vite build` → ✅ passes in 14.25s
+- Live-tested via `vite preview`:
+  - `GET /` → 200 (page loads)
+  - `POST .../convex.site/api/auth/sign-in/social` → 200, returns Google OAuth URL ✅
+  - `GET .../convex.site/api/auth/get-session` → 200, returns `null` ✅
+  - `POST .../convex.cloud/api/auth/get-session` → 404 (confirms the OLD broken behavior the user was seeing)
+
+Stage Summary:
+- The 404 on `/api/auth/get-session` and `/api/auth/sign-in/social` will be resolved once this change deploys to Vercel — the auth client now ALWAYS uses `.convex.site` regardless of how the env var is misconfigured.
+- The `Not authenticated` error from `seedPersonalWorkspace` is fixed at the source — the mutation will no longer fire on the sign-in page (or any other unauthenticated page) because the entire `WorkspaceProvider` now skips all Convex workspace work until Convex confirms a session.
+- The deprecated meta tag warning is silenced.
+- All three issues user reported are addressed. Build is green. Ready to commit + push to Vercel.

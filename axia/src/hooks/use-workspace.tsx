@@ -1,6 +1,7 @@
 import { useCallback, useMemo, createContext, useContext, useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { useQuery, useMutation } from "@/lib/safe-convex-react";
+import { useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 // ponytail: toast import for upgradeToTeam success/error notifications.
@@ -112,33 +113,50 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     loadFromStorage(STORAGE_KEY_ACTIVE_WS, null)
   );
 
+  // ponytail: gate ALL workspace queries + seeding on Convex auth state.
+  // Without this, an unauthenticated visitor landing on /auth would mount
+  // WorkspaceProvider, fire getMyWorkspaces (returns [] for unauth), and
+  // then trigger seedPersonalWorkspace — which throws "Not authenticated".
+  // We now skip all Convex workspace work until Convex confirms a session.
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
+
   // ── Convex queries ──
   const workspacesApi = (api as any).workspaces;
   const hasCrudApi = !!(workspacesApi?.crud?.getMyWorkspaces);
   const hasSeedApi = !!(workspacesApi?.crud?.seedPersonalWorkspace);
   const hasCreateApi = !!(workspacesApi?.crud?.createWorkspace);
 
-  // Query real workspaces from Convex
+  // Query real workspaces from Convex — ONLY when authenticated. While
+  // unauthenticated or auth-state-loading, pass "skip" so the hook returns
+  // undefined (which the seed effect treats as "still loading, don't fire").
   const convexWorkspaces = useQuery(
-    hasCrudApi ? workspacesApi.crud.getMyWorkspaces : "skip",
+    hasCrudApi && isAuthenticated ? workspacesApi.crud.getMyWorkspaces : "skip",
     {}
   ) as any[] | undefined;
 
   // Seed personal workspace mutation
   const seedPersonalWorkspace = useMutation(
-    hasSeedApi ? workspacesApi.crud.seedPersonalWorkspace : null
+    hasSeedApi && isAuthenticated ? workspacesApi.crud.seedPersonalWorkspace : null
   );
 
   // Create team workspace mutation
   const createWorkspaceMutation = useMutation(
-    hasCreateApi ? workspacesApi.crud.createWorkspace : null
+    hasCreateApi && isAuthenticated ? workspacesApi.crud.createWorkspace : null
   );
 
   // Track if we've attempted seeding
   const seedAttempted = useRef(false);
 
-  // Auto-seed a personal workspace if none exist
+  // Auto-seed a personal workspace if none exist.
+  // ponytail: triple-guarded against firing while unauthenticated:
+  //   1. isAuthenticated from useConvexAuth (Convex-level session check)
+  //   2. !authLoading (wait for Convex auth state to settle)
+  //   3. convexWorkspaces !== undefined (wait for query to return)
+  // Even if the seed somehow fires, the mutation itself is also gated by
+  // `hasSeedApi && isAuthenticated` above — passing null disables it.
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (authLoading) return;
     if (!hasSeedApi || !seedPersonalWorkspace) return;
     if (seedAttempted.current) return;
     if (convexWorkspaces === undefined) return; // still loading
@@ -152,7 +170,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }).catch((err: any) => {
       console.warn("[Workspace] Seed failed:", err);
     });
-  }, [convexWorkspaces, hasSeedApi, seedPersonalWorkspace]);
+  }, [convexWorkspaces, hasSeedApi, seedPersonalWorkspace, isAuthenticated, authLoading]);
 
   // Build WorkspaceInfo[] from Convex data — use real `myRole` returned
   // by `getMyWorkspaces` (was previously hardcoded to "owner" for every

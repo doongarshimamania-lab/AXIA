@@ -34,22 +34,32 @@ import {
 import { magicLinkClient, emailOTPClient } from "better-auth/client/plugins";
 
 // ─── Resolve the Convex site URL ────────────────────────────────────────────
-// ponytail: this is the fix for the production "VITE_CONVEX_SITE_URL is not
-// set" → 405 on /api/auth/sign-in/social bug. Vercel builds only had
-// VITE_CONVEX_URL configured; the BA client then POSTed to a relative path
-// which Vercel's static file server rejected with 405. We now derive the
-// site URL from the cloud URL when the explicit var is missing.
+// ponytail: bulletproof resolver — handles ALL three misconfiguration modes:
+//   1. VITE_CONVEX_SITE_URL missing  → derive from VITE_CONVEX_URL
+//   2. VITE_CONVEX_SITE_URL set to .convex.cloud (WRONG — that's the WS URL)
+//      → rewrite to .convex.site
+//   3. VITE_CONVEX_SITE_URL set correctly to .convex.site → use as-is
+// Without this, Vercel builds where the user set VITE_CONVEX_SITE_URL to the
+// cloud URL by mistake produced: POST /api/auth/get-session → 404 on the
+// WebSocket host. Better Auth's HTTP routes ONLY exist on .convex.site.
 const CONVEX_CLOUD_URL = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const EXPLICIT_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL as
   | string
   | undefined;
 
+function toSiteUrl(url: string): string {
+  // Convert any .convex.cloud host to .convex.site. Also strips any trailing
+  // slash so baseURL doesn't end up double-slashed when BA appends /api/auth.
+  const trimmed = url.replace(/\/+$/, "");
+  return trimmed.replace(/\.convex\.cloud(\/|$)/, ".convex.site$1");
+}
+
 function resolveSiteUrl(): string | undefined {
-  if (EXPLICIT_SITE_URL) return EXPLICIT_SITE_URL;
-  if (CONVEX_CLOUD_URL) {
-    // https://veracious-zebra-519.convex.cloud → https://veracious-zebra-519.convex.site
-    return CONVEX_CLOUD_URL.replace(/\.convex\.cloud$/, ".convex.site");
-  }
+  // Prefer the explicit site URL, but normalize it (user may have entered the
+  // cloud URL by mistake — extremely common confusion).
+  if (EXPLICIT_SITE_URL) return toSiteUrl(EXPLICIT_SITE_URL);
+  // Fallback: derive from the cloud URL.
+  if (CONVEX_CLOUD_URL) return toSiteUrl(CONVEX_CLOUD_URL);
   return undefined;
 }
 
@@ -61,6 +71,20 @@ if (typeof window !== "undefined" && !resolvedSiteUrl) {
       "Auth API calls will fail. Set VITE_CONVEX_URL in your Vercel project " +
       "settings (format: https://<deployment>.convex.cloud) — the site URL " +
       "is derived automatically."
+  );
+} else if (
+  typeof window !== "undefined" &&
+  EXPLICIT_SITE_URL &&
+  EXPLICIT_SITE_URL !== resolvedSiteUrl
+) {
+  // ponytail: surface the auto-correction so the user knows their env var was
+  // misconfigured (helps them fix it on Vercel rather than relying on the
+  // silent rewrite).
+  console.warn(
+    `[auth-client] VITE_CONVEX_SITE_URL was set to "${EXPLICIT_SITE_URL}" ` +
+      `but auto-corrected to "${resolvedSiteUrl}" — Better Auth HTTP routes ` +
+      `only exist on .convex.site, not .convex.cloud. ` +
+      `Update the env var on Vercel to remove this warning.`
   );
 }
 
