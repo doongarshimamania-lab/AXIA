@@ -83,6 +83,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
 // branches if a multi-tenant leak risk ever materializes.
 export const trustedOriginsList: string[] = [
   siteUrl,
+  "https://axia-bay.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
   "http://127.0.0.1:3000",
