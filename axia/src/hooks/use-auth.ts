@@ -96,12 +96,31 @@ export function useAuth() {
           return;
         }
         case "google": {
-          // BA redirects to Google → callback → session issued.
-          await authClient.signIn.social({ provider: "google" });
+          // BA redirects to Google → callback → session issued → redirect to app.
+          // callbackURL tells Better Auth where to send the user AFTER the OAuth
+          // callback completes. Without it, BA redirects to the Convex site URL
+          // (baseURL), leaving the user stranded on the backend domain instead
+          // of the app. We send them to /dashboard; ProtectedRoute will bounce
+          // them to /onboarding-user-information if onboarding isn't complete.
+          const callbackURL =
+            typeof window !== "undefined"
+              ? window.location.origin + "/dashboard"
+              : undefined;
+          await authClient.signIn.social({
+            provider: "google",
+            callbackURL,
+          });
           return;
         }
         case "microsoft": {
-          await authClient.signIn.social({ provider: "microsoft" });
+          const callbackURL =
+            typeof window !== "undefined"
+              ? window.location.origin + "/dashboard"
+              : undefined;
+          await authClient.signIn.social({
+            provider: "microsoft",
+            callbackURL,
+          });
           return;
         }
         case "magicLink": {

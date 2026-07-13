@@ -98,6 +98,13 @@ export const trustedOriginsList: string[] = [
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
   ({
     baseURL: process.env.CONVEX_SITE_URL,
+    // appName is shown on email templates and some OAuth consent screens.
+    // Google's consent screen primarily shows the redirect_uri domain
+    // (veracious-zebra-519.convex.site). To fully show "Axia" there, a
+    // custom domain (e.g. auth.axia.app) must be configured on the Convex
+    // deployment + Google OAuth console. This appName is the best we can
+    // do without a custom domain.
+    appName: "Axia",
     trustedOrigins: trustedOriginsList,
 
     database: authComponent.adapter(ctx),
