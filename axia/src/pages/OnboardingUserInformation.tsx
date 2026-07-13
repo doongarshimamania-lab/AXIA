@@ -45,6 +45,15 @@ export default function OnboardingUserInformation() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Redirect returning users (who already completed onboarding) straight to
+  // the dashboard. Google/Microsoft OAuth callbackURL points here, so without
+  // this guard a returning user would see the onboarding form again.
+  useEffect(() => {
+    if (user?.onboardingComplete) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
   
   const [errors, setErrors] = useState({
     fullName: '',
