@@ -3176,3 +3176,39 @@ Stage Summary:
 - ✅ Evidence Library mock data removed — backend now returns real empty state (0 items / 0% scores / all-unprotected 24-hour timeline). UI's existing 'No Evidence Data Yet' empty state will trigger correctly.
 - ✅ Convex backend deployed (library.ts changes are LIVE now).
 - ✅ Frontend pushed to GitHub (commit 8bbc7a1). Vercel auto-deploy pending.
+
+---
+Task ID: restore-payments-and-wire-evidence
+Agent: Super Z (main)
+Task: (A) Restore the Payments Patterns page that was previously removed. (B) Wire useEvidenceCollector into TimeTracking so a running work-session timer actually captures mouse/keyboard/visibility/screenshot-marker events into evidenceSessions + evidenceEvents tables — which the Evidence Library page reads from.
+
+Work Log:
+- User asked two questions: 'does the evidence library actually work when new evidence is captured?' and 'where is the payments patterns page gone?'. I answered honestly:
+  - Library query IS dynamic and wired to real tables. Mock data was already removed in commit 8bbc7a1. BUT the capture side (useEvidenceCollector hook in src/components/EvidenceCollector.tsx) was never imported or called by any page — so no in-app flow was actually producing evidence data. The only ways data entered the DB were the browser-extension HTTP API and adminSeed.ts.
+  - Payment Patterns page was removed in commit 9ceeee6 (Jul 1, 2026) per a previous user request. The file was fully recoverable from git history (commit 38e649f).
+- User replied 'c both' → restore the page AND wire the evidence collector.
+
+A) Payment Patterns page restoration:
+- src/pages/PaymentPatterns.tsx: restored verbatim from git history (commit 38e649f:axia/src/pages/PaymentPatterns.tsx). 1053-line analytics page — Upwork/Fiverr/Toptal/Freelancer.com payment stats, monthly trend charts, empty state, export button. Uses api.billing.crud.getInvoices + getInvoiceStats + api.clients.crud.getClientsEnriched (all still exist).
+- src/main.tsx: re-added `import PaymentPatterns from "./pages/PaymentPatterns.tsx"` and `<Route path="/payment-patterns" element={<PaymentPatterns />} />` under the auth-guarded Dashboard Routes block (between /invoices/new and /reports). Removed stale 'ponytail: PaymentPatterns page removed' comment.
+- src/components/CollapsibleSidebar.tsx: added CreditCard to the lucide-react imports, then re-added the Payments sidebar nav entry in all 3 variants — expanded desktop (between Invoices and Reports under BILLING), collapsed desktop (icon-only, same position), mobile-expanded (same position).
+
+B) Evidence collector wiring into TimeTracking:
+- src/pages/TimeTracking.tsx: imported `useEvidenceCollector` from '@/components/EvidenceCollector'.
+- Derived `evidenceSessionId = isTimerRunning ? activeSession?._id ?? null : null` so the hook gets the real workSession ID when the timer is running.
+- Derived `evidencePlatform` by mapping activeSession.platform ('upwork' | 'fiverr' | 'toptal' → as-is; 'manual' or undefined → 'freelancer' as a dummy — never used because isActive=false).
+- Derived `evidenceActive = isTimerRunning && !isPaused && activeSession?.platform !== 'manual'` so evidence capture pauses when the timer pauses and is skipped entirely for manual (back-dated) entries.
+- Called `useEvidenceCollector({ sessionId: evidenceSessionId, platform: evidencePlatform, isActive: evidenceActive })`. The hook auto-starts an evidence session on activation, throttles+flushes events every 5s, and auto-finalizes on deactivation. It also handles the no-extension-token case gracefully (toast 'Could not start evidence collection' but timer keeps running).
+- Added a live status badge below the timer: green pulsing dot + 'Capturing evidence · N events' when active, yellow dot + 'Evidence capture paused' when timer paused, muted dot + 'Evidence capture idle' otherwise. Hidden for manual-platform sessions.
+
+Verification:
+- bun run build → ✓ built in 15.19s (no new errors; pre-existing warnings about chunk size + dynamic-import overlap unchanged).
+- Committed (6c629c5) and pushed to GitHub main. Vercel auto-deploy should pick it up.
+- No Convex backend deploy needed — both changes are frontend-only (PaymentPatterns reads existing Convex queries; useEvidenceCollector writes via the existing /api/extension/* HTTP routes which are already deployed).
+
+Stage Summary:
+- ✅ Payment Patterns page is back at /payment-patterns with sidebar nav in all 3 variants.
+- ✅ TimeTracking now feeds real evidence events into the Evidence Library. When a user starts a timer (non-manual platform), mouse/keyboard/visibility/screenshot-marker events are captured every 5s into evidenceSessions + evidenceEvents. The Evidence Library page will show real items + scores after the first work session.
+- ✅ Manual-entry sessions (back-dated, no real-time activity) correctly skip evidence capture.
+- ✅ Live status badge tells the user exactly when evidence is being captured.
+- ⚠️ The hook requires an extension token (api.extension.getActiveToken) to call /api/extension/start. If the user has never generated one in Account Settings → API, the hook will toast 'Could not start evidence collection' on every timer start. The timer itself still works. To silence this, the user should generate an extension token in Account Settings.
