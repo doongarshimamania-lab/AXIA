@@ -88,33 +88,90 @@ async function ensureLinkedUser(
 // ─── Public API: getAuthUserId ──────────────────────────────────────────────
 // Drop-in replacement for @convex-dev/auth/server's getAuthUserId.
 // Returns the existing users-table Id (Id<"users">) or null.
+//
+// ROBUSTNESS FIX: safeGetAuthUser does a session database lookup that can
+// fail (session expired, WebSocket reconnect after JWT expiry, BA component
+// internal query issue). When it fails, we fall back to ctx.auth.getUserIdentity()
+// which reads the JWT directly — no database lookup needed. This fixes the
+// "Not authenticated" Convex error on saveOnboardingStep1 that occurred even
+// though the user was signed in (the currentUser query worked, but the
+// mutation failed because the session lookup returned null).
 export async function getAuthUserId(
   ctx: QueryCtx | MutationCtx
 ): Promise<Id<"users"> | null> {
-  // ponytail: use safeGetAuthUser (returns undefined for unauthenticated)
-  // instead of getAuthUser (throws ConvexError("Unauthenticated")).
-  // The throw-based version breaks the contract that 68 callers rely on —
-  // they expect null for "no session" so the sign-in page can render
-  // without a server error popup. Self-check: if BA ever removes the
-  // safe variant, catch the ConvexError here as a fallback.
+  // ── Primary path: safeGetAuthUser (validates session in BA's database) ──
   let baUser;
   try {
     baUser = await authComponent.safeGetAuthUser(ctx);
   } catch (err: any) {
-    // Defense-in-depth: if safeGetAuthUser ever starts throwing too
-    // (e.g. BA removes it in a major version), treat as "no session".
-    console.warn("getAuthUserId: safeGetAuthUser threw, treating as unauthenticated", err?.message);
-    return null;
-  }
-  if (!baUser) return null;
-
-  // ponytail: self-check — BA user must have an ID.
-  if (!baUser.id) {
-    console.error("getAuthUserId: BA user has no id field", baUser);
-    return null;
+    console.warn("getAuthUserId: safeGetAuthUser threw, trying JWT fallback", err?.message);
   }
 
-  return await ensureLinkedUser(ctx, baUser);
+  if (baUser?.id) {
+    return await ensureLinkedUser(ctx, baUser);
+  }
+
+  // ── Fallback: ctx.auth.getUserIdentity() (JWT-based, no DB session lookup) ──
+  // This is the critical resilience fix. safeGetAuthUser can return null when:
+  //   1. The session row in BA's component table is missing or expired
+  //      (e.g. after a WebSocket reconnect with a stale JWT)
+  //   2. The BA component's internal query fails for any reason
+  //   3. The JWT is valid but the session hasn't been written to the DB yet
+  //      (race condition during OAuth callback)
+  // In all these cases, the JWT itself is still valid and contains the user's
+  // subject (BA user ID), email, and name. We use those to look up or create
+  // the users-table record directly.
+  try {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) {
+      return null;
+    }
+
+    // Look up by betterAuthUserId (JWT subject = BA user ID)
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_betterAuthUserId", (q) => q.eq("betterAuthUserId", identity.subject))
+      .first();
+    if (existing) return existing._id;
+
+    // Fallback: look up by email
+    if (identity.email) {
+      const byEmail = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", identity.email!))
+        .first();
+      if (byEmail) {
+        // Link the existing record to the BA user ID (only in MutationCtx)
+        if (typeof (ctx as any).db.patch === "function") {
+          await ctx.db.patch(byEmail._id, { betterAuthUserId: identity.subject });
+        }
+        return byEmail._id;
+      }
+    }
+
+    // First-time user: create a minimal record (only in MutationCtx)
+    if (typeof (ctx as any).db.insert === "function") {
+      const now = Date.now();
+      const newId = await ctx.db.insert("users", {
+        betterAuthUserId: identity.subject,
+        email: identity.email ?? undefined,
+        name: identity.name ?? undefined,
+        image: (identity as any).pictureUrl ?? (identity as any).picture ?? undefined,
+        emailVerificationTime: (identity as any).emailVerified ? now : undefined,
+        role: "user",
+        subscriptionTier: "free",
+        joinedAt: now,
+        onboardingComplete: false,
+      });
+      return newId;
+    }
+
+    // QueryCtx and no existing record — can't create, return null
+    return null;
+  } catch (err: any) {
+    console.warn("getAuthUserId: JWT fallback also failed", err?.message);
+    return null;
+  }
 }
 
 // ─── Public API: getBetterAuthUser ──────────────────────────────────────────

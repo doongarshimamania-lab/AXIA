@@ -177,9 +177,9 @@ export default function OnboardingSource() {
             <img
               src="./logo.svg"
               alt="Axia Logo"
-              width={56}
-              height={56}
-              className="rounded-lg mb-3 mt-1 cursor-pointer"
+              width={64}
+              height={64}
+              className="rounded-lg mb-4 mt-2 cursor-pointer"
               onClick={() => navigate('/')}
             />
           </div>
@@ -187,9 +187,9 @@ export default function OnboardingSource() {
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Globe className="w-5 h-5 text-primary" />
             </div>
-            <CardTitle className="text-2xl">How Did You Find Us?</CardTitle>
+            <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>How Did You Find Us?</CardTitle>
           </div>
-          <CardDescription className="max-w-[420px] mx-auto">
+          <CardDescription className="max-w-[420px] mx-auto text-[16px]">
             Help us understand how agencies discover Axia so we can better serve you
           </CardDescription>
         </CardHeader>
@@ -270,7 +270,7 @@ export default function OnboardingSource() {
             <Button
               onClick={handleContinue}
               disabled={!selectedSource || isSubmitting}
-              className="px-6 h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white"
+              className="px-6 h-11"
             >
               {isSubmitting ? 'Completing...' : 'Complete Setup'}
               <ArrowRight className="ml-2 w-4 h-4" />

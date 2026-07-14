@@ -143,9 +143,9 @@ export default function OnboardingUserInformation() {
             <img
               src="./logo.svg"
               alt="Axia Logo"
-              width={56}
-              height={56}
-              className="rounded-lg mb-3 mt-1 cursor-pointer"
+              width={64}
+              height={64}
+              className="rounded-lg mb-4 mt-2 cursor-pointer"
               onClick={() => navigate('/')}
             />
           </div>
@@ -153,9 +153,9 @@ export default function OnboardingUserInformation() {
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Your Agency Profile</CardTitle>
+            <CardTitle className="text-[28px]" style={{ fontFamily: "Space Grotesk, sans-serif" }}>Your Agency Profile</CardTitle>
           </div>
-          <CardDescription className="max-w-[420px] mx-auto">
+          <CardDescription className="max-w-[420px] mx-auto text-[16px]">
             Let's set up your agency profile so Axia can accurately protect your revenue and client work
           </CardDescription>
         </CardHeader>
@@ -291,7 +291,7 @@ export default function OnboardingUserInformation() {
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
               Step 1 of 2
             </div>
-            <Button onClick={handleContinue} className="px-6 h-11 bg-axia-teal-600 hover:bg-axia-teal-600/90 text-white">
+            <Button onClick={handleContinue} className="px-6 h-11">
               Continue
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
