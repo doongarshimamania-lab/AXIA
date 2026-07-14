@@ -60,15 +60,14 @@ async function ensureLinkedUser(
   }
 
   // First-time user: create a new users-table record.
-  // ponytail: only MutationCtx can patch. QueryCtx callers should never
-  // reach this branch because the user must have signed in (mutation) to
-  // have a BA session. If they do, we throw — caller should re-issue as
-  // a mutation.
+  // ponytail: only MutationCtx can insert. QueryCtx callers (e.g. the
+  // `currentUser` query fired immediately after email sign-up) cannot
+  // create the record. Instead of throwing (which surfaced as a "Convex
+  // error" toast on the onboarding page), return null — the first
+  // mutation call (saveOnboardingStep1) will create the record via this
+  // same function running with a MutationCtx.
   if (!("db" in ctx) || typeof (ctx as any).db.patch !== "function") {
-    throw new Error(
-      "ensureLinkedUser: cannot create users record from QueryCtx — " +
-      "first sign-in must happen via a mutation. BA user id: " + baUser.id
-    );
+    return null;
   }
 
   const now = Date.now();

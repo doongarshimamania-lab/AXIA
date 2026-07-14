@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, User, DollarSign, Briefcase, GraduationCap, Mail, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Building2, DollarSign, Briefcase, GraduationCap, Mail, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/ThemeProvider';
@@ -45,7 +45,16 @@ export default function OnboardingUserInformation() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-  
+
+  // Redirect returning users (who already completed onboarding) straight to
+  // the dashboard. Google/Microsoft OAuth callbackURL points here, so without
+  // this guard a returning user would see the onboarding form again.
+  useEffect(() => {
+    if (user?.onboardingComplete) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [errors, setErrors] = useState({
     fullName: '',
     hourlyRate: '',
@@ -54,35 +63,43 @@ export default function OnboardingUserInformation() {
 
   // Use global theme from ThemeProvider
   const { theme, setTheme } = useTheme();
-  
+
+  // ponytail: pivoted from freelance platforms to agency client-source platforms.
+  // Agencies get clients from these channels — not freelance marketplaces.
   const platforms = [
-    'Upwork', 'Fiverr', 'Toptal', 'Freelancer.com', 
-    'PeoplePerHour', 'Guru', 'LinkedIn ProFinder', 'Other'
+    'Referrals / Word of Mouth',
+    'LinkedIn',
+    'Google / SEO',
+    'Upwork / Freelance Platforms',
+    'Paid Ads (Google/Meta)',
+    'Industry Partnerships',
+    'Content Marketing',
+    'Other'
   ];
-  
+
   const validateForm = () => {
     const newErrors = { fullName: '', hourlyRate: '', primaryPlatform: '' };
     let isValid = true;
-    
+
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = 'Agency name is required';
       isValid = false;
     }
-    
+
     if (!formData.hourlyRate || isNaN(Number(formData.hourlyRate)) || Number(formData.hourlyRate) <= 0) {
       newErrors.hourlyRate = 'Valid hourly rate is required';
       isValid = false;
     }
-    
+
     if (!formData.primaryPlatform) {
-      newErrors.primaryPlatform = 'Please select your primary platform';
+      newErrors.primaryPlatform = 'Please select your primary client source';
       isValid = false;
     }
-    
+
     setErrors(newErrors);
     return isValid;
   };
-  
+
   const handleContinue = async () => {
     if (!validateForm()) return;
     try {
@@ -98,7 +115,7 @@ export default function OnboardingUserInformation() {
       toast.error(err?.message || 'Failed to save. Please try again.');
     }
   };
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -106,7 +123,7 @@ export default function OnboardingUserInformation() {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4">
       {/* Dark mode toggle - fixed position */}
@@ -134,44 +151,44 @@ export default function OnboardingUserInformation() {
           </div>
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" />
+              <Building2 className="w-5 h-5 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Your Professional Profile</CardTitle>
+            <CardTitle className="text-2xl">Your Agency Profile</CardTitle>
           </div>
           <CardDescription className="max-w-[420px] mx-auto">
-            Let's set up your profile so Axia can accurately protect your earnings
+            Let's set up your agency profile so Axia can accurately protect your revenue and client work
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <div className="space-y-6">
-            {/* Full Name */}
+            {/* Agency Name */}
             <div className="space-y-2">
               <Label htmlFor="fullName" className="flex items-center gap-2">
-                <User className="w-4 h-4 text-primary" />
-                Full Name
+                <Building2 className="w-4 h-4 text-primary" />
+                Agency Name
               </Label>
               <Input
                 id="fullName"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="John Smith"
+                placeholder="Acme Digital Agency"
                 className={`h-11 bg-background border-border ${errors.fullName ? 'border-destructive' : ''}`}
               />
               {errors.fullName && (
                 <p className="text-sm text-destructive">{errors.fullName}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                We'll use this to personalize your protection reports
+                We'll use this to personalize your protection reports and client communications
               </p>
             </div>
-            
+
             {/* Hourly Rate */}
             <div className="space-y-2">
               <Label htmlFor="hourlyRate" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-primary" />
-                Hourly Rate (USD)
+                Average Hourly Rate (USD)
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -181,7 +198,7 @@ export default function OnboardingUserInformation() {
                   type="number"
                   value={formData.hourlyRate}
                   onChange={handleChange}
-                  placeholder="50"
+                  placeholder="120"
                   className={`h-11 pl-8 bg-background border-border ${errors.hourlyRate ? 'border-destructive' : ''}`}
                 />
               </div>
@@ -189,15 +206,15 @@ export default function OnboardingUserInformation() {
                 <p className="text-sm text-destructive">{errors.hourlyRate}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                Critical for calculating your potential income loss and protection value
+                Critical for calculating your agency's potential revenue loss and protection value
               </p>
             </div>
-            
-            {/* Primary Platform */}
+
+            {/* Primary Client Source */}
             <div className="space-y-2">
               <Label htmlFor="primaryPlatform" className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-primary" />
-                Primary Platform
+                Primary Client Source
               </Label>
               <select
                 id="primaryPlatform"
@@ -208,7 +225,7 @@ export default function OnboardingUserInformation() {
                   errors.primaryPlatform ? 'border-destructive' : 'border-border'
                 }`}
               >
-                <option value="">Select your primary platform</option>
+                <option value="">Select your primary client source</option>
                 {platforms.map(platform => (
                   <option key={platform} value={platform.toLowerCase()}>
                     {platform}
@@ -219,15 +236,15 @@ export default function OnboardingUserInformation() {
                 <p className="text-sm text-destructive">{errors.primaryPlatform}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                Axia will prioritize protection standards for this platform
+                Axia will prioritize protection standards for this client acquisition channel
               </p>
             </div>
-            
-            {/* Years of Experience */}
+
+            {/* Years in Business */}
             <div className="space-y-2">
               <Label htmlFor="yearsExperience" className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-primary" />
-                Years of Professional Experience
+                Years in Business
               </Label>
               <select
                 id="yearsExperience"
@@ -244,31 +261,31 @@ export default function OnboardingUserInformation() {
                 <option value="5">10+ years</option>
               </select>
               <p className="text-sm text-muted-foreground">
-                Helps Axia tailor protection recommendations to your experience level
+                Helps Axia tailor protection recommendations to your agency's maturity
               </p>
             </div>
-            
-            {/* Professional Bio */}
+
+            {/* Agency Bio */}
             <div className="space-y-2">
               <Label htmlFor="professionalBio" className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
-                Professional Bio (Optional)
+                Agency Bio (Optional)
               </Label>
               <Textarea
                 id="professionalBio"
                 name="professionalBio"
                 value={formData.professionalBio}
                 onChange={handleChange}
-                placeholder="I'm a web developer specializing in React and Node.js with 5+ years of experience..."
+                placeholder="We're a full-service digital agency specializing in web development, SEO, and brand strategy for B2B clients..."
                 rows={4}
                 className="bg-background border-border"
               />
               <p className="text-sm text-muted-foreground">
-                Optional but helpful for context in dispute resolution reports
+                Optional but helpful for context in dispute resolution reports and client proposals
               </p>
             </div>
           </div>
-          
+
           <div className="mt-8 flex justify-between">
             <div className="flex items-center text-sm text-muted-foreground">
               <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>

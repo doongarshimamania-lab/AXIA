@@ -349,11 +349,11 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             />
           </div>
           <CardTitle className="text-[28px]">
-            {step === "signUp" ? "Create your account" : "Protect Your Freelance Income"}
+            {step === "signUp" ? "Create your agency account" : "Protect Your Agency Revenue"}
           </CardTitle>
           <CardDescription className="max-w-[360px] mx-auto text-[16px] text-muted-foreground">
             {step === "signUp"
-              ? "Sign up to start protecting your freelance work with dispute-proof evidence."
+              ? "Sign up to start protecting your agency's client work with dispute-proof evidence."
               : "Axia prevents payment denials by validating your work meets ALL requirements — with dispute-proof evidence."}
           </CardDescription>
         </CardHeader>
