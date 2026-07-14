@@ -20,9 +20,14 @@ export const getEvidenceLibraryData = query({
     try {
       const user = await getCurrentUser(ctx).catch(() => null);
 
-      // Always return mock data if anything fails or user is missing
+      // ponytail: previously this returned getMockEvidenceLibraryData() when the
+      // user was missing or had no evidence events — which is why the page
+      // showed "124 items / 98% dispute success / 95% quality score" for a
+      // brand-new account. Now we return a real EMPTY state so the UI can
+      // render a proper "no evidence yet" empty state and the export section
+      // can show its own CTA. The mock generator is gone.
       if (!user) {
-        return getMockEvidenceLibraryData();
+        return getEmptyEvidenceLibraryData();
       }
 
       // ponytail: IDOR fix — previously when workspaceId was provided we
@@ -71,9 +76,13 @@ export const getEvidenceLibraryData = query({
         allEvents.push(...events);
       }
 
-      // If user exists but has no data, return mock data
+      // ponytail: previously returned getMockEvidenceLibraryData() here. Now
+      // returns a real empty state — analytics helpers may still return
+      // meaningful numbers (e.g. disputeData.currentRate could be 0) but the
+      // evidenceItems list is empty so the UI can show its "no data yet"
+      // empty state instead of fake mock items.
       if (allEvents.length === 0) {
-        return getMockEvidenceLibraryData();
+        return getEmptyEvidenceLibraryData();
       }
 
       const evidenceItems = allEvents
@@ -135,8 +144,9 @@ export const getEvidenceLibraryData = query({
         },
       };
     } catch (error) {
-      console.error("Error in getEvidenceLibraryData, returning mock data:", error);
-      return getMockEvidenceLibraryData();
+      console.error("Error in getEvidenceLibraryData, returning empty state:", error);
+      // ponytail: catch path also returns empty state instead of mock data.
+      return getEmptyEvidenceLibraryData();
     }
   },
 });
@@ -149,9 +159,13 @@ export const getEvidenceTimeline = query({
   handler: async (ctx, args) => {
     try {
       const user = await getCurrentUser(ctx).catch(() => null);
-      
+
+      // ponytail: previously this returned getMockEvidenceTimeline() (a fake
+      // 9-6 work day with random event counts) when the user had no sessions.
+      // Now returns a real empty 24-hour timeline with 0 events so the UI
+      // shows the actual "no evidence collected today" state.
       if (!user) {
-        return getMockEvidenceTimeline();
+        return getEmptyEvidenceTimeline();
       }
 
       // Get today's evidence sessions
@@ -188,10 +202,11 @@ export const getEvidenceTimeline = query({
         (s) => s.startTime >= startOfDay && s.startTime <= endOfDay
       );
 
-      // If no sessions today, return mock timeline for demo purposes if user has no history
-      // Check if user has ANY sessions ever
+      // ponytail: previously returned getMockEvidenceTimeline() here. Now
+      // returns a real empty 24-hour timeline so the UI can render the
+      // "no evidence collected today" state.
       if (evidenceSessions.length === 0) {
-        return getMockEvidenceTimeline();
+        return getEmptyEvidenceTimeline();
       }
 
       // Calculate protected hours
@@ -236,8 +251,9 @@ export const getEvidenceTimeline = query({
         timeline,
       };
     } catch (error) {
-      console.error("Error in getEvidenceTimeline, returning mock data:", error);
-      return getMockEvidenceTimeline();
+      console.error("Error in getEvidenceTimeline, returning empty state:", error);
+      // ponytail: catch path returns empty state instead of mock data.
+      return getEmptyEvidenceTimeline();
     }
   },
 });
@@ -261,141 +277,80 @@ function getEventDescription(event: any): string {
   }
 }
 
-// --- MOCK DATA GENERATORS ---
+// --- EMPTY STATE GENERATORS ---
+// ponytail: previously these were MOCK DATA GENERATORS that returned fake
+// numbers (124 items, 98% dispute success rate, 95% quality score, simulated
+// 9-6 work day with random event counts). That was confusing — a brand-new
+// account would see a fully-populated Evidence Library that looked real.
+// Now we return a real EMPTY state with 0 items, 0% scores, and an empty
+// 24-hour timeline. The UI's "No Evidence Data Yet" empty state handles
+// the CTA to start collecting evidence.
 
-function getMockEvidenceLibraryData() {
-  const now = Date.now();
-  
-  // Generate realistic mock items
-  const evidenceItems = [
-    {
-      id: "mock-1",
-      timestamp: now - 1000 * 60 * 5,
-      type: "screenshot_ref",
-      platform: "upwork",
-      description: "Screenshot captured",
-      metadata: { resolution: "1920x1080" }
-    },
-    {
-      id: "mock-2",
-      timestamp: now - 1000 * 60 * 15,
-      type: "memo",
-      platform: "upwork",
-      description: "Completed authentication module refactor",
-      metadata: { content: "Completed authentication module refactor" }
-    },
-    {
-      id: "mock-3",
-      timestamp: now - 1000 * 60 * 25,
-      type: "url",
-      platform: "upwork",
-      description: "Visited: github.com/axia/core",
-      metadata: { url: "https://github.com/axia/core" }
-    },
-    {
-      id: "mock-4",
-      timestamp: now - 1000 * 60 * 45,
-      type: "screenshot_ref",
-      platform: "upwork",
-      description: "Screenshot captured",
-      metadata: { resolution: "1920x1080" }
-    },
-    {
-      id: "mock-5",
-      timestamp: now - 1000 * 60 * 60,
-      type: "platform_status",
-      platform: "upwork",
-      description: "Platform status update",
-      metadata: { status: "active" }
-    },
-    {
-      id: "mock-6",
-      timestamp: now - 1000 * 60 * 90,
-      type: "keyboard",
-      platform: "upwork",
-      description: "Keyboard activity",
-      metadata: { wpm: 65 }
-    }
-  ];
-
+function getEmptyEvidenceLibraryData() {
   return {
-    totalCount: 124,
-    disputeSuccessRate: 98,
-    contentQualityScore: 95,
+    totalCount: 0,
+    disputeSuccessRate: 0,
+    contentQualityScore: 0,
     gapPrediction: {
-      status: "no_gaps",
-      message: "No Gaps Predicted",
-      description: "Your evidence collection pattern is consistent. Keep up the good work!",
+      status: "no_data" as const,
+      message: "No Data",
+      description: "Start collecting evidence to see gap predictions.",
       nextGapTime: null,
       missingTypes: [],
     },
-    evidenceItems: evidenceItems as any[],
+    evidenceItems: [] as any[],
     healthScore: {
-      score: 92,
-      workContextScore: 95,
-      evidenceConsistency: 90,
-      platformCompliance: 98,
-      improvementOpportunity: "Excellent evidence quality! Maintain current collection pattern.",
-      totalEvents: 124,
-      screenshotCount: 42,
-      memoCount: 15,
-      overallQuality: 92,
-      possibleImprovement: 8,
+      score: 0,
+      workContextScore: 0,
+      evidenceConsistency: 0,
+      platformCompliance: 0,
+      improvementOpportunity: "Start collecting evidence",
+      totalEvents: 0,
+      screenshotCount: 0,
+      memoCount: 0,
+      overallQuality: 0,
+      possibleImprovement: 0,
     },
     disputeData: {
-      currentRate: 98,
-      potentialRate: 100,
-      improvement: 2,
-      workContextCoverage: 95,
-      timeConsistency: 90,
-      platformCompliance: 98,
-      totalEvidenceItems: 124,
-      recommendation: "Maintain current evidence quality",
+      currentRate: 0,
+      potentialRate: 0,
+      improvement: 0,
+      workContextCoverage: 0,
+      timeConsistency: 0,
+      platformCompliance: 0,
+      totalEvidenceItems: 0,
+      recommendation: "Start collecting evidence",
     },
     contentData: {
-      score: 95,
-      workRelatedCount: 118,
-      totalCount: 124,
-      flaggedCount: 6,
-      contextIssues: "No context issues detected",
+      score: 0,
+      workRelatedCount: 0,
+      totalCount: 0,
+      flaggedCount: 0,
+      contextIssues: "No content analysis data yet — start a work session to begin collecting evidence.",
       detailedBreakdown: {
-        workRelated: 118,
-        flagged: 6,
+        workRelated: 0,
+        flagged: 0,
       },
     },
   };
 }
 
-function getMockEvidenceTimeline() {
+function getEmptyEvidenceTimeline() {
+  // ponytail: returns a real 24-hour timeline where every hour is "unprotected"
+  // (no events captured). The UI's EvidenceTimeline renders this as a flat
+  // empty bar — accurate representation of "you haven't tracked any work today".
   const timeline = [];
-  const currentHour = new Date().getHours();
-  
-  for (let i = 0; i < 24; i++) {
-    // Simulate a work day from 9 AM to 6 PM
-    const isWorkHour = i >= 9 && i <= 18;
-    const isLunch = i === 13;
-    
-    if (isWorkHour && !isLunch) {
-      timeline.push({
-        hour: i,
-        status: "protected",
-        eventCount: Math.floor(Math.random() * 20) + 10,
-        screenshotCount: Math.floor(Math.random() * 6) + 2,
-        memoCount: Math.floor(Math.random() * 2),
-      });
-    } else {
-      timeline.push({
-        hour: i,
-        status: "unprotected",
-        eventCount: 0,
-        screenshotCount: 0,
-        memoCount: 0,
-      });
-    }
+  for (let hour = 0; hour < 24; hour++) {
+    timeline.push({
+      hour,
+      status: "unprotected",
+      eventCount: 0,
+      screenshotCount: 0,
+      memoCount: 0,
+    });
   }
-
   return {
-    protectedHours: 8.5,
+    protectedHours: 0,
     timeline,
   };
 }

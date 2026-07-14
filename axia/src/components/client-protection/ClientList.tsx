@@ -1,7 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Plus, Lock, Share2, Copy, Check, ExternalLink, Tag as TagIcon } from "lucide-react";
+import {
+  Shield,
+  Plus,
+  Lock,
+  Share2,
+  Copy,
+  Check,
+  ExternalLink,
+  Tag as TagIcon,
+  Link2,
+  ArrowRightLeft,
+  Trash2,
+  Pencil,
+} from "lucide-react";
 import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,6 +23,10 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 // ponytail: read-only badge display + multi-select picker popover for client cards.
 import { TagPicker, TagBadges } from "@/components/tags";
+// ponytail: PortalLinkDialog moved here from Clients.tsx — the action toolbar
+// (Portal Link / Edit / Share / Transfer / Delete) now lives in the Client
+// Protection Hub itself instead of the removed Client Policy Profile section.
+import { PortalLinkDialog } from "@/components/portal/PortalLinkDialog";
 
 // Check if an ID is a mock/demo ID (not a real Convex document ID)
 // Convex IDs for table "clients" always start with "clients:" or are 22+ char base62 strings
@@ -50,6 +67,11 @@ interface Client {
   activeSession: boolean;
   // ponytail: optional tagIds on the client (added by phase-1a schema patch).
   tagIds?: string[];
+  // ponytail: optional contact email/name so PortalLinkDialog can email the link.
+  contactEmail?: string;
+  contactName?: string;
+  // ponytail: ownership/permission flags used by the action toolbar.
+  userId?: string;
 }
 
 interface ClientListProps {
@@ -57,20 +79,45 @@ interface ClientListProps {
   selectedClientId: string | null;
   onSelectClient: (id: string | null) => void;
   onAddClient: () => void;
+  // ponytail: NEW — Edit Client handler. The parent owns the Edit dialog so it
+  // can reuse the same Convex updateClient mutation and the same form layout
+  // as the Add Client dialog.
+  onEditClient?: (client: Client) => void;
+  // ponytail: NEW — Share / Transfer / Delete handlers wired into the parent's
+  // existing dialogs (ShareDialog, TransferOwnershipDialog, delete confirm).
+  onShareClient?: (client: Client) => void;
+  onTransferOwnership?: (client: Client) => void;
+  onDeleteClient?: (client: Client) => void;
+  // ponytail: NEW — permission flags so the toolbar can hide actions the user
+  // isn't allowed to perform.
+  canShareRecords?: boolean;
+  canDeleteRecords?: boolean;
+  canShare?: boolean;
+  canDelete?: boolean;
+  isOwner?: boolean;
   subscriptionTier?: "free" | "starter" | "pro" | "expert";
   onUpgrade?: () => void;
   // ponytail: workspace tag list for rendering TagBadges + the Manage Tags popover.
   allTags?: any[];
 }
 
-export function ClientList({ 
-  clients, 
-  selectedClientId, 
-  onSelectClient, 
+export function ClientList({
+  clients,
+  selectedClientId,
+  onSelectClient,
   onAddClient,
+  onEditClient,
+  onShareClient,
+  onTransferOwnership,
+  onDeleteClient,
+  canShareRecords = false,
+  canDeleteRecords = false,
+  canShare = false,
+  canDelete = false,
+  isOwner = false,
   subscriptionTier = "free",
   onUpgrade,
-  allTags = []
+  allTags = [],
 }: ClientListProps) {
   const [shareClientId, setShareClientId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -142,6 +189,16 @@ export function ClientList({
   };
   const hasPaymentPatternAccess = getTierLevel(subscriptionTier) >= getTierLevel("pro");
 
+  // ponytail: the selected client object — used to drive the action toolbar
+  // (Portal Link / Edit / Share / Transfer / Delete) that sits between the
+  // "Client Protection Hub" header and the client cards list.
+  const selectedClient = clients.find((c) => c._id === selectedClientId) ?? null;
+
+  // ponytail: stop clicks inside the action toolbar from bubbling up to the
+  // card's onSelectClient toggle (otherwise clicking "Edit" would also
+  // deselect the client and close the toolbar in the same click).
+  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
   return (
     <Card>
       <CardHeader>
@@ -161,6 +218,80 @@ export function ClientList({
             Add Client
           </Button>
         </div>
+
+        {/* ponytail: MOVED from Clients.tsx Client Policy Profile section —
+            the action toolbar (Portal Link / Edit / Share / Transfer /
+            Delete) now lives inside the Client Protection Hub itself so the
+            entire client-policy-profile card can be removed without losing
+            these per-client actions. The toolbar only renders when a client
+            is selected, and uses the parent's permission flags + dialog
+            handlers so it stays in sync with the rest of the page. */}
+        {selectedClient && (
+          <div
+            className="mt-4 flex items-center gap-2 flex-wrap rounded-lg border border-border bg-muted/30 p-2"
+            onClick={stopPropagation}
+          >
+            {/* Portal Link — generates a JWT workspace link for this client */}
+            <PortalLinkDialog
+              clientId={selectedClient._id}
+              clientName={selectedClient.clientName}
+              contactEmail={selectedClient.contactEmail}
+            />
+
+            {/* Edit Client — opens the Edit dialog in the parent */}
+            {onEditClient && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => onEditClient(selectedClient)}
+                title="Edit client details"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+
+            {/* Share — opens ShareDialog in the parent (record-based sharing) */}
+            {(canShareRecords || canShare) && onShareClient && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => onShareClient(selectedClient)}
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </Button>
+            )}
+
+            {/* Transfer Ownership — owner-only */}
+            {isOwner && onTransferOwnership && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                onClick={() => onTransferOwnership(selectedClient)}
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                Transfer Ownership
+              </Button>
+            )}
+
+            {/* Delete Client — opens delete confirmation dialog in the parent */}
+            {(canDeleteRecords || canDelete) && onDeleteClient && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                onClick={() => onDeleteClient(selectedClient)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Client
+              </Button>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {!clients || clients.length === 0 ? (
@@ -171,8 +302,8 @@ export function ClientList({
         ) : (
           <div className="space-y-3">
             {clients.map((client) => (
-              <div 
-                key={client._id} 
+              <div
+                key={client._id}
                 className={`p-4 border border-border rounded-lg hover:bg-muted/50 transition cursor-pointer ${
                   selectedClientId === client._id ? 'ring-2 ring-primary' : ''
                 }`}
@@ -227,6 +358,10 @@ export function ClientList({
                     <Badge className={getRiskColor(client.riskLevel)}>
                       {client.riskLevel} risk
                     </Badge>
+                    {/* ponytail: per-card Share button — kept for quick access
+                        without having to first select the client. Uses the
+                        legacy clientWorkspace.generateClientWorkspaceToken
+                        flow with its own inline share-link dialog. */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -259,7 +394,7 @@ export function ClientList({
                     Active session
                   </div>
                 )}
-                
+
                 {/* Payment Pattern Analysis - PRO+ Feature */}
                 {selectedClientId === client._id && (
                   <div className="mt-3 pt-3 border-t border-border">

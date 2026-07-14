@@ -1,12 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-// ponytail: ClientPolicyProfile section + component RESTORED per user request
-// (commit 9ceeee6 had stripped it; user asked to reverse that immediately).
-// The tier-gated analysis card (Free/Starter/Pro/Expert) and the
-// Share/Transfer/Delete action toolbar are back. ClientList is untouched.
+// ponytail: ClientPolicyProfile section REMOVED per user request — the
+// Portal Link / Edit / Share / Transfer Ownership / Delete Client buttons
+// have been MOVED into the Client Protection Hub (ClientList) component's
+// header. The tier-gated analysis card is gone. ClientList is untouched.
 import { ClientList } from "@/components/client-protection/ClientList";
-import { ClientPolicyProfile } from "@/components/client-protection/ClientPolicyProfile";
-// ponytail: P0 — generate/ revoke client portal JWT links from the Clients page
-import { PortalLinkDialog } from "@/components/portal/PortalLinkDialog";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -22,7 +19,7 @@ import { useWorkspacePermissions, usePermissions } from "@/hooks/use-permissions
 import { useQuery, useMutation, useQueryTimeout, useConvexConnectionState } from "@/lib/safe-convex-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Trash2, Loader2, Shield, Plus, Share2, Upload, Settings2, ArrowRightLeft, Tag as TagIcon, X } from "lucide-react";
+import { Trash2, Loader2, Shield, Plus, Upload, Settings2, Pencil, Tag as TagIcon, X } from "lucide-react";
 import { ShareDialog } from "@/components/ShareDialog";
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
@@ -53,6 +50,10 @@ export default function Clients() {
   // ─── Convex mutations ──────────────────────────────────────────────────
   const createClientMutation = useMutation(api.clients.crud.createClient);
   const deleteClientMutation = useMutation(api.clients.crud.deleteClient);
+  // ponytail: NEW — updateClient mutation used by the Edit Client dialog so
+  // users can edit client fields after creating a client (previously the
+  // only way to fix a typo was to delete the client and re-add it).
+  const updateClientMutation = useMutation(api.clients.crud.updateClient);
   // ponytail: generic setEntityTags mutation — used to attach tags to a freshly-created
   // client (createClient doesn't accept tagIds directly, so we patch after).
   const setEntityTagsMutation = useMutation(api.tags.crud.setEntityTags);
@@ -78,6 +79,12 @@ export default function Clients() {
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  // ponytail: NEW — Edit Client dialog state. Tracks which client is being
+  // edited plus the form fields. The dialog reuses the same field shape as
+  // the Add Client dialog so users see a consistent form.
+  const [showEditClient, setShowEditClient] = useState(false);
+  const [editClientId, setEditClientId] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   // ponytail: detached TagPicker state for the Add Client dialog — held locally
   // until createClientMutation returns the new client ID, then persisted via setEntityTags.
   const [formTagIds, setFormTagIds] = useState<string[]>([]);
@@ -114,6 +121,13 @@ export default function Clients() {
     lastActivityAt: c.lastActivityAt,
     // ponytail: preserve tagIds from the patched schema so the list can show badges.
     tagIds: c.tagIds,
+    // ponytail: pass through contact + ownership fields so the action toolbar
+    // in ClientList can use them (PortalLinkDialog needs contactEmail, the
+    // Transfer Ownership flow needs the current owner id).
+    contactEmail: c.contactEmail,
+    contactName: c.contactName,
+    userId: c.userId,
+    sharing: c.sharing,
   }));
 
   // Use real clients only (empty array when demo/disconnected)
@@ -220,6 +234,81 @@ export default function Clients() {
     setRiskLevel("low");
     // ponytail: also reset the form's tag selection so the next client starts clean.
     setFormTagIds([]);
+  };
+
+  // ponytail: NEW — opens the Edit Client dialog pre-filled with the selected
+  // client's current field values. The user can tweak any field and save.
+  // The actual mutation call happens in handleSaveEdit below.
+  const openEditDialog = (client: any) => {
+    if (!client) return;
+    setEditClientId(client._id);
+    setClientName(client.clientName ?? client.name ?? "");
+    setPlatform((client.platform ?? "upwork") as any);
+    setHourlyRate(String(client.hourlyRate ?? ""));
+    setContractType((client.contractType ?? "hourly") as any);
+    setRiskLevel((client.riskLevel ?? "medium") as any);
+    setFormTagIds(Array.isArray(client.tagIds) ? client.tagIds : []);
+    setShowEditClient(true);
+  };
+
+  // ponytail: NEW — saves the edited client via the updateClient Convex mutation.
+  // Re-attaches the current tag selection via setEntityTags (same pattern as
+  // Add Client — updateClient doesn't accept tagIds directly).
+  const handleSaveEdit = async () => {
+    if (!editClientId) return;
+    if (!clientName || !hourlyRate) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      await updateClientMutation({
+        clientId: editClientId as any,
+        clientName,
+        platform,
+        hourlyRate: Number(hourlyRate),
+        contractType,
+        riskLevel,
+      });
+      if (formTagIds.length > 0) {
+        try {
+          await setEntityTagsMutation({
+            entityType: "clients",
+            entityId: editClientId as any,
+            tagIds: formTagIds as any,
+          });
+        } catch (tagErr: any) {
+          console.warn("[Clients] failed to update tags on edited client:", tagErr?.message);
+        }
+      }
+      toast.success("Client updated successfully!");
+      setShowEditClient(false);
+      resetForm();
+      setEditClientId(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update client");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // ponytail: NEW — handlers passed into ClientList's action toolbar. Each
+  // one wires a button in the toolbar to the corresponding dialog/confirmation
+  // flow that already lives in Clients.tsx. This keeps ClientList dumb (just
+  // renders buttons) and Clients.tsx in charge of state.
+  const handleShareClientFromToolbar = (client: any) => {
+    setSharingRecord({
+      id: client._id,
+      type: "client",
+      sharing: client?.sharing || [],
+    });
+    setShowShareDialog(true);
+  };
+  const handleTransferOwnershipFromToolbar = (_client: any) => {
+    setShowTransferDialog(true);
+  };
+  const handleDeleteClientFromToolbar = (_client: any) => {
+    setShowDeleteConfirm(true);
   };
 
   // ponytail: per-card Share/Manage-tags/copy-link helpers were MOVED into the
@@ -346,18 +435,32 @@ export default function Clients() {
               </div>
             )}
 
-            {/* ponytail: RESTORED <ClientList> component from @/components/client-protection/.
-                The inline replacement (commit 9ccc1db) lost the polished per-card
-                stats grid (Protection Score / Total Hours / Total Value), the
-                tier-gated Payment Pattern Analysis section, and the active-session
-                indicator. ClientList brings all of that back. Stats default to 0
-                because the `clients` table doesn't have protectionScore/totalHours/
-                totalValue fields — same defensive behavior the original had. */}
+            {/* ponytail: <ClientList> component — renders the "Client Protection Hub"
+                card with the Add Client button, the per-card stats grid, and the
+                per-selected-client action toolbar (Portal Link / Edit / Share /
+                Transfer / Delete) that used to live in the now-removed Client
+                Policy Profile section. Stats default to 0 because the `clients`
+                table doesn't have protectionScore/totalHours/totalValue fields. */}
             <ClientList
               clients={filteredClients}
               selectedClientId={selectedClientId}
               onSelectClient={setSelectedClientId}
               onAddClient={() => setShowAddClient(true)}
+              // ponytail: NEW — Edit Client dialog opens from the toolbar's
+              // "Edit" button. openEditDialog pre-fills the form fields.
+              onEditClient={openEditDialog}
+              // ponytail: NEW — Share / Transfer / Delete wired to the
+              // existing dialogs/confirmations in this file.
+              onShareClient={handleShareClientFromToolbar}
+              onTransferOwnership={handleTransferOwnershipFromToolbar}
+              onDeleteClient={handleDeleteClientFromToolbar}
+              // ponytail: NEW — permission flags so the toolbar can hide
+              // actions the user isn't allowed to perform.
+              canShareRecords={canShareRecords}
+              canDeleteRecords={canDeleteRecords}
+              canShare={perms.canShare}
+              canDelete={perms.canDelete}
+              isOwner={perms.isOwner}
               subscriptionTier={subscriptionTier}
               onUpgrade={() => toast.info("Upgrade feature coming soon")}
               // ponytail: pass tags + tag-bearing fields so the list can render
@@ -365,81 +468,14 @@ export default function Clients() {
               allTags={allTags}
             />
 
-            {/* ponytail: RESTORED "Client Policy Profile" section that lived
-                here before commit 9ceeee6 stripped it. The selected-client
-                Share / Transfer / Delete action toolbar sits at the top of
-                this section so it's reachable on both mobile and laptop.
-                The <ClientPolicyProfile> component renders a tier-gated
-                analysis card (Free / Starter / Pro / Expert) using
-                selectedClient data directly. */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h2 className="text-2xl font-black text-foreground">Client Policy Profile</h2>
-                {selectedClientId && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* ponytail: P0 — generate JWT portal link for this client */}
-                    <PortalLinkDialog
-                      clientId={selectedClientId}
-                      clientName={(selectedClient as any)?.clientName ?? (selectedClient as any)?.name ?? "Client"}
-                      contactEmail={(selectedClient as any)?.contactEmail ?? (selectedClient as any)?.email}
-                    />
-                    {(canShareRecords || perms.canShare) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setSharingRecord({
-                            id: selectedClientId!,
-                            type: "client",
-                            sharing: (selectedClient as any)?.sharing || [],
-                          });
-                          setShowShareDialog(true);
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                        Share
-                      </Button>
-                    )}
-                    {perms.isOwner && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                        onClick={() => setShowTransferDialog(true)}
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Transfer Ownership
-                      </Button>
-                    )}
-                    {(canDeleteRecords || perms.canDelete) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete Client
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              {selectedClient ? (
-                <ClientPolicyProfile
-                  selectedClient={selectedClient}
-                  tier={subscriptionTier}
-                />
-              ) : (
-                <Card className="p-6 bg-card rounded-xl border border-border">
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Select a client to view policy profile
-                  </div>
-                </Card>
-              )}
-            </div>
+            {/* ponytail: Client Policy Profile section REMOVED per user request.
+                The Portal Link / Edit / Share / Transfer Ownership / Delete
+                Client buttons have been MOVED into the Client Protection Hub
+                (ClientList) component's header. The tier-gated analysis card
+                (Free / Starter / Pro / Expert) is gone — the screenshot
+                confirmed it was the section the user wanted removed, NOT the
+                hub. The hub still shows the per-client stats grid + payment
+                pattern analysis section. */}
 
             {/* Empty state with CTA */}
             {!isDemoMode && clients.length === 0 && (
@@ -676,6 +712,120 @@ export default function Clients() {
             toast.success("Import complete");
           }}
         />
+
+        {/* ponytail: NEW — Edit Client dialog. Reuses the same form fields as
+            Add Client (Client Name / Platform / Hourly Rate / Contract Type /
+            Risk Level / Tags) so users see a consistent shape. openEditDialog
+            pre-fills the fields with the selected client's current values
+            before opening. Save calls the updateClient Convex mutation. */}
+        <Dialog open={showEditClient} onOpenChange={setShowEditClient}>
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+              <DialogDescription>Update the details for this client. Changes are saved immediately.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-client-name">Client Name *</Label>
+                <Input
+                  id="edit-client-name"
+                  placeholder="Enter client name"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Platform</Label>
+                <Select value={platform} onValueChange={(v: any) => setPlatform(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upwork">Upwork</SelectItem>
+                    <SelectItem value="fiverr">Fiverr</SelectItem>
+                    <SelectItem value="toptal">Toptal</SelectItem>
+                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
+                    <SelectItem value="direct">Direct Client</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-hourly-rate">Hourly Rate ($) *</Label>
+                <Input
+                  id="edit-hourly-rate"
+                  type="number"
+                  placeholder="85"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Contract Type</Label>
+                <Select value={contractType} onValueChange={(v: any) => setContractType(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hourly</SelectItem>
+                    <SelectItem value="fixed">Fixed Price</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Risk Level</Label>
+                <Select value={riskLevel} onValueChange={(v: any) => setRiskLevel(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* ponytail: detached TagPicker — IDs are held in `formTagIds` and
+                  attached after the client is updated via setEntityTags. */}
+              <div className="space-y-2">
+                <Label>Tags (optional)</Label>
+                <TagPicker
+                  entityType="clients"
+                  initialTagIds={formTagIds}
+                  onChange={setFormTagIds}
+                  categoryHint="client"
+                  placeholder="Update tags for this client..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditClient(false);
+                  resetForm();
+                  setEditClientId(null);
+                }}
+                disabled={isSavingEdit}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={!clientName || !hourlyRate || isSavingEdit}>
+                {isSavingEdit ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PageLayout>
     </div>
   );
