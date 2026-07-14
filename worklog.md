@@ -3073,3 +3073,44 @@ Stage Summary:
 - Frontend code pushed to GitHub ✅
 - Vercel auto-deploy pending — user may need to manually trigger a redeploy on Vercel dashboard, or wait for auto-deploy to catch up
 - Local preview server verified: Google sign-in redirects correctly to accounts.google.com
+
+---
+Task ID: signup-fix-agency-pivot
+Agent: main
+Task: Fix Convex error on onboarding step 1 + pivot freelancer→agency
+
+Work Log:
+- ROOT CAUSE of 'convex error after filling first onboarding page':
+  ensureLinkedUser() in lib/auth.ts threw 'cannot create users record from
+  QueryCtx' when currentUser query fired immediately after email sign-up.
+  BA user exists but no linked users-table record → throw → Convex error toast.
+- FIX: ensureLinkedUser now returns null instead of throwing on QueryCtx.
+  First mutation (saveOnboardingStep1) creates the record with MutationCtx.
+- Deployed Convex backend with fix ✅
+
+AGENCY PIVOT:
+- OnboardingUserInformation.tsx: "Professional Profile"→"Agency Profile",
+  "Full Name"→"Agency Name", "Primary Platform"→"Primary Client Source"
+  (Referrals, LinkedIn, Google/SEO, Paid Ads — not Upwork/Fiverr),
+  "Years of Professional Experience"→"Years in Business",
+  "Professional Bio"→"Agency Bio", User icon→Building2 icon
+- Auth.tsx: "Protect Your Freelance Income"→"Protect Your Agency Revenue",
+  "Create your account"→"Create your agency account",
+  "freelance work"→"agency's client work"
+- OnboardingSource.tsx: already says "agencies" — no change needed
+
+UI consistency: onboarding pages already use bg-axia-teal-600 buttons,
+Card components, footer matching Auth.tsx — no color changes needed.
+
+Verification:
+- Built JS contains: Agency Profile, Agency Name, Primary Client Source,
+  Years in Business, Agency Bio, agency's client ✅
+- Old freelancer wording removed from onboarding + auth ✅
+- Convex backend deployed with ensureLinkedUser fix ✅
+- Pushed to GitHub (commit da29037) ✅
+
+Stage Summary:
+- Sign-up flow Convex error FIXED (root cause: ensureLinkedUser throwing on QueryCtx)
+- Onboarding pages pivoted to agency wording ✅
+- UI/colors already consistent (bg-axia-teal-600, Card, footer) ✅
+- Vercel needs to redeploy — user should trigger manually or wait for auto-deploy
