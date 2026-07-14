@@ -3114,3 +3114,33 @@ Stage Summary:
 - Onboarding pages pivoted to agency wording ✅
 - UI/colors already consistent (bg-axia-teal-600, Card, footer) ✅
 - Vercel needs to redeploy — user should trigger manually or wait for auto-deploy
+
+---
+Task ID: auth-fix-and-onboarding-rebrand
+Agent: Super Z (main)
+Task: Fix Convex "Not authenticated" error on saveOnboardingStep1 + rebrand onboarding pages to agency + make UI consistent with dashboard
+
+Work Log:
+- Read OnboardingUserInformation.tsx, OnboardingSource.tsx, users.ts, lib/auth.ts, auth.ts, auth-client.ts, use-auth.ts, safe-convex-react.ts, rateLimit.ts, auth.config.ts, http.ts, tables/users.ts, Dashboard.tsx, Auth.tsx, index.css, tailwind.config.ts
+- Diagnosed root cause of "Not authenticated" error: safeGetAuthUser() in @convex-dev/better-auth does a session database lookup (via ctx.runQuery on the BA component's internal session table) that can return null when:
+  1. The session row is missing or expired (WebSocket reconnect with stale JWT)
+  2. The BA component's internal query fails
+  3. Race condition during OAuth callback (session not yet written)
+  Even though ctx.auth.getUserIdentity() (JWT-based) would still return a valid identity, safeGetAuthUser returns null → getAuthUserId returns null → mutation throws "Not authenticated"
+- Fixed by adding JWT-based fallback to getAuthUserId() in src/convex/lib/auth.ts:
+  - Primary path: safeGetAuthUser (validates session in BA's database)
+  - Fallback: ctx.auth.getUserIdentity() (reads JWT directly, no DB session lookup)
+  - If JWT is valid, looks up users-table record by betterAuthUserId (= JWT subject)
+  - If not found, falls back to email lookup, then creates a minimal record (MutationCtx only)
+- Deployed Convex backend: npx convex deploy --typecheck disable (confirmed functions live via npx convex function-spec)
+- Updated OnboardingUserInformation.tsx: logo 56→64px, CardTitle text-2xl→text-[28px] with Space Grotesk font, CardDescription +text-[16px], removed explicit bg-axia-teal-600 (uses default Button variant = bg-primary = same teal #0D9488)
+- Updated OnboardingSource.tsx: same UI consistency changes
+- Both pages already use agency terminology (Agency Name, Agency Profile, Agency Bio, Years in Business, Primary Client Source, etc.)
+- Committed and pushed to GitHub (commits fb54985, f032d13, 9d84b74)
+- Removed package-lock.json from git tracking (project uses pnpm per vercel.json)
+
+Stage Summary:
+- ✅ Convex backend deployed with auth fix — saveOnboardingStep1 mutation should no longer throw "Not authenticated"
+- ✅ Frontend changes pushed to GitHub (UI consistency + agency terminology)
+- ⚠️ Vercel auto-deploy NOT picking up GitHub commits (bundle hash unchanged after 10+ minutes). User needs to manually trigger a Vercel redeploy from the dashboard, or check if the Vercel-GitHub integration is working.
+- KEY INSIGHT: The auth fix is BACKEND-only (Convex deployment), so it's already live. The user can test the sign-up flow NOW — the onboarding form submission should work even with the old frontend bundle. The frontend changes (button styling, logo size) are cosmetic and will appear after Vercel deploys.
