@@ -25,6 +25,12 @@ import { PageLayout } from "@/components/design-system/PageLayout";
 // ponytail: import reusable tag components for picker, badges, and filter bar.
 import { TagPicker, TagBadges } from "@/components/tags";
 import { Tag as TagIcon, X } from "lucide-react";
+// super-z: import the evidence collector hook so a running timer automatically
+// captures mouse / keyboard / visibility / screenshot-marker events into the
+// evidenceSessions + evidenceEvents tables — which the Evidence Library page
+// then reads from. Previously this hook existed but was never called anywhere,
+// so the Evidence Library always showed an empty state even after a work session.
+import { useEvidenceCollector } from "@/components/EvidenceCollector";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -204,6 +210,27 @@ export default function TimeTracking() {
       setIsPaused(false);
     }
   }, [isTimerRunning]);
+
+  // ─── Evidence collection ─────────────────────────────────────────────────
+  // super-z: while a work session is actively running (not paused, not manual
+  // platform), pipe mouse / keyboard / visibility / screenshot-marker events
+  // into the evidenceSessions + evidenceEvents tables via the existing
+  // useEvidenceCollector hook. The hook is fully self-contained — it starts
+  // an evidence session on activation, flushes events every 5s, and finalizes
+  // on deactivation. We just feed it the active workSession ID + a platform
+  // it accepts. Manual platform skips evidence (no real-time activity to
+  // capture for a back-dated manual entry).
+  const evidenceSessionId = isTimerRunning ? (activeSession?._id ?? null) : null;
+  const evidencePlatform: "upwork" | "fiverr" | "toptal" | "freelancer" =
+    activeSession?.platform === "upwork" || activeSession?.platform === "fiverr" || activeSession?.platform === "toptal"
+      ? activeSession.platform
+      : "freelancer"; // fallback for "manual" + undefined — never used because isActive=false
+  const evidenceActive = isTimerRunning && !isPaused && activeSession?.platform !== "manual";
+  const { isCollecting: isEvidenceCollecting, eventCount: evidenceEventCount } = useEvidenceCollector({
+    sessionId: evidenceSessionId,
+    platform: evidencePlatform,
+    isActive: evidenceActive,
+  });
 
   // ─── Weekly stats ────────────────────────────────────────────────────────
   const totalMinutesThisWeek = timeEntries.reduce((acc: number, e: any) => acc + (e.totalMinutes ?? 0), 0);
@@ -664,6 +691,23 @@ export default function TimeTracking() {
                         {activeSession?.platform || "manual"}
                       </Badge>
                     </div>
+                    {/* super-z: live evidence-capture status badge. Shows green
+                        pulsing dot + event count when useEvidenceCollector is
+                        actively flushing events to Convex. Shows muted "paused"
+                        state when timer is paused. Hidden entirely for manual
+                        platform sessions (no real-time capture). */}
+                    {activeSession?.platform !== "manual" && (
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <div className={`h-2 w-2 rounded-full ${isEvidenceCollecting && !isPaused ? "bg-emerald-500 animate-pulse" : isPaused ? "bg-yellow-500" : "bg-muted-foreground/40"}`} />
+                        <span className="text-muted-foreground">
+                          {isEvidenceCollecting && !isPaused
+                            ? `Capturing evidence · ${evidenceEventCount} events`
+                            : isPaused
+                              ? "Evidence capture paused"
+                              : "Evidence capture idle"}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-[56px] font-mono font-bold text-foreground tracking-wider">
                       {formatTime(elapsedSeconds)}
                     </div>

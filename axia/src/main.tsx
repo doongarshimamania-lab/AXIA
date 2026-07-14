@@ -31,8 +31,7 @@ import Tags from "./pages/Tags.tsx";
 import Goals from "./pages/Goals.tsx";
 import Invoices from "./pages/Invoices.tsx";
 import InvoiceBuilder from "./pages/InvoiceBuilder.tsx";
-// ponytail: PaymentPatterns page removed per user request — page file deleted,
-// route stripped below, sidebar nav links stripped from CollapsibleSidebar.
+import PaymentPatterns from "./pages/PaymentPatterns.tsx";
 import Reports from "./pages/Reports.tsx";
 import EvidenceExport from "./pages/EvidenceExport.tsx";
 // ponytail: removed orphan page imports — ApiSettings, HelpCenter, Subscription, PlatformIntegrations are now fully consolidated into AccountSettings.tsx (which has SubscriptionSection, HelpSection, ConnectionsSection). The route aliases /subscription /help-center /platform-integrations are kept below as redirects to /account-settings so existing navigate() calls (e.g. Projects.tsx upgrade CTAs) keep working.
@@ -301,7 +300,7 @@ root.render(
                     <Route path="/goals" element={<Goals />} />
                     <Route path="/invoices" element={<Invoices />} />
                     <Route path="/invoices/new" element={<InvoiceBuilder />} />
-                    {/* ponytail: /payment-patterns route removed per user request. */}
+                    <Route path="/payment-patterns" element={<PaymentPatterns />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/pipeline" element={<Pipeline />} />
                     <Route path="/proposals" element={<Proposals />} />
