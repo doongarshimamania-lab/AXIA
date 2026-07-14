@@ -96,12 +96,33 @@ export function useAuth() {
           return;
         }
         case "google": {
-          // BA redirects to Google → callback → session issued.
-          await authClient.signIn.social({ provider: "google" });
+          // BA redirects to Google → callback → session issued → redirect to app.
+          // callbackURL tells Better Auth where to send the user AFTER the OAuth
+          // callback completes. We send ALL OAuth sign-ins directly to the first
+          // onboarding step. New users land on onboarding (their first visit);
+          // returning users who already completed onboarding are bounced from
+          // /onboarding-user-information → /dashboard by the OnboardingUserInformation
+          // page's own redirect effect. This guarantees the OAuth entry point is
+          // always onboarding, never the dashboard.
+          const callbackURL =
+            typeof window !== "undefined"
+              ? window.location.origin + "/onboarding-user-information"
+              : undefined;
+          await authClient.signIn.social({
+            provider: "google",
+            callbackURL,
+          });
           return;
         }
         case "microsoft": {
-          await authClient.signIn.social({ provider: "microsoft" });
+          const callbackURL =
+            typeof window !== "undefined"
+              ? window.location.origin + "/onboarding-user-information"
+              : undefined;
+          await authClient.signIn.social({
+            provider: "microsoft",
+            callbackURL,
+          });
           return;
         }
         case "magicLink": {

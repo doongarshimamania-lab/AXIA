@@ -58,7 +58,7 @@ function applySecurityHeaders(response: Response): void {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.convex.cloud https://api.resend.com wss://*.convex.cloud",
+    "connect-src 'self' https://*.convex.cloud https://*.convex.site https://api.resend.com wss://*.convex.cloud wss://*.convex.site",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
