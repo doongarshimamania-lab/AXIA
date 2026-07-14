@@ -3144,3 +3144,35 @@ Stage Summary:
 - ✅ Frontend changes pushed to GitHub (UI consistency + agency terminology)
 - ⚠️ Vercel auto-deploy NOT picking up GitHub commits (bundle hash unchanged after 10+ minutes). User needs to manually trigger a Vercel redeploy from the dashboard, or check if the Vercel-GitHub integration is working.
 - KEY INSIGHT: The auth fix is BACKEND-only (Convex deployment), so it's already live. The user can test the sign-up flow NOW — the onboarding form submission should work even with the old frontend bundle. The frontend changes (button styling, logo size) are cosmetic and will appear after Vercel deploys.
+
+---
+Task ID: clients-toolbar-and-evidence-fix
+Agent: Super Z (main)
+Task: Move Portal Link / Share / Transfer Ownership / Delete Client buttons from Client Policy Profile into Client Protection Hub, remove only the Client Policy Profile section, add Edit Client dialog, fix Evidence Library heavily hardcoded mock data.
+
+Work Log:
+- Analyzed uploaded screenshot (pasted_image_1784057936866.png) — confirmed user wanted the action toolbar buttons (Portal Link / Share / Transfer Ownership / Delete Client) moved from the Client Policy Profile section into the Client Protection Hub (ClientList) component, NOT the other way around.
+- Read Clients.tsx, ClientList.tsx, ClientPolicyProfile.tsx, EvidenceLibrary.tsx, library.ts, EvidenceQualityScorecard.tsx, EvidenceItemsList.tsx, WorkContentAnalysis.tsx, EvidenceTimeline.tsx, TeamValidation.tsx, clients/crud.ts to understand existing structure.
+
+Clients page changes:
+- ClientList.tsx: added new optional props onEditClient / onShareClient / onTransferOwnership / onDeleteClient / canShareRecords / canDeleteRecords / canShare / canDelete / isOwner. Renders an action toolbar (rounded border-muted panel) below the 'Client Protection Hub' header when a client is selected. Toolbar contains: PortalLinkDialog, Edit (Pencil icon), Share (Share2), Transfer Ownership (ArrowRightLeft), Delete Client (Trash2). Buttons respect permission flags. Imported PortalLinkDialog from '@/components/portal/PortalLinkDialog'. Imported new icons: Link2, ArrowRightLeft, Trash2, Pencil.
+- Clients.tsx: REMOVED the entire 'Client Policy Profile' section (header + tier-gated analysis card + ClientPolicyProfile component + PortalLinkDialog import + Share2 / ArrowRightLeft imports). Added updateClientMutation. Added showEditClient / editClientId / isSavingEdit state. Added openEditDialog(client) handler that pre-fills clientName/platform/hourlyRate/contractType/riskLevel/formTagIds from the selected client. Added handleSaveEdit handler that calls updateClient + setEntityTags. Added handleShareClientFromToolbar / handleTransferOwnershipFromToolbar / handleDeleteClientFromToolbar wrapper handlers. Added Edit Client dialog at the end with the same form shape as Add Client (Name / Platform / Hourly Rate / Contract Type / Risk Level / Tags). Passed new props to ClientList. Added contactEmail / contactName / userId / sharing to realClients mapping so the toolbar can use them.
+- Verified: no leftover references to PortalLinkDialog, ClientPolicyProfile, Share2, or ArrowRightLeft in the actual code (only in comments).
+- Build passed: bun run build → '✓ built in 15.26s'.
+
+Evidence Library changes (root cause of 'heavily hardcoded mock data'):
+- library.ts: getEvidenceLibraryData() previously returned getMockEvidenceLibraryData() (124 fake items, 98% dispute success rate, 95% quality score, fake 9-6 work day with random event counts) when user was missing OR had no evidence events OR any error occurred. Replaced all 3 fallback paths to call new getEmptyEvidenceLibraryData() instead — returns 0 items, 0% scores, real empty health/dispute/content objects. getEvidenceTimeline() previously returned getMockEvidenceTimeline() (simulated 9-6 work day with random event counts) when user was missing OR had no sessions OR any error occurred. Replaced all 3 fallback paths to call new getEmptyEvidenceTimeline() — returns 24-hour timeline of all 'unprotected' hours with 0 events. Removed both getMockEvidenceLibraryData() and getMockEvidenceTimeline() functions entirely (no more fake data).
+- EvidenceQualityScorecard.tsx: replaced hardcoded strings '17 items flagged for review' / 'Excellent temporal coverage' / 'Meets all platform requirements' (which showed even when every score was 0) with score-scaled hints: 'No work context data yet — start a work session' / 'No temporal data yet — start tracking work sessions' / 'No platform data yet — connect a platform to measure compliance' when score is 0, with intermediate thresholds for non-zero scores.
+
+Deploy:
+- Convex backend deployed successfully: npx convex deploy --typecheck disable → '✔ Deployed Convex functions to https://veracious-zebra-519.convex.cloud'
+- Frontend committed (d04edce) + rebased on remote (8bbc7a1) + pushed to GitHub main.
+- Vercel auto-deploy should pick up the GitHub push.
+
+Stage Summary:
+- ✅ Client Protection Hub now contains the Portal Link / Edit / Share / Transfer Ownership / Delete Client action toolbar (rendered when a client is selected, respecting permission flags).
+- ✅ Client Policy Profile section entirely removed (header + tier-gated analysis card + imports).
+- ✅ Edit Client dialog added — pre-fills form fields from the selected client, calls existing updateClient Convex mutation. Users can now edit any client field after creating it.
+- ✅ Evidence Library mock data removed — backend now returns real empty state (0 items / 0% scores / all-unprotected 24-hour timeline). UI's existing 'No Evidence Data Yet' empty state will trigger correctly.
+- ✅ Convex backend deployed (library.ts changes are LIVE now).
+- ✅ Frontend pushed to GitHub (commit 8bbc7a1). Vercel auto-deploy pending.
