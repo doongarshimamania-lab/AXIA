@@ -3438,3 +3438,45 @@ Stage Summary:
 - ✅ Analytics tracking wrapper (src/lib/analytics.ts) + auto page view tracking.
 - ⏳ Env vars need to be set on Convex: SENTRY_AUTH_TOKEN, SENTRY_ORG_SLUG, POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID, VERCEL_ACCESS_TOKEN, VERCEL_PROJECT_ID, PADDLE_API_KEY, PADDLE_ENVIRONMENT, PADDLE_WEBHOOK_SECRET.
 - ⏳ Owner user needs role:"owner" set in users table (via Convex dashboard or a one-time mutation).
+
+---
+Task ID: owner-sidebar-link
+Agent: Super Z (main)
+Task: Add an Owner Dashboard link to the main app sidebar, visible only to users with role === "owner". The dashboard itself was built in the prior session (commit b6bf3df); this commit just exposes it from the sidebar nav.
+
+Work Log:
+
+Step 1 — Locate sidebar:
+- src/components/CollapsibleSidebar.tsx (705 lines pre-edit).
+- Confirmed it renders 3 layouts: desktop expanded (with WORK/CRM/BILLING/ADMIN sections using NavItem), desktop collapsed (icon-only buttons with dividers), mobile expanded (full NavItem list inside a Sheet drawer).
+- Existing nav calls `go(path)` which wraps `navigate()` + closes the mobile sheet.
+
+Step 2 — Pick the role check:
+- `useIsOwner()` already exists at src/components/owner-dashboard/hooks.ts:162 → calls `api.ownerDashboard.queries.checkOwner` → `isOwner(ctx)` from convex/ownerDashboard/lib/guard.ts:61 → checks `user?.role === "owner"` on the current Convex user doc. Returns `boolean | undefined`.
+- No need to add a new query — re-use the existing one.
+- Active state: `currentPath === "/owner-dashboard" || currentPath === "/owner"` (both routes map to <OwnerDashboard /> in main.tsx:265-266).
+
+Step 3 — Edit CollapsibleSidebar.tsx (4 changes, all atomic via MultiEdit):
+- Added `Crown` to the lucide-react import line (line 28).
+- Added `import { useIsOwner } from "@/components/owner-dashboard/hooks";` (line 32).
+- Inside the component, added `const isOwner = useIsOwner();` and `const isOwnerRoute = currentPath === "/owner-dashboard" || currentPath === "/owner";` right after `currentPath` (line 60-64).
+- Desktop expanded ADMIN section: added a new OWNER section block below ADMIN, conditional on `isOwner`. Contains a "OWNER" label + a Crown NavItem linking to /owner-dashboard with active state on isOwnerRoute.
+- Desktop collapsed ADMIN section: added a Crown icon button after the Account Settings icon, conditional on `isOwner`, with the same active-state logic.
+- Mobile expanded ADMIN section: added a new OWNER section block below ADMIN, conditional on `isOwner`, mirroring the desktop expanded layout.
+
+Step 4 — Verify build:
+- `bun run build` → ✓ built in 15.45s, no new errors. Same pre-existing chunk-size + dynamic-import warnings as before.
+- File delta: 1 file changed, 31 insertions(+), 1 deletion(-).
+
+Step 5 — Commit:
+- d2b9829: feat(sidebar): add Owner Dashboard link (visible only to owners).
+- Pushed to local main. Vercel auto-deploy will pick it up on next push to remote.
+
+Stage Summary:
+- ✅ Owner Dashboard link now appears in the sidebar for users with role === "owner" — in all three sidebar layouts (desktop expanded, desktop collapsed, mobile expanded drawer).
+- ✅ Non-owners see nothing: the OWNER section + the Crown icon are wrapped in `{isOwner && (...)}`, and `useIsOwner()` returns `false` for non-owners.
+- ✅ Active state highlights the link when the user is on `/owner-dashboard` or `/owner`.
+- ✅ Uses existing `useIsOwner()` hook (no new backend code needed).
+- ✅ Build verified: 15.45s, no new errors.
+- ⏳ Not yet pushed to GitHub remote — user should `git push` (or I can on request) to trigger Vercel auto-deploy.
+- ⏳ Owner role still needs to be granted to your user via the Convex dashboard or a one-time mutation (set `users.role = "owner"` for your user doc). Without this, the sidebar link won't appear even after deploy.
