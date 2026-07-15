@@ -257,9 +257,14 @@ root.render(
               <WorkspaceProvider>
                 <ProfileModal />
                 <Routes>
-                  {/* Owner Dashboard - uses separate Convex clients */}
-                  <Route path="/owner-dashboard" element={<OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} />} />
-                  <Route path="/owner" element={<OwnerDashboard prodConvex={prodConvexClient} devConvex={devConvexClient} />} />
+                  {/* Owner Dashboard — auth-guarded (Better Auth session required).
+                      The component itself checks role === "owner" via Convex query
+                      and shows "Access Denied" if not an owner. Owner auth now
+                      flows through Better Auth (not the old OWNER_PASSWORD gate). */}
+                  <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+                    <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+                    <Route path="/owner" element={<OwnerDashboard />} />
+                  </Route>
 
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />

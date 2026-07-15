@@ -1,7 +1,7 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
-const roleValidator = v.union(v.literal("admin"), v.literal("user"));
+const roleValidator = v.union(v.literal("owner"), v.literal("admin"), v.literal("user"));
 
 export const users = defineTable({
     name: v.optional(v.string()), // name of the user. do not remove

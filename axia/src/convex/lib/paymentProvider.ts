@@ -26,12 +26,13 @@ export interface CheckoutSessionResult {
 }
 
 export interface PaymentProvider {
-  name: "mock" | "stripe" | "razorpay" | "paypal";
+  name: "mock" | "stripe" | "razorpay" | "paypal" | "paddle";
   createCheckoutSession(args: CheckoutSessionArgs): Promise<CheckoutSessionResult>;
   /**
    * Verify a webhook signature. Returns true if valid.
    * Mock provider: always true (no signature).
    * Stripe: HMAC-SHA256 verification against STRIPE_WEBHOOK_SECRET.
+   * Paddle: HMAC-SHA256 verification against PADDLE_WEBHOOK_SECRET.
    */
   verifyWebhookSignature(payload: string, signature: string): Promise<boolean>;
 }
@@ -50,6 +51,13 @@ export function getPaymentProvider(): PaymentProvider {
     // If the package is not installed, this will throw at first call — by design.
     const { stripeProvider } = require("./paymentProviders/stripe");
     cachedProvider = stripeProvider;
+  } else if (name === "paddle") {
+    // Paddle provider for agency invoice collection.
+    // NOTE: This is for agencies collecting payments from their clients.
+    // AXIA's own SaaS subscriptions use a separate Paddle integration
+    // (see convex/ownerDashboard/lib/paddle.ts).
+    const { paddleProvider } = require("./paymentProviders/paddle");
+    cachedProvider = paddleProvider;
   } else if (name === "razorpay") {
     // ponytail: razorpay provider not yet implemented (file doesn't exist).
     // Falls through to mock provider until razorpay.ts is created.

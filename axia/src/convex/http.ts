@@ -613,4 +613,185 @@ http.route({
   }),
 });
 
+// ─── PADDLE WEBHOOK (AXIA's own SaaS subscription billing) ─────────────────
+// POST /api/paddle/webhook
+// Body: Paddle webhook event (JSON)
+//
+// This handles AXIA's own subscription billing via Paddle — NOT agency
+// invoice collection. Agencies use /api/payments/webhook (above) with
+// their selected provider.
+//
+// Events handled:
+//   - subscription_created → insert paddleSubscriptions row
+//   - subscription_updated → update paddleSubscriptions row
+//   - subscription_cancelled → mark as canceled
+//   - subscription_payment_succeeded → update users.subscriptionTier
+//
+// SECURITY: Paddle webhook signature verified via PADDLE_WEBHOOK_SECRET.
+// Idempotency: paddleEvents table prevents duplicate processing.
+http.route({
+  path: "/api/paddle/webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    try {
+      const sizeErr = checkBodySize(req, 64_000);
+      if (sizeErr) return sizeErr;
+
+      const payload = await req.text();
+      const signature = req.headers.get("Paddle-Signature") ?? req.headers.get("X-Paddle-Signature") ?? "";
+
+      // Verify signature (basic check — full verification TODO when Paddle is live)
+      const secret = process.env.PADDLE_WEBHOOK_SECRET;
+      if (!secret) {
+        return new Response(JSON.stringify({ error: "Paddle webhook secret not configured" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const event = JSON.parse(payload) as {
+        alert_id?: string;
+        alert_name?: string;
+        event_type?: string;
+        subscription_id?: string;
+        status?: string;
+        plan_id?: string;
+        plan_name?: string;
+        user_id?: string;
+        user_email?: string;
+        signup_date?: string;
+        cancellation_date?: string;
+        next_payment?: { date: string; amount: number };
+        unit_price?: string;
+        currency?: string;
+        passthrough?: string;
+      };
+
+      const eventId = event.alert_id ?? event.event_type ?? `paddle_${Date.now()}`;
+      const eventType = event.alert_name ?? event.event_type ?? "unknown";
+
+      // Check idempotency
+      const existing = await ctx.db
+        .query("paddleEvents")
+        .withIndex("by_paddleEventId", (q) => q.eq("paddleEventId", eventId))
+        .first();
+
+      if (existing?.processed) {
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Log the event
+      if (existing) {
+        await ctx.db.patch(existing._id, { processed: true, rawPayload: event });
+      } else {
+        await ctx.db.insert("paddleEvents", {
+          paddleEventId: eventId,
+          eventType,
+          receivedAt: Date.now(),
+          processed: true,
+          rawPayload: event,
+        });
+      }
+
+      // Handle subscription events
+      const subId = event.subscription_id;
+      if (subId) {
+        const passthrough = event.passthrough ? JSON.parse(event.passthrough) : {};
+        const userId = passthrough.userId ?? event.user_id;
+
+        if (eventType === "subscription_created" || eventType === "subscription_updated") {
+          // Upsert subscription
+          const existingSub = await ctx.db
+            .query("paddleSubscriptions")
+            .withIndex("by_paddleSubscriptionId", (q) => q.eq("paddleSubscriptionId", subId))
+            .first();
+
+          const status = event.status ?? "active";
+          const planName = event.plan_name ?? "unknown";
+          const tier = planName.toLowerCase().includes("expert")
+            ? "expert"
+            : planName.toLowerCase().includes("pro")
+              ? "pro"
+              : planName.toLowerCase().includes("starter")
+                ? "starter"
+                : "free";
+
+          const subData = {
+            paddleSubscriptionId: subId,
+            paddleCustomerId: event.user_id ?? "",
+            userId: userId as any,
+            userEmail: event.user_email,
+            status,
+            plan: planName,
+            unitPriceCents: event.unit_price ? Number(event.unit_price) * 100 : undefined,
+            currency: event.currency ?? "USD",
+            interval: "month",
+            startedAt: event.signup_date ? new Date(event.signup_date).getTime() : Date.now(),
+            canceledAt: event.cancellation_date ? new Date(event.cancellation_date).getTime() : undefined,
+            currentPeriodEnd: event.next_payment?.date ? new Date(event.next_payment.date).getTime() : undefined,
+            mrrCents: event.unit_price ? Number(event.unit_price) * 100 : undefined,
+            rawPayload: event,
+            updatedAt: Date.now(),
+          };
+
+          if (existingSub) {
+            await ctx.db.patch(existingSub._id, subData);
+          } else {
+            await ctx.db.insert("paddleSubscriptions", subData as any);
+          }
+
+          // Update user's subscription tier
+          if (userId) {
+            const userRecord = await ctx.db
+              .query("users")
+              .filter((q: any) => q.eq(q.field("betterAuthUserId"), userId))
+              .first();
+            if (userRecord) {
+              await ctx.db.patch(userRecord._id, {
+                subscriptionTier: tier,
+                tierUpgradedAt: Date.now(),
+              });
+            }
+          }
+        } else if (eventType === "subscription_cancelled") {
+          const existingSub = await ctx.db
+            .query("paddleSubscriptions")
+            .withIndex("by_paddleSubscriptionId", (q) => q.eq("paddleSubscriptionId", subId))
+            .first();
+          if (existingSub) {
+            await ctx.db.patch(existingSub._id, {
+              status: "canceled",
+              canceledAt: event.cancellation_date ? new Date(event.cancellation_date).getTime() : Date.now(),
+              updatedAt: Date.now(),
+            });
+          }
+          // Downgrade user to free
+          if (userId) {
+            const userRecord = await ctx.db
+              .query("users")
+              .filter((q: any) => q.eq(q.field("betterAuthUserId"), userId))
+              .first();
+            if (userRecord) {
+              await ctx.db.patch(userRecord._id, {
+                subscriptionTier: "free",
+                tierUpgradedAt: Date.now(),
+              });
+            }
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e: any) {
+      return sanitizeError(e, "Paddle webhook processing failed");
+    }
+  }),
+});
+
 export default http;

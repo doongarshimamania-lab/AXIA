@@ -135,7 +135,9 @@ export function InstrumentationProvider({
 
   // Initialize Sentry + PostHog on mount
   useEffect(() => {
-    initMonitoring();
+    initMonitoring().catch((err) => {
+      console.warn("[Instrumentation] Monitoring init failed:", err);
+    });
   }, []);
 
   useEffect(() => {

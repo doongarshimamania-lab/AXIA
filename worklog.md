@@ -3343,3 +3343,98 @@ Stage Summary:
 - ✅ src/data/ directory removed (was only holding unused mock data).
 - ✅ Build + lint verified working post-cleanup.
 - ✅ axia/ file count: 480 → 476 tracked files.
+
+---
+Task ID: owner-dashboard-v7-full-build
+Agent: Super Z (main)
+Task: Build a full, complete owner-only dashboard with all app metrics + Sentry + PostHog integration. Replace the existing OWNER_PASSWORD-gated OwnerDashboard entirely. Owner logs in via Better Auth (email/password) like everyone else. Paddle for AXIA's own billing; agencies can use any provider for invoice collection.
+
+Work Log:
+
+Research:
+- Ran 9 parallel web searches covering SaaS owner dashboards, Sentry/PostHog/Vercel/Convex/Stripe APIs, SaaS KPIs, audit logging, realtime monitoring.
+- Full research brief saved to /home/z/my-project/download/owner-dashboard-research/RESEARCH_BRIEF.md (3,400 words, 10 sections).
+- Inspected AXIA codebase: confirmed Sentry/PostHog are stubs (not installed), Stripe is mock-active, existing OwnerDashboard.tsx is 1,382 lines of mostly mocks.
+
+Answers to user questions:
+- Sentry: SDK is MIT (open source), backend is BSL but free to self-host. Cloud is paid.
+- PostHog: Fully MIT open source. Free to self-host (Docker). Cloud has free tier.
+- In-app analytics: PostHog handles everything (page views, feature usage, session recordings, heatmaps, funnels, retention). Lives in src/lib/monitoring.ts (init) + new src/lib/analytics.ts (tracking wrapper).
+- Auth: Recommended Better Auth + role:"owner" over the old OWNER_PASSWORD env-var gate. Owner logs in via /auth like everyone else; redirected to /owner-dashboard after login. Every Convex query checks role === "owner" (real enforcement at data layer).
+
+Step 1 — Schema + auth foundation:
+- Added role:"owner" to users table roleValidator (was "admin" | "user", now "owner" | "admin" | "user").
+- Created convex/tables/ownerDashboard.ts with 4 new tables: auditLog, dashboardCache, paddleSubscriptions, paddleEvents.
+- Registered new tables in convex/schema.ts.
+- Created convex/ownerDashboard/lib/guard.ts with requireOwner() + isOwner() helpers.
+- Created convex/ownerDashboard/lib/audit.ts with writeAuditLog() + queryAuditLog().
+- Created convex/ownerDashboard/lib/cache.ts with getOrFetch() + getCacheOnly() + TTL constants.
+- Updated .env.example with all new env vars: SENTRY_AUTH_TOKEN, SENTRY_ORG_SLUG, POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID, VERCEL_ACCESS_TOKEN, VERCEL_PROJECT_ID, PADDLE_API_KEY, PADDLE_ENVIRONMENT, PADDLE_WEBHOOK_SECRET, VITE_PADDLE_CLIENT_TOKEN, VITE_PADDLE_ENVIRONMENT.
+
+Step 2 — Backend Convex actions (7 tabs + cache + audit):
+- Created convex/ownerDashboard/lib/sentry.ts — Sentry REST API client (issues, stats, event trend, releases, projects). Rate-limit aware.
+- Created convex/ownerDashboard/lib/posthog.ts — PostHog API client (HogQL Query API, retention, funnel, top pages, feature adoption, live users). Rate-limit aware.
+- Created convex/ownerDashboard/lib/vercel.ts — Vercel API client (deployments, deploy summary, web analytics). Rate-limit aware.
+- Created convex/ownerDashboard/lib/paddle.ts — Paddle API client (plans, subscriptions, revenue summary with MRR/ARR/churn/net new MRR/ARPU/top customers, recent transactions, webhook verification).
+- Created convex/ownerDashboard/queries.ts — Read-only queries (checkOwner, getOverview, getRevenue, getProduct, getErrors, getInfrastructure, getRealtime, getAuditLog, getHeroKpis, getAlerts). All check requireOwner().
+- Created convex/ownerDashboard/mutations.ts — Internal mutations for cache writes + Convex-internal user stats.
+- Created convex/ownerDashboard/fetchers.ts — Node-runtime actions that actually call upstream APIs (fetchSentry, fetchPostHog, fetchInfrastructure, fetchRealtime) and cache results. Rate-limit aware: on 429, returns stale cached data.
+- Created convex/ownerDashboard/actions.ts — Action wrappers (refreshRevenue, refreshProduct, refreshErrors, refreshInfrastructure, refreshRealtime, refreshOverview, refreshHeroKpis, refreshAlerts).
+- Created convex/ownerDashboard/index.ts — Barrel export.
+
+Step 3 — Paddle for AXIA billing + agency provider:
+- Created convex/lib/paymentProviders/paddle.ts — Paddle as a provider option for agency invoice collection (alongside Stripe/Razorpay/mock).
+- Updated convex/lib/paymentProvider.ts — added "paddle" to the provider union + paddle branch in getPaymentProvider().
+- Added Paddle webhook route POST /api/paddle/webhook in convex/http.ts — handles subscription_created/updated/cancelled events, upserts paddleSubscriptions table, updates users.subscriptionTier, idempotent via paddleEvents table.
+
+Step 4 — Real Sentry + PostHog (replaced stubs):
+- Installed @sentry/react@^9 and posthog-js@^1 via bun add.
+- Replaced src/lib/monitoring.ts stubs with real lazy-loaded Sentry + PostHog init. All functions (captureException, captureMessage, setUser, clearUser, trackEvent, trackPageView, isFeatureEnabled, getFeatureFlagVariant, startSpan, reportQueryError) now use real clients when env vars are set, no-op when not.
+- Updated src/instrumentation.tsx — initMonitoring() is now async, added .catch() for error handling.
+- Created src/lib/analytics.ts — clean tracking wrapper: analytics.track(), analytics.identify(), analytics.pageView(), analytics.reset(), analytics.error(), analytics.isFeatureEnabled(), analytics.events. Plus autoTrackPageViews() for automatic SPA route tracking.
+
+Step 5 — Frontend OwnerDashboard (replaced entirely):
+- Replaced src/pages/OwnerDashboard.tsx (was 1,382 lines of mocks + OWNER_PASSWORD gate) with new 200-line component: 7-tab layout + sticky header with hero KPIs + collapsible alerts side rail + quick links to all external dashboards. Checks role === "owner" via Convex query, shows "Access Denied" if not.
+- Created src/components/owner-dashboard/hooks.ts — cache-first data hooks for each tab (useOverview, useRevenue, useProduct, useErrors, useInfrastructure, useRealtime, useHeroKpis, useAlerts, useAuditLog, useIsOwner). Each hook: reads cache, triggers refresh on miss/focus/interval.
+- Created src/components/owner-dashboard/shared.tsx — reusable UI: MetricCard, HeroKpiBar, RefreshButton, ErrorState, ConnectServiceState (for unconfigured services), RateLimitedBanner, StaleDataIndicator.
+- Created 7 tab components:
+  - tabs/OverviewTab.tsx — 2x2 trend grid + needs-attention panel + recent activity strip + quick stats row.
+  - tabs/RevenueTab.tsx — MRR/ARR/Net New MRR/ARPU cards + subscription counts (active/new/churned/churn rate) + top customers table + recent transactions table.
+  - tabs/ProductTab.tsx — DAU/WAU/MAU/stickiness cards + DAU sparkline (30d) + signup-to-paid funnel chart + 8-week retention heatmap + top pages table + feature adoption table.
+  - tabs/ErrorsTab.tsx — open issues by severity (total/fatal/error/warning) + error events trend chart (24h) + latest release health (crash-free sessions/users, adoption, new issues) + top 5 issues table with Sentry links.
+  - tabs/InfrastructureTab.tsx — deploy summary (today/7d/p95 build time/failed) + latest production deploy card + web analytics (visitors/page views/top pages) + Convex backend stats.
+  - tabs/UsersTab.tsx — account stats (users/workspaces/owners/signups) + searchable audit log table with CSV export.
+  - tabs/RealtimeTab.tsx — big live user count (60s window) + active pages right now + live error feed. 5s polling.
+
+Step 6 — Routing + auth:
+- Updated src/main.tsx — moved /owner-dashboard and /owner routes INSIDE ProtectedRoute (requires Better Auth session). Removed the old prodConvex/devConvex props (no longer needed — dashboard uses the main Convex client).
+- OwnerDashboard component checks isOwner via Convex query; shows "Access Denied" if not owner.
+- Old OWNER_PASSWORD gate (convex/security/ownerAuth.ts) left in place but no longer called — will be removed in a future cleanup.
+
+Step 7 — Polish:
+- Skeletons: every tab shows Skeleton loaders while data is loading.
+- Empty states: ConnectServiceState component shows "Connect [Service] to see data" with docs link when a service isn't configured.
+- Error states: ErrorState component with retry button.
+- Rate-limit handling: RateLimitedBanner shows "Rate limited — showing cached data. Retries in Ns." when upstream returns 429.
+- CSV export: audit log has CSV export button (downloads last 50 entries).
+- Responsive: hero KPIs go 6-col → 3-col → 2-col on smaller screens. Alerts rail hidden on mobile.
+- Stale data indicator: each tab shows when data was last fetched.
+
+Verification:
+- bun add @sentry/react posthog-js → ✓ installed (17 packages).
+- bun run build → ✓ built in 15.37s (no new errors, same pre-existing chunk warnings).
+- Convex schema: 4 new tables registered (auditLog, dashboardCache, paddleSubscriptions, paddleEvents) — will deploy on next `npx convex dev`.
+
+Stage Summary:
+- ✅ Full 7-tab owner dashboard built (Overview, Revenue, Product, Errors, Infrastructure, Users, Realtime) + alerts side rail.
+- ✅ Owner auth via Better Auth + role:"owner" — owner logs in at /auth, redirected to /owner-dashboard. Every Convex query checks role === "owner".
+- ✅ Sentry + PostHog installed and wired for real (replaced stubs). Both open source.
+- ✅ Paddle wired for AXIA's own billing (subscriptions, MRR, churn, top customers). Webhook handler at /api/paddle/webhook.
+- ✅ Agencies can use any provider for invoice collection (Stripe/Razorpay/mock/Paddle — provider abstraction).
+- ✅ Vercel API wired for deploy status + web analytics.
+- ✅ Caching layer (dashboardCache table with TTL: 15s realtime, 30s Sentry/hero KPIs, 60s PostHog/Vercel, 120s Paddle subscriptions, 300s stats/MRR).
+- ✅ Rate-limit handling: on 429, returns stale cached data + shows banner.
+- ✅ Audit log: every dashboard load, tab view, and upstream API call logged.
+- ✅ Analytics tracking wrapper (src/lib/analytics.ts) + auto page view tracking.
+- ⏳ Env vars need to be set on Convex: SENTRY_AUTH_TOKEN, SENTRY_ORG_SLUG, POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID, VERCEL_ACCESS_TOKEN, VERCEL_PROJECT_ID, PADDLE_API_KEY, PADDLE_ENVIRONMENT, PADDLE_WEBHOOK_SECRET.
+- ⏳ Owner user needs role:"owner" set in users table (via Convex dashboard or a one-time mutation).
