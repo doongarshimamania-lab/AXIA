@@ -531,23 +531,10 @@ function ProfileSection({
             <p className="text-xs text-muted-foreground mt-1">{profileBio.length}/500 characters</p>
           </div>
 
-          <div className="p-4 bg-primary/5 rounded-lg border border-border">
-            <div className="text-sm font-medium mb-2">Protection Metrics</div>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex justify-between">
-                <span>Axia Protection:</span>
-                <span className="text-emerald-500 font-medium">Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Hours Protected:</span>
-                <span className="text-foreground font-medium">124.5h</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Denial Rate:</span>
-                <span className="text-foreground font-medium">0%</span>
-              </div>
-            </div>
-          </div>
+          {/* super-z: Protection Metrics section (Axia Protection / Hours
+              Protected / Denial Rate) removed per user request — it showed
+              static placeholder numbers ('Active' / '124.5h' / '0%') that
+              didn't reflect any real backend data. */}
 
           {/* Platform Connections — link to dedicated Connections tab */}
           <div className="p-4 bg-primary/5 rounded-lg border border-border">

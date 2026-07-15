@@ -205,7 +205,7 @@ export function ClientList({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Client Protection Hub
+            Client List
             {!hasPaymentPatternAccess && (
               <Badge variant="outline" className="ml-2 bg-primary/10 text-primary">
                 <Lock className="h-3 w-3 mr-1" />
@@ -374,11 +374,7 @@ export function ClientList({
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Protection Score</div>
-                    <div className="text-lg font-bold text-foreground">{client.protectionScore}%</div>
-                  </div>
+                <div className="grid grid-cols-2 gap-4 mt-3">
                   <div>
                     <div className="text-xs text-muted-foreground">Total Hours</div>
                     <div className="text-lg font-bold text-foreground">{client.totalHours}h</div>

@@ -329,7 +329,7 @@ export default function Clients() {
               Clients
             </h1>
             <p className="text-[16px] text-muted-foreground">
-              Manage client policy profiles and protection settings.
+              Manage clients and protection settings.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -376,7 +376,7 @@ export default function Clients() {
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Sign in to see your clients</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Connect your account to manage client policy profiles and protection settings.
+                  Connect your account to manage clients and protection settings.
                 </p>
               </div>
               <Button asChild>

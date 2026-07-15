@@ -117,26 +117,64 @@ function ChartSkeleton() {
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
+// super-z: previously the empty state rendered a centered "No Payment Data Yet"
+// CTA that hid the entire page layout. Per user request, the empty state now
+// renders the SAME skeleton layout used during loading — 4 stats cards + a
+// tabs strip + a chart card — so users can see what the page contains before
+// they have any invoice data. The EmptyState function is kept for backwards
+// imports but no longer rendered; FullPageSkeleton replaces it.
+
 function EmptyState() {
+  return <FullPageSkeleton />;
+}
+
+function FullPageSkeleton() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="text-center py-16"
-    >
-      <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-        <CreditCard className="h-8 w-8 text-muted-foreground" />
-      </div>
-      <h3 className="text-xl font-semibold text-foreground mb-2">No Payment Data Yet</h3>
-      <p className="text-muted-foreground max-w-md mx-auto mb-6">
-        Start tracking your payments by creating invoices. Once you have invoices with different statuses, 
-        you'll see payment trends, risk analysis, and platform breakdowns here.
-      </p>
-      <Button onClick={() => toast.info("Navigate to Invoices to create your first invoice")}>
-        <Plus className="h-4 w-4 mr-2" />
-        Create Your First Invoice
-      </Button>
-    </motion.div>
+    <>
+      <StatsSkeleton />
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40 mb-1" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Tabs strip skeleton */}
+          <Skeleton className="h-9 w-72 rounded-md" />
+          {/* Two-column card grid skeleton (mirrors Overview tab) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i} className="border border-border">
+                <CardHeader>
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-3 w-48" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <Skeleton key={j} className="h-4 w-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Monthly trend chart skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-3 w-52" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-2 h-56">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${30 + ((i * 7) % 60)}%` }} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 }
 
