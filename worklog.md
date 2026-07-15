@@ -3314,3 +3314,32 @@ Stage Summary:
 - ✅ axia/ production folder untouched (per user request — Step 2 dead-code cleanup inside axia/ skipped).
 - ✅ UUID-message commit d4a651e dropped via soft reset; its worklog content preserved in this commit.
 - ✅ Tag v6.2.0-repo-cleanup cuts a new release containing the latest Payment Patterns + Clients free-text changes (which were on main but not in any release tag prior to this).
+
+---
+Task ID: axia-deadcode-cleanup-v6.2.1
+Agent: Super Z (main)
+Task: Remove dead/duplicate files inside axia/ production folder: unused lockfiles (package-lock.json, bun.lock), broken ESLint config (eslint.config.mjs referencing uninstalled eslint-config-next), and unused mock data (src/data/mockProjectData.ts).
+
+Work Log:
+- Deleted axia/package-lock.json (336 KB) — project uses pnpm (packageManager: "pnpm@10.11.0", vercel.json installCommand: "pnpm install --no-frozen-lockfile"). npm lockfile was a leftover.
+- Deleted axia/bun.lock (194 KB) — same reason. bun lockfile was a leftover from a one-off bun install.
+- Deleted axia/eslint.config.mjs (1.7 KB) — Next.js-style ESLint config that imports eslint-config-next/core-web-vitals and eslint-config-next/typescript, neither of which is in package.json or node_modules. Project is Vite-based (vercel.json framework: "vite"). The correct config is eslint.config.js (Vite + React + TypeScript ESLint 9 flat config, all deps installed).
+- Deleted axia/src/data/mockProjectData.ts (38 KB, 700 lines) — zero imports anywhere in axia/src/ (grep verified). Leftover mock data from early prototype.
+- axia/src/data/ directory auto-removed (was empty after mockProjectData.ts deletion).
+- Kept: axia/pnpm-lock.yaml (canonical lockfile), axia/eslint.config.js (working Vite-style config).
+
+Note on eslint config swap: initial execution accidentally deleted eslint.config.js (the working one) instead of eslint.config.mjs (the broken one). Caught during post-deletion verification when ESLint failed to load. Reversed: restored eslint.config.js, deleted eslint.config.mjs instead. Lesson: always re-verify file contents immediately before deletion, don't rely on earlier session analysis.
+
+Verification:
+- bun install → ✓ 614 packages installed, 0 errors.
+- ESLint config loads: npx eslint --print-config src/main.tsx → ✓ valid config output.
+- ESLint runs: npx eslint src/main.tsx → ✓ produces real lint results (pre-existing warnings, not config errors).
+- Production build: bun run build → ✓ built in 14.97s, no new errors. Same chunk warnings as before (pre-existing).
+
+Stage Summary:
+- ✅ 4 dead files removed from axia/ (12,942 lines deleted, ~570 KB repo size reduction).
+- ✅ pnpm-lock.yaml is now the only lockfile (no more lockfile confusion).
+- ✅ eslint.config.js is now the only ESLint config (no more broken Next.js config failing to load).
+- ✅ src/data/ directory removed (was only holding unused mock data).
+- ✅ Build + lint verified working post-cleanup.
+- ✅ axia/ file count: 480 → 476 tracked files.
