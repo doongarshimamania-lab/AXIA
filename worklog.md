@@ -3233,3 +3233,84 @@ Stage Summary:
 - ✅ Clients page heading now reads 'Client List' (description text updated to match).
 - ✅ Per-card Protection Score metric is gone from client cards (Total Hours + Total Value remain on a 2-col grid).
 - ✅ Payment Patterns empty state now shows a full-page skeleton mirroring the real layout instead of a 'No Payment Data Yet' CTA.
+
+---
+Task ID: payments-real-structure-and-clients-free-text-platform
+Agent: Super Z (main)
+Task: (A) Payment Patterns page should always show the exact real structure (not a skeleton or centered empty-state CTA) even when there's no invoice data — and all data must be real, no mock/hardcoded. (B) Clients page: remove the platform dropdown (Upwork/Fiverr/etc), replace with a free-text input that accepts anything.
+
+Work Log:
+
+A) Payment Patterns real-structure + real-data:
+- src/pages/PaymentPatterns.tsx:
+  - Removed the top-level `!hasData ? <EmptyState />` branch. The real page structure (4 stats cards + tabbed Overview/Timeline/Alerts/Risk/Predictions content) now always renders when not in the initial loading state. When there's no invoice data, stats cards show zeros ($0 / 0.0 days / 0% / $0 at-risk) and each section's existing in-place empty-state placeholder ('No platform data yet...', 'No trend data yet...', 'No client risk data yet...') shows inside that section.
+  - Deleted the now-unused `EmptyState` and `FullPageSkeleton` functions.
+  - Replaced 3 hardcoded mock values with real calculations from invoice data:
+    * `platformBreakdown.avgPaymentDays` — was hardcoded `id === 'toptal' ? 7.1 : id === 'upwork' ? 5.2 : 3.8`. Now computed as the average `(paidDate - issueDate)` delta across that platform's paid invoices. 0 when no paid invoices.
+    * `platformBreakdown.trend` — was hardcoded `-3` or `12`. Now computed as the % change in paid-invoice count between the most recent month and the prior month on that platform. 0 when insufficient history.
+    * `riskClients.avgDaysLate` — was hardcoded `3.5`. Now computed as the average `(now - dueDate)` delta across that client's overdue invoices. 0 when none overdue.
+  - All other values were already wired to real Convex queries (api.billing.crud.getInvoices, getInvoiceStats, api.clients.crud.getClientsEnriched) — verified.
+
+B) Clients free-text platform:
+- Frontend (src/pages/Clients.tsx):
+  - Changed `platform` state type from `"upwork" | "fiverr" | "toptal" | "freelancer" | "direct"` to plain `string`, default `""` (empty/blank).
+  - Replaced both `<Select>` dropdowns (Add Client dialog at line 528 and Edit Client dialog at line 736) with free-text `<Input>` fields. Placeholder: 'e.g. Referral, LinkedIn, Direct, Upwork…'. The Contract Type and Risk Level dropdowns stay as `<Select>` (they have legitimate fixed options).
+  - Reset and edit pre-fill handlers updated to use `""` instead of `"upwork"` as the default.
+
+- Backend (required so the frontend change actually persists):
+  - src/convex/tables/clients.ts: widened the `clients.platform` column from `v.union(v.literal('upwork'), ...)` to `v.string()`. Backward-compatible — all existing literal values are valid strings, no data backfill needed.
+  - src/convex/clients/crud.ts: widened `createClient` arg from union to `v.string()` and `updateClient` arg from `v.optional(v.union(...))` to `v.optional(v.string())`.
+  - src/convex/clients/bulkImport.ts: relaxed the CSV `platform` column definition from `type:'select', options:[5 fixed values]` to `type:'text'`. Removed the `validPlatforms` whitelist — any string the user provides in the CSV now passes through verbatim. Empty/missing values still default to `'direct'` so legacy CSVs without a platform column still import cleanly.
+
+Verification:
+- bun run build → ✓ built in 15.09s (no new errors).
+- Convex backend deployed: `npx convex deploy --typecheck disable` → '✔ Deployed Convex functions to https://veracious-zebra-519.convex.cloud'. Schema validation passed; no indexes deleted.
+- Committed (544b372), rebased on remote, pushed as 3a2e646. Vercel auto-deploy will pick it up.
+
+Stage Summary:
+- ✅ Payment Patterns page now always renders its real structure. No skeleton, no centered empty-state CTA. Stats cards show real zeros, each tab section shows its own in-place 'No X data yet' placeholder when empty.
+- ✅ All Payment Patterns numbers now flow from real Convex data — no mock/hardcoded values left. Verified: avgPaymentDays, trend, avgDaysLate all computed from real invoice dates.
+- ✅ Clients page Add Client + Edit Client dialogs now have a free-text Platform input. Backend schema widened to v.string() so any value persists. Bulk import CSVs also accept any platform string.
+- ✅ Convex backend is LIVE with the widened schema. Frontend pushed to GitHub; Vercel auto-deploy pending.
+
+---
+Task ID: repo-restructure-axia-resources-v6.2.0
+Agent: Super Z (main)
+Task: Restore AXIA repo to clean axia/ + resources/ structure matching the v6.1.1 release baseline. Move all root-level bloat (added between v6.1.1 and HEAD) into resources/. Delete pure junk. Preserve all meaningful content. Then commit, push, and tag a new release so the latest Payment Patterns + Clients free-text changes are in a release.
+
+Work Log:
+
+Step 1 — Root restructure (restore v6.1.1 baseline):
+- Pure junk deleted from git tracking: test_write, vite.config.ts.bak, dashboard-screenshot.png, httpd, httpd.c, PR_DESCRIPTION.md, package-lock.json (root), node_modules symlink. (8 items)
+- Root duplicates identical to resources/ removed from root (content already preserved in resources/): src/ (385 files, identical to axia/src/), public/ (112 files, identical to axia/public/), chrome-extension/, ecc/, examples/, mini-services/, prisma/, src_backup_20260602_154431/, src_backup_20260602_161626/. (9 dirs, 1369 files)
+- Root supersets moved to resources/ with -from-root suffix to preserve extra content: disk/ → resources/disk-from-root/ (756 files), timelock/ → resources/timelock-from-root/ (1200 files), timelock-messy-backup/ → resources/timelock-messy-backup-from-root/ (589 files). (3 dirs, 2545 files)
+- backups/ merged: timelock-fullcode-20260607-pipeline-proposals-templates (544 files, unique to root) moved into resources/backups/, remaining root backups/ entries (already in resources/backups/) removed from root.
+- src_old_stale_20260618/ → resources/backups/src_old_stale_20260618/ (392 files).
+- axia-local-untracked-backup/ → resources/backups/axia-local-untracked-backup/ (6 files).
+- 51 loose research_*.json / research_*.md / dashboard_search*.json files moved into research/root-research-dump/ (research/ is in v6.1.1 baseline, kept at root).
+- 20 root build configs (.prettierignore, .prettierrc, Caddyfile, Procfile, bun.lock, components.json, convex.json, eslint.config.js, eslint.config.mjs, index.html, next.config.ts, package.json, pnpm-lock.yaml, pnpm-workspace.yaml, postcss.config.mjs, tailwind.config.ts, tsconfig.app.json, tsconfig.json, tsconfig.node.json, vite.config.ts) moved to resources/config-snapshots/ (axia/ has its own canonical copies).
+- 14 root server/launcher scripts (axia-server.sh, daemon-server.js, daemon-timelock.cjs, generate_pdf.py, launch-server.cjs, preview-server.cjs, serve-proxy.cjs, serve-timelock.cjs, serve-vite.cjs, server-manager.cjs, server-manager-daemon.cjs, static-server.cjs, start-server.sh, vite-proxy.mjs) moved to resources/scripts/root-server-scripts/.
+
+Final root structure (exactly matches v6.1.1 baseline):
+.gitignore  README.md  agent-ctx/  axia/  dist_old/  dubsado.json  research/  resources/  scripts/  serve-preview.cjs  server.mjs  start-preview.sh  vendor-repos/  worklog.md
+
+Step 4 — Drop UUID-message commit d4a651e:
+- d4a651e was an unpushed worklog-only commit with a UUID message ("a464ea58-0776-4a65-a41d-2ed6e686f521"). It documented the Payment Patterns + Clients free-text work that was already pushed in commit 3a2e646.
+- Soft-reset HEAD~1 to drop d4a651e, combined its worklog content with this cleanup commit. History is now: 3a2e646 → this commit. Clean.
+
+Step 3 — Commit + push + tag:
+- Single commit: "chore(repo): restore axia/ + resources/ structure, move root bloat into resources/, drop UUID commit".
+- Tag: v6.2.0-repo-cleanup.
+
+Verification:
+- Root tracked items at HEAD after commit = 14, exactly matches v6.1.1 baseline.
+- axia/ untouched: 528 tracked files before and after.
+- All moved content preserved in resources/ subdirs (config-snapshots/, scripts/root-server-scripts/, research/root-research-dump/, backups/, *-from-root/).
+- Total tracked files: 9737 → 7679 (2058 duplicate files removed from root, content preserved in resources/).
+
+Stage Summary:
+- ✅ Repo root restored to v6.1.1 clean baseline (14 items: .gitignore, README.md, agent-ctx/, axia/, dist_old/, dubsado.json, research/, resources/, scripts/, serve-preview.cjs, server.mjs, start-preview.sh, vendor-repos/, worklog.md).
+- ✅ All root bloat moved into resources/ with clear subdir organization (config-snapshots/, scripts/root-server-scripts/, research/root-research-dump/, backups/, *-from-root/ for supersets).
+- ✅ axia/ production folder untouched (per user request — Step 2 dead-code cleanup inside axia/ skipped).
+- ✅ UUID-message commit d4a651e dropped via soft reset; its worklog content preserved in this commit.
+- ✅ Tag v6.2.0-repo-cleanup cuts a new release containing the latest Payment Patterns + Clients free-text changes (which were on main but not in any release tag prior to this).
