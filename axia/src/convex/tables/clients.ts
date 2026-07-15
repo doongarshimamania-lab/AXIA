@@ -41,13 +41,12 @@ export const clients = defineTable({
   teamId: v.optional(v.id("teams")),
   sharing: v.optional(v.array(sharingEntry)),
   clientName: v.string(),
-  platform: v.union(
-    v.literal("upwork"),
-    v.literal("fiverr"),
-    v.literal("toptal"),
-    v.literal("freelancer"),
-    v.literal("direct")
-  ),
+  // super-z: widened from union of literals (upwork|fiverr|toptal|freelancer|direct)
+  // to v.string() so agencies can enter any client source as free text on the
+  // Add/Edit Client dialog (e.g. "Referral", "LinkedIn", "Cold email"). All
+  // existing literal values are valid strings, so the migration is backward-
+  // compatible — no data backfill needed.
+  platform: v.string(),
   hourlyRate: v.number(),
   contractType: v.union(v.literal("hourly"), v.literal("fixed")),
   riskLevel: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),

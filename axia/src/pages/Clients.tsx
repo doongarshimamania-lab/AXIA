@@ -71,7 +71,7 @@ export default function Clients() {
   const [sharingRecord, setSharingRecord] = useState<{id: string, type: string, sharing: any[]} | null>(null);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [clientName, setClientName] = useState("");
-  const [platform, setPlatform] = useState<"upwork" | "fiverr" | "toptal" | "freelancer" | "direct">("upwork");
+  const [platform, setPlatform] = useState<string>("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [contractType, setContractType] = useState<"hourly" | "fixed">("hourly");
   const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("low");
@@ -229,7 +229,7 @@ export default function Clients() {
   const resetForm = () => {
     setClientName("");
     setHourlyRate("");
-    setPlatform("upwork");
+    setPlatform("");
     setContractType("hourly");
     setRiskLevel("low");
     // ponytail: also reset the form's tag selection so the next client starts clean.
@@ -243,7 +243,7 @@ export default function Clients() {
     if (!client) return;
     setEditClientId(client._id);
     setClientName(client.clientName ?? client.name ?? "");
-    setPlatform((client.platform ?? "upwork") as any);
+    setPlatform((client.platform ?? "") as string);
     setHourlyRate(String(client.hourlyRate ?? ""));
     setContractType((client.contractType ?? "hourly") as any);
     setRiskLevel((client.riskLevel ?? "medium") as any);
@@ -526,19 +526,18 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Platform</Label>
-                <Select value={platform} onValueChange={(v: any) => setPlatform(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upwork">Upwork</SelectItem>
-                    <SelectItem value="fiverr">Fiverr</SelectItem>
-                    <SelectItem value="toptal">Toptal</SelectItem>
-                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
-                    <SelectItem value="direct">Direct Client</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="client-platform">Platform</Label>
+                {/* super-z: previously a <Select> dropdown restricted to
+                    upwork/fiverr/toptal/freelancer/direct. Per user request
+                    replaced with a free-text input so agencies can enter any
+                    client source (e.g. "Referral", "LinkedIn", "Cold email",
+                    "Website inquiry"). Backend schema widened to v.string(). */}
+                <Input
+                  id="client-platform"
+                  placeholder="e.g. Referral, LinkedIn, Direct, Upwork…"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hourly-rate">Hourly Rate ($) *</Label>
@@ -735,19 +734,16 @@ export default function Clients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Platform</Label>
-                <Select value={platform} onValueChange={(v: any) => setPlatform(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upwork">Upwork</SelectItem>
-                    <SelectItem value="fiverr">Fiverr</SelectItem>
-                    <SelectItem value="toptal">Toptal</SelectItem>
-                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
-                    <SelectItem value="direct">Direct Client</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-client-platform">Platform</Label>
+                {/* super-z: free-text platform input — matches the Add Client
+                    dialog. Backend schema widened to v.string() so any value
+                    the agency enters is accepted. */}
+                <Input
+                  id="edit-client-platform"
+                  placeholder="e.g. Referral, LinkedIn, Direct, Upwork…"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-hourly-rate">Hourly Rate ($) *</Label>

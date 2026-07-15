@@ -9,12 +9,14 @@
  */
 
 import type * as accountSettings from "../accountSettings.js";
+import type * as adminGrants from "../adminGrants.js";
 import type * as adminListAll from "../adminListAll.js";
 import type * as adminSeed from "../adminSeed.js";
 import type * as ai_disputePrediction from "../ai/disputePrediction.js";
 import type * as ai_disputePredictionNode from "../ai/disputePredictionNode.js";
 import type * as audit_storeConsentAudit from "../audit/storeConsentAudit.js";
 import type * as auth from "../auth.js";
+import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as autoSeed from "../autoSeed.js";
 import type * as billing_bulkImport from "../billing/bulkImport.js";
 import type * as billing_crud from "../billing/crud.js";
@@ -23,7 +25,14 @@ import type * as clientAuth from "../clientAuth.js";
 import type * as clients from "../clients.js";
 import type * as clients_bulkImport from "../clients/bulkImport.js";
 import type * as clients_clientAuth from "../clients/clientAuth.js";
+import type * as clients_clientDisputeSimulation from "../clients/clientDisputeSimulation.js";
+import type * as clients_clientGapPrediction from "../clients/clientGapPrediction.js";
+import type * as clients_clientPolicyProfile from "../clients/clientPolicyProfile.js";
 import type * as clients_clientPortal from "../clients/clientPortal.js";
+import type * as clients_clientProtection from "../clients/clientProtection.js";
+import type * as clients_clientProtectionScore from "../clients/clientProtectionScore.js";
+import type * as clients_clientProtectionSimple from "../clients/clientProtectionSimple.js";
+import type * as clients_clientTrustScore from "../clients/clientTrustScore.js";
 import type * as clients_clientWorkspace from "../clients/clientWorkspace.js";
 import type * as clients_crud from "../clients/crud.js";
 import type * as clients_freelancerDirectory from "../clients/freelancerDirectory.js";
@@ -56,9 +65,11 @@ import type * as lib_email from "../lib/email.js";
 import type * as lib_emailTemplates from "../lib/emailTemplates.js";
 import type * as lib_paymentProvider from "../lib/paymentProvider.js";
 import type * as lib_paymentProviders_mock from "../lib/paymentProviders/mock.js";
+import type * as lib_paymentProviders_razorpay from "../lib/paymentProviders/razorpay.js";
 import type * as lib_paymentProviders_stripe from "../lib/paymentProviders/stripe.js";
 import type * as lib_portalAuditLog from "../lib/portalAuditLog.js";
 import type * as lib_portalAuth from "../lib/portalAuth.js";
+import type * as lib_pureCrypto from "../lib/pureCrypto.js";
 import type * as lib_scopeCreepDetector from "../lib/scopeCreepDetector.js";
 import type * as manualSends from "../manualSends.js";
 import type * as messaging_channelMutations from "../messaging/channelMutations.js";
@@ -83,8 +94,11 @@ import type * as platforms_upworkComplianceCheck from "../platforms/upworkCompli
 import type * as policies_clientPolicies from "../policies/clientPolicies.js";
 import type * as portal_changeOrders from "../portal/changeOrders.js";
 import type * as portal_deliverables from "../portal/deliverables.js";
+import type * as portal_evidence from "../portal/evidence.js";
+import type * as portal_files from "../portal/files.js";
 import type * as portal_invoices from "../portal/invoices.js";
 import type * as portal_messages from "../portal/messages.js";
+import type * as portal_milestones from "../portal/milestones.js";
 import type * as portal_payments from "../portal/payments.js";
 import type * as portal_rateLimit from "../portal/rateLimit.js";
 import type * as portal_self from "../portal/self.js";
@@ -173,12 +187,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accountSettings: typeof accountSettings;
+  adminGrants: typeof adminGrants;
   adminListAll: typeof adminListAll;
   adminSeed: typeof adminSeed;
   "ai/disputePrediction": typeof ai_disputePrediction;
   "ai/disputePredictionNode": typeof ai_disputePredictionNode;
   "audit/storeConsentAudit": typeof audit_storeConsentAudit;
   auth: typeof auth;
+  "auth/emailOtp": typeof auth_emailOtp;
   autoSeed: typeof autoSeed;
   "billing/bulkImport": typeof billing_bulkImport;
   "billing/crud": typeof billing_crud;
@@ -187,7 +203,14 @@ declare const fullApi: ApiFromModules<{
   clients: typeof clients;
   "clients/bulkImport": typeof clients_bulkImport;
   "clients/clientAuth": typeof clients_clientAuth;
+  "clients/clientDisputeSimulation": typeof clients_clientDisputeSimulation;
+  "clients/clientGapPrediction": typeof clients_clientGapPrediction;
+  "clients/clientPolicyProfile": typeof clients_clientPolicyProfile;
   "clients/clientPortal": typeof clients_clientPortal;
+  "clients/clientProtection": typeof clients_clientProtection;
+  "clients/clientProtectionScore": typeof clients_clientProtectionScore;
+  "clients/clientProtectionSimple": typeof clients_clientProtectionSimple;
+  "clients/clientTrustScore": typeof clients_clientTrustScore;
   "clients/clientWorkspace": typeof clients_clientWorkspace;
   "clients/crud": typeof clients_crud;
   "clients/freelancerDirectory": typeof clients_freelancerDirectory;
@@ -220,9 +243,11 @@ declare const fullApi: ApiFromModules<{
   "lib/emailTemplates": typeof lib_emailTemplates;
   "lib/paymentProvider": typeof lib_paymentProvider;
   "lib/paymentProviders/mock": typeof lib_paymentProviders_mock;
+  "lib/paymentProviders/razorpay": typeof lib_paymentProviders_razorpay;
   "lib/paymentProviders/stripe": typeof lib_paymentProviders_stripe;
   "lib/portalAuditLog": typeof lib_portalAuditLog;
   "lib/portalAuth": typeof lib_portalAuth;
+  "lib/pureCrypto": typeof lib_pureCrypto;
   "lib/scopeCreepDetector": typeof lib_scopeCreepDetector;
   manualSends: typeof manualSends;
   "messaging/channelMutations": typeof messaging_channelMutations;
@@ -247,8 +272,11 @@ declare const fullApi: ApiFromModules<{
   "policies/clientPolicies": typeof policies_clientPolicies;
   "portal/changeOrders": typeof portal_changeOrders;
   "portal/deliverables": typeof portal_deliverables;
+  "portal/evidence": typeof portal_evidence;
+  "portal/files": typeof portal_files;
   "portal/invoices": typeof portal_invoices;
   "portal/messages": typeof portal_messages;
+  "portal/milestones": typeof portal_milestones;
   "portal/payments": typeof portal_payments;
   "portal/rateLimit": typeof portal_rateLimit;
   "portal/self": typeof portal_self;

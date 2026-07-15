@@ -9,7 +9,7 @@ import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
 // The `key` is the column name in the DB; the `label` is what the user sees.
 export const CLIENT_CORE_FIELDS = [
   { key: "clientName", label: "Client Name", required: true },
-  { key: "platform", label: "Platform", type: "select", options: ["upwork", "fiverr", "toptal", "freelancer", "direct"] },
+  { key: "platform", label: "Platform", type: "text" },
   { key: "hourlyRate", label: "Hourly Rate", type: "number" },
   { key: "contractType", label: "Contract Type", type: "select", options: ["hourly", "fixed"] },
   { key: "riskLevel", label: "Risk Level", type: "select", options: ["low", "medium", "high"] },
@@ -129,9 +129,13 @@ export const importClients = mutation({
         }
 
         // ── Coerce / default core fields ──────────────────────────────────
-        const validPlatforms = ["upwork", "fiverr", "toptal", "freelancer", "direct"];
-        const rawPlatform = String(coreData.platform ?? "direct").toLowerCase();
-        const platform = validPlatforms.includes(rawPlatform) ? rawPlatform : "direct";
+        // super-z: platform widened to v.string() — accept any value the
+        // user provides in the CSV (e.g. "Referral", "LinkedIn"). Previously
+        // unknown values were silently coerced to "direct"; now they pass
+        // through verbatim. Empty/missing values default to "direct" so
+        // legacy CSVs without a platform column still import cleanly.
+        const rawPlatform = String(coreData.platform ?? "direct").trim();
+        const platform = rawPlatform || "direct";
 
         const validContractTypes = ["hourly", "fixed"];
         const rawContractType = String(coreData.contractType ?? "hourly").toLowerCase();

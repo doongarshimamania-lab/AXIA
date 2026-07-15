@@ -132,13 +132,8 @@ export const createClient = mutation({
     workspaceId: v.optional(v.id("workspaces")),
     teamId: v.optional(v.id("teams")),
     clientName: v.string(),
-    platform: v.union(
-      v.literal("upwork"),
-      v.literal("fiverr"),
-      v.literal("toptal"),
-      v.literal("freelancer"),
-      v.literal("direct")
-    ),
+    // super-z: widened to v.string() — see tables/clients.ts comment.
+    platform: v.string(),
     hourlyRate: v.number(),
     contractType: v.union(v.literal("hourly"), v.literal("fixed")),
     riskLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
@@ -184,13 +179,7 @@ export const updateClient = mutation({
   args: {
     clientId: v.id("clients"),
     clientName: v.optional(v.string()),
-    platform: v.optional(v.union(
-      v.literal("upwork"),
-      v.literal("fiverr"),
-      v.literal("toptal"),
-      v.literal("freelancer"),
-      v.literal("direct")
-    )),
+    platform: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
     contractType: v.optional(v.union(v.literal("hourly"), v.literal("fixed"))),
     riskLevel: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),

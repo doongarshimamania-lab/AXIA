@@ -117,66 +117,11 @@ function ChartSkeleton() {
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-// super-z: previously the empty state rendered a centered "No Payment Data Yet"
-// CTA that hid the entire page layout. Per user request, the empty state now
-// renders the SAME skeleton layout used during loading — 4 stats cards + a
-// tabs strip + a chart card — so users can see what the page contains before
-// they have any invoice data. The EmptyState function is kept for backwards
-// imports but no longer rendered; FullPageSkeleton replaces it.
-
-function EmptyState() {
-  return <FullPageSkeleton />;
-}
-
-function FullPageSkeleton() {
-  return (
-    <>
-      <StatsSkeleton />
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-40 mb-1" />
-          <Skeleton className="h-4 w-64" />
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Tabs strip skeleton */}
-          <Skeleton className="h-9 w-72 rounded-md" />
-          {/* Two-column card grid skeleton (mirrors Overview tab) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i} className="border border-border">
-                <CardHeader>
-                  <Skeleton className="h-5 w-36" />
-                  <Skeleton className="h-3 w-48" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <Skeleton key={j} className="h-4 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {/* Monthly trend chart skeleton */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-3 w-52" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-2 h-56">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Skeleton key={i} className="flex-1 rounded-t-sm" style={{ height: `${30 + ((i * 7) % 60)}%` }} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
+// super-z: the standalone EmptyState component was removed — the page now
+// always renders its real structure (stats cards + tabbed content) with
+// zeros / empty arrays when there's no invoice data, and each section
+// has its own in-place "No X data yet" placeholder. No function exported
+// here.
 
 // ─── Demo Mode Banner ─────────────────────────────────────────────────────────
 
@@ -265,17 +210,61 @@ export default function PaymentPatterns() {
       }
     }
 
-    return Object.entries(platformMap).map(([id, data]) => ({
-      id,
-      totalEarned: data.totalEarned,
-      avgPaymentDays: id === "toptal" ? 7.1 : id === "upwork" ? 5.2 : 3.8,
-      onTimeRate: data.invoiceCount > 0
-        ? Math.round(((data.invoiceCount - data.overdueCount) / data.invoiceCount) * 100)
-        : 100,
-      atRiskAmount: data.overdueTotal,
-      paymentCount: data.invoiceCount,
-      trend: data.overdueCount > 0 ? -3 : 12,
-    }));
+      return Object.entries(platformMap).map(([id, data]) => {
+        // super-z: real avg payment days — averaged from paid invoices'
+        // (paidDate - issueDate) deltas on this platform. 0 when no paid
+        // invoices yet (previously this returned hardcoded 7.1 / 5.2 / 3.8
+        // per platform which was mock data).
+        const platformPaidInvoices = invoices.filter((inv: any) => {
+          const client = enrichedClients.find((c: any) =>
+            c._id === inv.clientId || c.clientName === inv.clientName
+          );
+          const invPlatform = client?.platform ?? "direct";
+          if (invPlatform !== id) return false;
+          if (inv.status !== "paid" || !inv.paidDate || !inv.issueDate) return false;
+          return true;
+        });
+        const avgPaymentDays = platformPaidInvoices.length > 0
+          ? platformPaidInvoices.reduce((sum: number, inv: any) => {
+              const deltaMs = new Date(inv.paidDate).getTime() - new Date(inv.issueDate).getTime();
+              return sum + Math.max(0, deltaMs / (1000 * 60 * 60 * 24));
+            }, 0) / platformPaidInvoices.length
+          : 0;
+        // super-z: real trend — % change in paid-invoice count between the
+        // most recent month and the prior month on this platform.
+        // 0 when there's not enough history (previously this returned -3 or 12).
+        const now = new Date();
+        const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+        const platformInvoicesByMonth = invoices.reduce((acc: Record<string, number>, inv: any) => {
+          const client = enrichedClients.find((c: any) =>
+            c._id === inv.clientId || c.clientName === inv.clientName
+          );
+          if ((client?.platform ?? "direct") !== id) return acc;
+          if (inv.status !== "paid") return acc;
+          const d = new Date(inv.issueDate ?? inv.createdAt);
+          const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          acc[k] = (acc[k] ?? 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const thisMonthCount = platformInvoicesByMonth[thisMonthKey] ?? 0;
+        const lastMonthCount = platformInvoicesByMonth[lastMonthKey] ?? 0;
+        const trend = lastMonthCount > 0
+          ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100)
+          : 0;
+        return {
+          id,
+          totalEarned: data.totalEarned,
+          avgPaymentDays,
+          onTimeRate: data.invoiceCount > 0
+            ? Math.round(((data.invoiceCount - data.overdueCount) / data.invoiceCount) * 100)
+            : 100,
+          atRiskAmount: data.overdueTotal,
+          paymentCount: data.invoiceCount,
+          trend,
+        };
+      });
   }, [invoices, enrichedClients]);
 
   // Recent payments from real invoices
@@ -352,7 +341,7 @@ export default function PaymentPatterns() {
       if (inv.status === "overdue") clientInvoiceMap[key].overdue++;
     }
 
-    return enrichedClients
+        return enrichedClients
       .map((client: any) => {
         const key = client.clientName ?? client._id;
         const stats = clientInvoiceMap[key] ?? { total: 0, overdue: 0, count: 0 };
@@ -361,6 +350,18 @@ export default function PaymentPatterns() {
         const riskLevel = client.riskLevel ?? "medium";
         const adjustedRiskScore = riskLevel === "high" ? Math.min(100, riskScore + 30) :
           riskLevel === "low" ? Math.max(0, riskScore - 20) : riskScore;
+        // super-z: real avg days late — averaged from this client's overdue
+        // invoices' (now - dueDate) deltas. 0 when none are overdue
+        // (previously this returned hardcoded 3.5).
+        const clientOverdueInvoices = invoices.filter((inv: any) =>
+          (inv.clientName ?? inv.clientId) === key && inv.status === "overdue"
+        );
+        const avgDaysLate = clientOverdueInvoices.length > 0
+          ? Math.round(clientOverdueInvoices.reduce((sum: number, inv: any) => {
+              const due = inv.dueDate ? new Date(inv.dueDate).getTime() : new Date(inv.createdAt).getTime();
+              return sum + Math.max(0, Math.floor((Date.now() - due) / (1000 * 60 * 60 * 24)));
+            }, 0) / clientOverdueInvoices.length)
+          : 0;
 
         return {
           client: client.clientName ?? "Unknown",
@@ -368,7 +369,7 @@ export default function PaymentPatterns() {
           totalInvoiced: stats.total,
           latePayments: stats.overdue,
           totalPayments: stats.count,
-          avgDaysLate: stats.overdue > 0 ? 3.5 : 0,
+          avgDaysLate,
           riskScore: adjustedRiskScore,
           trend: stats.overdue > 1 ? "worsening" as const :
             stats.overdue === 1 ? "stable" as const : "improving" as const,
@@ -421,7 +422,14 @@ export default function PaymentPatterns() {
     });
   };
 
-  const hasData = invoices && invoices.length > 0;
+  // super-z: previously when !hasData the page rendered <EmptyState /> (a
+  // centered "No Payment Data Yet" CTA, later replaced with a skeleton).
+  // Per user request, the REAL page structure now always renders — every
+  // section already has its own in-place empty-state placeholder
+  // ("No platform data yet...", "No trend data yet...", etc.) that shows
+  // when its specific derived array is empty. Top-level stats cards render
+  // with zeros ($0 / 0.0 days / 0% / $0 at-risk) which accurately reflect
+  // the no-data state instead of hiding the layout.
 
   // ─── Available Platforms ──────────────────────────────────────────────────
   const availablePlatforms = useMemo(() => {
@@ -455,14 +463,14 @@ export default function PaymentPatterns() {
         {/* Demo Mode Banner */}
         {!isAuthenticated && <DemoModeBanner />}
 
-        {/* Loading State */}
+        {/* Loading State — only show skeletons during the initial Convex
+            fetch. Once data has arrived (even if empty), render the real
+            structure so users can see what the page contains. */}
         {showLoading ? (
           <>
             <StatsSkeleton />
             <ChartSkeleton />
           </>
-        ) : !hasData ? (
-          <EmptyState />
         ) : (
           <>
             {/* Stats Cards */}
