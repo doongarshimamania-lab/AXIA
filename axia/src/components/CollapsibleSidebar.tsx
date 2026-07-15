@@ -25,10 +25,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag, CreditCard } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag, CreditCard, Crown } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsOwner } from "@/components/owner-dashboard/hooks";
 
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
@@ -57,6 +58,10 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
 
   // Current path for active indicator
   const currentPath = location.pathname;
+  // Owner-only nav link: only render when the current user has role === "owner".
+  // useIsOwner() returns undefined while loading, then boolean. Falsy → hidden.
+  const isOwner = useIsOwner();
+  const isOwnerRoute = currentPath === "/owner-dashboard" || currentPath === "/owner";
 
   // ponytail: wrap navigate so any in-sidebar nav click also closes the parent
   // Sheet (mobile only). On desktop onNavigate is undefined — no-op.
@@ -423,6 +428,20 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                     <NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} />
                   </button>
                 </div>
+
+                {/* OWNER Section — only visible to users with role === "owner".
+                    Links to the full 7-tab Owner Dashboard (Overview / Revenue /
+                    Product / Errors / Infrastructure / Users / Realtime). */}
+                {isOwner && (
+                  <div className="px-2 space-y-0.5 mt-4">
+                    <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">
+                      OWNER
+                    </div>
+                    <button onClick={() => go("/owner-dashboard")} className="w-full text-left" type="button">
+                      <NavItem icon={Crown} label="Owner Dashboard" isExpanded={true} isActive={isOwnerRoute} />
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div
@@ -496,6 +515,11 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                 <button onClick={() => go("/account-settings")} title="Account Settings" className={`p-1.5 rounded-md transition-colors ${currentPath === "/account-settings" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <Settings className={`w-4 h-4 ${currentPath === "/account-settings" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
+                {isOwner && (
+                  <button onClick={() => go("/owner-dashboard")} title="Owner Dashboard" className={`p-1.5 rounded-md transition-colors ${isOwnerRoute ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                    <Crown className={`w-4 h-4 ${isOwnerRoute ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -622,6 +646,12 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
               <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">ADMIN</div>
               <button onClick={() => go("/account-settings")} className="w-full text-left"><NavItem icon={Settings} label="Account Settings" isExpanded={true} isActive={currentPath === "/account-settings"} /></button>
             </div>
+            {isOwner && (
+              <div className="px-2 space-y-0.5 mt-4">
+                <div className="text-[9px] text-sidebar-foreground/50 uppercase tracking-wider px-2 py-1 font-semibold">OWNER</div>
+                <button onClick={() => go("/owner-dashboard")} className="w-full text-left"><NavItem icon={Crown} label="Owner Dashboard" isExpanded={true} isActive={isOwnerRoute} /></button>
+              </div>
+            )}
           </div>
           {/* Bottom: Theme + Work Timeline */}
           <div className="border-t border-sidebar-border py-2 px-2 space-y-0.5 text-xs">
