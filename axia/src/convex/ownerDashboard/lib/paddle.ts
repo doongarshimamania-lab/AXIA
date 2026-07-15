@@ -24,7 +24,7 @@ export class PaddleNotConfiguredError extends Error {
   }
 }
 
-function isConfigured(): boolean {
+export function isConfigured(): boolean {
   return Boolean(process.env.PADDLE_API_KEY);
 }
 

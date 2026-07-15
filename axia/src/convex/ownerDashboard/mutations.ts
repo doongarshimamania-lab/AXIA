@@ -82,7 +82,7 @@ export const _refreshRevenueInternal = mutation({
     // Also fetch recent transactions
     let transactions: Paddle.PaddleTransaction[] = [];
     try {
-      if (Paddle["isConfigured"]?.()) {
+      if (Paddle.isConfigured()) {
         const txResult = await Paddle.getRecentTransactions({ limit: 20 });
         transactions = txResult.transactions;
       }
