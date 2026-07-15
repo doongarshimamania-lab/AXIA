@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axia App Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F8FAFC; color: #243447; padding: 48px; }
+
+  .diagram-title { font-size: 28px; font-weight: 700; color: #1E293B; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .diagram-subtitle { font-size: 14px; color: #64748B; margin-bottom: 40px; }
+
+  /* Phase groups */
+  .phase { margin-bottom: 24px; position: relative; }
+  .phase-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px 28px; position: relative; }
+  .phase-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 6px; display: inline-block; margin-bottom: 16px;
+  }
+  .phase-1 .phase-label { background: #EFF6FF; color: #2563EB; }
+  .phase-2 .phase-label { background: #F0FDF4; color: #16A34A; }
+  .phase-3 .phase-label { background: #FFF7ED; color: #EA580C; }
+  .phase-4 .phase-label { background: #FAF5FF; color: #9333EA; }
+  .phase-5 .phase-label { background: #FEF2F2; color: #DC2626; }
+  .phase-6 .phase-label { background: #F0FDFA; color: #0D9488; }
+  .phase-7 .phase-label { background: #FFFBEB; color: #D97706; }
+
+  /* Step rows */
+  .step-row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+  .step {
+    flex: 1; min-width: 160px; max-width: 240px;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 12px 14px; position: relative;
+  }
+  .step-title { font-size: 13px; font-weight: 600; color: #1E293B; margin-bottom: 4px; }
+  .step-desc { font-size: 11px; color: #64748B; line-height: 1.4; }
+
+  /* Arrow between phases */
+  .phase-arrow {
+    display: flex; justify-content: center; padding: 6px 0;
+  }
+  .phase-arrow svg { width: 24px; height: 24px; color: #94A3B8; }
+
+  /* Flow connector */
+  .flow-line {
+    display: flex; align-items: center; gap: 8px; margin: 8px 0; padding-left: 12px;
+  }
+  .flow-line .arrow { color: #94A3B8; font-size: 18px; flex-shrink: 0; }
+  .flow-line .label { font-size: 11px; color: #94A3B8; font-style: italic; }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* Sub-flow cards */
+  .sub-flow {
+    background: #FAFBFC; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .sub-flow-title {
+    font-size: 12px; font-weight: 600; color: #475569;
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #F1F5F9;
+  }
+  .sub-flow-items { display: flex; flex-direction: column; gap: 6px; }
+  .sub-flow-item {
+    font-size: 11px; color: #64748B; padding: 4px 8px;
+    background: #FFFFFF; border-radius: 4px; border: 1px solid #F1F5F9;
+  }
+
+  /* Data box */
+  .data-box {
+    background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .data-box-title { font-size: 12px; font-weight: 600; color: #1D4ED8; margin-bottom: 6px; }
+  .data-box-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .data-tag {
+    font-size: 10px; font-weight: 500; color: #3B82F6; background: #DBEAFE;
+    padding: 2px 8px; border-radius: 4px;
+  }
+
+  /* Auth badge */
+  .auth-badge {
+    font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+    display: inline-block; margin-left: 4px; vertical-align: middle;
+  }
+  .auth-public { background: #DCFCE7; color: #166534; }
+  .auth-protected { background: #FEF3C7; color: #92400E; }
+  .auth-owner { background: #FEE2E2; color: #991B1B; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748B; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="diagram-title">Axia — Complete Application Flow Map</div>
+<div class="diagram-subtitle">Vite + Convex | React + TypeScript | Freelancer Protection SaaS</div>
+
+<!-- PHASE 1: Landing & Discovery -->
+<div class="phase phase-1">
+  <div class="phase-card">
+    <div class="phase-label">Phase 1 — Landing & Discovery</div>
+    <div class="step-row">
+      <div class="step">
+        <div class="step-title">Landing Page <span class="auth-badge auth-public">Public</span></div>
+        <div class="step-desc">Hero, problems, 5 pain points, testimonials, waitlist CTA, pricing preview, referral program</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Waitlist Signup</div>
+        <div class="step-desc">Email entry → waitlistEntries table → unique referral code generated → redirect to /waitlist/success</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Waitlist Success</div>
+        <div class="step-desc">Confirmation page showing referral link, position in queue, reward tiers (1/3/5/10 referrals)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 2: Authentication -->
+<div class="phase phase-2">
+  <div class="phase-card">
+    <div class="phase-label">Phase 2 — Authentication</div>
+    <div class="step-row">
+      <div class="step">
+        <div class="step-title">Auth Page <span class="auth-badge auth-public">Public</span></div>
+        <div class="step-desc">Platform-first connect (Upwork/Fiverr/Toptal) → stores pending platform in localStorage → Email OTP sign-in</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Convex Auth</div>
+        <div class="step-desc">Email OTP provider + Anonymous fallback. Uses @convex-dev/auth. After verification → redirect to onboarding</div>
+      </div>
+      <div class="step">
+        <div class="step-title">No Route Guards</div>
+        <div class="step-desc">⚠ No auth guards on protected routes. Dashboard renders with mock data if unauthenticated. Client-side only.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 3: Onboarding -->
+<div class="phase phase-3">
+  <div class="phase-card">
+    <div class="phase-label">Phase 3 — Onboarding</div>
+    <div class="step-row">
+      <div class="step">
+        <div class="step-title">Step 1: Profile</div>
+        <div class="step-desc">/onboarding-user-information — Collects name, hourly rate, platform, bio, experience → localStorage('onboardingData')</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Step 2: Source</div>
+        <div class="step-desc">/onboarding-source — How did you hear about Axia? → Calls completeOnboarding mutation → Saves to users table</div>
+      </div>
+      <div class="step">
+        <div class="step-title">→ Dashboard</div>
+        <div class="step-desc">Navigates to /dashboard. User profile created in Convex with default Free tier. Subscription stored in localStorage.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 4: Main App — Dashboard + Sidebar -->
+<div class="phase phase-4">
+  <div class="phase-card">
+    <div class="phase-label">Phase 4 — Main App (CollapsibleSidebar + Routes)</div>
+    <div class="three-col">
+      <div class="sub-flow">
+        <div class="sub-flow-title">WORK Section</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">Dashboard — Compliance widget, work diary, timeline popup, protection advisor</div>
+          <div class="sub-flow-item">Projects — Protection scores, risk timeline, health dashboard, milestones</div>
+          <div class="sub-flow-item">Clients — Trust scores, dispute simulation, gap prediction, policy profiles</div>
+          <div class="sub-flow-item">Evidence Library — Health score, gap prediction, timeline, quality scorecard</div>
+          <div class="sub-flow-item">Time Tracking — Start/stop timer, manual entries, compliance warnings</div>
+          <div class="sub-flow-item">Tags — Tag management for categorization</div>
+          <div class="sub-flow-item">Goals — Goal tracking and progress</div>
+        </div>
+      </div>
+      <div class="sub-flow">
+        <div class="sub-flow-title">BILLING Section</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">Invoices — Create/send/track invoices, PDF download (jsPDF), status management</div>
+          <div class="sub-flow-item">Payment Patterns — Payment timeline, risk analysis, CSV export</div>
+          <div class="sub-flow-items">
+          <div class="sub-flow-item">Reports — Dispute report generation, usage limits per tier, viewer modal (PDF download)</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+        <div class="sub-flow-title">INTEGRATIONS Section</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">Platform Connections — Connect Upwork/Fiverr/Toptal/Freelancer</div>
+          <div class="sub-flow-item">Evidence Export — CSV/JSON/PDF/Legal package (jsPDF direct download)</div>
+          <div class="sub-flow-item">API Settings — Chrome extension tokens, generate/revoke API keys</div>
+        </div>
+        </div>
+      </div>
+      <div class="sub-flow">
+        <div class="sub-flow-title">ADMIN Section</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">Subscription — 4 tiers (Free/Starter/Pro/Expert), receipt PDF download, billing history</div>
+          <div class="sub-flow-item">Account Settings — Profile modal (name, avatar, hourly rate, bio)</div>
+          <div class="sub-flow-item">Help Center — FAQ, guides, contact form</div>
+        </div>
+        <div style="margin-top:12px">
+        <div class="sub-flow-title">Bottom Bar</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">Theme Toggle — Dark/Light mode (CSS class toggle on html)</div>
+          <div class="sub-flow-item">Work Timeline — Popup with Day/Week/Month/Year views</div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 5: Subscription Tier Gating -->
+<div class="phase phase-5">
+  <div class="phase-card">
+    <div class="phase-label">Phase 5 — Subscription Tier System (Client-Side localStorage)</div>
+    <div class="step-row">
+      <div class="step">
+        <div class="step-title">Free — $0/mo</div>
+        <div class="step-desc">1 report/mo, 1 platform, 50 evidence items, basic compliance, manual evidence review</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Starter — $7/mo</div>
+        <div class="step-desc">5 reports, 2 platforms, 500 evidence, enhanced compliance, evidence timeline, team validation</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Pro — $15/mo</div>
+        <div class="step-desc">Unlimited reports, 5 platforms, unlimited evidence, AI dispute prediction, WCVM, cross-platform sync</div>
+      </div>
+      <div class="step">
+        <div class="step-title">Expert — $49/mo</div>
+        <div class="step-desc">All Pro + team validation, policy deep analysis, premium network, WCVM access, white label</div>
+      </div>
+    </div>
+    <div style="margin-top:12px; padding:8px 12px; background:#FEF3C7; border-radius:6px; border:1px solid #FDE68A;">
+      <div style="font-size:11px; color:#92400E;">⚠ Tier stored in <code>localStorage('axia_subscription_tier')</code> — NOT server-enforced. Feature gating is client-side only via <code>useSubscriptionTier</code> hook.</div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 6: Data Layer -->
+<div class="phase phase-6">
+  <div class="phase-card">
+    <div class="phase-label">Phase 6 — Convex Data Layer (30+ Tables)</div>
+    <div class="two-col">
+      <div>
+        <div class="data-box" style="margin-bottom:12px">
+          <div class="data-box-title">Core Tables</div>
+          <div class="data-box-items">
+            <span class="data-tag">users</span>
+            <span class="data-tag">workSessions</span>
+            <span class="data-tag">timeBlocks</span>
+            <span class="data-tag">appUsage</span>
+            <span class="data-tag">complianceAlerts</span>
+          </div>
+        </div>
+        <div class="data-box" style="margin-bottom:12px">
+          <div class="data-box-title">Evidence & Protection</div>
+          <div class="data-box-items">
+            <span class="data-tag">evidenceSessions</span>
+            <span class="data-tag">evidenceEvents</span>
+            <span class="data-tag">wcvmVerifications</span>
+            <span class="data-tag">evidenceMetadata</span>
+            <span class="data-tag">disputeReports</span>
+          </div>
+        </div>
+        <div class="data-box">
+          <div class="data-box-title">Projects & Clients</div>
+          <div class="data-box-items">
+            <span class="data-tag">projects</span>
+            <span class="data-tag">clients</span>
+            <span class="data-tag">clientCompanies</span>
+            <span class="data-tag">clientPolicies</span>
+            <span class="data-tag">verificationRequests</span>
+            <span class="data-tag">freelancerPublicProfiles</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="data-box" style="margin-bottom:12px">
+          <div class="data-box-title">Features & Integrations</div>
+          <div class="data-box-items">
+            <span class="data-tag">platformConnections</span>
+            <span class="data-tag">platformImportedData</span>
+            <span class="data-tag">crossPlatformVerifications</span>
+            <span class="data-tag">extensionTokens</span>
+            <span class="data-tag">networkConnections</span>
+          </div>
+        </div>
+        <div class="data-box" style="margin-bottom:12px">
+          <div class="data-box-title">Premium & AI</div>
+          <div class="data-box-items">
+            <span class="data-tag">protectionAdvisorAlerts</span>
+            <span class="data-tag">teamValidations</span>
+            <span class="data-tag">automatedDisputeReports</span>
+            <span class="data-tag">policyIntelligence</span>
+            <span class="data-tag">milestoneSnapshots</span>
+            <span class="data-tag">scopeFormalizations</span>
+          </div>
+        </div>
+        <div class="data-box">
+          <div class="data-box-title">Compliance & Security</div>
+          <div class="data-box-items">
+            <span class="data-tag">auditTrail</span>
+            <span class="data-tag">consentManagement</span>
+            <span class="data-tag">complianceCertificates</span>
+            <span class="data-tag">dataLineage</span>
+            <span class="data-tag">waitlistEntries</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+
+<!-- PHASE 7: External Flows -->
+<div class="phase phase-7">
+  <div class="phase-card">
+    <div class="phase-label">Phase 7 — External Flows</div>
+    <div class="three-col">
+      <div class="sub-flow">
+        <div class="sub-flow-title">Client Portal</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">/client-signup → Create company account</div>
+          <div class="sub-flow-item">/client-login → localStorage auth (axia_client_email)</div>
+          <div class="sub-flow-item">/client-dashboard → WCVM Dashboard, Freelancer Directory, Verification Requests, Real-time Validation</div>
+        </div>
+      </div>
+      <div class="sub-flow">
+        <div class="sub-flow-title">Chrome Extension</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">API token auth via extensionTokens table</div>
+          <div class="sub-flow-item">Captures work activity, screenshots, app usage</div>
+          <div class="sub-flow-item">Sends time blocks to Convex backend</div>
+        </div>
+      </div>
+      <div class="sub-flow">
+        <div class="sub-flow-title">Owner Dashboard</div>
+        <div class="sub-flow-items">
+          <div class="sub-flow-item">/owner-dashboard — Password: @@@@HHH$</div>
+          <div class="sub-flow-item">Revenue MRR speedometer, waitlist management</div>
+          <div class="sub-flow-item">Priority actions, compliance rule tester, system health</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div> Public Routes</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div> Auth Flow</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#EA580C"></div> Onboarding</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#9333EA"></div> Main App</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div> Tier System</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0D9488"></div> Data Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div> External</div>
+</div>
+
+</body>
+</html>

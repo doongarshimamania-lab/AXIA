@@ -3212,3 +3212,24 @@ Stage Summary:
 - ✅ Manual-entry sessions (back-dated, no real-time activity) correctly skip evidence capture.
 - ✅ Live status badge tells the user exactly when evidence is being captured.
 - ⚠️ The hook requires an extension token (api.extension.getActiveToken) to call /api/extension/start. If the user has never generated one in Account Settings → API, the hook will toast 'Could not start evidence collection' on every timer start. The timer itself still works. To silence this, the user should generate an extension token in Account Settings.
+
+---
+Task ID: clients-and-payments-ui-tweaks
+Agent: Super Z (main)
+Task: Four small UI fixes per user request — (1) remove the Protection Metrics card from Account Settings, (2) rename the clients page section heading from 'Client Protection Hub' to 'Client List', (3) remove the per-card Protection Score metric from the client list (only that one metric, not the whole UI), (4) in Payment Patterns show skeletons when there's no data so users can see the page layout.
+
+Work Log:
+- src/pages/AccountSettings.tsx: removed the entire <div className="p-4 bg-primary/5 rounded-lg border border-border"> block under the Professional Bio textarea that contained the Protection Metrics card (Axia Protection: Active / Hours Protected: 124.5h / Denial Rate: 0%). These were hardcoded static strings with no backend source. The surrounding Platform Connections card is untouched.
+- src/components/client-protection/ClientList.tsx: changed the CardTitle text from 'Client Protection Hub' to 'Client List' (line 208). No structural changes — same component, same props, same toolbar, same cards. Also removed the per-card 'Protection Score' metric from the 3-column stats grid on each client card (lines 378-381). Grid changed from grid-cols-3 to grid-cols-2; only Total Hours + Total Value remain. The protectionScore field is still on the type and still computed by the backend, just not rendered.
+- src/pages/Clients.tsx: updated two description strings from 'Manage client policy profiles and protection settings.' to 'Manage clients and protection settings.' (page header + sign-in empty state) to match the rename.
+- src/pages/PaymentPatterns.tsx: replaced the centered 'No Payment Data Yet' empty state with a new FullPageSkeleton component that mirrors the real page layout — 4 stats card skeletons (reuses existing StatsSkeleton) + a tabs strip skeleton + a 2-column card grid skeleton (mirrors Overview tab's Platform Breakdown + Monthly Trend cards) + a 12-bar monthly trend chart skeleton (reuses existing ChartSkeleton pattern). EmptyState() now just returns <FullPageSkeleton /> for backwards compatibility. Users can now see the page structure before they have any invoice data.
+
+Verification:
+- bun run build → ✓ built in 16.17s (no new errors).
+- Committed (9d536d1), rebased onto remote (78a0a81), pushed as 784a225. Vercel auto-deploy will pick it up.
+
+Stage Summary:
+- ✅ Protection Metrics card is gone from Account Settings.
+- ✅ Clients page heading now reads 'Client List' (description text updated to match).
+- ✅ Per-card Protection Score metric is gone from client cards (Total Hours + Total Value remain on a 2-col grid).
+- ✅ Payment Patterns empty state now shows a full-page skeleton mirroring the real layout instead of a 'No Payment Data Yet' CTA.
