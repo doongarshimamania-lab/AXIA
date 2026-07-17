@@ -3997,3 +3997,92 @@ Stage Summary:
 - ⏳ Vercel deploy will be live at https://axia-bay.vercel.app within ~2-3 minutes. Custom domain axia.app will follow once Vercel finishes the build.
 - ⏳ Owner role still needs to be granted to user's account via Convex dashboard (set users.role = "owner" for the user's email).
 - ⏳ Setting env vars on Convex for full Paddle integration: PADDLE_API_KEY, PADDLE_ENVIRONMENT, PADDLE_WEBHOOK_SECRET (for the now-signature-verified webhook to actually verify real Paddle events).
+
+---
+
+Task ID: audit-3-4
+Agent: Explore (API+caching+signout audit)
+
+Scope: Read-only audit of (1) all Convex HTTP routes + Convex functions inventory, (2) caching layers + vercel/next config + sitemap/robots, (3) end-to-end sign-out flow. No files modified.
+
+## What I did
+
+1. Read `src/convex/http.ts` end-to-end (853 lines) and inventoried every `http.route({...})` registration. Also traced the Better Auth route block at line 139 (`authComponent.registerRoutesLazy(http, createAuth, { basePath: "/api/auth", ... })`).
+2. Grepped `src/convex/**/*.ts` with `^export const <name> = (query|mutation|action|httpAction|internalQuery|internalMutation|internalAction)(` and aggregated per-file + per-kind counts via Python.
+3. For every HTTP route, grepped `src/` for the route path to find frontend callers.
+4. Read `src/convex/ownerDashboard/lib/cache.ts` (115 lines) + `src/convex/tables/ownerDashboard.ts` + `src/components/owner-dashboard/hooks.ts` to fully understand the owner-dashboard TTL cache.
+5. Read `vercel.json`, `next.config.ts`, `public/robots.txt`, `public/sitemap.xml`, `scripts/generate-sitemap.mjs`, `Caddyfile`, `index.html`, `src/main.tsx`, `src/lib/safe-convex-react.ts`, `src/lib/auth-client.ts`, `src/hooks/use-auth.ts`, `src/components/LogoDropdown.tsx`, `src/components/CollapsibleSidebar.tsx`, `src/components/ProfileModal.tsx`, `src/components/ProfileSection.tsx`, `src/components/ProtectedRoute.tsx`, `src/pages/AccountSettings.tsx` (sign-out section), `src/convex/accountSettings.ts`.
+6. Grepped `src/` for `signOut|signout|sign-out|logout` (case-insensitive) and traced every caller.
+7. Grepped `src/` for `cache|Cache-Control|ETag|If-None-Match|serviceWorker|service-worker|sw.js|TanstackQuery|QueryClient|useSWR|react-query|WeakMap` and inspected every hit.
+
+## Key findings
+
+### API endpoints
+- 7 explicit `http.route({...})` registrations in `src/convex/http.ts` + 1 Better Auth route block at line 139 covering `/api/auth/*` (sign-in, sign-up, sign-out, get-session, magic-link, email-otp, OAuth callbacks — all delegated to Better Auth).
+- HTTP routes:
+  - POST `/api/extension/start` — caller: `src/components/EvidenceCollector.tsx:34` (active, used by TimeTracking's `useEvidenceCollector` hook).
+  - POST `/api/extension/record` — caller: `EvidenceCollector.tsx:58` (active).
+  - POST `/api/extension/finalize` — caller: `EvidenceCollector.tsx:80` (active).
+  - POST `/api/extension/validate` — no React caller; intended for the separate Chrome extension codebase (not in this repo). NOT dead — external API.
+  - POST `/api/ai/predict` — caller: `src/components/AIDisputePrediction.tsx:45`, but `AIDisputePrediction` is **never mounted** (no `<AIDisputePrediction` usage in src/). Endpoint is live on the backend but has zero active frontend callers from this repo — likely dead or used only by the extension.
+  - POST `/api/payments/webhook` — Stripe webhook, called by Stripe (no frontend caller — correct).
+  - POST `/api/paddle/webhook` — Paddle webhook, called by Paddle (no frontend caller — correct). Signature verified via HMAC-SHA256 (pureCrypto).
+- Convex function totals (120 files, 603 exports): `query` = 248, `mutation` = 317, `internalMutation` = 21, `action` = 16, `internalAction` = 1, `httpAction` = 7 (counted via `http.route` calls — they're inline, not exported consts).
+
+### Likely dead / debug Convex files
+- `src/convex/debug.ts` (3 exports) — admin-only debug helpers; no `api.debug.` callers in src/.
+- `src/convex/seed.ts` (4 exports) — comment says "Called automatically by the useAuth hook" but no `api.seed.` callers in src/. Orphaned.
+- `src/convex/seedTeamUsers.ts` (4 exports, ~1280 lines) — admin seed script; comment says "Run from Convex dashboard or via: npx convex run seedTeamUsers:seedAllUsers". Dev-only.
+- `src/convex/adminSeed.ts` (1 export) — comment says "After running, DELETE this file or revert the changes." Dev-only.
+- `src/convex/projects/debugProjects.ts` (1 export) — no `api.debugProjects.` callers.
+- `src/convex/projects/milestoneProtectionTest.ts` (3 exports, all named `test*`) — no callers; explicitly a test utility.
+- `src/convex/extensionRotate.ts` (1 export) — `rotateToken`; no `api.extensionRotate.` callers found in src/ (may be invoked from Convex dashboard).
+- `src/convex/clientAuth.ts` (root-level, 3 exports) — duplicates `clients/clientAuth.ts` conceptually; no `api.clientAuth.` callers (the `clients/clientAuth.ts` version is also uncalled — both look unused post-removal of the user-account "client" tier).
+- `src/convex/ai/disputePredictionNode.ts` (1 export, `predictDisputeOutcome`) — comment in disputePrediction.ts says "Call api.ai.disputePredictionNode.predictDisputeOutcome directly from the client" but no such caller exists; the HTTP route `/api/ai/predict` re-implements the LLM call inline. Dead.
+- `src/hooks/use-auto-seed.ts` — `useAutoSeed()` hook defined but never imported.
+- `src/components/AIDisputePrediction.tsx` — component defined but never rendered.
+
+### Caching
+- **Convex owner-dashboard TTL cache** (`src/convex/ownerDashboard/lib/cache.ts` + `dashboardCache` table): well-implemented, per-source TTLs (Sentry 30s, PostHog 60s, Vercel 60s, Paddle 300s), upsert pattern, read-only `getCacheOnly` for queries, write via `getOrFetch` in mutations/actions, stale-cache fallback on 429 rate limit. Working + appropriate.
+- **Vercel `Cache-Control` headers** (`vercel.json` lines 16–34): `/assets/*` → `public, max-age=31536000, immutable` (1y, perfect for hashed Vite assets). `/index.html` → `no-cache, no-store, must-revalidate` (correct — SPA shell must always re-fetch). Top-level static files (logo, favicon, og-image, robots, sitemap, manifest) → `public, max-age=86400, stale-while-revalidate=604800` (1d fresh + 7d stale). Working + appropriate.
+- **`next.config.ts`**: only a dev-mode rewrite (`/axia/:path*` → `localhost:3000`). No caching directives. (App is Vite + React Router, not Next.js — this file is vestigial.)
+- **Caddyfile**: pure reverse proxy to localhost:3000, no Cache-Control directives.
+- **`src/lib/safe-convex-react.ts`**: NOT a cache — it's a connection-aware wrapper that skips queries when unauthenticated. No caching layer added.
+- **localStorage "caches"**: `axia_subscription_tier` is mirrored to localStorage in `use-subscription-tier.ts` for offline reads (Convex is source of truth). Not really a cache — it's a per-user pref.
+- **No service worker** in `public/` (no `sw.js`/`service-worker.js`). No SW registration in `index.html` or `src/main.tsx`.
+- **No TanStack Query / SWR / React Query** in `package.json` (deps verified).
+- **No HTTP `ETag` / `If-None-Match` usage** anywhere in src/.
+- **No `Cache-Control` headers on Convex HTTP routes** — `applySecurityHeaders` in `http.ts:52-77` sets CSP/HSTS/X-Frame-Options/etc. but NOT `Cache-Control`. Webhook responses (payment/paddle) are effectively uncached, which is correct for webhooks but means the public `/api/auth/*` routes don't set cache-busting headers either (BA manages its own caching internally).
+- **sitemap.xml**: static file, regenerated by `scripts/generate-sitemap.mjs` on every `prebuild`. Contains 9 URLs (5 static routes + 4 blog posts). No dynamic content (no per-user /workspace/:token URLs — correct, those are private). `lastmod` is the build date.
+- **robots.txt**: static, blocks all /auth /dashboard /clients /projects /invoices /proposals /pipeline /account-settings /owner-dashboard /owner /workspace/ routes. Declares sitemap at https://axia.app/sitemap.xml.
+
+### Missing / recommended caching
+- No CDN-level caching layer in front of the SPA (Vercel handles this implicitly for /assets/*, but no explicit edge config).
+- No HTTP Cache-Control on public marketing pages (/, /blog, /privacy, /terms, /cookies) — they're served via Vercel's SPA fallback (`/index.html` rewrites), so they inherit the no-cache directive. For an SPA this is unavoidable without SSR/ISR. Vercel Edge Functions or a CDN purge on deploy would be the right approach for caching public marketing HTML.
+- No sitemap submission to Google Search Console (out of code scope but worth noting).
+- No `/manifest.json` in `public/` (referenced in `vercel.json` line 29 Cache-Control rule but file doesn't exist — `rg manifest.json public/` returns nothing). The vercel.json cache rule for manifest.json is dead.
+- No stale-while-revalidate on blog post routes (would help SEO + repeat-visit perf).
+- No service worker / PWA offline support — fine for a SaaS dashboard, but could help the marketing site.
+
+### Sign-out flow
+- Sign-out button locations:
+  - `src/pages/AccountSettings.tsx:1084-1114` — primary sign-out button (with confirmation dialog). Calls `handleSignOut()` at line 295.
+  - `src/components/LogoDropdown.tsx:54` — secondary sign-out in the logo dropdown menu. Calls `handleSignOut()` at line 19.
+  - `src/pages/AccountSettings.tsx:1185` — `EmailChangeDialog` calls `onSignOut` (which is `handleSignOut`) after a successful email change (because sessions were revoked server-side).
+  - `src/components/CollapsibleSidebar.tsx:55` — destructures `signOut` from `useAuth()` but **never calls it** — dead destructure (no `signOut(` call in the file).
+  - `src/pages/ClientWorkspace.tsx:203` — "Exit portal" button (NOT Better Auth sign-out — just clears `axia_portal_token` from sessionStorage + redirects). This is the client-portal token logout, separate from the user-account sign-out.
+- Call chain: button → `handleSignOut` → `signOut()` from `useAuth()` → `authClient.signOut()` (Better Auth client → POST /api/auth/sign-out on Convex site URL, revokes BA session server-side, which also invalidates the linked Convex auth token) → in a `finally` block: `analytics.track("auth_sign_out") + analytics.reset()` (drops Sentry/PostHog identity) → loops through `AXIA_LS_KEYS` (8 keys: `axia_active_workspace`, `axia_account_mode`, `axia_subscription_tier`, `axia_sidebar_state`, `axia_client_email`, `axia_notifications_last_seen`, `extension_token`, `onboardingData`) and `localStorage.removeItem(k)` each → `window.location.href = "/"` (hard reload to landing page).
+- After sign-out: ProtectedRoute wraps all dashboard routes. On Back button → SPA reloads → `useConvexAuth()` sees `isAuthenticated = false` (BA session revoked) → ProtectedRoute redirects to `/auth?redirect=...`. No stale dashboard visible.
+- Verdict: **Sign-out works correctly**. Server session is revoked, Convex token invalidated via BA plugin, per-user localStorage wiped, analytics identity cleared, hard reload kills in-memory state, ProtectedRoute enforces auth on every route mount. **Minor cosmetic bugs only**:
+  1. `AccountSettings.tsx:298` shows `toast.success("Signed out successfully")` AFTER `await signOut()`, but `signOut()` ends with `window.location.href = "/"` (hard navigation) — the toast will never render. Cosmetic.
+  2. `LogoDropdown.tsx:22-23` calls `await signOut(); navigate("/");` — the `navigate("/")` is dead code (signOut already hard-reloaded to "/"). Cosmetic.
+  3. `CollapsibleSidebar.tsx:55` destructures `signOut` but never uses it — dead import. Cosmetic.
+  4. `axia_sidebar_sections` and `axia_sidebar_scroll` are user-specific-ish but NOT in `AXIA_LS_KEYS` — they survive sign-out (next user sees prior user's sidebar scroll position + expanded sections). Minor UX leak, not a security issue.
+  5. `axia_theme` and `axia_hallmark_theme` are intentional global UI prefs that survive sign-out (correct).
+  6. `axia_cookie_consent` survives sign-out (correct — consent is per-browser not per-user).
+
+## Stage Summary
+- API surface: 7 HTTP routes + Better Auth /api/auth/* block + 596 Convex query/mutation/action functions across 120 files. All HTTP routes are live except `/api/ai/predict` which has no active React caller (its only consumer component is never mounted).
+- ~12 Convex files are likely dead/debug (debug.ts, seed.ts, seedTeamUsers.ts, adminSeed.ts, debugProjects.ts, milestoneProtectionTest.ts, extensionRotate.ts, clientAuth.ts root, ai/disputePredictionNode.ts, plus orphaned use-auto-seed.ts and AIDisputePrediction.tsx). Recommend removal or move to a `convex/_debug/` subfolder excluded from production builds.
+- Caching: owner-dashboard TTL cache is excellent. Vercel asset caching is excellent. SPA HTML is no-cache (correct). Missing: manifest.json (referenced but doesn't exist), no SWR/React-Query (acceptable — Convex live queries fill that role), no service worker (fine for SaaS).
+- Sign-out: works correctly. No security bugs. Three minor cosmetic issues (toast-then-reload race, dead navigate, dead destructure).

@@ -189,11 +189,11 @@ export function Content() {
         If you've made it this far, you're probably serious about evaluating an agency OS. <Link to="/auth?mode=signup">Sign up for Axia Free</Link> — no credit card, no commitment. The Free tier lets you manage up to 3 clients and 1 workspace, which is enough to pilot the OS model on your own workflow.
       </p>
       <p>
-        If you want a guided demo first, email <a href="mailto:hello@axia.app">hello@axia.app</a> and we'll schedule a 30-minute walkthrough.
+        If you want a guided demo first, email <a href="mailto:hello@axia-bay.vercel.app">hello@axia-bay.vercel.app</a> and we'll schedule a 30-minute walkthrough.
       </p>
 
       <hr />
-      <p className="text-sm text-muted-foreground italic">Updated July 2026. Pricing reflects publicly listed rates at time of publication. We re-run this comparison quarterly; if a competitor has changed pricing or features since publication, email us at hello@axia.app and we'll update.</p>
+      <p className="text-sm text-muted-foreground italic">Updated July 2026. Pricing reflects publicly listed rates at time of publication. We re-run this comparison quarterly; if a competitor has changed pricing or features since publication, email us at hello@axia-bay.vercel.app and we'll update.</p>
     </>
   );
 }

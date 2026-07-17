@@ -1,55 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://axia.app/</loc>
+    <loc>https://axia-bay.vercel.app/</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://axia.app/blog</loc>
+    <loc>https://axia-bay.vercel.app/blog</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axia.app/privacy</loc>
+    <loc>https://axia-bay.vercel.app/privacy</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://axia.app/terms</loc>
+    <loc>https://axia-bay.vercel.app/terms</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://axia.app/cookies</loc>
+    <loc>https://axia-bay.vercel.app/cookies</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://axia.app/blog/agency-os-case-study</loc>
+    <loc>https://axia-bay.vercel.app/blog/agency-os-case-study</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axia.app/blog/agency-os-comparison</loc>
+    <loc>https://axia-bay.vercel.app/blog/agency-os-comparison</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axia.app/blog/best-agency-tools-2026</loc>
+    <loc>https://axia-bay.vercel.app/blog/agency-os-for-small-agencies</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://axia-bay.vercel.app/blog/agency-os-pricing-guide</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://axia-bay.vercel.app/blog/agency-os-vs-crm</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://axia-bay.vercel.app/blog/best-agency-tools-2026</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axia.app/blog/what-is-agency-os</loc>
+    <loc>https://axia-bay.vercel.app/blog/how-to-build-an-agency-os</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://axia-bay.vercel.app/blog/what-is-agency-os</loc>
     <lastmod>2026-07-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

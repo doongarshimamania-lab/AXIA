@@ -1,5 +1,8 @@
-# robots.txt — Axia (axia.app)
+# robots.txt — Axia (axia-bay.vercel.app)
 # Allow all crawlers full access. Sitemap declared below.
+#
+# ponytail: when axia.app apex domain is acquired, update the Sitemap URL below
+# and the DOMAIN constant in scripts/generate-sitemap.mjs.
 
 User-agent: *
 Allow: /
@@ -19,4 +22,4 @@ Disallow: /owner
 Disallow: /workspace/
 
 # Sitemap
-Sitemap: https://axia.app/sitemap.xml
+Sitemap: https://axia-bay.vercel.app/sitemap.xml

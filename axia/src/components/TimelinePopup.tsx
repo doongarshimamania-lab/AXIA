@@ -60,7 +60,7 @@ export function TimelinePopup({ isOpen, onClose, initialDate = new Date(), initi
         startTime,
         endTime,
         activity: status === "compliant" ? "Focused work" : status === "at_risk" ? "Context switch" : "Off-platform",
-        website: status === "rejected" ? "unknown" : "axia.app",
+        website: status === "rejected" ? "unknown" : "axia-bay.vercel.app",
         complianceStatus: status,
         screenshotCount: status === "rejected" ? 0 : 2,
         mouseActivity: status !== "rejected",

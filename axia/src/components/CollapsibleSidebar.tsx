@@ -52,7 +52,9 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { signOut, user } = useAuth();
+  // ponytail: v7.3 audit fix — `signOut` was destructured but never used
+  // (dead destructure per audit). Only `user` is needed here.
+  const { user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 

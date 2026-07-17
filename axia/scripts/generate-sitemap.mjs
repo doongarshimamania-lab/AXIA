@@ -11,7 +11,8 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
-const DOMAIN = "https://axia.app";
+// ponytail: when axia.app apex domain is acquired, update this single constant.
+const DOMAIN = "https://axia-bay.vercel.app";
 
 // Static public routes (no auth, no sidebar).
 const staticRoutes = [

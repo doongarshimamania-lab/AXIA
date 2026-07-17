@@ -259,10 +259,43 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   // Google + Microsoft enabled. GMail sign-in is just Google sign-in.
   // The providers are wired in convex/auth.ts based on env vars
   // GOOGLE_CLIENT_ID / MICROSOFT_CLIENT_ID being set on Convex.
+  //
+  // v7.3: In SIGNUP mode, OAuth buttons are gated behind the same legal consent
+  // checkbox as password signup. We also record a best-effort consent row with
+  // authProvider="google"/"microsoft" + placeholder email "oauth-pending@local"
+  // BEFORE the OAuth redirect. The IP + UA + policy version + content hash are
+  // captured, proving what they agreed to. After OAuth callback, the consent
+  // row can be linked to the actual user by matching IP + UA + recent timestamp
+  // (not yet implemented — see TODO in convex/legal/consent.ts).
+  // In SIGNIN mode, OAuth buttons work without the checkbox (returning users
+  // already consented at signup; the checkbox is hidden via `initialStep`).
   const handleGoogleSignIn = async () => {
+    // v7.3: gate OAuth behind consent checkbox in signup mode.
+    if (step === "signUp" && !hasAgreedToTerms) {
+      setError("Please review and accept the Privacy Policy and Terms of Service to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
+      // v7.3: record legal consent before OAuth redirect (signup mode only).
+      if (step === "signUp") {
+        try {
+          const [privacyRes, termsRes] = await Promise.all([
+            fetch("/privacy").then((r) => r.text()).catch(() => "privacy_policy_v1"),
+            fetch("/terms").then((r) => r.text()).catch(() => "terms_v1"),
+          ]);
+          await recordLegalConsent({
+            email: "oauth-pending@local",
+            policyType: "both",
+            policyVersion: LEGAL_POLICY_VERSION,
+            policyContent: `${privacyRes}\n---\n${termsRes}`,
+            authProvider: "google",
+          });
+        } catch (consentErr) {
+          console.warn("Failed to record pre-OAuth consent (non-blocking):", consentErr);
+        }
+      }
       await signIn("google");
       // BA redirects to Google → callback → navigate happens automatically.
     } catch (err: any) {
@@ -273,9 +306,31 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   };
 
   const handleMicrosoftSignIn = async () => {
+    // v7.3: gate OAuth behind consent checkbox in signup mode.
+    if (step === "signUp" && !hasAgreedToTerms) {
+      setError("Please review and accept the Privacy Policy and Terms of Service to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
+      if (step === "signUp") {
+        try {
+          const [privacyRes, termsRes] = await Promise.all([
+            fetch("/privacy").then((r) => r.text()).catch(() => "privacy_policy_v1"),
+            fetch("/terms").then((r) => r.text()).catch(() => "terms_v1"),
+          ]);
+          await recordLegalConsent({
+            email: "oauth-pending@local",
+            policyType: "both",
+            policyVersion: LEGAL_POLICY_VERSION,
+            policyContent: `${privacyRes}\n---\n${termsRes}`,
+            authProvider: "microsoft",
+          });
+        } catch (consentErr) {
+          console.warn("Failed to record pre-OAuth consent (non-blocking):", consentErr);
+        }
+      }
       await signIn("microsoft");
     } catch (err: any) {
       console.error("Microsoft sign-in error:", err);
@@ -410,7 +465,14 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           {/* OAuth sign-in buttons (Better Auth): Google + Microsoft.
               GMail sign-in is just Google sign-in — no separate provider.
               Providers are wired in convex/auth.ts based on env vars
-              GOOGLE_CLIENT_ID / MICROSOFT_CLIENT_ID set on Convex. */}
+              GOOGLE_CLIENT_ID / MICROSOFT_CLIENT_ID set on Convex.
+              v7.3: in signup mode, these are gated by the consent checkbox
+              below — clicking shows an error if checkbox isn't ticked. */}
+          {step === "signUp" && !hasAgreedToTerms && (
+            <p className="text-[11px] text-muted-foreground mb-2 text-center">
+              Continue with Google/Microsoft requires accepting the policies below.
+            </p>
+          )}
           <div className="space-y-2 mb-4">
             <Button
               type="button"
@@ -418,6 +480,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               className="w-full h-11 bg-background border-border"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
+              title={step === "signUp" && !hasAgreedToTerms ? "Tick the consent checkbox below first" : undefined}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -445,6 +508,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               className="w-full h-11 bg-background border-border"
               onClick={handleMicrosoftSignIn}
               disabled={isLoading}
+              title={step === "signUp" && !hasAgreedToTerms ? "Tick the consent checkbox below first" : undefined}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23" aria-hidden="true">
                 <path fill="#F25022" d="M1 1h10v10H1z" />

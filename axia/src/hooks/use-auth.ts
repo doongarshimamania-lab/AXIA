@@ -39,11 +39,18 @@ import { authClient } from "@/lib/auth-client";
 // `extension_token` (defense-in-depth: if the Chrome-extension token UI ever
 // gets wired to the backend, this prevents the next user pairing as the prior
 // user).
+//
+// v7.3 audit fix: added `axia_sidebar_sections` + `axia_sidebar_scroll` —
+// previously survived sign-out, leaking the prior user's sidebar expand-state
+// and scroll position to the next user. Minor UX leak, not security, but the
+// audit flagged it so we fix it here.
 const AXIA_LS_KEYS = [
   "axia_active_workspace",
   "axia_account_mode",
   "axia_subscription_tier",
   "axia_sidebar_state",
+  "axia_sidebar_sections",
+  "axia_sidebar_scroll",
   "axia_client_email",
   "axia_notifications_last_seen",
   "extension_token",

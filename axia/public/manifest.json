@@ -1,0 +1,13 @@
+{
+  "name": "Axia — Agency OS",
+  "short_name": "Axia",
+  "description": "The agency OS — one connected system for CRM, projects, proposals, invoices, payments, and analytics.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

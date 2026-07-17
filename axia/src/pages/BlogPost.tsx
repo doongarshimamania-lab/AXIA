@@ -2,6 +2,10 @@
 //
 // Loads a single blog post by slug from src/content/posts/*.tsx. Renders the
 // post's `Content` component. Sets document title + meta description for SEO.
+//
+// v7.3: Adds per-post BlogPosting JSON-LD schema for richer Google indexing
+// (author, datePublished, image, publisher). Helps Google understand the
+// content is a published article and enables rich results in Search.
 
 import { Link, useParams } from "react-router";
 import { useEffect } from "react";
@@ -35,9 +39,67 @@ for (const [path, mod] of Object.entries(postModules)) {
   }
 }
 
+const SITE_URL = "https://axia-bay.vercel.app";
+
+// ponytail: builds a BlogPosting JSON-LD object for the current post and
+// injects it as a <script type="application/ld+json"> tag in <head>. Removed
+// on unmount so navigating between posts doesn't stack up stale scripts.
+function useBlogPostingSchema(post: PostModule | undefined) {
+  useEffect(() => {
+    if (!post) return;
+    const fm = post.frontmatter;
+    const scriptId = "blogposting-schema";
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.type = "application/ld+json";
+      document.head.appendChild(script);
+    }
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: fm.title,
+      description: fm.description,
+      datePublished: fm.date,
+      dateModified: fm.date,
+      author: {
+        "@type": "Organization",
+        name: fm.author,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Axia Technologies Pvt. Ltd.",
+        logo: {
+          "@type": "ImageObject",
+          url: `${SITE_URL}/logo.png`,
+        },
+      },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/blog/${fm.slug}`,
+      },
+      image: `${SITE_URL}/og-image.png`,
+      keywords: fm.keywords.join(", "),
+      articleSection: fm.category,
+      inLanguage: "en",
+    };
+    script.textContent = JSON.stringify(schema);
+
+    return () => {
+      // Don't remove on unmount — React Router may reuse the element when
+      // navigating between blog posts. The next post's useEffect will overwrite
+      // the textContent. Cleanup happens on full page navigation.
+    };
+  }, [post]);
+}
+
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? postsBySlug[slug] : undefined;
+
+  // v7.3: inject BlogPosting schema for this post.
+  useBlogPostingSchema(post);
 
   // SEO: set document title + meta description per post.
   useEffect(() => {

@@ -1,7 +1,12 @@
 // src/pages/TermsOfService.tsx — /terms route.
 //
-// Full Terms & Conditions covering: India Contract Act 1872 + IT Act 2000 +
-// DPDP Act 2023 (primary), GDPR (EU), CCPA (California). Full liability shield.
+// Full Terms & Conditions covering: GDPR (EU), CCPA (California), UK GDPR,
+// then India Contract Act 1872 + IT Act 2000 + DPDP Act 2023 (legal-HQ).
+// Full liability shield.
+//
+// v7.3: Reordered GLOBAL-first per user preference. Service URL updated to
+// axia-bay.vercel.app (current production domain; apex axia.app will replace
+// it when acquired).
 //
 // The policy "version" + "last updated" date match the constants exported
 // from convex/legal/consent.ts (POLICY_VERSIONS.terms_of_service). When the
@@ -12,7 +17,9 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 
 const POLICY_VERSION = "1.0.0";
-const LAST_UPDATED = "17 July 2026";
+const LAST_UPDATED = "18 July 2026";
+const SERVICE_URL = "axia-bay.vercel.app";
+const OPERATOR = "Axia Technologies Pvt. Ltd.";
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -59,7 +66,7 @@ export default function TermsOfService() {
 
           <Section id="agreement" title="1. Agreement to Terms">
             <p>
-              These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "you", "your") and <strong>Axia Technologies Pvt. Ltd.</strong> ("Axia", "we", "us", "our") governing your access to and use of the SaaS platform at <strong>axia.app</strong> and any related subdomains (the "Service").
+              These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "you", "your") and <strong>{OPERATOR}</strong> ("Axia", "we", "us", "our") governing your access to and use of the SaaS platform at <strong>{SERVICE_URL}</strong> and any related subdomains (the "Service").
             </p>
             <p>
               By creating an account, clicking "I agree", or using any part of the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms and our <Link to="/privacy">Privacy Policy</Link> and <Link to="/cookies">Cookie Policy</Link>, which are incorporated by reference. If you do not agree, you must not access or use the Service.
@@ -86,7 +93,7 @@ export default function TermsOfService() {
               To use most features, you must create an account by providing your name, email address, and a password (or by signing in via Google or Microsoft OAuth, magic link, or email OTP). You are responsible for maintaining the confidentiality of your credentials and for all activities that occur under your account.
             </p>
             <p>
-              You agree to: (a) provide accurate and complete information at sign-up; (b) keep your account information updated; (c) use a strong, unique password; (d) immediately notify us at <a href="mailto:security@axia.app">security@axia.app</a> of any unauthorized use of your account; and (e) accept all risks of unauthorized access if you fail to enable available security features.
+              You agree to: (a) provide accurate and complete information at sign-up; (b) keep your account information updated; (c) use a strong, unique password; (d) immediately notify us at <a href="mailto:security@axia-bay.vercel.app">security@axia-bay.vercel.app</a> of any unauthorized use of your account; and (e) accept all risks of unauthorized access if you fail to enable available security features.
             </p>
             <p>
               We reserve the right to suspend or terminate accounts that: violate these Terms, engage in fraudulent or abusive behavior, fail to pay subscription fees when due, or expose us to legal liability. We will provide notice and an opportunity to cure where feasible.
@@ -107,7 +114,7 @@ export default function TermsOfService() {
               <li>Resell, sublicense, or redistribute access to the Service without our prior written consent.</li>
             </ul>
             <p>
-              Violations may result in immediate account suspension and, where applicable, referral to law enforcement. We reserve the right to report violations to authorities in India (IT Act 2000 §43, §66) and abroad.
+              Violations may result in immediate account suspension and, where applicable, referral to law enforcement. We reserve the right to report violations to authorities in our legal-HQ jurisdiction (India — IT Act 2000 §43, §66), in the user's jurisdiction, and to international authorities via Interpol or MLAT channels.
             </p>
           </Section>
 
@@ -122,13 +129,13 @@ export default function TermsOfService() {
               <strong>Cancellation:</strong> You can cancel your subscription at any time from Account Settings. Cancellation takes effect at the end of the current billing period. No refunds are issued for partial billing periods, except where required by law (e.g., EU consumer protection allows 14-day withdrawal for B2C contracts).
             </p>
             <p>
-              <strong>Refunds:</strong> Refunds are issued at our discretion for service outages exceeding 24 hours in a 30-day period, billing errors, or where required by law. To request a refund, email <a href="mailto:billing@axia.app">billing@axia.app</a> within 30 days of the disputed charge.
+              <strong>Refunds:</strong> Refunds are issued at our discretion for service outages exceeding 24 hours in a 30-day period, billing errors, or where required by law. EU consumers have a 14-day withdrawal right under the EU Consumer Rights Directive (Dir. 2011/83/EU). To request a refund, email <a href="mailto:billing@axia-bay.vercel.app">billing@axia-bay.vercel.app</a> within 30 days of the disputed charge.
             </p>
             <p>
-              <strong>Taxes:</strong> Prices exclude applicable taxes (GST for Indian customers, VAT for EU customers, sales tax for US customers), which are added at checkout by Paddle based on your billing address.
+              <strong>Taxes:</strong> Prices exclude applicable taxes — GST for Indian customers (where Axia's legal entity is registered), VAT for EU customers, sales tax for US customers, UK VAT — which are added at checkout by Paddle based on your billing address. Paddle is the merchant of record and handles tax remittance in most jurisdictions.
             </p>
             <p>
-              <strong>Plan changes during payment integration:</strong> Until our Paddle checkout flow is fully wired into the Pricing modal, paid tier upgrades require contacting <a href="mailto:billing@axia.app">billing@axia.app</a>. Self-serve tier changes via the in-app modal can only cancel (downgrade to Free) — they cannot self-upgrade paid tiers. This is a security measure to prevent privilege escalation.
+              <strong>Plan changes during payment integration:</strong> Until our Paddle checkout flow is fully wired into the Pricing modal, paid tier upgrades require contacting <a href="mailto:billing@axia-bay.vercel.app">billing@axia-bay.vercel.app</a>. Self-serve tier changes via the in-app modal can only cancel (downgrade to Free) — they cannot self-upgrade paid tiers. This is a security measure to prevent privilege escalation.
             </p>
           </Section>
 
@@ -255,13 +262,13 @@ export default function TermsOfService() {
 
           <Section id="law" title="15. Governing Law and Dispute Resolution">
             <p>
-              These Terms are governed by the laws of the Republic of India, without regard to its conflict-of-law principles. The courts of Bengaluru, Karnataka, have exclusive jurisdiction over any dispute arising out of or related to these Terms or the Service.
+              These Terms are governed by the laws of the Republic of India (our legal-HQ jurisdiction), without regard to its conflict-of-law principles. The courts of Bengaluru, Karnataka, have exclusive jurisdiction over any dispute arising out of or related to these Terms or the Service — except where mandatory consumer-protection laws in the user's jurisdiction require otherwise.
             </p>
             <p>
               Before initiating litigation, the parties agree to: (a) attempt good-faith negotiation for 30 days; (b) if unresolved, proceed to mediation under the Mediation Act 2023 (Bengaluru venue); (c) if still unresolved, refer the dispute to a sole arbitrator appointed mutually under the Arbitration and Conciliation Act 1996 (Bengaluru seat, English language). The award shall be final and binding.
             </p>
             <p>
-              EU consumers retain rights under GDPR Art. 79 and the EU Consumer Rights Directive. California residents retain rights under CCPA §1798.150 and the California Consumer Legal Remedies Act.
+              EU consumers retain rights under GDPR Art. 79 and the EU Consumer Rights Directive (Dir. 2011/83/EU), including the 14-day right of withdrawal for B2C digital-content contracts. UK consumers retain rights under UK GDPR and the Consumer Rights Act 2015. California residents retain rights under CCPA §1798.150 and the California Consumer Legal Remedies Act. These jurisdiction-specific rights are preserved and the user may elect the forum most favourable to them.
             </p>
             <p>
               If any provision of these Terms is held to be unenforceable, the remaining provisions continue in full force and effect.
@@ -294,10 +301,10 @@ export default function TermsOfService() {
               For any questions about these Terms, contact:
             </p>
             <p>
-              <strong>Axia Technologies Pvt. Ltd.</strong><br />
-              Legal: <a href="mailto:legal@axia.app">legal@axia.app</a><br />
-              Billing: <a href="mailto:billing@axia.app">billing@axia.app</a><br />
-              Security: <a href="mailto:security@axia.app">security@axia.app</a>
+              <strong>{OPERATOR}</strong><br />
+              Legal: <a href="mailto:legal@axia-bay.vercel.app">legal@axia-bay.vercel.app</a><br />
+              Billing: <a href="mailto:billing@axia-bay.vercel.app">billing@axia-bay.vercel.app</a><br />
+              Security: <a href="mailto:security@axia-bay.vercel.app">security@axia-bay.vercel.app</a>
             </p>
           </Section>
         </article>

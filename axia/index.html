@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/axia-favicon.svg" />
   <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <!-- ponytail: NEW landing page fonts — Inter (body) + Inter Tight (display).
@@ -13,8 +14,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   
-  <!-- Canonical URL to prevent duplicate content -->
-  <link rel="canonical" href="https://axia.app/" />
+  <!-- Canonical URL to prevent duplicate content.
+       ponytail: when axia.app apex domain is acquired, change SITE_URL in one place
+       (src/lib/app-config.ts) + this hardcoded value in index.html + scripts/generate-sitemap.mjs. -->
+  <link rel="canonical" href="https://axia-bay.vercel.app/" />
   
   <!-- Security Headers -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
@@ -36,22 +39,35 @@
   <meta name="publisher" content="Axia" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   
-  <!-- Geographic Targeting — v7.2: India HQ, global target per user preference -->
-  <meta name="geo.region" content="IN" />
-  <meta name="geo.placename" content="Bengaluru, India" />
+  <!-- Geographic Targeting — v7.3: GLOBAL first (primary market), India HQ (secondary).
+       Per user preference: rank globally for "agency os", then localize for India.
+       geo.region empty = no country restriction; distribution=global; coverage=Worldwide. -->
+  <meta name="geo.region" content="" />
+  <meta name="geo.placename" content="Global, with HQ in Bengaluru, India" />
   <meta name="geo.position" content="12.9716;77.5946" />
   <meta name="ICBM" content="12.9716, 77.5946" />
   <meta name="language" content="English" />
   <meta name="coverage" content="Worldwide" />
   <meta name="distribution" content="global" />
   <meta name="target" content="all" />
+  <meta name="audience" content="all" />
+  <meta name="rating" content="general" />
+
+  <!-- hreflang for international SEO (global English first, then regional variants) -->
+  <link rel="alternate" hreflang="en" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="en-US" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="en-GB" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="en-IN" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="en-AU" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="en-CA" href="https://axia-bay.vercel.app/" />
+  <link rel="alternate" hreflang="x-default" href="https://axia-bay.vercel.app/" />
   
-  <!-- Open Graph Meta Tags (Enhanced) — v7.2: agency os focused -->
+  <!-- Open Graph Meta Tags (Enhanced) — v7.3: agency os focused, global-first -->
   <meta property="og:title" content="Axia — The Agency OS for Modern Agencies" />
   <meta property="og:description" content="One connected system for CRM, projects, proposals, invoices, payments, and analytics. Replaces 5+ tools at 1/5 the cost. Built for boutique agencies and freelancers scaling up." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://axia.app/" />
-  <meta property="og:image" content="https://axia.app/og-image.png" />
+  <meta property="og:url" content="https://axia-bay.vercel.app/" />
+  <meta property="og:image" content="https://axia-bay.vercel.app/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Axia" />
@@ -63,7 +79,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Axia — The Agency OS for Modern Agencies" />
   <meta name="twitter:description" content="One connected system for CRM, projects, proposals, invoices, payments, and analytics. Replaces 5+ tools at 1/5 the cost." />
-  <meta name="twitter:image" content="https://axia.app/og-image.png" />
+  <meta name="twitter:image" content="https://axia-bay.vercel.app/og-image.png" />
   <meta name="twitter:site" content="@Axia" />
   <meta name="twitter:creator" content="@Axia" />
   
@@ -136,7 +152,7 @@
       "Audit log + DPDP/GDPR/CCPA compliance",
       "Owner role enforcement at the database level"
     ],
-    "screenshot": "https://axia.app/logo_bg.png",
+    "screenshot": "https://axia-bay.vercel.app/logo_bg.png",
     "softwareVersion": "1.0",
     "author": {
       "@type": "Organization",
@@ -145,23 +161,25 @@
     "provider": {
       "@type": "Organization",
       "name": "Axia",
-      "url": "https://axia.app"
+      "url": "https://axia-bay.vercel.app"
     }
   }
   </script>
   
-  <!-- Organization Schema — v7.2: India HQ, agency OS focus -->
+  <!-- Organization Schema — v7.3: global-first HQ, agency OS focus.
+       areaServed = Worldwide (primary); address = India (secondary, legal HQ). -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Axia Technologies Pvt. Ltd.",
     "alternateName": "Axia",
-    "url": "https://axia.app",
-    "logo": "https://axia.app/logo.png",
+    "url": "https://axia-bay.vercel.app",
+    "logo": "https://axia-bay.vercel.app/logo.png",
     "description": "Axia is the agency OS — one connected system for CRM, projects, proposals, invoices, payments, and analytics. Built for boutique agencies and freelancers scaling up.",
     "foundingDate": "2024",
     "founders": [{ "@type": "Person", "name": "Axia Founders" }],
+    "areaServed": [{ "@type": "Place", "name": "Worldwide" }],
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Bengaluru",
@@ -171,7 +189,7 @@
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "customer support",
-      "email": "hello@axia.app",
+      "email": "hello@axia-bay.vercel.app",
       "availableLanguage": ["English"]
     },
     "sameAs": [
@@ -182,18 +200,18 @@
   }
   </script>
   
-  <!-- v7.2: Blog schema (marks /blog as a publish entity for Google) -->
+  <!-- v7.3: Blog schema (marks /blog as a publish entity for Google) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Blog",
     "name": "The Axia Blog",
-    "url": "https://axia.app/blog",
+    "url": "https://axia-bay.vercel.app/blog",
     "description": "Insights on running an agency in 2026: tools, workflows, case studies, and the case for an agency operating system.",
     "publisher": {
       "@type": "Organization",
       "name": "Axia Technologies Pvt. Ltd.",
-      "url": "https://axia.app"
+      "url": "https://axia-bay.vercel.app"
     }
   }
   </script>
@@ -233,7 +251,7 @@
         "name": "Is Axia compliant with GDPR and India's DPDP Act?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Axia was built from day one with India's DPDP Act 2023, the EU GDPR, UK GDPR, and California CCPA in mind. Every consent event is logged with timestamp, IP, user-agent, and policy version. Users can export or delete their data on request. The full Privacy Policy is at axia.app/privacy."
+          "text": "Yes. Axia was built from day one with the EU GDPR, UK GDPR, California CCPA, and India's DPDP Act 2023 in mind. Every consent event is logged with timestamp, IP, user-agent, and policy version. Users can export or delete their data on request. The full Privacy Policy is at axia-bay.vercel.app/privacy."
         }
       }
     ]
@@ -241,7 +259,7 @@
   </script>
   
   <!-- Optimized Title Tag (50-60 characters for SEO) — v7.2: agency os keyword front-loaded -->
-  <title>Axia — The Agency OS for Modern Agencies | axia.app</title>
+  <title>Axia — The Agency OS for Modern Agencies</title>
   
   <!-- Prevent flash of wrong theme: apply/remove dark class before React loads -->
   <script>

@@ -293,11 +293,17 @@ export default function AccountSettings() {
   };
 
   const handleSignOut = async () => {
+    // ponytail: v7.3 audit fix — signOut() ends with window.location.href="/"
+    // (hard reload), so a toast.success() AFTER it never renders. Show the
+    // toast BEFORE calling signOut so the user gets feedback. If signOut
+    // throws, the toast has already painted "success" — acceptable UX since
+    // signOut only throws on network failure and the user is still signed in
+    // (the error toast fires next, replacing the success toast).
     try {
+      toast.success("Signing out…");
       await signOut();
-      toast.success("Signed out successfully");
     } catch (error) {
-      toast.error("Failed to sign out");
+      toast.error("Failed to sign out. Please try again.");
     }
   };
 

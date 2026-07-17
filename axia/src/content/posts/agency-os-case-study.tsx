@@ -150,7 +150,7 @@ export function Content() {
 
       <h2>Want to Talk to Priya?</h2>
       <p>
-        Priya has agreed to chat with other agency founders considering Axia. Email <a href="mailto:hello@axia.app">hello@axia.app</a> with subject "Lumen intro" and we'll connect you.
+        Priya has agreed to chat with other agency founders considering Axia. Email <a href="mailto:hello@axia-bay.vercel.app">hello@axia-bay.vercel.app</a> with subject "Lumen intro" and we'll connect you.
       </p>
       <p>
         Or, if you'd rather just try it yourself, <Link to="/auth?mode=signup">sign up for Axia free</Link> — the Free tier is enough to run a 3-client pilot and see whether the OS model fits.

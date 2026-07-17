@@ -152,7 +152,7 @@ export const COOKIE_INVENTORY: CookieRecord[] = [
     name: "better-auth.session_token.cookies",
     category: "strictly_necessary",
     provider: "Axia (first-party, via Better Auth)",
-    purpose: "Cross-subdomain session cookie (used when accessing axia.app from www or app subdomain).",
+    purpose: "Cross-subdomain session cookie (used when accessing the Service from www or app subdomains).",
     type: "cookie",
     ttl: "24 hours (sliding)",
   },

@@ -107,7 +107,7 @@ export function Content() {
       </p>
 
       <hr />
-      <p className="text-sm text-muted-foreground italic">Updated July 2026. We re-evaluate this guide quarterly. Have a tool we missed? Email us at hello@axia.app.</p>
+      <p className="text-sm text-muted-foreground italic">Updated July 2026. We re-evaluate this guide quarterly. Have a tool we missed? Email us at hello@axia-bay.vercel.app.</p>
     </>
   );
 }

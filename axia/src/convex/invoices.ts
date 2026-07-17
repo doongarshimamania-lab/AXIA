@@ -1510,7 +1510,7 @@ export const createStripePaymentLink = mutation({
 
     if (!stripeKey) {
       // No Stripe key configured — return a mock payment link
-      const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+      const mockUrl = `${process.env.HOST_URL || 'https://axia-bay.vercel.app'}/pay/${invoice.publicToken}`;
       await ctx.db.patch(args.invoiceId, {
         updatedAt: Date.now(),
       });
@@ -1522,7 +1522,7 @@ export const createStripePaymentLink = mutation({
     // 2. Set success_url and cancel_url
     // 3. Set metadata: { invoiceId, userId }
     // 4. Return the session URL
-    const mockUrl = `${process.env.HOST_URL || 'https://axia.app'}/pay/${invoice.publicToken}`;
+    const mockUrl = `${process.env.HOST_URL || 'https://axia-bay.vercel.app'}/pay/${invoice.publicToken}`;
     return { paymentUrl: mockUrl, mock: true };
   },
 });

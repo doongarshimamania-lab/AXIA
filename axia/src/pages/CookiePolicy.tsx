@@ -174,11 +174,10 @@ export default function CookiePolicy() {
           </h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
             For any questions about this Cookie Policy or your consent choices, contact us at{" "}
-            <a href="mailto:legal@axia.app" className="underline text-foreground hover:text-primary">
-              legal@axia.app
+            <a href="mailto:legal@axia-bay.vercel.app" className="underline text-foreground hover:text-primary">
+              legal@axia-bay.vercel.app
             </a>
-            . Our Data Protection Officer (India) handles DPDP Act 2023 requests; for GDPR
-            requests, the same address reaches the EU representative.
+            . Our Data Protection Officer handles GDPR / UK GDPR / CCPA / India DPDP Act 2023 requests; for GDPR matters, the EU representative is reachable at the same address.
           </p>
         </section>
       </div>

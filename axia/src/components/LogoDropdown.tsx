@@ -17,9 +17,11 @@ export function LogoDropdown() {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
+    // ponytail: v7.3 audit fix — signOut() ends with window.location.href="/"
+    // (hard reload), so navigate("/") after it is unreachable dead code. Just
+    // call signOut(); the hard reload handles the navigation.
     try {
       await signOut();
-      navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
     }

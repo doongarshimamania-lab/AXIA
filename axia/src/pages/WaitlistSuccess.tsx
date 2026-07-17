@@ -295,7 +295,7 @@ export default function WaitlistSuccess() {
           className="mt-8 text-center text-blue-200/60 text-sm"
         >
           <p>
-            Questions? Contact us at support@axia.app
+            Questions? Contact us at support@axia-bay.vercel.app
           </p>
         </motion.div>
       </div>
