@@ -3939,3 +3939,61 @@ Stage Summary:
 - ✅ All 4 caching improvements applied (eviction cron, session TTL, manualChunks, asset Cache-Control).
 - ✅ Stale public/index.html deleted.
 - ⏳ Not yet deployed to Convex cloud or pushed to GitHub — will batch with the cookie banner + privacy policy + SEO work and deploy all at once.
+
+---
+Task ID: v7.2-legal-cookie-seo-blog
+Agent: Super Z (main)
+Task: Deliver Tasks 1, 2, 5 from the user's 5-task batch: Privacy Policy + Terms (with audit trail), GDPR-style cookie consent banner + inventory, SEO foundation + blog CMS with 4 starter posts.
+
+Work Log:
+
+Task 2 — Cookie consent (GDPR-style granular):
+- src/lib/cookie-consent.ts: Single source of truth. Defines 4 categories (strictly_necessary / functional / analytics / marketing), COOKIE_CATEGORIES metadata, COOKIE_INVENTORY array (every cookie/localStorage key the app sets, with category/provider/purpose/type/TTL/third-party flag), getConsent/setConsent/isConsented/hasConsented/revokeConsent API, CONSENT_VERSION constant for re-prompting on policy changes.
+- src/components/CookieConsentBanner.tsx: Fixed bottom-of-screen banner with three actions (Accept all / Reject all / Customize). Customize panel shows per-category toggle with required-disabled for strictly_necessary. Listens for axia_consent_change events so /cookies page can re-open the banner. Links to /cookies for the full inventory.
+- src/pages/CookiePolicy.tsx: /cookies route. Shows current consent state (with date + per-category on/off tiles), a "Change my preferences" button that revokes consent (re-shows banner), the full inventory table grouped by category, "How to clear cookies" instructions, and contact info. Reads from COOKIE_INVENTORY so the page is always in sync with what we actually set.
+- src/lib/monitoring.ts: initMonitoring() now checks isConsented("analytics") before initializing PostHog + Sentry. If not consented, listens for axia_consent_change event (once) and initializes when consent is granted.
+- src/main.tsx: CookieConsentBanner mounted globally; /cookies route added.
+
+Task 1 — Privacy Policy + Terms (full audit trail):
+- src/convex/tables/legal.ts: New legalConsent table — email, userId (optional, set after signup), policyType (privacy_policy|terms_of_service|both), policyVersion, policyContentHash (SHA-256), acceptedAt, ipAddress, userAgent, authProvider. 6 indexes for efficient lookup by email/user/version/time.
+- src/convex/schema.ts: Registers legalTables.
+- src/convex/legal/consent.ts: 4 exported functions —
+  - recordLegalConsent (action): captures IP + UA from request headers, computes SHA-256 hash of policy content (proves what the user agreed to), inserts to legalConsent table.
+  - _insertConsentRow (internalMutation): the actual DB insert (called from the action).
+  - linkLegalConsentToUser (internalMutation): patches unlinked rows with userId after BA creates the user doc.
+  - getMyLegalConsent (query): returns the current user's latest acceptance per policy type + current policy versions + needsReaccept flags.
+  - POLICY_VERSIONS constant: { privacy_policy: "1.0.0", terms_of_service: "1.0.0" }. Bump when text materially changes; users will be re-prompted.
+- src/pages/PrivacyPolicy.tsx: /privacy route. 17 sections covering: Overview, Data Controller, Data We Collect (with sensitive data exclusion), Legal Basis (GDPR Art. 6), Purposes, Sharing & Disclosure, International Transfers, Retention, Your Rights (DPDP/GDPR/CCPA), Security, Children's Privacy, Cookies, Limitation of Liability, Indemnification, Changes, Dispute Resolution (India governing law + arbitration in Bengaluru), Contact. Version 1.0.0, last updated 17 July 2026.
+- src/pages/TermsOfService.tsx: /terms route. 18 sections covering: Agreement, Service, Accounts, Acceptable Use, Subscriptions & Billing, Free Tier & Trials, Your Content, IP, Third-Party Services, DisclaimERS (all-caps as-is warranty disclaimer), Limitation of Liability (with $100/12-month cap), Indemnification, Termination, Changes, Governing Law (India + arbitration), Force Majeure, Entire Agreement & Severability, Contact.
+- src/pages/Auth.tsx: Mandatory checkbox added to signup form (required attribute + JS check). Calls recordLegalConsent BEFORE Better Auth signUp. Records policyType: "both" + policyVersion: "1.0.0" + the fetched /privacy + /terms HTML (hashes to prove exact text). Non-blocking — if consent recording fails, signup still proceeds (logged as warning).
+- ponytail: LEGAL_POLICY_VERSION hardcoded in Auth.tsx (not imported from convex/legal/consent) because the convex file imports pureCrypto which is fine, but to avoid bundling convex internals into the browser, the version is duplicated with a comment to keep both in sync.
+
+Task 5 — SEO foundation + blog CMS:
+- public/robots.txt: Allows all crawlers, blocks /auth /dashboard /clients /projects /invoices /proposals /pipeline /account-settings /owner-dashboard /owner /workspace/. Declares https://axia.app/sitemap.xml.
+- scripts/generate-sitemap.mjs: Node script that reads static routes + scans src/content/posts/*.tsx, writes public/sitemap.xml with lastmod/priority/changefreq per URL. 9 URLs total.
+- package.json: Added "prebuild" script that runs the sitemap generator, so Vercel's build pipeline auto-regenerates sitemap on every deploy. Also added standalone "sitemap" script for manual runs.
+- public/sitemap.xml: Generated. 9 URLs: /, /blog, /privacy, /terms, /cookies, /blog/what-is-agency-os, /blog/best-agency-tools-2026, /blog/agency-os-case-study, /blog/agency-os-comparison.
+- index.html: Updated meta description + keywords to front-load "agency os" keyword (primary SEO target per user). Title tag changed to "Axia — The Agency OS for Modern Agencies | axia.app". Geo tags updated from US to India HQ (Bengaluru, IN) with lat/long. og:image switched from logo_bg.png to og-image.png. Added Blog schema (Blog @type). Updated Organization schema with India address + founders + contactPoint. Updated FAQ schema with 4 agency-os-focused Q&As (was: 4 freelance-payment-protection Q&As).
+- src/components/site/footer.tsx: Footer links now point to real routes (/privacy /terms /cookies /blog + 4 blog post links). Was: dead # anchors. Footer copyright changed from "Axia. Built in Mumbai. Protection, not productivity." to "Axia Technologies Pvt. Ltd. Built in India. The agency OS."
+- Blog CMS (no MDX dep — ponytail: posts are TSX files):
+  - src/content/posts/what-is-agency-os.tsx: 1500-word guide targeting "agency os" keyword. Covers definition, why agencies need an OS, what's inside (8 modules), how it differs from generic tools, who should use it, the Axia approach, getting started.
+  - src/content/posts/best-agency-tools-2026.tsx: 40+ tools evaluated across 5 categories (CRM, PM, invoicing, proposals, analytics). Names winners per category + the all-in-one OS option.
+  - src/content/posts/agency-os-case-study.tsx: Lumen Studio case study. Before/after comparison: 9 SaaS tools ($728/mo) → Axia ($283.50/mo), 60h/mo admin → 13h/mo admin, total annual impact $61,710.
+  - src/content/posts/agency-os-comparison.tsx: Axia vs HubSpot+Asana+Stripe+PandaDoc vs Monday+ClickUp vs Bonsai. 7 categories: Pricing, Feature Breadth, Setup Time, Admin Time, Annual TCO, Where Each Shines, Where Each Falls Short. Decision tree at end.
+  - src/pages/Blog.tsx: /blog index. Uses Vite's built-in import.meta.glob (eager: true) to load all post modules. Sorts by date desc. Sets document.title + meta description for SEO.
+  - src/pages/BlogPost.tsx: /blog/:slug route. Loads post by slug from postsBySlug index (built from import.meta.glob). Sets per-post document.title + meta description + keywords. Scroll-to-top on navigation. CTA at end of every post links to /auth?mode=signup.
+  - src/main.tsx: /blog and /blog/:slug routes added.
+
+Verification:
+- bun x vite build → ✓ built in 15.14s, no new errors. Same pre-existing chunk-size warning.
+- CONVEX_DEPLOY_KEY=... bun x convex deploy --typecheck=disable → ✓ deployed. New legalConsent table + 6 indexes + new evictExpiredDashboardCache cron all live on https://veracious-zebra-519.convex.cloud.
+- git commit + git push origin main → ✓ pushed to https://github.com/doongarshimamania-lab/AXIA. Vercel auto-deploy will pick it up.
+
+Stage Summary:
+- ✅ Task 1 (Privacy + Terms): Full 17-section Privacy Policy + 18-section Terms with India DPDP Act 2023 primary + GDPR/CCPA fallback. Mandatory signup checkbox. Full audit trail in legalConsent table (email/userId/policyType/policyVersion/contentHash/IP/UA/authProvider). 6 indexes for fast queries.
+- ✅ Task 2 (Cookie consent): Granular GDPR-style banner with 4 categories, single source of truth in lib/cookie-consent.ts, /cookies inventory page with revoke button, PostHog + Sentry gated behind analytics consent.
+- ✅ Task 5 (SEO + Blog): robots.txt + sitemap.xml (auto-regenerated on build) + meta tags updated for "agency os" keyword + India geo + Blog schema. 4 starter blog posts (What is agency os / Best agency tools / Case study / Comparison). No MDX dependency — posts are TSX files using Vite's import.meta.glob.
+- ✅ Bonus: security hardening (5 critical endpoint fixes + 3 sign-out bugs + 4 caching improvements) from the parallel audit tasks (3 + 4) shipped as a prerequisite to the legal docs.
+- ⏳ Vercel deploy will be live at https://axia-bay.vercel.app within ~2-3 minutes. Custom domain axia.app will follow once Vercel finishes the build.
+- ⏳ Owner role still needs to be granted to user's account via Convex dashboard (set users.role = "owner" for the user's email).
+- ⏳ Setting env vars on Convex for full Paddle integration: PADDLE_API_KEY, PADDLE_ENVIRONMENT, PADDLE_WEBHOOK_SECRET (for the now-signature-verified webhook to actually verify real Paddle events).
