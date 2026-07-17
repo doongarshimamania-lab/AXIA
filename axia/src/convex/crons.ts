@@ -41,4 +41,14 @@ crons.cron(
   {}
 );
 
+// Daily 3am UTC — evict expired dashboardCache rows (older than 7 days past
+// their expiresAt). Without this, the dashboardCache table grows unbounded.
+// See ownerDashboard/mutations.ts → _evictExpiredCacheRows for details.
+crons.cron(
+  "evictExpiredDashboardCache",
+  "0 3 * * *",
+  internal.ownerDashboard.mutations._evictExpiredCacheRows,
+  {}
+);
+
 export default crons;

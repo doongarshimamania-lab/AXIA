@@ -178,27 +178,22 @@ export const setUserRole = mutation({
   },
 });
 
-// ─── SELF-SERVE TIER UPGRADE (no payment integration yet) ────────────────────
+// ─── SELF-SERVE TIER CHANGE (cancellation only — paid upgrades via Paddle) ──
 //
-// ponytail: This mutation exists because there is currently no Stripe /
-// payment integration in the app — the PricingModal.handleUpgradeClick
-// path was showing a "payment integration coming soon" toast and silently
-// dropping the upgrade. Combined with `useSubscriptionTier` only writing
-// to localStorage (never to Convex), this caused the user-reported bug:
-// "when i upgrade to any tier it doesnt stay in the tier and automatically
-// comes down to free" — every time the user record re-fetched from Convex,
-// the (never-persisted) tier reset to `undefined` → 'free'.
+// SECURITY (v7.2 hardening): Previously let any signed-in user set their own
+// tier to "starter" / "pro" / "expert" — combined with the loose
+// `requireAdmin` in security/rateLimit.ts that accepted `subscriptionTier
+// === "expert"` as a substitute for `role === "admin"`, this was a 2-call
+// privilege escalation to admin.
 //
-// This mutation lets a signed-in user set ONLY their OWN subscriptionTier.
-// It does NOT grant them any other user's tier, and it does NOT touch the
-// admin-only `setUserTier`/`grantTierByEmail` mutations (those still
-// require `role === "admin"` and are used by the dev tier-switcher for
-// cross-user grants).
+// Now: paid tiers (starter/pro/expert) can ONLY be set by:
+//   1. The Paddle webhook (http.ts → /api/paddle/webhook, signature-verified)
+//   2. An owner via adminGrants:grantTier (requireOwner-guarded)
 //
-// When real payment integration lands, this mutation should be replaced
-// with a payment-verified upgrade flow (e.g. Stripe webhook →
-// setUserTier), but for the current pre-payment beta it is the only
-// way for a user's upgrade to actually persist across page reloads.
+// Users can still CANCEL their subscription (downgrade to "free") via this
+// mutation. Attempting to upgrade via this mutation throws — the PricingModal
+// UI will show the error; a future Paddle checkout integration will replace
+// the upgrade button with a Paddle checkout URL.
 export const setMyTier = mutation({
   args: {
     tier: v.union(
@@ -218,11 +213,20 @@ export const setMyTier = mutation({
     if (!existing) {
       throw new Error("User not found");
     }
+
+    // ponytail: only allow self-cancellation. Any tier escalation must go
+    // through Paddle webhook (signature-verified) or adminGrants:grantTier.
+    if (args.tier !== "free") {
+      throw new Error(
+        "Paid tier upgrades require checkout. Please use the Pricing modal's checkout button."
+      );
+    }
+
     await ctx.db.patch(userId, {
-      subscriptionTier: args.tier,
+      subscriptionTier: "free",
       tierUpgradedAt: Date.now(),
     });
-    return { success: true, userId, tier: args.tier };
+    return { success: true, userId, tier: "free" as const };
   },
 });
 

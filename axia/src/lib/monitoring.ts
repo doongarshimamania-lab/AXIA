@@ -16,7 +16,15 @@
  * Server-side API keys (for owner dashboard) are separate:
  *   SENTRY_AUTH_TOKEN, POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID
  *   (set on Convex, never exposed to browser)
+ *
+ * CONSENT (v7.2): PostHog + Sentry are NOT initialized until the user opts
+ * into the "analytics" cookie category. See lib/cookie-consent.ts. We listen
+ * for consent changes and load/unload accordingly. (Sentry's "unload" is
+ * a stub — once loaded, it stays loaded — but the consent gate still
+ * prevents the initial load.)
  */
+
+import { isConsented } from "@/lib/cookie-consent";
 
 const ENVIRONMENT = import.meta.env.MODE || "development";
 
@@ -101,6 +109,24 @@ export async function initPostHog() {
 
 export async function initMonitoring() {
   if (initialized) return;
+  // ponytail: v7.2 — gate analytics init behind explicit consent. If user
+  // hasn't opted into "analytics" category, skip and listen for the consent
+  // change event. This is the GDPR/DPDP-correct behavior: no analytics
+  // cookies/scripts until opt-in.
+  if (!isConsented("analytics")) {
+    if (typeof window !== "undefined") {
+      window.addEventListener(
+        "axia_consent_change",
+        () => {
+          if (isConsented("analytics") && !initialized) {
+            initMonitoring();
+          }
+        },
+        { once: true }
+      );
+    }
+    return;
+  }
   initialized = true;
   await Promise.all([initSentry(), initPostHog()]);
 }

@@ -3480,3 +3480,462 @@ Stage Summary:
 - ✅ Build verified: 15.45s, no new errors.
 - ⏳ Not yet pushed to GitHub remote — user should `git push` (or I can on request) to trigger Vercel auto-deploy.
 - ⏳ Owner role still needs to be granted to your user via the Convex dashboard or a one-time mutation (set `users.role = "owner"` for your user doc). Without this, the sidebar link won't appear even after deploy.
+
+---
+Task ID: audit-caching-signout-v7.2
+Agent: Explore (caching + auth audit)
+Task: Audit AXIA at /home/z/my-project/axia/ for (A) every caching layer currently in use and (B) the end-to-end sign-out flow. Pure audit — no code modified.
+
+Work Log:
+- Read worklog.md (last 500 lines) for context: AXIA uses Better Auth + Convex, OAuth flows verified working in v7.0, owner dashboard v7 added dashboardCache table + Sentry/PostHog/Paddle integration.
+- Read in parallel: src/hooks/use-auth.ts, src/lib/auth-client.ts, src/convex/auth.config.ts, src/convex/lib/auth.ts, src/convex/auth.ts, src/hooks/use-workspace.tsx, vite.config.ts, vercel.json, Caddyfile, index.html, public/index.html, convex.json, package.json, src/convex/convex.config.ts, src/convex/http.ts (partial), src/convex/accountSettings.ts, src/convex/ownerDashboard/lib/cache.ts, src/convex/ownerDashboard/queries.ts, src/convex/tables/ownerDashboard.ts, src/components/owner-dashboard/hooks.ts, src/components/ProtectedRoute.tsx, src/instrumentation.tsx, src/lib/monitoring.ts, src/lib/analytics.ts, src/lib/safe-convex-react.ts, src/main.tsx, src/components/LogoDropdown.tsx, src/components/CollapsibleSidebar.tsx (lines 1-220, 600-719), src/components/ThemeProvider.tsx, src/components/ui/sidebar.tsx (lines 1-120), src/components/ExtensionTokenSection.tsx, src/hooks/use-hallmark-theme.tsx, src/hooks/use-subscription-tier.ts, src/hooks/use-notifications.ts, src/pages/AccountSettings.tsx (lines 160-319, 960-1019, 1080-1199), src/pages/ClientWorkspace.tsx (lines 1-100), src/pages/ClientSignup.tsx (lines 1-60), src/pages/Auth.tsx (lines 1-100), src/convex/extension.ts (full).
+- Greped src/ for: signOut|signout|logout|logOut|SignOut; localStorage.|sessionStorage.|document.cookie|IndexedDB|idb; react-query|@tanstack/react-query|@swr; service.?worker|workbox|manifest\.json|webmanifest; clearAllCache|clearCache|invalidate|reset.*[Cc]ache|client\.clear; onboardingData; posthog|sentry|setUser|clearUser|analytics\.reset|posthog\.reset.
+
+Stage Summary:
+
+# AXIA — Caching + Sign-Out Audit
+
+## Part A: Caching Audit
+
+### A.1 Convex caching
+
+| Layer | Where it lives | What it caches | TTL | Invalidation trigger | Gaps |
+|---|---|---|---|---|---|
+| `dashboardCache` table | `src/convex/tables/ownerDashboard.ts:44-53`, lib helper at `src/convex/ownerDashboard/lib/cache.ts` | Upstream API responses (Sentry issues/events, PostHog DAU/MAU/retention, Vercel deploys, Paddle MRR/subscriptions) | Per-key TTL: 30s (Sentry issues/events, realtime, internal users), 60s (PostHog DAU, Vercel deploys, hero KPIs, alerts), 120s (Sentry releases, PostHog funnel/pages, Paddle subscriptions/transactions), 300s (Sentry stats, PostHog retention, Vercel analytics, Paddle MRR) — see `cache.ts:17-32` | TTL expiry → next query returns `null` → frontend `useOwnerDashboardData` hook triggers refresh action (`src/components/owner-dashboard/hooks.ts:34-57`). Stale-on-429: fetchers return cached data when upstream rate-limits. | No automatic eviction of expired rows — `dashboardCache` grows unbounded. Cron needed. No user-scoping — any owner sees any other owner's cached upstream data (acceptable since owner role is singleton-like). |
+| `withIndex` query patterns | ~80 query sites across `src/convex/**/*.ts` (adminGrants, clientAuth, users, seedTeamUsers, policies, customFields, tags, scope, leads, goals, network, tracking, pipeline, …) | N/A — these are indexed DB scans, not caches | N/A | N/A — re-runs on every Convex client subscription update | Convex itself does NOT cache query results across invocations (each query re-runs in V8 worker on every subscription update). No memoization. For hot paths this is acceptable; for cold paths (e.g., `clientsEnriched` join) it's a known scaling limit. |
+| Owner dashboard `useOwnerDashboardData` client-side cache | `src/components/owner-dashboard/hooks.ts:18-82` | Last-returned cache row + isRefreshing flag in React state | React component lifetime | Poll interval (5s-120s depending on tab), window focus, manual refresh button | Throttle in `doRefresh` (10s min between refreshes) means rapid tab-focus switches don't trigger duplicate fetches — good. But `lastRefreshRef` is a `useRef`, so it survives across re-renders but NOT across HMR — fine for prod. |
+
+**No other Convex-side caching helpers exist.** No custom `cache` utility outside owner dashboard. No `withQuery` helper (Convex doesn't expose one — that's a Convex Cloudflare-style feature that doesn't apply here).
+
+### A.2 HTTP caching
+
+| Layer | Where | What it caches | TTL | Invalidation | Gaps |
+|---|---|---|---|---|---|
+| Vercel asset cache | `vercel.json:16-21` → `Cache-Control: public, max-age=31536000, immutable` on `/assets/(.*)` | Vite-emitted hashed JS/CSS chunks (filename contains content hash) | 1 year, immutable | Hash in filename changes when content changes → URL changes → new fetch | Correct as-is. **Gap:** no equivalent header on `/logo.svg`, `/logo.png`, `/favicon.ico`, `/axia-favicon.svg`, `/og-image.png` — these are served without explicit Cache-Control and fall back to Vercel's default (which is short). Logo assets re-fetched on every navigation. |
+| Vercel index.html cache | `vercel.json:22-27` → `Cache-Control: no-cache, no-store, must-revalidate` | HTML shell | Always re-fetch | Per request | Correct. |
+| Caddyfile reverse proxy | `Caddyfile:1-26` (preview-81.space-z.ai, axia.space-z.ai, timelock.space-z.ai) | N/A — pure TCP relay, no caching directives | N/A | N/A | No cache headers injected at proxy layer. Vercel handles cache headers when deployed to vercel.app. When using Caddy-backed preview deploys, no asset cache headers are set at all — relies on Vercel build artifact headers (which the Caddy proxy doesn't add). |
+| Convex HTTP routes | `src/convex/http.ts:51-76` (`applySecurityHeaders`) | N/A — sets CSP + HSTS + X-Frame-Options etc. on every Convex HTTP response (auth, extension, AI, webhooks) | N/A | N/A | No `Cache-Control` set on auth/extension HTTP routes. Better Auth's `signOut` response includes `Cache-Control: no-store` natively, but custom httpActions (e.g., `/api/extension/record`) don't set it. Browsers may cache GET requests (none exist in custom routes — all POST). Acceptable. |
+| Browser HTML meta cache | `index.html` (root) + `public/index.html` | N/A — no `<meta http-equiv="Cache-Control">` tags | N/A | N/A | Relies on Vercel headers. **Note:** `public/index.html` is a stale pre-built artifact (lines 206-207 reference specific hashed filenames `/assets/index-DtFjXlJ7.js` and `/assets/index-C6zh-kIX.css` from a previous build). Vite overwrites this during build — but its existence in `public/` means Vite copies it to `dist/` verbatim, potentially clobbering the freshly-built `index.html`. The v7.0 worklog (line 2986) claimed this file was deleted, but it has reappeared — likely re-added during a later commit. **Re-introduced regression.** |
+| Service worker / Workbox / PWA manifest | (none) | n/a | n/a | n/a | No service worker, no offline caching, no `manifest.json` / `.webmanifest`. App requires network to load. Acceptable for a SaaS dashboard; would be a gap for mobile/PWA ambitions. |
+
+### A.3 Auth/session caching
+
+| Component | Location | TTL | Storage | Invalidation | Gaps |
+|---|---|---|---|---|---|
+| Better Auth session (DB row) | `@convex-dev/better-auth` component's `session` table (inside the Convex Component, NOT in our schema.ts) | **Not explicitly configured — uses BA default of 7 days.** No `session: { expiresIn, updateAge }` in `createAuthOptions` (`src/convex/auth.ts:98-216`). | Convex DB row in the BA component | `authClient.signOut()` → `POST /api/auth/signout` → BA deletes the row. `revokeAllSessions` API used after password/email change (`accountSettings.ts:77,145`). | **Gap:** Session TTL is the BA default (7 days, sliding window). For a financial-data app, 7 days may be too long. Should set `session: { expiresIn: 60*60*24, updateAge: 60*60 }` (24h, refresh hourly) explicitly. |
+| BA JWT (issued to client) | Inside the BA session, propagated to Convex via cookie | Default 1 hour (`betterAuth` default), refreshed on `updateAge` boundary | HttpOnly cookie set by BA `crossDomain` plugin | Hard reload on sign-out → cookie is cleared by BA signOut response (`Set-Cookie: <session>=; Max-Age=0`). Subsequent requests have no cookie. | **Gap:** If the cookie isn't cleared (e.g., third-party cookie blocking on Safari, which is the default since Safari 13.1), the JWT may persist in memory until expiry. The hard reload in `use-auth.ts:175` mitigates the in-memory case. |
+| Convex auth state (`useConvexAuth`) | `src/hooks/use-auth.ts:59` (`useConvexAuth` from `convex/react`) | Polls the Convex backend every ~30s for fresh auth state | In-memory React state | Re-fetches on WS reconnect, on `setAuth` mutation, on hard reload | OK. The hard reload in signOut forces a fresh `useConvexAuth` initialization. |
+| `safeGetAuthUser` session DB lookup | `src/convex/lib/auth.ts:105` | Per-query (no caching) | N/A | N/A | Slow path — every Convex query does a DB session lookup. **Acceptable** for security; would benefit from Convex's `cache` API if/when they ship one. |
+| `getAuthUserId` JWT fallback | `src/convex/lib/auth.ts:124-150` | N/A — only fires when `safeGetAuthUser` THROWS (not returns null) | N/A | N/A | **Critical gap:** If `safeGetAuthUser` ever throws (instead of returning null) on a deleted session, the fallback reads the JWT directly and would still see the user as authenticated until JWT expiry. Today it returns null on missing session, so the fallback doesn't fire — but this is a brittle dependency on BA component internals. |
+
+### A.4 Browser storage usage (full inventory)
+
+| Storage key | Where set | Where read | TTL | Cleared on sign-out? | Gap / Notes |
+|---|---|---|---|---|---|
+| `axia_active_workspace` (LS) | `use-workspace.tsx:61,211,227,233,242,258` | `use-workspace.tsx:53,113` | Until changed | ✅ Yes (in `AXIA_LS_KEYS`, `use-auth.ts:36`) | None — correctly cleared. |
+| `axia_account_mode` (LS) | `use-workspace.tsx:61,220,233,245,260,291` | `use-workspace.tsx:53,110` | Until changed | ✅ Yes | None. |
+| `axia_subscription_tier` (LS) | `use-subscription-tier.ts:64,89,99` | `use-subscription-tier.ts:52` (only removes; reads from Convex user record) | Until changed / sign-out | ✅ Yes | None — correctly cleared; also re-synced from Convex on next sign-in. |
+| `axia_sidebar_state` (LS) | `CollapsibleSidebar.tsx:183`, `main.tsx:223` (read-only) | `CollapsibleSidebar.tsx:89`, `main.tsx:221` | Until changed | ✅ Yes | UI preference — clearing is harmless but inconsistent with `axia_sidebar_sections` (which is NOT cleared). |
+| `axia_client_email` (LS) | `ClientSignup.tsx:40` | (nowhere — read never) | Until changed | ✅ Yes (defensive) | **Dead key.** ClientSignup page is no longer routed (`main.tsx:316` comment: "/client-signup route removed — no client sign-up"). The `localStorage.setItem` call on line 40 is unreachable in current routes. |
+| `onboardingData` (LS) | (nowhere — no `setItem` anywhere in `src/`) | (nowhere — no `getItem` anywhere in `src/`) | n/a | ✅ Yes (defensive) | **Dead key.** Likely from a previous onboarding implementation that was rewritten. Kept defensively for old clients that may still have it. Safe to remove from the list, but harmless to keep. |
+| `axia_sidebar_sections` (LS) | `CollapsibleSidebar.tsx:191` | `CollapsibleSidebar.tsx:96` | Until changed | ❌ **NO — GAP** | UI preference (which nav sections are expanded). Inconsistent with `axia_sidebar_state` (which IS cleared). Cosmetic only — next user sees the previous user's expanded-sections state. Should be cleared OR `axia_sidebar_state` should be kept. |
+| `axia_sidebar_scroll` (LS) | `CollapsibleSidebar.tsx:160` | `CollapsibleSidebar.tsx:174` | Until changed | ❌ **NO — GAP** | UI preference (sidebar scroll position). Cosmetic. Minor leak. |
+| `axia_theme` (LS) | `ThemeProvider.tsx:41`, `index.html:206-211` (inline script) | `ThemeProvider.tsx:17,47`, `index.html:206` | Until changed | ❌ No (intentional) | OK — theme is a non-user-scoped preference (dark/light). Clearing would force light mode for the next user. Correct as-is. |
+| `axia_hallmark_theme` (LS) | `use-hallmark-theme.tsx:117` | `use-hallmark-theme.tsx:101` | Until changed | ❌ No (intentional) | OK — design theme is a non-user-scoped preference (specimen/midnight/etc.). Correct as-is. |
+| `axia_notifications_last_seen` (LS) | `use-notifications.ts:81` | `use-notifications.ts:71` | Until changed | ❌ **NO — BUG** | **Per-user seen-state map** (`{ dedupKey: lastSeenCount }`). Next user would see all reaction notifications as "seen" until their notification counts exceed the previous user's `lastSeenValue`. The Phase-1 table-backed notifications use backend `read` state (correctly user-scoped), so those are fine — but the reaction-derived notifications (proposal-viewed, invoice-overdue, mention-latest, etc.) use this localStorage map. **Should be cleared on sign-out.** |
+| `extension_token` (LS) | `ExtensionTokenSection.tsx:50` | `ExtensionTokenSection.tsx:27` | 30 days (Date.now() + 30 * 24 * 60 * 60 * 1000) | ❌ **NO — BUG (defense-in-depth)** | **Security-sensitive.** Stores `{ token, expiresAt, lastUsed }` for the Chrome extension pairing. The token is generated client-side (`randomHex(64)`) and stored ONLY in localStorage — the UI never calls `api.extension.generateToken` to register it server-side. So this localStorage entry is effectively dead (the backend has no record of this token). BUT: (1) the UI displays this token to the user as if it were valid, which is a separate bug; (2) if the UI is ever fixed to call `generateToken`, leaving this in localStorage on sign-out would let the next user pair their extension as the previous user. **Should be cleared on sign-out for defense-in-depth.** |
+| `axia_portal_token` (SS — sessionStorage) | `ClientWorkspace.tsx:68` | (nowhere — the `:token` URL param is the source of truth, not the sessionStorage copy) | Tab close | n/a (dies on tab close) | OK — sessionStorage dies on tab close, limits XSS exfil blast radius. The sessionStorage write at line 68 is essentially write-only — nothing reads it back. Could be removed entirely. |
+| `sidebar_state` (cookie) | `src/components/ui/sidebar.tsx:86` | (nowhere — server-side rendering would read it, but this is a Vite SPA, no SSR) | 7 days (`max-age=604800`) | ❌ No | **Dead cookie.** Set by the shadcn/ui sidebar template (which AXIA doesn't actually use — AXIA uses its own `CollapsibleSidebar` component). The cookie is never read by any code in `src/`. Harmless but dead. |
+
+### A.5 Build/asset caching
+
+| Component | Location | Strategy | Gaps |
+|---|---|---|---|
+| Vite chunk hashing | `vite.config.ts:7-22` | No explicit `rollupOptions.output.chunkFileNames`/`entryFileNames` — Vite default is `[name]-[hash].js` (content-hash, immutable-friendly) | OK — Vite defaults work with the Vercel `immutable` header. |
+| Chunk splitting | `vite.config.ts:14-16` | No `manualChunks` config. `chunkSizeWarningLimit: 1500` (raised to suppress warnings) | **Gap:** No vendor chunk splitting → React, Convex, Radix, Recharts all bundled into the main chunk. Build emits chunk-size warnings (pre-existing). Initial bundle size is larger than necessary. A `manualChunks: { vendor: ['react','react-dom','react-router'], convex: ['convex','@convex-dev/better-auth'], ui: ['@radix-ui/*','lucide-react'] }` would improve cache hit rates across deploys. |
+| Service worker for offline | (none) | N/A | No service worker. App requires network. Acceptable for SaaS dashboard. |
+| PWA manifest | (none) | N/A | No `manifest.json` / `.webmanifest`. No installability. |
+
+### A.6 Summary: what exists, what's missing, what to implement
+
+**Exists:**
+- ✅ Owner dashboard `dashboardCache` table with TTL-based invalidation (well-designed, with stale-on-429 fallback)
+- ✅ Vercel asset cache headers (`immutable, max-age=31536000` for `/assets/*`, `no-cache` for `/index.html`)
+- ✅ Convex real-time subscriptions (no stale data — queries auto-refresh via WebSocket)
+- ✅ Theme + Hallmark theme persistence (correctly NOT cleared on sign-out — non-user-scoped preferences)
+- ✅ BA session DB lookup on every Convex query (no client-side auth cache → can't drift)
+
+**Missing:**
+- ❌ `dashboardCache` row eviction — table grows unbounded. Add a cron that deletes rows where `expiresAt < now - 7 days`.
+- ❌ Explicit BA session TTL config — uses default 7 days. For financial data, set explicitly to 24h sliding.
+- ❌ Cache headers on `public/logo.svg`, `public/logo.png`, `public/favicon.ico`, `public/og-image.png` — re-fetched on every navigation.
+- ❌ `manualChunks` config in Vite — bundle is monolithic, suboptimal cache hit rate across deploys.
+- ❌ Sign-out clearing of `axia_notifications_last_seen`, `extension_token`, `axia_sidebar_sections`, `axia_sidebar_scroll` (see Part B).
+- ❌ No service worker — acceptable but limits offline/PWA ambitions.
+
+**Should implement (ranked):**
+1. **P0:** Add `axia_notifications_last_seen` and `extension_token` to `AXIA_LS_KEYS` in `use-auth.ts:33-40`. Both are user-scoped and currently leak across sign-out.
+2. **P0:** Add a `dashboardCache` eviction cron (daily, deletes rows where `expiresAt < now - 7d`).
+3. **P1:** Set explicit BA session TTL: `session: { expiresIn: 60*60*24, updateAge: 60*60 }` in `createAuthOptions`.
+4. **P1:** Delete the stale `public/index.html` (re-introduced regression — see A.2 row 5). Vite should be the only `index.html` source.
+5. **P2:** Add `manualChunks` to Vite config for vendor splitting.
+6. **P2:** Add `Cache-Control: public, max-age=86400` headers for `/logo.svg`, `/logo.png`, `/favicon.ico`, `/og-image.png` in `vercel.json`.
+7. **P3:** Add `axia_sidebar_sections` and `axia_sidebar_scroll` to `AXIA_LS_KEYS` for consistency (cosmetic only).
+
+---
+
+## Part B: Sign-Out Flow
+
+### B.1 Sign-out handlers found
+
+| # | Location | Function | Calls | Notes |
+|---|---|---|---|---|
+| 1 | `src/hooks/use-auth.ts:165-177` | `signOut` (the CENTRAL implementation, returned by `useAuth()`) | `authClient.signOut()` + 6-key localStorage clear + `window.location.href = "/"` | The single source of truth. All other handlers delegate to this. |
+| 2 | `src/pages/AccountSettings.tsx:295-302` | `handleSignOut` | `await signOut()` + `toast.success("Signed out successfully")` / `toast.error("Failed to sign out")` on catch | Wired to the "Sign Out" button in the Security section (line 1099). Confirmation dialog first (lines 1084-1114). |
+| 3 | `src/components/LogoDropdown.tsx:19-26` | `handleSignOut` | `await signOut()` + `navigate("/")` (the navigate is redundant — signOut already does `window.location.href = "/"` in the finally block, so the SPA navigate is swallowed by the impending hard reload) | Wired to the "Sign Out" menu item in the logo dropdown (line 54). |
+| 4 | `src/pages/AccountSettings.tsx:1168-1185` (inside `EmailChangeDialog.handleSubmit`) | calls `onSignOut()` (which is `handleSignOut` from AccountSettings, see #2) | Triggers sign-out after successful email change | Intentional — `changeEmail` mutation calls `auth.api.revokeAllSessions({ headers })` (`accountSettings.ts:145`), so all sessions are invalidated server-side. The client-side sign-out is required to clear the now-stale local session. |
+| 5 | `src/components/CollapsibleSidebar.tsx:55` | destructures `signOut` from `useAuth()` | (never called) | **Dead code.** The sidebar never renders a sign-out button — the `signOut` is destructured but unused. Leftover from an earlier sidebar design. |
+
+### B.2 What each handler actually does
+
+**Central `signOut` (use-auth.ts:165-177) — the only one that matters:**
+
+```ts
+const signOut = useCallback(async () => {
+  try {
+    await authClient.signOut();   // POST /api/auth/signout → BA deletes session row + clears cookie
+  } finally {
+    for (const k of AXIA_LS_KEYS) {  // 6 keys: axia_active_workspace, axia_account_mode,
+      try { localStorage.removeItem(k); } catch {}  // axia_subscription_tier, axia_sidebar_state,
+    }                                              // axia_client_email, onboardingData
+    if (typeof window !== "undefined") window.location.href = "/";  // hard reload
+  }
+}, []);
+```
+
+What it DOES:
+1. ✅ Calls BA's `signOut()` — invalidates the BA session DB row (which Convex's `safeGetAuthUser` checks on every query → next Convex call sees unauthenticated).
+2. ✅ Clears the BA session cookie (via BA's `Set-Cookie: <session>=; Max-Age=0` response header).
+3. ✅ Removes 6 specific `axia_*` localStorage keys.
+4. ✅ Hard-reloads to `/` — wipes all in-memory state: Convex client subscriptions, WorkspaceProvider's `seedAttempted` ref, React Query cache (n/a — not used), Sentry/PostHog SDK in-memory state, all React component state.
+
+What it does NOT do:
+1. ❌ Does NOT call `analytics.reset()` / `clearUser()` (`src/lib/monitoring.ts:157-166`). Sentry + PostHog user identity is NOT explicitly cleared. Mitigated by the hard reload (SDKs re-initialize fresh on next page load), but if the user lands on a public page (Landing) after sign-out, `ProtectedRoute` never mounts → `clearUser()` (called only from `ProtectedRoute.tsx:36` when `!isAuthenticated`) never fires → Sentry/PostHog see no `setUser(null)` call. **However**, since they also see no `setUser(...)` call (no ProtectedRoute mount), the SDKs remain in their initial "no user identified" state, which is equivalent. **Net effect: OK by accident, fragile by design.**
+2. ❌ Does NOT clear 4 user-scoped localStorage keys: `axia_notifications_last_seen`, `extension_token`, `axia_sidebar_sections`, `axia_sidebar_scroll` (see A.4 table).
+3. ❌ Does NOT call `convexClient.clear()` or equivalent — relies ENTIRELY on the hard reload to wipe the Convex client's in-memory query cache. If the reload is ever blocked (e.g., a `beforeunload` handler returns false — none exist today, but the dependency is fragile), stale data could persist.
+4. ❌ Does NOT clear the `sidebar_state` cookie (dead cookie set by the unused shadcn/ui template — see A.4).
+5. ❌ Does NOT fire `trackEvent(AnalyticsEvents.AUTH_SIGN_OUT, ...)` — the event is defined (`monitoring.ts:229`) but never sent. Sign-out is invisible to product analytics. Minor gap.
+
+**Handler #2 (AccountSettings `handleSignOut`):** Calls the central `signOut()`. Wraps in try/catch to show success/error toasts. The toast.success may never be visible because `signOut` triggers a hard reload in the finally block — the toast is queued, then the page reloads before it renders. **Minor UX bug** (the "Signed out successfully" toast is invisible).
+
+**Handler #3 (LogoDropdown `handleSignOut`):** Calls the central `signOut()`. The subsequent `navigate("/")` is dead — `signOut` already does `window.location.href = "/"`, which is a hard navigation that pre-empts the SPA `navigate`. Caught errors are logged but not surfaced to the user.
+
+**Handler #4 (EmailChangeDialog):** Calls the AccountSettings `handleSignOut` (via `onSignOut` prop) after `changeEmail` succeeds. BA already revoked all sessions server-side, so the client-side sign-out is for state cleanup. Correct.
+
+### B.3 UI triggers
+
+| UI surface | Component | Visible to | Handler |
+|---|---|---|---|
+| Account Settings → Security → "Sign Out" button + confirmation dialog | `src/pages/AccountSettings.tsx:1084-1114` | All authenticated users | `handleSignOut` (#2) |
+| Logo dropdown → "Sign Out" menu item | `src/components/LogoDropdown.tsx:54` | All authenticated users (logo dropdown is rendered in the dashboard layout) | `handleSignOut` (#3) |
+| Email change dialog → after submit success | `src/pages/AccountSettings.tsx:1185` (inside EmailChangeDialog) | User who just changed their email | `onSignOut` (#4, delegates to #2) |
+
+**No sign-out button in the sidebar.** The `CollapsibleSidebar.tsx` destructures `signOut` but never renders a button for it (dead code, see B.1 #5). The only sign-out surfaces are AccountSettings (two clicks deep) and the logo dropdown (one click, but only visible on dashboard pages, not on the landing page).
+
+### B.4 Bugs / gaps
+
+**BUG 1 (P0): `axia_notifications_last_seen` localStorage not cleared on sign-out.**
+- File: `src/hooks/use-auth.ts:33-40` (AXIA_LS_KEYS list) is missing `axia_notifications_last_seen`.
+- Impact: Next user sees all reaction notifications (proposal-viewed, invoice-overdue, mention-latest, deal-won, etc.) as "seen" until their counts exceed the previous user's `lastSeenValue`. The notification bell badge shows wrong unread count.
+- Fix: Add `"axia_notifications_last_seen"` to `AXIA_LS_KEYS` array in `use-auth.ts:33`.
+
+**BUG 2 (P0): `extension_token` localStorage not cleared on sign-out.**
+- File: `src/hooks/use-auth.ts:33-40` is missing `extension_token`.
+- Impact: Defense-in-depth gap. The token is currently client-only dead (the UI never calls `api.extension.generateToken` to register it server-side — see A.4 row 11), so today's impact is nil. But: (a) if the UI is fixed to register tokens server-side, leaving the localStorage entry on sign-out would let the next user pair their Chrome extension as the previous user; (b) the previous user's (dead) token UI is shown to the next user until they regenerate.
+- Fix: Add `"extension_token"` to `AXIA_LS_KEYS`.
+
+**BUG 3 (P1): Analytics `clearUser()` not called on sign-out.**
+- File: `src/hooks/use-auth.ts:165-177` (the central `signOut`) does not call `clearUser()` from `src/lib/monitoring.ts:157`.
+- Impact: Sentry + PostHog user identity is not explicitly cleared. Today, the hard reload wipes the SDK in-memory state, and the next page (Landing) doesn't call `setUser()` — so the SDKs end up in an "anonymous" state by accident. But if a future change adds a `setUser()` call on the Landing page (e.g., for logged-out user tracking), the previous user's identity would persist.
+- Fix: Add `import { clearUser } from "@/lib/monitoring";` and call `clearUser()` in the `finally` block of `signOut` (before `window.location.href = "/"`).
+
+**BUG 4 (P1): No `trackEvent(AUTH_SIGN_OUT)` fired.**
+- File: `src/lib/monitoring.ts:229` defines `AUTH_SIGN_OUT: "auth_sign_out"` but no caller invokes it on sign-out.
+- Impact: Sign-out events are invisible to PostHog product analytics. Cannot compute "session duration" or "sign-out funnel" metrics.
+- Fix: Call `trackEvent(AnalyticsEvents.AUTH_SIGN_OUT, { method: "manual" })` in the `signOut` wrapper, before the hard reload.
+
+**BUG 5 (P2): "Signed out successfully" toast is invisible.**
+- File: `src/pages/AccountSettings.tsx:298` calls `toast.success("Signed out successfully")` after `await signOut()`. But `signOut` ends with `window.location.href = "/"` (hard reload), which pre-empts the toast render.
+- Impact: User sees no confirmation. Minor UX bug.
+- Fix: Either (a) move the toast to BEFORE the `await signOut()` call (but then it's a lie if signOut fails), or (b) show the toast on the post-reload Landing page via a query param or sessionStorage flag, or (c) accept the invisible toast (the redirect to Landing IS the confirmation).
+
+**BUG 6 (P2): `LogoDropdown.handleSignOut` calls redundant `navigate("/")`.**
+- File: `src/components/LogoDropdown.tsx:22` calls `navigate("/")` after `await signOut()`. Since `signOut` does `window.location.href = "/"` (hard navigation), the SPA `navigate` is a no-op.
+- Impact: Dead code. No functional impact.
+- Fix: Remove the `navigate("/")` line.
+
+**BUG 7 (P2): Inconsistent localStorage clearing — `axia_sidebar_state` cleared but `axia_sidebar_sections` and `axia_sidebar_scroll` not.**
+- Files: `src/hooks/use-auth.ts:33-40` (AXIA_LS_KEYS) vs `src/components/CollapsibleSidebar.tsx:160,191` (the uncleared keys).
+- Impact: Cosmetic — next user sees the previous user's sidebar expanded-sections state and scroll position.
+- Fix: Either (a) add the two keys to `AXIA_LS_KEYS` for full cleanup, or (b) remove `axia_sidebar_state` from `AXIA_LS_KEYS` for consistency (since sidebar UI state is non-user-scoped, like theme). Option (a) is safer.
+
+**BUG 8 (P3): `extension_token` UI generates tokens client-side that the backend never sees.**
+- File: `src/components/ExtensionTokenSection.tsx:77` (`const newToken = randomHex(64); saveToken(newToken);`) — never calls `api.extension.generateToken` (which exists at `src/convex/extension.ts:61` and properly hashes + stores the token).
+- Impact: The "Generate Extension Token" button produces a token that the user is told to paste into their Chrome extension, but the backend has no record of this token → `validateTokenReadOnly` (`extension.ts:206`) returns null → all extension HTTP calls (`/api/extension/start`, `/api/extension/record`, etc.) return 401. The Chrome extension cannot pair.
+- Out of scope for this audit (it's a feature bug, not a sign-out bug), but flagged because it explains why BUG 2 has no current security impact.
+
+### B.5 Recommended fixes (ranked by severity)
+
+| Rank | Fix | File(s) | Effort |
+|---|---|---|---|
+| P0 | Add `axia_notifications_last_seen` and `extension_token` to `AXIA_LS_KEYS` in `use-auth.ts:33-40` | `src/hooks/use-auth.ts` | 2 lines |
+| P1 | Call `clearUser()` from `src/lib/monitoring` in the `signOut` finally block, before the hard reload | `src/hooks/use-auth.ts` | 3 lines |
+| P1 | Call `trackEvent(AnalyticsEvents.AUTH_SIGN_OUT)` in the `signOut` wrapper before the hard reload | `src/hooks/use-auth.ts` | 2 lines |
+| P1 | Delete the stale `public/index.html` (re-introduced regression with hashed filenames from a previous build + old CSP missing convex.site) | `public/index.html` | 1 file deletion |
+| P2 | Add `axia_sidebar_sections` and `axia_sidebar_scroll` to `AXIA_LS_KEYS` for consistency | `src/hooks/use-auth.ts` | 2 lines |
+| P2 | Remove the redundant `navigate("/")` from `LogoDropdown.handleSignOut` | `src/components/LogoDropdown.tsx:22` | 1 line |
+| P2 | Set explicit BA session TTL: `session: { expiresIn: 60*60*24, updateAge: 60*60 }` in `createAuthOptions` | `src/convex/auth.ts:108` (add to the BA options object) | 4 lines |
+| P3 | Either show the "Signed out successfully" toast via a post-reload flag, or remove it (the redirect IS the confirmation) | `src/pages/AccountSettings.tsx:298` | 1 line removal or 5 lines for the flag approach |
+| P3 | Remove the dead `signOut` destructure from `CollapsibleSidebar.tsx:55` | `src/components/CollapsibleSidebar.tsx` | 1 line |
+
+### B.6 Mental flow trace (sign-out end-to-end)
+
+User on `/dashboard` clicks "Sign Out" in the logo dropdown:
+
+1. **Click** → `LogoDropdown.handleSignOut` (`LogoDropdown.tsx:19`) fires.
+2. **`await signOut()`** (`use-auth.ts:165`):
+   a. `authClient.signOut()` → POST `https://<convex-site>/api/auth/signout` with the session cookie.
+   b. BA server (`src/convex/auth.ts`, routes registered at `http.ts:138-142`):
+      - Verifies the session cookie.
+      - Deletes the session row from BA's `session` table (inside the @convex-dev/better-auth component).
+      - Returns `Set-Cookie: <session>=; Max-Age=0; Path=/` to clear the cookie.
+   c. **BA session is now invalid server-side.** The next Convex query that calls `safeGetAuthUser(ctx)` (`lib/auth.ts:105`) will look up the session by ID from the JWT, find nothing, and return null → `getAuthUserId` returns null → query handler throws "Not authenticated" (or returns null).
+3. **`finally` block** (`use-auth.ts:168-176`):
+   a. Removes 6 localStorage keys: `axia_active_workspace`, `axia_account_mode`, `axia_subscription_tier`, `axia_sidebar_state`, `axia_client_email`, `onboardingData`.
+   b. **(BUG 1, 2, 7)** Does NOT remove: `axia_notifications_last_seen`, `extension_token`, `axia_sidebar_sections`, `axia_sidebar_scroll`.
+   c. **(BUG 3, 4)** Does NOT call `clearUser()` or `trackEvent(AUTH_SIGN_OUT)`.
+   d. `window.location.href = "/"` → browser initiates hard navigation to `/`.
+4. **Hard reload:**
+   - All in-memory state wiped: Convex client (`ConvexReactClient`), WorkspaceProvider's `seedAttempted` ref, React tree, Sentry + PostHog SDK in-memory state, all React component state.
+   - Browser sends the new (empty) cookie jar to the Convex backend on the next WS connection.
+5. **New page load at `/`:**
+   - `Landing` page mounts (public route, no `ProtectedRoute` wrapper).
+   - `ProtectedRoute` does NOT mount → `clearUser()` (called only from `ProtectedRoute.tsx:36` when `!isAuthenticated`) does NOT fire. But `setUser()` (line 25-31) also doesn't fire — so Sentry + PostHog remain in their initial "no user identified" state. Effectively cleared by accident.
+   - `WorkspaceProvider` mounts but skips all Convex queries (`isAuthenticated: false` → `useQuery(... "skip")`).
+6. **Next user signs in:**
+   - `Auth.tsx` → `signIn("password", ...)` → BA issues a new session + cookie.
+   - Convex client reconnects with the new cookie → `useConvexAuth` reports `isAuthenticated: true`.
+   - `WorkspaceProvider` seeds a personal workspace (or loads existing) for the new user.
+   - `useSubscriptionTier` syncs from the new user's Convex record.
+   - **(BUG 1)** `useNotifications` reads the previous user's `axia_notifications_last_seen` map → notification badge shows wrong unread count until counts exceed previous user's lastSeen.
+   - **(BUG 2)** `ExtensionTokenSection` reads the previous user's `extension_token` from localStorage → shows the previous user's (dead) token UI.
+   - **(BUG 7)** `CollapsibleSidebar` reads the previous user's `axia_sidebar_sections` and `axia_sidebar_scroll` → cosmetic inconsistency.
+
+**Convex session invalidation (the CRITICAL question from the task):**
+
+✅ **YES, signing out DOES invalidate the Convex session.** The chain is:
+- `authClient.signOut()` → BA deletes the session DB row.
+- Next Convex query calls `safeGetAuthUser(ctx)` (`lib/auth.ts:105`) → does a DB session lookup → finds nothing → returns null.
+- `getAuthUserId` returns null → query handler sees "Not authenticated".
+
+⚠️ **Caveat:** There's a fallback at `lib/auth.ts:124-150` — if `safeGetAuthUser` THROWS (not returns null), the code falls back to `ctx.auth.getUserIdentity()` which reads the JWT directly without DB lookup. **This fallback would still see the user as authenticated** until the JWT itself expires. Today, `safeGetAuthUser` returns null (not throws) on a deleted session, so the fallback doesn't fire. But this is a brittle dependency on BA component internals — if a BA upgrade changes the throw-vs-null behavior, sign-out would NOT immediately invalidate the Convex session until JWT expiry (default 1 hour). The hard reload in `signOut` mitigates this for the current device, but the JWT could still be valid for another user on another device that hasn't re-fetched.
+
+⚠️ **Second caveat:** The hard reload in `signOut` forces a fresh Convex client + WS connection, so even if the JWT were briefly valid post-sign-out, no queries fire on the public Landing page. The next sign-in establishes a fresh session.
+
+**Dangling refs analysis (the second CRITICAL question):**
+
+After sign-out + hard reload, the next user CANNOT see the previous user's data via:
+- ✅ Convex queries — fresh client, fresh auth, fresh subscriptions.
+- ✅ Workspace context — `WorkspaceProvider` re-mounts with empty initial state, `seedAttempted.current` is a fresh `useRef(false)`.
+- ✅ Subscription tier — re-synced from Convex user record via `useSubscriptionTier`'s `useEffect` on `user` change.
+- ✅ Auth state — `useConvexAuth` re-initializes, reports `isAuthenticated: false` until the new user signs in.
+
+The next user CAN see the previous user's:
+- ❌ Notification seen-state (BUG 1) — `axia_notifications_last_seen` localStorage persists.
+- ❌ Extension token UI (BUG 2) — `extension_token` localStorage persists (though the token is dead client-only).
+- ❌ Sidebar section expand/collapse state (BUG 7) — `axia_sidebar_sections` + `axia_sidebar_scroll` persist.
+
+None of these expose **data** (no client list, no invoice data, no project data) — they're all UI-state or seen-tracking leaks. The Convex backend is the source of truth for all data, and Convex auth is properly invalidated. So the worst case is "next user sees stale UI state from previous user," not "next user sees previous user's private data."
+
+---
+
+## Final Summary
+
+### Top 5 Caching Gaps
+
+1. **`dashboardCache` table grows unbounded** — no eviction cron. Add a daily cron to delete rows where `expiresAt < now - 7d`. (`src/convex/tables/ownerDashboard.ts:44`, `src/convex/ownerDashboard/lib/cache.ts`)
+2. **BA session TTL not explicitly set** — uses default 7 days. For a financial-data app, set `session: { expiresIn: 60*60*24, updateAge: 60*60 }` explicitly. (`src/convex/auth.ts:108`)
+3. **`public/index.html` is a stale pre-built artifact** — contains hashed filenames from a previous build (`/assets/index-DtFjXlJ7.js`, `/assets/index-C6zh-kIX.css`) and the OLD CSP missing `convex.site`. Vite copies this to `dist/`, potentially clobbering the freshly-built `index.html`. Re-introduced regression (v7.0 worklog line 2986 claimed it was deleted). (`public/index.html:206-207`)
+4. **No `manualChunks` config in Vite** — bundle is monolithic (React + Convex + Radix + Recharts all in one chunk). Suboptimal cache hit rate across deploys. (`vite.config.ts:14-16`)
+5. **No `Cache-Control` headers on `public/logo.svg`, `public/logo.png`, `public/favicon.ico`, `public/og-image.png`** — re-fetched on every navigation. Add `Cache-Control: public, max-age=86400` in `vercel.json`. (`vercel.json:15-28`)
+
+### Top 3 Sign-Out Bugs
+
+1. **`axia_notifications_last_seen` localStorage not cleared on sign-out** — next user sees the previous user's notification seen-state map, causing the notification bell badge to show wrong unread counts until counts exceed the previous user's lastSeenValue. Fix: add to `AXIA_LS_KEYS` in `src/hooks/use-auth.ts:33-40`. (P0)
+2. **`extension_token` localStorage not cleared on sign-out** — defense-in-depth gap. Today the token is client-only dead (BUG 8 — the UI never registers it server-side), so impact is nil. But if BUG 8 is fixed, leaving this in localStorage would let the next user pair their Chrome extension as the previous user. Fix: add to `AXIA_LS_KEYS`. (P0)
+3. **Analytics `clearUser()` and `trackEvent(AUTH_SIGN_OUT)` not called on sign-out** — Sentry + PostHog user identity is not explicitly cleared (mitigated by hard reload), and sign-out events are invisible to product analytics. Fix: call both in the `signOut` finally block in `src/hooks/use-auth.ts:165-177`. (P1)
+
+**Net assessment:** The sign-out flow is functionally correct for data isolation (Convex session is properly invalidated, all data-fetching paths re-initialize on the next sign-in). The bugs are in UI-state leakage (notifications seen-state, sidebar prefs, extension token UI) and analytics hygiene. None expose private data across users. The caching architecture is sound for a SaaS dashboard — the main gap is the unbounded `dashboardCache` table, which is a slow-burn operational issue (will degrade query performance over months, not days).
+
+---
+Task ID: audit-api-endpoints-v7.2
+Agent: Explore (API endpoint audit)
+
+# AXIA — API Endpoint Inventory
+
+## Methodology
+Walked every `*.ts` file under `/home/z/my-project/axia/src/convex/` (excluding `_generated/` boilerplate), extracted all `export const X = (query|mutation|action|internalQuery|internalMutation|internalAction|httpAction)(...)` declarations via ripgrep. Cross-referenced every exported function against client-side `api.X.Y[.Z]` references (ripgrep on `src/**/*.{ts,tsx}` excluding `src/convex/_generated`) PLUS server-to-server references (`ctx.runQuery(api.X.Y)`, `ctx.runMutation(api.X.Y)` inside `src/convex/`) PLUS cron-driven `internal.*` references in `src/convex/crons.ts` PLUS dynamic property references (`workspacesApi.crud.getMyWorkspaces` etc. in `src/hooks/use-workspace.tsx`). A function is "ACTIVE" if at least one caller exists; otherwise "DEAD".
+
+CAVEAT — "DEAD" includes CLI-only / `npx convex run`-only functions used by ops scripts (e.g. `adminListAll:resetPassword`, `adminListAll:cleanupDuplicateStages`, `adminListAll:fixWorkspaceOwnerMemberships`, `debug:listAuthAccountsForEmail`, `debug:cleanOrphanedAuthAccounts`, `adminGrants:*`, `seed.resetDevUser`). These should NOT be blindly deleted — they need an admin auth gate first, then a re-evaluation of whether they're still needed.
+
+## Summary
+- **Total queries:** 247 (86 active, 161 dead)
+- **Total mutations:** 319 (116 active, 203 dead)
+- **Total internal mutations:** 16 (4 active, 12 dead)
+- **Total actions:** 15 (9 active, 6 dead)
+- **Total internal actions:** 1 (0 active, 1 dead)
+- **GRAND TOTAL: 598 exported Convex functions** (215 active = 36%, 383 dead = 64%)
+- **Total HTTP routes:** 7 (1 Better-Auth mount + 4 extension endpoints + 1 payments webhook + 1 paddle webhook)
+
+The huge "dead" fraction is driven by **duplicate root-level module files** that the schema migration superseded by nested folders. Specifically:
+- `convex/clients.ts` (root) vs `convex/clients/crud.ts` — both export `create/update/delete/list/get`, only the nested one is wired to the UI
+- `convex/proposals.ts` (root, 1260 lines) vs `convex/proposals/crud.ts` — same pattern
+- `convex/invoices.ts` (root, 1907 lines) vs `convex/billing/crud.ts` — same pattern
+- `convex/deals.ts` (root) vs `convex/pipeline/crud.ts` — same pattern
+- `convex/scope.ts` (root, 853 lines) vs `convex/scope/crud.ts` — same pattern
+- `convex/clientAuth.ts` (root) vs `convex/clients/clientAuth.ts` — same pattern
+- `convex/teams.ts` (root, 32 lines) vs `convex/teams/crud.ts` — same pattern
+
+These duplicate root files together account for ~110 dead exports and represent the single biggest source of confusion + risk in the codebase (anyone reading the wrong file gets stale API shapes).
+
+## D. HTTP Routes (in `src/convex/http.ts`)
+
+| Method | Path | Handler (httpAction) | Auth / Verification | Purpose |
+|---|---|---|---|---|
+| GET/POST/etc | `/api/auth/*` | `authComponent.registerRoutesLazy(http, createAuth, …)` (Better Auth) | Session-based via Better Auth JWT | Full Better Auth surface (sign in/up/out, OAuth callbacks, email OTP, magic link, reset password). 7 distinct sub-routes. |
+| POST | `/api/extension/start` | inline `httpAction` (line 148) | Extension token validated against DB (`validateExtensionToken` → `api.extension.validateTokenReadOnly`) | Start an evidence session from the browser extension |
+| POST | `/api/extension/record` | inline `httpAction` (line 221) | Extension token validated; 2,000-event cap per call; 1MB body cap | Record evidence events (mouse/keyboard/URL/screenshot_ref/memo) |
+| POST | `/api/extension/finalize` | inline `httpAction` (line 293) | Extension token validated | Finalize an evidence session |
+| POST | `/api/extension/validate` | inline `httpAction` (line 349) | Extension token validated; updates `lastUsed` via `api.extension.validateToken` | Token validation endpoint (used by extension to check token liveness) |
+| POST | `/api/ai/predict` | inline `httpAction` (line 429) | Extension token OR Bearer token; per-token rate-limit via `api.extension.rateLimitAiPredict` (10/hr); 8K-char evidence cap; OpenAI key from env | LangChain + OpenAI gpt-4o-mini dispute prediction |
+| POST | `/api/payments/webhook` | inline `httpAction` (line 565) | `provider.verifyWebhookSignature(payload, signature)` — Stripe HMAC-SHA256 (correct), Mock always-returns-true (DANGEROUS in prod) | Stripe checkout.session.completed → marks portal payment + invoice as paid via `api.portal.payments.markPaymentCompleted` |
+| POST | `/api/paddle/webhook` | inline `httpAction` (line 632) | **NONE — only checks `process.env.PADDLE_WEBHOOK_SECRET` is set, never actually calls crypto verify** | AXIA's own SaaS subscription billing webhook. Handles `subscription_created/updated/cancelled`. **Updates `users.subscriptionTier` based on attacker-supplied `plan_name`.** |
+
+All HTTP routes share: 64KB body cap (webhooks), 10KB cap (extension endpoints), strict CSP + HSTS + X-Frame-Options:DENY headers (`applySecurityHeaders`), restricted CORS allowlist (`configureCORS`).
+
+## E. Security findings — endpoints needing owner/admin guards
+
+| # | File:Line | Function | Current guard | Recommended | Severity | Notes |
+|---|---|---|---|---|---|---|
+| 1 | `convex/adminGrants.ts:30,82,134,176,248` | `renameEngineeringToDevTeam`, `upgradeSelfToExpert`, `grantTier`, `grantWorkspaceRole`, `addToTeam` | **NONE** (file comment at line 13-16 admits this) | `requireOwner(ctx)` (or `requireAdmin` from a properly-fixed guard) | **CRITICAL** | Anyone — including unauthenticated callers — can grant themselves "expert" tier, "owner" workspace role, or add themselves to any team. The file comment says "BEFORE PRODUCTION: add `requireAdmin(ctx)`" — this gate was never added. |
+| 2 | `convex/users.ts:202` | `setMyTier` | Authenticated (`getAuthUserId`) + rate-limit only | Either remove (replace with payment-verified flow) OR require owner/admin | **CRITICAL** | Lets any authenticated user set their OWN `subscriptionTier` to any value including "expert". Combined with finding #3 below, this is a one-call privilege escalation to admin. |
+| 3 | `convex/security/rateLimit.ts:145-159` | `requireAdmin` (the function used by `adminListAll.*`, `adminSeed`, `seedTeamUsers.*`) | Accepts `user.role === "admin"` OR `user.subscriptionTier === "expert"` | Tighten to `role === "admin"` (or `role === "owner"`) only | **CRITICAL** | Any user who flips their own tier to "expert" (via `users:setMyTier`, finding #2) instantly satisfies `requireAdmin` and can call every "admin-only" mutation: `adminListAll:resetPassword` (would let them reset any user's password if BA migration didn't disable it), `adminListAll:listAllUsers`, `adminListAll:cleanupDuplicateStages`, `adminListAll:fixWorkspaceOwnerMemberships`, `adminSeed`, `seedTeamUsers.enrichAllTeamUsers`. |
+| 4 | `convex/security/rateLimit.ts:146` | `requireAdmin` uses `ctx.auth?.getUserId?.()` | **Convex-native auth**, not Better Auth | Switch to `getAuthUserId(ctx)` from `lib/auth.ts` | **HIGH** | The project uses Better Auth via `lib/auth.ts:getAuthUserId` everywhere else. `ctx.auth.getUserIdentity()` returns the Convex JWT subject, which is NOT the BA user ID and is NOT linked to the users-table Id. For BA-only sessions this likely returns `undefined` → `requireAdmin` always throws "Unauthorized: Sign in required" — meaning admin functions are either broken OR bypassable depending on auth.config wiring. Needs immediate verification. |
+| 5 | `convex/seed.ts:142` | `enrichDevUser` | Authenticated + `user.email === "dev@axia.app"` check | Remove from production deployment entirely | **CRITICAL** | Hardcoded dev backdoor: if an attacker signs up with email `dev@axia.app` BEFORE the legitimate dev does (or if the legitimate dev account is ever deleted), the attacker gets `role: "admin"`, `subscriptionTier: "pro"`, and a fully seeded workspace. After becoming admin they can call any `requireAdmin`-gated function (finding #3). |
+| 6 | `convex/invoices.ts:1724` | `handleStripeWebhook` | `rateLimitAuthenticated` (no signature check, no Stripe verification) | Remove this mutation entirely — real Stripe webhooks MUST go through the HTTP route at `/api/payments/webhook` (which does verify signature) | **CRITICAL** | This is a Convex mutation (not an HTTP webhook handler) that any client can call directly via `api.invoices.handleStripeWebhook`. Caller passes `invoiceId` + `eventType: "payment_succeeded"` and the mutation marks the invoice as paid + updates client payment stats. Any authenticated user can mark ANY of their own invoices as paid (and possibly others — it doesn't check `invoice.userId === callerId`). The HTTP route at `/api/payments/webhook` is the correct, signature-verified path — this duplicate is pure attack surface. |
+| 7 | `convex/portal/payments.ts:197` | `markPaymentCompleted` | NONE (no auth check at all — comment at line 192-196 says "called from http.ts webhook, NOT from frontend" but mutation is still public) | Add a server-only guard (e.g. `internalMutation`) OR require a verified provider signature | **CRITICAL** | Publicly callable. Comment claims "called from convex/http.ts (webhook handler), NOT from the frontend" — but it's exported as a regular `mutation`, so any client can call `api.portal.payments.markPaymentCompleted({paymentId, providerPaymentId})`. The only check is that `payment.providerPaymentId` matches IF it's already set — but for pending payments (where `providerPaymentId === undefined`), any caller can complete it, which marks the corresponding invoice as paid. Free invoices for everyone. |
+| 8 | `convex/clients/clientWorkspace.ts:40,105,132,167,204,225,335,379,446,532,565,615,635` | 13 functions (all of `clients/clientWorkspace.ts`) | Uses `ctx.auth.getUserIdentity()` (Convex native auth) NOT `getAuthUserId(ctx)` (Better Auth) | Replace every `ctx.auth.getUserIdentity()` with `await getAuthUserId(ctx)` from `lib/auth.ts` | **HIGH** | Same auth-mismatch as finding #4. For BA-only sessions `ctx.auth.getUserIdentity()` likely returns `undefined`, making the "Require the freelancer to be authenticated" check at line 45 a no-op OR a hard-block. Either way the security gate is broken. This module is currently DEAD (no client callers — superseded by `clients/clientPortal.ts` and `portal/*`), but if it's ever re-wired it will be wide-open. |
+| 9 | `convex/http.ts:632-795` (`/api/paddle/webhook`) | Paddle webhook | Reads `PADDLE_WEBHOOK_SECRET` env var but **never calls any verify function** | Implement HMAC-SHA256 verification per Paddle's spec (similar to `lib/paymentProviders/stripe.ts:92-113`); also use `paddleEvents` table idempotency before processing | **CRITICAL** | The inline comment at line 643 admits "Verify signature (basic check — full verification TODO when Paddle is live)". Anyone can POST a forged Paddle event. Because the handler updates `users.subscriptionTier` based on the attacker-supplied `plan_name`, this is a one-request privilege escalation: POST `{"alert_name":"subscription_created","subscription_id":"x","status":"active","plan_name":"Expert","user_id":"<BA user ID>","user_email":"attacker@example.com"}` → attacker becomes "expert" tier → satisfying `requireAdmin` (finding #3) → admin. |
+| 10 | `convex/extensionRotate.ts:16-70` | `rotateToken` | Authenticated + anonymous-user block | Hash the token before storing (mirror `extension.ts:61-118` pattern) | **MEDIUM** | Stores the extension token as **plaintext** in `extensionTokens.token` (line 53). The sibling `extension.generateToken` (in `extension.ts`) was already fixed to store `tokenHash` + `tokenSuffix` only. This file was missed. A DB read leak = every extension token in the wild. Also, `rotateToken` returns the plaintext to the client — same as `generateToken`, which is OK (one-time view), but the storage MUST be hashed. |
+| 11 | `convex/clients/clientWorkspace.ts:78-89` | `generateClientWorkspaceToken` (and the entire module) | Stores `token` as plaintext in `clientWorkspaceTokens.token` (line 79); also returns the existing token from DB on subsequent calls (line 65) | Hash on store; never return the stored token from DB | **HIGH** | Same plaintext-storage issue as finding #10 but worse: it actively returns existing tokens from the DB on every subsequent call (`existing.token` at line 65), so anyone who can call `generateClientWorkspaceToken` for a client can retrieve the currently-active token even if they're not the original issuer. The DB-stored value should be a hash, and the plaintext should only ever be returned once at creation time (mirror `portal/tokens.ts:47-113`). |
+| 12 | `convex/waitlist.ts:107-113` | `getWaitlistCount` | NONE | Optional: add minimal rate-limit (currently unbounded) | **LOW** | Public unauthenticated query, but only returns a count. Low risk; would just need a rate limit to prevent cheap scanning. |
+| 13 | `convex/waitlist.ts:133-145` | `getEntryByReferralCode` | NONE | Should at minimum be restricted to either: caller owns the referral code, OR admin | **MEDIUM** | Returns full waitlist entry (position, email, referredBy, referredCount) for ANY referral code with no auth. At 1K-user scale this enables competitive intelligence (enumerate all users' positions + referral counts). The sibling `getEntryByEmail` (line 154) was already fixed (IDOR fix noted in comment at line 147-153) — `getEntryByReferralCode` was missed. |
+| 14 | `convex/users.ts:107,137,167` | `setUserTier`, `grantTierByEmail`, `setUserRole` | Uses local `requireAdmin(ctx)` (defined at line 97-102) — checks `user.role !== "admin"` only | Replace with `ownerAuth.ts:requireOwner` OR keep but tighten + verify `getAuthUserId` is correct under BA | **MEDIUM** | Good — these use the STRICT `role === "admin"` check (not the broken `subscriptionTier === "expert"` shortcut from `security/rateLimit.ts:requireAdmin`). The local `requireAdmin` is correct. Just flagging that there are TWO `requireAdmin` implementations in the codebase with different semantics — they should be unified. |
+| 15 | `convex/adminListAll.ts:43-71` | `resetPassword` | `requireAdmin` (broken — see finding #3) + 8–16 char length cap | Use the strict `requireAdmin` (or `requireOwner`) after fixing #3 | **HIGH** | Currently a stub (BA migration disabled it, returns "not supported" message). But the moment someone re-implements it via `authComponent.getAuth()`, the broken `requireAdmin` gate means any "expert"-tier user (which any user can self-grant via #2) can reset ANY user's password. |
+| 16 | `convex/permissions/transferOwnership.ts:28,107,162,217` | `transferWorkspaceOwnership`, `transferProjectOwnership`, `transferClientOwnership`, `transferDealOwnership` | Authenticated + checks caller is current owner of the specific record | Add explicit `requireOwner` of the parent workspace for defense-in-depth; audit-log every transfer | **MEDIUM** | Implementation looks correct (checks `workspace.ownerId === callerId` etc.) but there's no audit log written for the transfer. The dead-but-exported status means it's not currently reachable, but if re-wired, add an `auditTrail` insert. |
+| 17 | `convex/security/audit.ts:27` | `logOperation` | Authenticated + per-user rate-limit (60/min) + snapshot size cap | OK as-is; this is the audit log writer — public-by-design for app audit logging | **INFO** | Properly bounded. Just noting it's an open audit-write endpoint (users can write whatever they want to their own audit trail). |
+| 18 | `convex/disputeReports.ts:87,168,253` | `createDisputeReport`, `generateDisputeReport`, `updateReportStatus` | Authenticated; need to verify scoping by user (didn't fully trace) | Verify `userId === callerId` on writes and `userId === callerId` on reads | **MEDIUM** | Spot-check: `getUserDisputeReports` should only return the caller's own reports. Worth a focused review. |
+| 19 | `convex/ownerDashboard/*` (queries.ts, actions.ts, mutations.ts, fetchers.ts) | 10 queries + 8 actions + 9 mutations | All use `requireOwner(ctx)` from `ownerDashboard/lib/guard.ts` — correct | OK | **INFO** | This is the gold-standard pattern in the codebase. The guard checks `getAuthUserId` → `users.role === "owner"`. Other modules should follow this template. |
+
+## F. Webhook security findings
+
+| Route / Handler | Signature verification | Idempotency | Risk |
+|---|---|---|---|
+| `POST /api/payments/webhook` (http.ts:565) — Stripe path | ✅ Correct HMAC-SHA256 + constant-time compare (`lib/paymentProviders/stripe.ts:92-113`) | ✅ `markPaymentCompleted` is idempotent (returns `alreadyCompleted` if status==="completed") | LOW (when `PORTAL_PAYMENT_PROVIDER=stripe`). **CRITICAL** when `PORTAL_PAYMENT_PROVIDER=mock` (default) — mock provider's `verifyWebhookSignature` always returns `true`, so anyone can POST a forged event and mark any portal payment + invoice as paid. |
+| `POST /api/payments/webhook` (http.ts:565) — Paddle provider path (if `PORTAL_PAYMENT_PROVIDER=paddle`) | ❓ `lib/paymentProviders/paddle.ts` not inspected — verify it implements `verifyWebhookSignature` correctly before activating | Same idempotency as above | UNKNOWN — needs verification before activating Paddle as the agency-collected payment provider |
+| `POST /api/paddle/webhook` (http.ts:632) — AXIA SaaS subscription billing | ❌ **NO signature verification** — only checks `process.env.PADDLE_WEBHOOK_SECRET` is set, never calls verify | ✅ `paddleEvents` table prevents duplicate processing | **CRITICAL** — attacker can forge any subscription event; updates `users.subscriptionTier` based on attacker-supplied `plan_name`, leading to privilege escalation |
+| `mutation: invoices.handleStripeWebhook` (invoices.ts:1724) | ❌ None — this is a Convex mutation callable by any client, NOT an HTTP webhook | ❌ None | **CRITICAL** — any authenticated user can mark any invoice as paid by calling `api.invoices.handleStripeWebhook({invoiceId, eventType: "payment_succeeded"})`. Should be deleted (the real Stripe path is `/api/payments/webhook`). |
+| `mutation: portal.payments.markPaymentCompleted` (portal/payments.ts:197) | ❌ None — public mutation, no auth check | ✅ Idempotent | **CRITICAL** — any client can complete any pending portal payment (and mark the linked invoice as paid) by calling this directly. Should be `internalMutation` (only callable from http.ts). |
+
+## G. Top 10 priority fixes (ranked)
+
+1. **`/api/paddle/webhook` has no signature verification** (`http.ts:632-795`) — anyone can forge a Paddle event and escalate themselves to "expert" tier in one HTTP request. Implement HMAC-SHA256 verification per Paddle's spec.
+
+2. **`adminGrants.ts` has zero auth on 5 mutations** (`grantTier`, `upgradeSelfToExpert`, `grantWorkspaceRole`, `addToTeam`, `renameEngineeringToDevTeam`) — file comment at line 13-16 admits this. Anyone can grant themselves any tier / workspace owner role. Add `requireOwner(ctx)` from `ownerDashboard/lib/guard.ts` to every handler.
+
+3. **`users.setMyTier` (`users.ts:202`) lets any user self-set tier to "expert"** — combined with the loose `requireAdmin` in `security/rateLimit.ts:155` (which accepts `subscriptionTier === "expert"` as equivalent to admin), this is a 2-step privilege escalation to admin. Either remove `setMyTier` entirely (replace with payment-verified flow) or strip `subscriptionTier === "expert"` from `requireAdmin`.
+
+4. **`requireAdmin` in `security/rateLimit.ts:145-159` accepts `subscriptionTier === "expert"` as a substitute for `role === "admin"`** — used by `adminListAll.*`, `adminSeed`, `seedTeamUsers.enrichAllTeamUsers`. Tighten to `role === "admin"` only (or migrate callers to `ownerAuth.ts:requireOwner`).
+
+5. **`requireAdmin` in `security/rateLimit.ts:146` uses `ctx.auth?.getUserId?.()` (Convex native auth) instead of `getAuthUserId(ctx)` (Better Auth)** — likely returns `undefined` for BA-only sessions, meaning either (a) admin functions are broken and unreachable, or (b) if `auth.config.ts` somehow enables Convex native auth alongside BA, the check is using a different identity system than the rest of the app. Verify and unify on `lib/auth.ts:getAuthUserId`.
+
+6. **`invoices.handleStripeWebhook` (`invoices.ts:1724`) is a public Convex mutation** — any authenticated user can mark any invoice as paid. DELETE this mutation; the correct Stripe webhook path is the HTTP route at `/api/payments/webhook` which verifies the signature.
+
+7. **`portal.payments.markPaymentCompleted` (`portal/payments.ts:197`) has no auth check** — publicly callable mutation that marks portal payments + invoices as paid. Change `export const markPaymentCompleted = mutation(...)` to `internalMutation` so it can only be invoked from `http.ts`.
+
+8. **`seed.enrichDevUser` (`seed.ts:142`) is a hardcoded dev backdoor** — if "dev@axia.app" is unclaimed, an attacker can sign up with that email, call `enrichDevUser`, and become admin. DELETE this file (and `seed.resetDevUser`, `seed.seedDevProfile`, `seed.isDevUserSeeded`) from production deployment.
+
+9. **`extensionRotate.rotateToken` (`extensionRotate.ts:53`) stores the extension token as plaintext** — DB leak = every extension token compromised. Mirror the `extension.ts:generateToken` pattern: store `tokenHash` + `tokenSuffix`, return plaintext once.
+
+10. **`clients/clientWorkspace.ts` (entire module) uses `ctx.auth.getUserIdentity()` instead of `getAuthUserId(ctx)` AND stores tokens as plaintext AND returns existing tokens from DB on subsequent calls** — triple vulnerability. Currently DEAD (no client callers) so the impact is latent, but DELETE this module to prevent future re-wiring. The active equivalent is `portal/tokens.ts` which does it correctly.
+
+## H. Work Log
+1. Listed all files under `src/convex/` (210 `.ts` files, 130+ of which define exported functions).
+2. Extracted 598 `export const X = (query|mutation|action|internalQuery|internalMutation|internalAction)(...)` declarations via ripgrep, normalized file paths to module names (e.g. `billing/crud.ts` → `billing.crud`).
+3. Grepped `src/**/*.{ts,tsx}` for `api.X.Y[.Z]` patterns — found 208 unique client-side references.
+4. Grepped `src/convex/**` for `ctx.runQuery(api.X.Y)` / `ctx.runMutation(api.X.Y)` — found 5 server-to-server refs (all in `http.ts`).
+5. Grepped `src/convex/crons.ts` for `internal.*` refs — found 4 cron-driven internal mutations.
+6. Grepped `src/hooks/use-workspace.tsx` for dynamic `workspacesApi.crud.X` property accesses — found 10 dynamic refs.
+7. Combined all references into an "active" set; everything else is "dead".
+8. Read in full: `http.ts`, `lib/auth.ts`, `security/ownerAuth.ts`, `security/rateLimit.ts`, `ownerDashboard/lib/guard.ts`, `ownerDashboard/queries.ts`, `ownerDashboard/actions.ts`, `users.ts`, `adminGrants.ts`, `adminListAll.ts`, `adminSeed.ts`, `seed.ts`, `extension.ts`, `extensionRotate.ts`, `portal/tokens.ts`, `portal/payments.ts`, `lib/paymentProvider.ts`, `lib/paymentProviders/mock.ts`, `lib/paymentProviders/stripe.ts`, `waitlist.ts`, `accountSettings.ts`, `security/audit.ts`, `permissions/transferOwnership.ts`, `clients/clientWorkspace.ts`, `clients/crud.ts`, `clients.ts` (root, partial), `deals.ts` (root, partial), `scope.ts` (root, partial), `invoices.ts` (root, partial), `proposals.ts` (root, partial), `teams.ts` (root), `auth.config.ts`, `crons.ts`, `debug.ts`.
+9. Did NOT modify any code.
+
+## I. Stage Summary
+- **598 total exported Convex functions** across 130+ files: 215 active (36%), 383 dead (64%).
+- **7 HTTP routes** in `http.ts`: 1 Better-Auth mount, 4 extension endpoints, 1 payments webhook, 1 paddle webhook.
+- **5 critical privilege-escalation paths** identified (findings #1, #2, #3, #5, #9 in section E + findings #6, #7 in section E + the entire section F): the chain is `users.setMyTier → "expert" → security/rateLimit.requireAdmin passes → admin powers`. Plus `adminGrants.ts` is completely unauthenticated. Plus `/api/paddle/webhook` has no signature verification and can directly flip `users.subscriptionTier`.
+- **The biggest single hygiene fix is deleting the duplicate root-level modules** (`clients.ts`, `proposals.ts`, `invoices.ts`, `deals.ts`, `scope.ts`, `clientAuth.ts`, `teams.ts`) — they account for ~110 dead exports and are a constant source of "which file is canonical?" confusion.
+- **The owner dashboard (`ownerDashboard/*`) is the gold-standard auth pattern** in this codebase: every query/action calls `requireOwner(ctx)` first, which checks `getAuthUserId` → `users.role === "owner"`. Other modules should be migrated to this pattern.
+
+
+---
+Task ID: security-hardening-v7.2
+Agent: Super Z (main)
+Task: Fix the 5 critical security gaps + 3 sign-out bugs + 4 caching improvements surfaced by the v7.2 audits. These block the privacy policy (can't claim "we secure your data" while anyone can mark invoices paid).
+
+Work Log:
+
+Critical security fixes:
+- http.ts:632-700 (Paddle webhook): Implemented Paddle Billing v2 signature verification (HMAC-SHA256 of `<ts>:<payload>`, constant-time compare, 5-min replay window). Previously the handler read PADDLE_WEBHOOK_SECRET but never verified the signature — anyone could POST a forged event and elevate any user to "expert" tier.
+- adminGrants.ts (all 5 mutations: renameEngineeringToDevTeam, upgradeSelfToExpert, grantTier, grantWorkspaceRole, addToTeam): Added `await requireOwner(ctx);` as first line of each handler. Previously zero auth — relied on "private deployment" assumption broken once Convex went live.
+- users.ts:202 setMyTier: Now only accepts `tier: "free"` (cancellation path). Any attempt to set a paid tier throws "Paid tier upgrades require checkout". Combined with the rateLimit.ts fix below, closes the 2-call privilege-escalation to admin. PricingModal will display the error; future Paddle checkout integration will replace the upgrade button.
+- invoices.ts:1724 handleStripeWebhook: Changed from `mutation` to `internalMutation`. Previously any signed-in user could call `api.invoices.handleStripeWebhook({invoiceId, eventType: "payment_succeeded"})` to mark ANY invoice as paid. Now only callable from Convex's own http.ts route (where Stripe signature is verified first).
+- portal/payments.ts:197 markPaymentCompleted: Changed from `mutation` to `internalMutation`. Updated the single caller in http.ts:598 to use `internal.portal.payments.markPaymentCompleted`. Previously any signed-in user could mark ANY portal payment + its invoice as paid.
+- security/rateLimit.ts:145 requireAdmin: Removed the `subscriptionTier === "expert"` bypass — now only `role === "admin"` or `role === "owner"` qualifies. Also fixed the auth API used: was `ctx.auth?.getUserId?.()` (Convex native auth, returns null under Better Auth) → now `getAuthUserId(ctx)` (Better Auth). Imports added.
+- seed.ts:142 enrichDevUser: Gated to local dev deployments only (`CONVEX_CLOUD_URL` must contain `127.0.0.1` or `localhost`). Previously anyone could sign up with `dev@axia.app` and run this mutation to become `role: "admin"` + `subscriptionTier: "pro"` + a full sample dataset — a production backdoor.
+
+Sign-out flow fixes (use-auth.ts):
+- Added `axia_notifications_last_seen` to AXIA_LS_KEYS (was leaking prior user's notification read-state → wrong unread counts).
+- Added `extension_token` to AXIA_LS_KEYS (defense-in-depth for the Chrome-extension pairing path).
+- Added `analytics.track("auth_sign_out")` + `analytics.reset()` in the signOut finally block (was missing — Sentry + PostHog user identity was only cleared by the hard reload, fragile).
+
+Caching improvements:
+- crons.ts: Added daily 3am UTC cron calling `internal.ownerDashboard.mutations._evictExpiredCacheRows` — deletes dashboardCache rows older than 7 days past their expiresAt. Without this, the table grew unbounded.
+- ownerDashboard/mutations.ts: Added `_evictExpiredCacheRows` internalMutation (takes 500 at a time, idempotent).
+- auth.ts: Added explicit `session: { expiresIn: 60*60*24, updateAge: 60*60 }` to Better Auth options (24h session, 1h sliding refresh). Previously used BA's default 7-day TTL — too long for a financial-data app.
+- vite.config.ts: Added function-based `manualChunks` (react-vendor, convex-vendor, radix-vendor, charts-vendor, motion-vendor, monitoring-vendor). Previously everything bundled into one mega-chunk; any app-code change invalidated the whole vendor cache.
+- vercel.json: Added `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` for `/logo.svg`, `/logo.png`, `/favicon.ico`, `/og-image.png`, `/robots.txt`, `/sitemap.xml`, `/manifest.json`. Previously re-fetched on every navigation.
+- Deleted stale `public/index.html` artifact (contained hashed filenames from a previous build + the OLD CSP missing `convex.site` — would clobber the fresh Vite-built index.html on copy to dist/).
+
+Verification:
+- bun install → ✓ 629 packages.
+- bun x vite build → ✓ built in 15.85s, no new errors. Same pre-existing chunk-size warning on the main index-BnY2J5UX.js (2.09 MB) — out of scope for this batch.
+- All manualChunks entries resolve to installed packages (react, react-dom, react-router, convex, @radix-ui, recharts, d3-*, framer-motion, @sentry, posthog-js).
+
+Stage Summary:
+- ✅ All 5 critical endpoint security gaps closed (Paddle sig verify, adminGrants owner guard, setMyTier cancel-only, handleStripeWebhook internal, markPaymentCompleted internal).
+- ✅ Bonus: dev@axia.app backdoor gated to local dev only; requireAdmin fixed to use Better Auth (not Convex native auth) + no more expert-tier bypass.
+- ✅ All 3 sign-out bugs fixed (notifications last_seen, extension_token, analytics clear).
+- ✅ All 4 caching improvements applied (eviction cron, session TTL, manualChunks, asset Cache-Control).
+- ✅ Stale public/index.html deleted.
+- ⏳ Not yet deployed to Convex cloud or pushed to GitHub — will batch with the cookie banner + privacy policy + SEO work and deploy all at once.

@@ -1,14 +1,22 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# robots.txt — Axia (axia.app)
+# Allow all crawlers full access. Sitemap declared below.
 
 User-agent: *
 Allow: /
+
+# Block auth + app routes from indexing (sign-in, dashboard, account
+# settings — these are private and have no value in search results).
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /clients
+Disallow: /projects
+Disallow: /invoices
+Disallow: /proposals
+Disallow: /pipeline
+Disallow: /account-settings
+Disallow: /owner-dashboard
+Disallow: /owner
+Disallow: /workspace/
+
+# Sitemap
+Sitemap: https://axia.app/sitemap.xml

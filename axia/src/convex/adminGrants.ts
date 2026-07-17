@@ -5,19 +5,20 @@
  *   2. Upgrade a specific user (default: priya@axia.dev) to the "expert" tier.
  *   3. Grant a tier to ANY user by email (admin escape hatch).
  *
- * Usage (run from project root):
+ * Usage (run from project root, signed in as an owner):
  *   npx convex run adminGrants:renameEngineeringToDevTeam '{}'
  *   npx convex run adminGrants:upgradeSelfToExpert '{"email":"priya@axia.dev"}'
  *   npx convex run adminGrants:grantTier '{"email":"marcus@axia.dev","tier":"pro"}'
  *
- * SECURITY: These mutations are NOT protected by an admin-role check because
- * the AXIA deployment currently has no admin role defined. They rely on the
- * Convex deployment being private (only the owner can run `npx convex run`).
- * BEFORE PRODUCTION: add `requireAdmin(ctx)` to each handler.
+ * SECURITY: Every mutation calls `requireOwner(ctx)` as its first line — only
+ * users with role === "owner" can invoke these. The prior "private deployment"
+ * assumption was broken once the Convex deployment went live (frontend is
+ * public; any signed-in user could call these via api.* references).
  */
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireOwner } from "./ownerDashboard/lib/guard";
 
 const VALID_TIERS = ["free", "starter", "pro", "expert", "client"] as const;
 type Tier = (typeof VALID_TIERS)[number];
@@ -32,6 +33,7 @@ export const renameEngineeringToDevTeam = mutation({
     workspaceName: v.optional(v.string()), // default: "AXIA Team"
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const workspaces = await ctx.db.query("workspaces").collect();
     const ws = workspaces.find(
       (w) => w.type === "team" && (args.workspaceName ? w.name === args.workspaceName : true)
@@ -84,6 +86,7 @@ export const upgradeSelfToExpert = mutation({
     email: v.optional(v.string()), // if omitted, uses the authenticated user
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     let userId;
     let userEmail;
 
@@ -137,6 +140,7 @@ export const grantTier = mutation({
     tier: v.union(...VALID_TIERS.map((t) => v.literal(t))),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const userRow = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))
@@ -184,6 +188,7 @@ export const grantWorkspaceRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const userRow = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))
@@ -252,6 +257,7 @@ export const addToTeam = mutation({
     role: v.optional(v.union(v.literal("lead"), v.literal("member"))),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const userRow = await ctx.db
       .query("users")
       .withIndex("email", (q) => q.eq("email", args.email))

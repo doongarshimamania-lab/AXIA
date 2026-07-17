@@ -28,6 +28,7 @@
 
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import { Doc } from "../_generated/dataModel";
+import { getAuthUserId } from "../lib/auth";
 
 export interface RateLimitConfig {
   /** Max calls per window per identifier */
@@ -141,9 +142,20 @@ export async function rateLimitAuthenticated(
 /**
  * Admin-only auth gate. Throws if caller is not signed in OR not admin.
  * Returns the admin userId on success.
+ *
+ * SECURITY (v7.2 hardening): Previously accepted `subscriptionTier === "expert"`
+ * as a substitute for `role === "admin"` — combined with the (now-fixed)
+ * `users.setMyTier` mutation that let any user self-set their tier to "expert",
+ * this was a 2-call privilege-escalation path to admin. The expert-tier bypass
+ * has been removed; only `role === "admin"` (or `role === "owner"`) qualifies.
+ *
+ * Also fixed: now uses `getAuthUserId(ctx)` from lib/auth (Better Auth) instead
+ * of `ctx.auth?.getUserId?.()` (Convex native auth) — the latter returns null
+ * under BA-only sessions, which previously caused requireAdmin to throw
+ * "Unauthorized" even for legitimately signed-in admins.
  */
 export async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<string> {
-  const userId = await ctx.auth?.getUserId?.();
+  const userId = await getAuthUserId(ctx as any);
   if (!userId) {
     throw new Error("Unauthorized: Sign in required.");
   }
@@ -151,9 +163,8 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<string>
   if (!user) {
     throw new Error("Unauthorized: User not found.");
   }
-  // Allow either the legacy `role === "admin"` or `subscriptionTier === "expert"` (per user request)
-  if (user.role !== "admin" && user.subscriptionTier !== "expert") {
-    throw new Error("Forbidden: Admin or Expert tier required.");
+  if (user.role !== "admin" && user.role !== "owner") {
+    throw new Error("Forbidden: Admin access required.");
   }
-  return userId as unknown as string;
+  return userId;
 }

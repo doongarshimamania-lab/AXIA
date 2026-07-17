@@ -23,6 +23,7 @@ import { manualSendTables } from "./tables/manualSends";
 import { leadTables } from "./tables/leads";
 import { portalTables } from "./tables/portal";
 import { ownerDashboardTables } from "./tables/ownerDashboard";
+import { legalTables } from "./tables/legal";
 
 export default defineSchema({
   // ponytail: no authTables spread — Better Auth tables live in the component.
@@ -47,4 +48,5 @@ export default defineSchema({
   ...leadTables,
   ...portalTables,
   ...ownerDashboardTables,
+  ...legalTables,
 });

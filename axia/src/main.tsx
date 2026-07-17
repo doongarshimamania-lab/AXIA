@@ -50,6 +50,12 @@ import EvidenceLibrary from "./pages/EvidenceLibrary.tsx";
 import OnboardingUserInformation from "./pages/OnboardingUserInformation.tsx";
 import OnboardingSource from "./pages/OnboardingSource.tsx";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import CookiePolicy from "@/pages/CookiePolicy";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
@@ -268,6 +274,11 @@ root.render(
 
                   {/* Public Routes (No Sidebar) */}
                   <Route path="/" element={<Landing />} />
+                  <Route path="/cookies" element={<CookiePolicy />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route path="/waitlist/success" element={<WaitlistSuccess />} />
                   {/* ponytail: /client-dashboard route removed — there is no
                       client user-account tier. Clients access the portal via
@@ -327,6 +338,7 @@ root.render(
               </WorkspaceProvider>
             </ConvexErrorBoundary>
             <Toaster />
+            <CookieConsentBanner />
           </BrowserRouter>
           </ConvexBetterAuthProvider>
         </ConvexProvider>

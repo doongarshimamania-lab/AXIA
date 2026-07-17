@@ -14,7 +14,7 @@
 //   - Audit logged
 // ──────────────────────────────────────────────────────────────────────────────
 
-import { mutation, query } from "../_generated/server";
+import { mutation, query, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { verifyPortalScope, PortalScope } from "../lib/portalAuth";
 import { logPortalAction } from "../lib/portalAuditLog";
@@ -190,11 +190,15 @@ export const initiatePayment = mutation({
  * payment completes. For the mock provider, this is called directly from
  * initiatePayment (above).
  *
- * SECURITY: This mutation is called from convex/http.ts (webhook handler),
- * NOT from the frontend. The webhook handler validates the provider's
- * signature before calling this.
+ * SECURITY (v7.2 hardening): Changed from `mutation` to `internalMutation`.
+ * Previously this was a public mutation — any signed-in user could call
+ * `api.portal.payments.markPaymentCompleted({paymentId, providerPaymentId: "x"})`
+ * to mark ANY portal payment + its invoice as paid. Now it can only be invoked
+ * from convex/http.ts (webhook handler) via
+ * `ctx.runMutation(internal.portal.payments.markPaymentCompleted, ...)`,
+ * after the provider's webhook signature has been verified.
  */
-export const markPaymentCompleted = mutation({
+export const markPaymentCompleted = internalMutation({
   args: {
     paymentId: v.id("portalPayments"),
     providerPaymentId: v.string(),

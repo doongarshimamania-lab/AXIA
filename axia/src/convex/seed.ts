@@ -138,10 +138,29 @@ export const resetDevUser = mutation({
  *
  * It enriches the user with profile data and creates sample data
  * (workspace, clients, projects, pipeline stages, deals).
+ *
+ * SECURITY (v7.2 hardening): This was a production backdoor — anyone could
+ * sign up with `dev@axia.app` and run this mutation to instantly become
+ * `role: "admin"` + `subscriptionTier: "pro"` + a full sample dataset. The
+ * mutation is now gated to ONLY run when the deployment is the local dev
+ * deployment (CONVEX_CLOUD_URL points at localhost). On any cloud deployment
+ * (preview or prod), the mutation throws immediately.
  */
 export const enrichDevUser = mutation({
   args: {},
   handler: async (ctx) => {
+    // ponytail: hard gate — this mutation only runs on local dev deployments.
+    // The check is `process.env.CONVEX_CLOUD_URL` (set by `npx convex dev`)
+    // which on local = "http://127.0.0.1:5173" or similar. On cloud it's
+    // "https://<deployment>.convex.cloud".
+    const cloudUrl = process.env.CONVEX_CLOUD_URL ?? "";
+    const isLocalDev = cloudUrl.includes("127.0.0.1") || cloudUrl.includes("localhost");
+    if (!isLocalDev) {
+      throw new Error(
+        "enrichDevUser is disabled on cloud deployments. Use adminGrants:grantTier + seedNew:seedAll from an owner account instead."
+      );
+    }
+
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated. Please sign in first.");

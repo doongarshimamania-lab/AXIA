@@ -13,7 +13,7 @@
 // The mutation helpers below are the cache-write-only part, called via
 // ctx.runMutation from the action.
 
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getOrFetch, CACHE_TTL } from "./lib/cache";
 import { writeAuditLog } from "./lib/audit";
@@ -458,5 +458,26 @@ export const getUsersTab = mutation({
       })),
       latencyMs: Date.now() - start,
     };
+  },
+});
+
+// ── Eviction cron target ────────────────────────────────────────────────────
+// ponytail: dashboardCache rows grow unbounded without this. Cron calls it
+// daily. Deletes rows whose `expiresAt` is more than 7 days in the past
+// (keeps a 7-day window of stale-but-readable rows for rate-limit fallback,
+// evicts anything older).
+export const _evictExpiredCacheRows = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const expired = await ctx.db
+      .query("dashboardCache")
+      .filter((q) => q.lt(q.field("expiresAt"), cutoff))
+      .take(500);
+
+    for (const row of expired) {
+      await ctx.db.delete(row._id);
+    }
+    return { evicted: expired.length };
   },
 });

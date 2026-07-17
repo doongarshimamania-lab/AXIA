@@ -1,8 +1,9 @@
 import { httpRouter } from "convex/server";
 import { authComponent, createAuth, trustedOriginsList } from "./auth";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
+import { hmacSha256, constantTimeEqual } from "./lib/pureCrypto";
 
 export const configureCORS = (response: Response): Response => {
   // SECURITY: Restrict CORS to known origins instead of wildcard
@@ -595,7 +596,9 @@ http.route({
         const sessionId = event.data?.object?.id;
         const paymentId = event.data?.object?.client_reference_id ?? event.data?.object?.metadata?.paymentId;
         if (paymentId && sessionId) {
-          await ctx.runMutation(api.portal.payments.markPaymentCompleted, {
+          // ponytail: v7.2 hardening — markPaymentCompleted is now an
+          // internalMutation; only Convex-internal code can invoke it.
+          await ctx.runMutation(internal.portal.payments.markPaymentCompleted, {
             paymentId: paymentId as any,
             providerPaymentId: sessionId,
           });
@@ -638,13 +641,65 @@ http.route({
       if (sizeErr) return sizeErr;
 
       const payload = await req.text();
-      const signature = req.headers.get("Paddle-Signature") ?? req.headers.get("X-Paddle-Signature") ?? "";
+      const signatureHeader = req.headers.get("Paddle-Signature") ?? req.headers.get("X-Paddle-Signature") ?? "";
 
-      // Verify signature (basic check — full verification TODO when Paddle is live)
+      // SECURITY (v7.2 hardening): Previously this route read the
+      // PADDLE_WEBHOOK_SECRET env var but NEVER verified the signature — the
+      // inline comment at the old line 643 even admitted it. Anyone could POST
+      // a forged Paddle event and update users.subscriptionTier to "expert",
+      // which (combined with the loose requireAdmin that accepted
+      // tier==="expert" as admin) was a privilege-escalation path.
+      //
+      // Paddle (Billing v2) webhook signature format:
+      //   Paddle-Signature: ts=<unix-seconds>;h1=<hex-hmac-sha256>
+      // Signed payload = `<ts>:<raw-body>` (literal colon, raw body bytes).
+      // Spec: https://developer.paddle.com/webhooks/verify-signatures
       const secret = process.env.PADDLE_WEBHOOK_SECRET;
       if (!secret) {
         return new Response(JSON.stringify({ error: "Paddle webhook secret not configured" }), {
           status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Parse ts=...;h1=...
+      const parts = Object.fromEntries(
+        signatureHeader.split(";").map((kv) => {
+          const [k, v] = kv.split("=");
+          return [k.trim(), (v ?? "").trim()];
+        })
+      );
+      const ts = parts.ts;
+      const h1 = parts.h1;
+      if (!ts || !h1) {
+        return new Response(JSON.stringify({ error: "Missing Paddle signature fields" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Replay protection: reject events older than 5 minutes.
+      const tsNum = Number(ts);
+      if (!Number.isFinite(tsNum) || Math.abs(Date.now() / 1000 - tsNum) > 300) {
+        return new Response(JSON.stringify({ error: "Stale or invalid timestamp" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Compute HMAC-SHA256 of `<ts>:<payload>` and compare in constant time.
+      // ponytail: reuse the existing pure-JS hmacSha256 from lib/pureCrypto
+      // (works in Convex's V8 isolate without "use node" directive).
+      const signedPayload = `${ts}:${payload}`;
+      const expectedBytes = hmacSha256(secret, signedPayload);
+      const expectedHex = Array.from(expectedBytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const expectedBuf = new TextEncoder().encode(expectedHex);
+      const gotBuf = new TextEncoder().encode(h1);
+      if (expectedBuf.length !== gotBuf.length || !constantTimeEqual(expectedBuf, gotBuf)) {
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
           headers: { "Content-Type": "application/json" },
         });
       }

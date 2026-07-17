@@ -1718,10 +1718,20 @@ export const removeRecurringInvoice = mutation({
 });
 
 // ═════════════════════════════════════════════
-// STRIPE WEBHOOK HANDLER
+// STRIPE WEBHOOK HANDLER (internal — only callable from Convex HTTP routes)
 // ═════════════════════════════════════════════
-
-export const handleStripeWebhook = mutation({
+//
+// SECURITY (v7.2 hardening): Changed from `mutation` to `internalMutation`.
+// Previously this was a public mutation — any signed-in user could call
+// `api.invoices.handleStripeWebhook({invoiceId, eventType: "payment_succeeded"})`
+// to mark ANY invoice as paid. Now it can only be invoked from Convex's own
+// http.ts route via `ctx.runMutation(internal.invoices.handleStripeWebhook, ...)`,
+// where the Stripe signature is verified first.
+//
+// The actual Stripe webhook route lives at POST /api/payments/webhook in
+// http.ts — that route verifies the Stripe signature, then calls this
+// internal mutation to do the DB write.
+export const handleStripeWebhook = internalMutation({
   args: {
     invoiceId: v.id("invoices"),
     eventType: v.string(),

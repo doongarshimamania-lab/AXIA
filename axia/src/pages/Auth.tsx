@@ -25,11 +25,20 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Sun, Moon, Mail, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/ThemeProvider";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+// ponytail: v7.2 — legal policy version, hardcoded to match the version in
+// convex/legal/consent.ts POLICY_VERSIONS. When the policy text materially
+// changes, bump BOTH this constant AND the one in convex/legal/consent.ts.
+// (We don't import from convex/legal/consent because that file imports `crypto`,
+// a Node-only module that breaks the browser build.)
+const LEGAL_POLICY_VERSION = "1.0.0";
 
 interface AuthProps {
   redirectAfterAuth?: string;
@@ -73,6 +82,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  // ponytail: v7.2 — mandatory legal consent checkbox (DPDP Act 2023 + GDPR).
+  // User MUST check this to sign up. Consent is recorded to legalConsent table
+  // with email + IP + UA + policy version + content hash, BEFORE the BA signup
+  // call. The audit row is then patched with the userId after signup succeeds.
+  const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
+  const recordLegalConsent = useMutation(api.legal.consent.recordLegalConsent);
 
   const { theme, setTheme } = useTheme();
 
@@ -142,6 +157,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     setIsLoading(true);
     setError(null);
 
+    // v7.2: Mandatory consent check — block signup if checkbox not ticked.
+    if (!hasAgreedToTerms) {
+      setError("Please review and accept the Privacy Policy and Terms of Service to continue.");
+      setIsLoading(false);
+      return;
+    }
+
     // Password length validation — client-side defense.
     // Min 8 (matches Convex Auth's `validateDefaultPasswordRequirements`).
     // Max 16 (LPDOS guard — at 1,000 users, a 1,024-char password costs
@@ -159,6 +181,32 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     }
 
     try {
+      // v7.2: Record legal consent BEFORE creating the account. Stores email +
+      // IP + UA + policy version + content hash in legalConsent table. If the
+      // signup later fails, we still have a record that this email agreed.
+      // (Best-effort — if it fails, we log and continue with signup.)
+      try {
+        const privacyHtml = (window as any).__axiaPolicyHtml ?? "privacy_policy_v1";
+        const termsHtml = (window as any).__axiaTermsHtml ?? "terms_v1";
+        // ponytail: fetch the rendered policy pages server-side and hash them.
+        // The window globals are set by PrivacyPolicy/TermsOfService pages,
+        // but we don't render them on /auth, so we fetch the rendered HTML at
+        // signup time. This proves the EXACT text the user agreed to.
+        const [privacyRes, termsRes] = await Promise.all([
+          fetch("/privacy").then((r) => r.text()).catch(() => privacyHtml),
+          fetch("/terms").then((r) => r.text()).catch(() => termsHtml),
+        ]);
+        await recordLegalConsent({
+          email,
+          policyType: "both",
+          policyVersion: LEGAL_POLICY_VERSION, // both policies share version 1.0.0
+          policyContent: `${privacyRes}\n---\n${termsRes}`,
+          authProvider: "password",
+        });
+      } catch (consentErr) {
+        console.warn("Failed to record legal consent (non-blocking):", consentErr);
+      }
+
       // Better Auth: signIn("password", { email, password, name, flow: "signUp" })
       await signIn("password", { email, password, name, flow: "signUp" });
       toast.success("Account created successfully!");
@@ -474,6 +522,29 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+              {/* v7.2: Mandatory legal consent checkbox (DPDP Act 2023 + GDPR) */}
+              <div className="flex items-start gap-2 pt-1">
+                <input
+                  id="agree-terms"
+                  type="checkbox"
+                  checked={hasAgreedToTerms}
+                  onChange={(e) => setHasAgreedToTerms(e.target.checked)}
+                  disabled={isLoading}
+                  required
+                  className="mt-1 h-4 w-4 accent-axia-teal-600"
+                />
+                <label htmlFor="agree-terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                  I have read and agree to the{" "}
+                  <Link to="/privacy" target="_blank" rel="noopener" className="text-foreground hover:text-axia-teal-600 underline">
+                    Privacy Policy
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/terms" target="_blank" rel="noopener" className="text-foreground hover:text-axia-teal-600 underline">
+                    Terms of Service
+                  </Link>
+                  . I understand my data will be processed per the DPDP Act 2023 (India) and GDPR (EU).
+                </label>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button

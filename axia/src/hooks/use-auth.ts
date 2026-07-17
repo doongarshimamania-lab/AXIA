@@ -30,12 +30,23 @@ import { authClient } from "@/lib/auth-client";
  * FIX (SIGNOUT-LEAK): `signOut` wipes axia_* localStorage keys and forces a
  * full reload, so the next user starts from a clean slate.
  */
+// AXIA_LS_KEYS — every localStorage key the app writes that is per-user
+// (NOT global UI prefs that should survive sign-out). signOut() wipes all of
+// these so the next user starts from a clean slate.
+//
+// v7.2 hardening: added `axia_notifications_last_seen` (was leaking the prior
+// user's notification read-state to the next user → wrong unread counts) and
+// `extension_token` (defense-in-depth: if the Chrome-extension token UI ever
+// gets wired to the backend, this prevents the next user pairing as the prior
+// user).
 const AXIA_LS_KEYS = [
   "axia_active_workspace",
   "axia_account_mode",
   "axia_subscription_tier",
   "axia_sidebar_state",
   "axia_client_email",
+  "axia_notifications_last_seen",
+  "extension_token",
   "onboardingData",
 ];
 
@@ -162,10 +173,22 @@ export function useAuth() {
   // ponytail: wrap signOut so all axia_* localStorage keys are cleared and
   // the page is reloaded — guarantees the next user starts with no stale
   // SPA state (WorkspaceProvider's seedAttempted ref, in-memory caches, etc.)
+  //
+  // v7.2 hardening: also calls analytics.clearUser() so Sentry + PostHog
+  // drop the prior user's identity immediately (defense-in-depth — the hard
+  // reload wipes in-memory state, but explicit clear is the correct hygiene),
+  // and tracks a sign-out event for product analytics.
   const signOut = useCallback(async () => {
     try {
       await authClient.signOut();
     } finally {
+      // Clear analytics identity first (before reload) so the sign-out event
+      // is attributed to the right user, then drop the identity.
+      try {
+        const { analytics } = await import("@/lib/analytics");
+        analytics.track("auth_sign_out");
+        analytics.reset();
+      } catch {}
       for (const k of AXIA_LS_KEYS) {
         try {
           localStorage.removeItem(k);

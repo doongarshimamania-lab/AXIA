@@ -1,25 +1,33 @@
 
+import { Link } from "react-router";
 import { AxiaLogo } from "./brand";
 import { ShieldCheck } from "lucide-react";
 
 const COLUMNS = [
   {
     title: "Product",
-    links: ["Truth Layer", "Features", "Calculator", "Pricing", "FAQ"],
-  },
-  {
-    title: "For agencies",
     links: [
-      "Digital Marketing",
-      "Growth / Performance",
-      "Web Dev Shops",
-      "SEO / SEM",
-      "Creative / Branding",
+      { label: "Blog", to: "/blog" },
+      { label: "Pricing", to: "/#pricing" },
+      { label: "FAQ", to: "/#faq" },
     ],
   },
   {
-    title: "Company",
-    links: ["About", "Brand Bible", "Careers", "Contact", "Security"],
+    title: "Resources",
+    links: [
+      { label: "What is an Agency OS?", to: "/blog/what-is-agency-os" },
+      { label: "Best Agency Tools 2026", to: "/blog/best-agency-tools-2026" },
+      { label: "Case Study", to: "/blog/agency-os-case-study" },
+      { label: "Axia vs Competitors", to: "/blog/agency-os-comparison" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", to: "/privacy" },
+      { label: "Terms of Service", to: "/terms" },
+      { label: "Cookie Policy", to: "/cookies" },
+    ],
   },
 ];
 
@@ -51,14 +59,14 @@ export function SiteFooter() {
               </h4>
               <ul className="mt-4 space-y-3">
                 {c.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
+                  <li key={l.label}>
+                    <Link
+                      to={l.to}
                       className="group relative text-[0.86rem] text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {l}
+                      {l.label}
                       <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[var(--axia-teal-bright)] transition-all duration-300 group-hover:w-full" />
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -68,19 +76,21 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
           <p className="text-[0.78rem] text-muted-foreground">
-            © {new Date().getFullYear()} Axia. Built in Mumbai. Protection,
-            not productivity.
+            © {new Date().getFullYear()} Axia Technologies Pvt. Ltd. Built in India. The agency OS.
           </p>
           <div className="flex items-center gap-5 text-[0.78rem] text-muted-foreground">
-            <a href="#" className="transition-colors hover:text-foreground">
+            <Link to="/privacy" className="transition-colors hover:text-foreground">
               Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-foreground">
+            </Link>
+            <Link to="/terms" className="transition-colors hover:text-foreground">
               Terms
-            </a>
-            <a href="#" className="transition-colors hover:text-foreground">
-              Status
-            </a>
+            </Link>
+            <Link to="/cookies" className="transition-colors hover:text-foreground">
+              Cookies
+            </Link>
+            <Link to="/blog" className="transition-colors hover:text-foreground">
+              Blog
+            </Link>
           </div>
         </div>
       </div>

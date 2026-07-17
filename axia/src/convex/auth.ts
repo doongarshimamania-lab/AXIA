@@ -213,6 +213,16 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
     rateLimit: {
       storage: "database",
     },
+
+    // ─── Session config (v7.2 hardening) ───────────────────────────────────
+    // ponytail: explicit session TTL for a financial-data app. BA defaults to
+    // 7 days, which is too long for our threat model. 24h expiresIn with 1h
+    // updateAge means: session JWT rotates every hour (sliding window), and
+    // the session hard-expires after 24h of inactivity, forcing a re-login.
+    session: {
+      expiresIn: 60 * 60 * 24, // 24 hours
+      updateAge: 60 * 60, // 1 hour (refresh window)
+    },
   }) satisfies BetterAuthOptions;
 
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
