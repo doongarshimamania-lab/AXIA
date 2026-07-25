@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { useAuth } from '@/hooks/use-auth';
 import { api } from '@/convex/_generated/api';
+import { hasTierGate, isValidTier, type Tier, type GateKey } from '@/lib/tiers';
 
 /**
  * useSubscriptionTier — returns the user's subscription tier.
@@ -25,14 +26,33 @@ import { api } from '@/convex/_generated/api';
  * time the user record re-fetched from Convex, the (never-persisted) tier
  * reset to `undefined` → 'free'.
  *
- * Now: `updateTier` calls the new `api.users.setMyTier` mutation (which
- * writes to the backend) AND mirrors to localStorage. The `useEffect`
- * re-sync is now idempotent — once the backend has the new tier, the
- * next re-fetch returns the same value.
+ * UPDATE (2026-07-25, Creem migration):
+ * The canonical tier set is now { solo, agency, scale } matching the
+ * marketing site + Creem product IDs. Legacy tier values (free/starter/
+ * pro/expert) are mapped to their new equivalents so existing users'
+ * data isn't broken:
+ *   free / starter → solo
+ *   pro            → agency
+ *   expert         → scale
+ * The `hasTierGate` function (from lib/tiers) accepts both old and new
+ * values — see the migration map in lib/tiers.ts.
  */
+const LEGACY_TIER_MAP: Record<string, Tier> = {
+  free: 'solo',
+  starter: 'solo',
+  pro: 'agency',
+  expert: 'scale',
+};
+
+function normalizeTier(raw: string | undefined | null): Tier | null {
+  if (!raw) return null;
+  if (isValidTier(raw)) return raw;
+  return LEGACY_TIER_MAP[raw] ?? null;
+}
+
 export function useSubscriptionTier() {
   const { user } = useAuth();
-  const [tier, setTierState] = useState<'free' | 'starter' | 'pro' | 'expert'>('free');
+  const [tier, setTierState] = useState<Tier | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // ponytail: mutation that persists tier to the backend `users.subscriptionTier`
@@ -47,21 +67,22 @@ export function useSubscriptionTier() {
     if (user === undefined) return; // still loading
 
     if (user === null) {
-      // Signed out — reset to free
-      setTierState('free');
+      // Signed out — reset to null (= no paid tier)
+      setTierState(null);
       localStorage.removeItem('axia_subscription_tier');
       setIsLoading(false);
       return;
     }
 
-    // Signed in — use the tier from the backend user record
-    const backendTier = (user as any)?.subscriptionTier as
-      | 'free' | 'starter' | 'pro' | 'expert'
-      | undefined;
-
-    const effectiveTier = backendTier ?? 'free';
+    // Signed in — use the tier from the backend user record (after migration).
+    const rawTier = (user as any)?.subscriptionTier as string | undefined;
+    const effectiveTier = normalizeTier(rawTier);
     setTierState(effectiveTier);
-    localStorage.setItem('axia_subscription_tier', effectiveTier);
+    if (effectiveTier) {
+      localStorage.setItem('axia_subscription_tier', effectiveTier);
+    } else {
+      localStorage.removeItem('axia_subscription_tier');
+    }
     setIsLoading(false);
   }, [user]);
 
@@ -69,7 +90,8 @@ export function useSubscriptionTier() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'axia_subscription_tier' && e.newValue) {
-        setTierState(e.newValue as any);
+        const next = normalizeTier(e.newValue);
+        if (next) setTierState(next);
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -82,10 +104,16 @@ export function useSubscriptionTier() {
   // Returns a Promise so callers CAN await + toast on failure, but does NOT
   // throw — on failure it rolls back to the backend-known tier and logs.
   // This avoids unhandled-promise-rejection crashes in callers that don't await.
+  //
+  // NOTE: setMyTier (post-v7.2 hardening) accepts only "free" for self-serve
+  // (cancellation). Paid upgrades must go through Paddle/Creem checkout. This
+  // hook still exposes setTier for backwards compatibility with callers that
+  // upgrade via UI; they'll get a clear error from the backend if they try a
+  // paid tier.
   const updateTier = async (newTier: 'free' | 'starter' | 'pro' | 'expert') => {
-    const previousTier = (user as any)?.subscriptionTier ?? 'free';
+    const previousTier = normalizeTier((user as any)?.subscriptionTier);
     // Optimistic local update so the UI flips immediately.
-    setTierState(newTier);
+    setTierState(normalizeTier(newTier));
     localStorage.setItem('axia_subscription_tier', newTier);
     window.dispatchEvent(new Event('axia_tier_update'));
     try {
@@ -96,10 +124,32 @@ export function useSubscriptionTier() {
       // The next user-record re-fetch will correct this.
       console.error('setMyTier failed — tier reverted to backend value:', err);
       setTierState(previousTier);
-      localStorage.setItem('axia_subscription_tier', previousTier);
+      if (previousTier) {
+        localStorage.setItem('axia_subscription_tier', previousTier);
+      } else {
+        localStorage.removeItem('axia_subscription_tier');
+      }
       return { ok: false as const, error: err };
     }
   };
 
   return { tier, setTier: updateTier, isLoading };
+}
+
+/**
+ * useTierGate — convenience hook for tier-gating UI.
+ * Returns a function that checks whether the current user's tier has access
+ * to a given gate key.
+ *
+ * Usage:
+ *   const hasAccess = useTierGate();
+ *   if (hasAccess('scope_creep_protection')) { ... }
+ *
+ * ponytail: this is the canonical way to gate features going forward. The
+ * old `tier === 'pro'` checks scattered across the codebase should migrate
+ * to this hook as they're touched.
+ */
+export function useTierGate() {
+  const { tier } = useSubscriptionTier();
+  return (gate: GateKey) => hasTierGate(tier, gate);
 }

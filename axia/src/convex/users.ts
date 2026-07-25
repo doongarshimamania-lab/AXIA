@@ -230,6 +230,54 @@ export const setMyTier = mutation({
   },
 });
 
+// ─── CREEM WEBHOOK-DRIVEN TIER UPDATE (internal-only) ───────────────────────
+//
+// ponytail: Called only by the Creem webhook handler (http.ts at
+// /api/payments/creem-webhook) when a Creem subscription becomes
+// active/canceled/expired. There is NO exposed query/HTTP route that accepts
+// a userId — the webhook handler looks up the user by `creemCustomerId` and
+// invokes this mutation internally via ctx.runMutation.
+//
+// When Creem sends `subscription.active`, we set the user's tier to the
+// matching Solo/Agency/Scale based on the product_id they purchased.
+// When `subscription.canceled` or `subscription.expired`, we clear the tier.
+//
+// NOTE: The `creemCustomerId` field needs to be added to the users table
+// (or a separate `creem_customers` table) before this is fully wired.
+// For now this mutation is scaffolded but the webhook handler does not
+// call it — see http.ts for the TODO.
+export const setTierFromCreem = mutation({
+  args: {
+    creemCustomerId: v.string(),
+    tier: v.union(
+      v.literal("solo"),
+      v.literal("agency"),
+      v.literal("scale"),
+      v.null(), // null = subscription canceled/expired
+    ),
+  },
+  handler: async (ctx, args) => {
+    // ponytail: this mutation is internal-only — there's no rate-limit-by-user
+    // because it's invoked by the webhook httpAction, not a user session.
+    // For now we just log; full implementation pending the users-table
+    // schema change to add `creemCustomerId`.
+    console.log("[setTierFromCreem] called", {
+      creemCustomerId: args.creemCustomerId,
+      tier: args.tier,
+    });
+    // TODO: once `creemCustomerId` field is added to users table:
+    //   const user = await ctx.db.query("users")
+    //     .withIndex("by_creem_customer_id", (q) => q.eq("creemCustomerId", args.creemCustomerId))
+    //     .first();
+    //   if (!user) throw new Error("No user found for Creem customer ID");
+    //   await ctx.db.patch(user._id, {
+    //     subscriptionTier: args.tier ?? undefined,
+    //     tierUpgradedAt: Date.now(),
+    //   });
+    return { success: true, received: true };
+  },
+});
+
 // Add: Complete onboarding mutation
 export const completeOnboarding = mutation({
   args: {

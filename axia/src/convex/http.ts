@@ -849,4 +849,114 @@ http.route({
   }),
 });
 
+// ─── Creem Payment Webhook ──────────────────────────────────────────────────
+// POST /api/payments/creem-webhook
+// Body: Creem event payload (see https://docs.creem.io/webhooks)
+//
+// Creem is an alternative Merchant of Record to Paddle. This route exists so
+// AXIA can switch billing providers by changing the PAYMENT_PROVIDER env var
+// (paddle → creem) without rewriting the tier-gating logic.
+//
+// Creem signs each webhook with HMAC-SHA256 in the `creem-signature` header.
+// We verify with CREEM_WEBHOOK_SECRET, then route by `event_type`.
+//
+// Supported events:
+//   - checkout.session.completed → mark invoice payment completed
+//   - subscription.active        → (TODO) set users.subscriptionTier via setTierFromCreem
+//   - subscription.canceled      → (TODO) clear users.subscriptionTier via setTierFromCreem
+//   - subscription.expired       → (TODO) clear users.subscriptionTier via setTierFromCreem
+//
+// SECURITY:
+//   - Signature verified via creemProvider.verifyWebhookSignature (constant-time compare)
+//   - Body size capped at 64KB
+//   - Idempotency: markPaymentCompleted is idempotent (re-delivery safe)
+//   - All errors sanitized to prevent info leakage
+http.route({
+  path: "/api/payments/creem-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    try {
+      const sizeErr = checkBodySize(req, 64_000);
+      if (sizeErr) return sizeErr;
+
+      const payload = await req.text();
+      const signature =
+        req.headers.get("creem-signature") ??
+        req.headers.get("Creem-Signature") ??
+        req.headers.get("X-Signature") ??
+        "";
+
+      const { getPaymentProvider } = await import("./lib/paymentProvider");
+      const provider = getPaymentProvider();
+
+      // ponytail: if PAYMENT_PROVIDER is not "creem", this will be the mock
+      // provider which always returns true — that's fine for dev, but in
+      // production Creem MUST be configured or this endpoint is insecure.
+      if (provider.name !== "creem") {
+        console.warn(
+          "[creem-webhook] PAYMENT_PROVIDER is not 'creem' — signature verification is a no-op. " +
+            "Set PAYMENT_PROVIDER=creem on Convex env before going live.",
+        );
+      }
+
+      const valid = await provider.verifyWebhookSignature(payload, signature);
+      if (!valid) {
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const event = JSON.parse(payload) as {
+        event_type?: string;
+        object?: {
+          id?: string;
+          metadata?: { paymentId?: string; invoiceId?: string };
+          customer_id?: string;
+          product_id?: string;
+        };
+      };
+
+      // ponytail: route by event_type. Each branch is independent so adding
+      // new events (refunds, disputes) doesn't touch existing branches.
+      switch (event.event_type) {
+        case "checkout.session.completed": {
+          const paymentId = event.object?.metadata?.paymentId;
+          const sessionId = event.object?.id;
+          if (paymentId && sessionId) {
+            await ctx.runMutation(api.portal.payments.markPaymentCompleted, {
+              paymentId: paymentId as any,
+              providerPaymentId: sessionId,
+            });
+          }
+          break;
+        }
+        // ponytail: subscription lifecycle events will be wired once the
+        // users-table `creemCustomerId` field is added (pending schema
+        // migration). For now, log only.
+        case "subscription.active":
+        case "subscription.canceled":
+        case "subscription.expired":
+        case "subscription.refunded": {
+          console.log(
+            `[creem-webhook] ${event.event_type} received — subscription-tier sync not yet implemented`,
+            { customerId: event.object?.customer_id, productId: event.object?.product_id },
+          );
+          break;
+        }
+        default:
+          // Unknown events: 200 OK so Creem doesn't retry forever.
+          console.log(`[creem-webhook] unhandled event_type: ${event.event_type}`);
+      }
+
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e: any) {
+      return sanitizeError(e, "Creem webhook processing failed");
+    }
+  }),
+});
+
 export default http;

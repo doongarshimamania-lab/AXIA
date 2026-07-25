@@ -26,13 +26,14 @@ export interface CheckoutSessionResult {
 }
 
 export interface PaymentProvider {
-  name: "mock" | "stripe" | "razorpay" | "paypal" | "paddle";
+  name: "mock" | "stripe" | "razorpay" | "paypal" | "paddle" | "creem";
   createCheckoutSession(args: CheckoutSessionArgs): Promise<CheckoutSessionResult>;
   /**
    * Verify a webhook signature. Returns true if valid.
    * Mock provider: always true (no signature).
    * Stripe: HMAC-SHA256 verification against STRIPE_WEBHOOK_SECRET.
    * Paddle: HMAC-SHA256 verification against PADDLE_WEBHOOK_SECRET.
+   * Creem:  HMAC-SHA256 verification against CREEM_WEBHOOK_SECRET.
    */
   verifyWebhookSignature(payload: string, signature: string): Promise<boolean>;
 }
@@ -42,9 +43,25 @@ let cachedProvider: PaymentProvider | null = null;
 export function getPaymentProvider(): PaymentProvider {
   if (cachedProvider) return cachedProvider;
 
-  const name = process.env.PORTAL_PAYMENT_PROVIDER ?? "mock";
+  // ponytail: PAYMENT_PROVIDER is the canonical env var. We also accept the
+  // legacy PORTAL_PAYMENT_PROVIDER for backwards compat with existing deploy.
+  const name = process.env.PAYMENT_PROVIDER ?? process.env.PORTAL_PAYMENT_PROVIDER ?? "mock";
 
-  if (name === "stripe") {
+  if (name === "creem") {
+    // Creem — Merchant of Record, handles global tax (GST/VAT/sales).
+    // Alternative to Paddle for Axia's own SaaS subscriptions.
+    // Lazy require to keep the mock path zero-dep.
+    try {
+      const { creemProvider } = require("./paymentProviders/creem");
+      cachedProvider = creemProvider;
+    } catch (e: any) {
+      console.warn(
+        `[paymentProvider] failed to load creem provider: ${e?.message}. Falling back to mock.`,
+      );
+      const { mockProvider } = require("./paymentProviders/mock");
+      cachedProvider = mockProvider;
+    }
+  } else if (name === "stripe") {
     // Lazy require to avoid loading Stripe SDK in mock mode
     // ponytail: dynamic require keeps the mock path zero-dep
     // NOTE: stripe provider requires the "stripe" npm package + STRIPE_SECRET_KEY env.
