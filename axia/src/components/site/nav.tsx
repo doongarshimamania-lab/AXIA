@@ -41,7 +41,10 @@ export function SiteNav() {
   }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    <header
+      className="fixed inset-x-0 z-50"
+      style={{ top: "var(--beta-banner-h, 0px)" }}
+    >
       {/* scroll progress rail */}
       <div className="absolute inset-x-0 bottom-0 h-px bg-transparent">
         <div

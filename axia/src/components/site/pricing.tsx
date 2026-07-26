@@ -1,75 +1,117 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, ArrowRight, ShieldCheck, Sparkles, Building2 } from "lucide-react";
 import { Link } from "react-router";
 import { Reveal } from "./reveal";
 import { cn } from "@/lib/utils";
 
 // ponytail: BETA_TRIAL flag controls the 30-day free beta offer. When true,
-// every tier shows a $0 trial price with the original price struck through,
-// so visitors see the real value of what they're getting. Flip to false after
-// the beta window ends — the pricing section reverts to the normal layout.
+// every self-serve tier shows a $0 trial price with the original price struck
+// through. Flip to false after the beta window ends. Enterprise is always
+// "Contact sales" — beta does not apply.
 const BETA_TRIAL = true;
 const BETA_TRIAL_DAYS = 30;
 
-// Numeric prices for toggle math. Annual = 2 months free (10/12 of monthly).
+// ponytail (2026-07-26): Tier definitions REWRITTEN to be grounded in REAL
+// app features (audited against src/main.tsx routes + src/convex/tables/*).
+// Previously listed marketing fluff ("Verified Workstreams", "Full Truth
+// Layer + event sourcing", "SSO + SCIM", "GitHub/Figma/Slack/Stripe
+// integrations") that does NOT exist in the codebase.
+//
+// Pricing model:
+//   - Solo    → per-SEAT  ($29/seat/mo, 1 seat)
+//   - Agency  → per-AGENCY ($99/agency/mo, 10 seats included)
+//   - Scale   → per-AGENCY ($299/agency/mo, 25 seats included)
+//   - Enterprise → Contact sales (features only, no price)
+//
+// Real app features (verified):
+//   Clients + token Portal, Projects, Time Tracking, Tags, Goals, Invoices +
+//   Builder, Payment Patterns, Reports, Pipeline, Proposals + Builder,
+//   Messages, Scope, Evidence Library + Export, Team Management,
+//   Multi-workspace, Custom fields, Compliance alerts.
 const TIERS = [
   {
     name: "Solo",
-    tagline: "For freelancers & consultants",
+    tagline: "For solo freelancers & consultants",
     monthly: 29,
-    seats: "1 seat",
-    features: [
-      "1 active client portal",
-      "Verified Workstreams",
-      "Validated Billing",
-      "Smart Proposals (5/mo)",
-      "Automated payment reminders",
-      "Evidence Library, 90 days",
-    ],
-    cta: "Start free",
+    pricingUnit: "seat",
+    seatsLabel: "1 seat included",
     featured: false,
-    // ponytail: href absent on Solo/Agency → renders <Link to="/auth?mode=signup">.
     href: undefined,
+    features: [
+      "1 agency seat",
+      "Up to 3 active clients",
+      "Up to 5 active projects",
+      "Time tracking + tags",
+      "Invoices + invoice builder",
+      "Up to 5 proposals / month",
+      "Sales pipeline",
+      "Evidence library — 90-day history",
+      "Token-based client portal",
+      "Email support (48h SLA)",
+    ],
   },
   {
     name: "Agency",
-    tagline: "For B2B agencies, 3 to 50 seats",
+    tagline: "For boutique agencies, up to 10 seats",
     monthly: 99,
-    seats: "Min 3 seats",
+    pricingUnit: "agency",
+    seatsLabel: "10 seats included",
+    featured: true,
+    href: undefined,
     features: [
       "Everything in Solo",
-      "Scope Creep Protection (AI)",
-      "Full Truth Layer + event sourcing",
-      "Unlimited Smart Proposals",
-      "Integrations: GitHub, Figma, Slack, Stripe",
-      "Evidence Library, unlimited",
-      "Priority support",
+      "10 agency seats included",
+      "Unlimited clients + projects",
+      "Unlimited proposals",
+      "Scope management + creep tracking",
+      "Payment pattern analysis",
+      "Evidence library — unlimited history",
+      "Team management + roles",
+      "Internal messages",
+      "Reports + dashboards",
+      "Priority email support (24h SLA)",
     ],
-    cta: "Start free",
-    featured: true,
-    // ponytail: href absent on Solo/Agency → renders <Link to="/auth?mode=signup">.
-    href: undefined,
   },
   {
     name: "Scale",
-    tagline: "For 50+ seats & multi-brand",
+    tagline: "For growing agencies, up to 25 seats",
     monthly: 299,
-    seats: "Min 10 seats",
+    pricingUnit: "agency",
+    seatsLabel: "25 seats included",
+    featured: false,
+    href: undefined,
     features: [
       "Everything in Agency",
-      "Multi-brand workspaces",
-      "SSO + SCIM provisioning",
+      "25 agency seats included",
+      "Multi-workspace (multiple brands)",
       "Advanced profitability reports",
+      "Custom fields",
+      "Compliance alerts",
+      "Goals + team performance",
       "Dedicated success manager",
-      "Custom integrations & SLA",
+      "99.9% uptime SLA",
     ],
-    cta: "Talk to us",
+  },
+  {
+    name: "Enterprise",
+    tagline: "For 25+ seats, multi-brand & custom needs",
+    monthly: null,
+    pricingUnit: null,
+    seatsLabel: "Custom seat allotment",
     featured: false,
-    // ponytail: 'Talk to us' is a sales contact, not self-serve signup —
-    // keep it scrolling to the lead form (#demo) so the sales team can qualify.
     href: "#demo",
+    features: [
+      "Everything in Scale",
+      "Custom seat allotment",
+      "Dedicated onboarding & training",
+      "Custom contracts & invoicing",
+      "Dedicated customer success manager",
+      "Custom SLA (99.99% uptime)",
+      "Priority security & compliance review",
+      "Custom data retention policies",
+    ],
   },
 ] as const;
 
@@ -101,7 +143,6 @@ export function Pricing() {
             </p>
           </Reveal>
 
-          {/* 30-day free beta trial banner */}
           {BETA_TRIAL && (
             <Reveal delay={0.14}>
               <div className="mx-auto mt-6 inline-flex max-w-2xl items-center gap-3 rounded-2xl border border-[var(--axia-teal)]/40 bg-gradient-to-r from-[var(--axia-teal-soft)]/60 to-white px-5 py-3 text-left shadow-[0_8px_28px_-12px_rgba(43,122,107,0.35)]">
@@ -122,7 +163,6 @@ export function Pricing() {
             </Reveal>
           )}
 
-          {/* billing toggle */}
           <Reveal delay={0.16}>
             <div
               className="mt-8 inline-flex items-center gap-1 rounded-full border border-border bg-secondary/50 p-1"
@@ -175,135 +215,145 @@ export function Pricing() {
           </Reveal>
         </div>
 
-        <div className="mt-8 grid items-stretch gap-4 lg:grid-cols-3">
-          {TIERS.map((t, i) => (
-            <Reveal key={t.name} delay={i * 0.08}>
-              <div
-                className={cn(
-                  "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-2xl)] p-5",
-                  t.featured
-                    ? "surface-elevated border-[var(--axia-teal)]/55 bg-gradient-to-b from-[var(--axia-teal-soft)] to-white"
-                    : "surface"
-                )}
-              >
-                {t.featured && (
-                  <>
-                    <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[radial-gradient(closest-side,rgba(43,122,107,0.3),transparent)]" />
-                    <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--axia-teal)]/40 bg-[var(--axia-teal-soft)]/25 px-2.5 py-1 text-[0.66rem] font-medium uppercase tracking-wide text-[var(--axia-teal-bright)]">
-                      <ShieldCheck className="h-3 w-3" /> most chosen
-                    </span>
-                  </>
-                )}
-                <div>
-                  <h3 className="text-[1.3rem] font-semibold text-foreground">
-                    {t.name}
-                  </h3>
-                  <p className="mt-1 text-[0.82rem] text-muted-foreground">
-                    {t.tagline}
-                  </p>
-                </div>
+        <div className="mt-8 grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {TIERS.map((t, i) => {
+            const isEnterprise = t.monthly === null;
+            return (
+              <Reveal key={t.name} delay={i * 0.08}>
+                <div
+                  className={cn(
+                    "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-2xl)] p-5",
+                    t.featured
+                      ? "surface-elevated border-[var(--axia-teal)]/55 bg-gradient-to-b from-[var(--axia-teal-soft)] to-white"
+                      : "surface"
+                  )}
+                >
+                  {t.featured && (
+                    <>
+                      <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[radial-gradient(closest-side,rgba(43,122,107,0.3),transparent)]" />
+                      <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--axia-teal)]/40 bg-[var(--axia-teal-soft)]/25 px-2.5 py-1 text-[0.66rem] font-medium uppercase tracking-wide text-[var(--axia-teal-bright)]">
+                        <ShieldCheck className="h-3 w-3" /> most chosen
+                      </span>
+                    </>
+                  )}
+                  <div>
+                    <h3 className="text-[1.3rem] font-semibold text-foreground">
+                      {t.name}
+                    </h3>
+                    <p className="mt-1 text-[0.82rem] text-muted-foreground">
+                      {t.tagline}
+                    </p>
+                  </div>
 
-                {/* animated price */}
-                <div className="mt-6 flex items-baseline gap-1.5">
-                  {BETA_TRIAL && (
+                  <div className="mt-6 flex items-baseline gap-1.5">
+                    {BETA_TRIAL && !isEnterprise && (
+                      <AnimatePresence mode="popLayout">
+                        <motion.span
+                          key={"strike-" + billing + t.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                          className="nums text-2xl font-medium tracking-tight text-muted-foreground/70 line-through"
+                          aria-label={`original price ${priceFor(t.monthly as number)} dollars per ${t.pricingUnit} per month`}
+                        >
+                          ${priceFor(t.monthly as number)}
+                        </motion.span>
+                      </AnimatePresence>
+                    )}
                     <AnimatePresence mode="popLayout">
                       <motion.span
-                        key={"strike-" + billing + t.name}
+                        key={billing + t.name}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                        className="nums text-2xl font-medium tracking-tight text-muted-foreground/70 line-through"
-                        aria-label={`original price ${priceFor(t.monthly)} dollars per seat per month`}
+                        className="nums text-5xl font-semibold tracking-tight text-foreground"
                       >
-                        ${priceFor(t.monthly)}
+                        {isEnterprise
+                          ? "Custom"
+                          : BETA_TRIAL
+                            ? "$0"
+                            : `$${priceFor(t.monthly as number)}`}
                       </motion.span>
                     </AnimatePresence>
-                  )}
-                  <AnimatePresence mode="popLayout">
-                    <motion.span
-                      key={billing + t.name}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      className="nums text-5xl font-semibold tracking-tight text-foreground"
+                    {!isEnterprise && (
+                      <span className="text-[0.82rem] text-muted-foreground">
+                        {BETA_TRIAL
+                          ? `/ ${t.pricingUnit} · ${BETA_TRIAL_DAYS} days`
+                          : `/ ${t.pricingUnit} / mo`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 h-5">
+                    {isEnterprise ? (
+                      <p className="text-[0.74rem] font-medium uppercase tracking-wide text-muted-foreground/80">
+                        {t.seatsLabel}
+                      </p>
+                    ) : BETA_TRIAL ? (
+                      <p className="text-[0.74rem] font-medium text-[var(--axia-teal-bright)]">
+                        Then ${priceFor(t.monthly as number)}/{t.pricingUnit}/mo{billing === "annual" ? " · billed annually" : ""}
+                      </p>
+                    ) : billing === "annual" ? (
+                      <p className="text-[0.72rem] text-emerald-700/90">
+                        Billed annually · ${(t.monthly as number) * 10}/yr per {t.pricingUnit}
+                      </p>
+                    ) : (
+                      <p className="text-[0.74rem] font-medium uppercase tracking-wide text-muted-foreground/80">
+                        {t.seatsLabel}
+                      </p>
+                    )}
+                  </div>
+
+                  {t.href ? (
+                    <a
+                      href={t.href}
+                      className={cn(
+                        "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
+                        t.featured
+                          ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
+                          : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
+                      )}
                     >
-                      {BETA_TRIAL ? "$0" : `$${priceFor(t.monthly)}`}
-                    </motion.span>
-                  </AnimatePresence>
-                  <span className="text-[0.82rem] text-muted-foreground">
-                    {BETA_TRIAL ? `/seat · ${BETA_TRIAL_DAYS} days` : "/seat / mo"}
-                  </span>
-                </div>
-                <div className="mt-1 h-5">
-                  {BETA_TRIAL ? (
-                    <p className="text-[0.74rem] font-medium text-[var(--axia-teal-bright)]">
-                      Then ${priceFor(t.monthly)}/seat/mo{billing === "annual" ? " · billed annually" : ""}
-                    </p>
-                  ) : billing === "annual" ? (
-                    <p className="text-[0.72rem] text-emerald-700/90">
-                      Billed annually · ${t.monthly * 10}/yr per seat
-                    </p>
+                      <Building2 className="h-4 w-4" />
+                      Contact sales
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </a>
                   ) : (
-                    <p className="text-[0.74rem] font-medium uppercase tracking-wide text-muted-foreground/80">
-                      {t.seats}
-                    </p>
-                  )}
-                </div>
-
-                {/* ponytail: Solo + Agency tiers (cta="Start free") now route
-                    to /auth?mode=signup to start the self-serve signup flow.
-                    Scale tier (cta="Talk to us") keeps href="#demo" to scroll
-                    to the lead form for sales qualification. The ternary below
-                    picks <Link> vs <a> based on whether the tier has an href. */}
-                {t.href ? (
-                  <a
-                    href={t.href}
-                    className={cn(
-                      "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
-                      t.featured
-                        ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
-                        : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
-                    )}
-                  >
-                    {BETA_TRIAL && !t.href ? `Start ${BETA_TRIAL_DAYS}-day free beta` : t.cta}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </a>
-                ) : (
-                  <Link
-                    to="/auth?mode=signup"
-                    className={cn(
-                      "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
-                      t.featured
-                        ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
-                        : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
-                    )}
-                  >
-                    {BETA_TRIAL ? `Start ${BETA_TRIAL_DAYS}-day free beta` : t.cta}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                )}
-
-                <ul className="mt-4 space-y-2 border-t border-border pt-6">
-                  {t.features.map((f) => (
-                    <li
-                      key={f}
-                      className="flex items-start gap-2.5 text-[0.86rem] text-muted-foreground"
+                    <Link
+                      to="/auth?mode=signup"
+                      className={cn(
+                        "group mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[0.92rem] font-medium transition-all",
+                        t.featured
+                          ? "bg-primary text-primary-foreground hover:bg-[var(--axia-teal-bright)] hover:shadow-[0_0_36px_-8px_rgba(43,122,107,0.8)]"
+                          : "border border-border bg-secondary/50 text-foreground hover:border-[var(--axia-teal)]/50 hover:bg-secondary"
+                      )}
                     >
-                      <Check
-                        className={cn(
-                          "mt-0.5 h-4 w-4 shrink-0",
-                          t.featured ? "text-emerald-600" : "text-[var(--axia-teal-bright)]"
-                        )}
-                      />
-                      <span className="text-foreground/90">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Reveal>
-          ))}
+                      {BETA_TRIAL ? `Start ${BETA_TRIAL_DAYS}-day free beta` : "Start free"}
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  )}
+
+                  <ul className="mt-4 space-y-2 border-t border-border pt-6">
+                    {t.features.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-start gap-2.5 text-[0.86rem] text-muted-foreground"
+                      >
+                        <Check
+                          className={cn(
+                            "mt-0.5 h-4 w-4 shrink-0",
+                            t.featured ? "text-emerald-600" : "text-[var(--axia-teal-bright)]"
+                          )}
+                        />
+                        <span className="text-foreground/90">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
 
         <Reveal delay={0.12}>

@@ -6,6 +6,11 @@ import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess, requir
 import { getUserVisibility, isRecordVisible } from "../workspaceFilter";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
+// ponytail (2026-07-26): server-side tier gating on project + proposal
+// creation. convertToProject enforces maxProjects; createProposal enforces
+// maxProposalsPerMonth. Both use the assertUnderLimitFor helper from
+// convex/lib/tiers.ts — the actual security boundary.
+import { assertUnderLimitFor, getMyTier, tierAtLeast, TIER_LIMITS } from "../lib/tiers";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getProposals = query({
@@ -223,6 +228,30 @@ export const createProposal = mutation({
     // If workspaceId provided, verify membership
     if (args.workspaceId) {
       await requireWorkspaceAccess(ctx, args.workspaceId, "member");
+    }
+
+    // ponytail (2026-07-26): server-side tier enforcement on monthly proposal
+    // count. Solo = 5 proposals/month, Agency+ = unlimited. We count
+    // proposals created this calendar month via the by_user index + a
+    // createdAt filter. Agency+ short-circuits (no count needed).
+    const tier = await getMyTier(ctx);
+    if (!tier || !tierAtLeast(tier, "agency")) {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const monthStartMs = monthStart.getTime();
+      const proposalLimit = TIER_LIMITS.SOLO_PROPOSALS_PER_MONTH;
+      const recentProposals = await (ctx.db as any)
+        .query("proposals")
+        .withIndex("by_user", (q: any) => q.eq("userId", userId))
+        .filter((q: any) => q.gte(q.field("createdAt"), monthStartMs))
+        .take(proposalLimit + 1);
+      if (recentProposals.length >= proposalLimit) {
+        throw new Error(
+          `You've reached your monthly proposal limit (${proposalLimit}) on the ${tier ?? "solo"} plan. ` +
+            `Upgrade to Agency for unlimited proposals.`,
+        );
+      }
     }
 
     const { workspaceId, teamId, customFields, ...rest } = args;
@@ -936,6 +965,11 @@ export const convertToProject = mutation({
     if (proposal.projectId) {
       return { clientId: proposal.clientId!, projectId: proposal.projectId, alreadyConverted: true };
     }
+
+    // ponytail (2026-07-26): server-side tier enforcement. Count existing
+    // projects via by_user index, assert under maxProjects limit. Solo=5,
+    // Agency+=unlimited. Cannot be bypassed from the client.
+    await assertUnderLimitFor(ctx, "maxProjects", "projects", "by_user", "userId");
 
     const workspaceId = proposal.workspaceId;
     const clientName = proposal.clientName?.trim() || "Unknown Client";

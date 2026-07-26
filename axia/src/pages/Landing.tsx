@@ -14,6 +14,7 @@
 // 5. Fonts (Inter, Inter Tight) load via Google Fonts <link> in index.html;
 //    Geist Mono was already installed via @fontsource/geist-mono.
 
+import { BetaBanner } from "@/components/site/beta-banner";
 import { SiteNav } from "@/components/site/nav";
 import { Hero } from "@/components/site/hero";
 import { TrustBand } from "@/components/site/trust-band";
@@ -41,6 +42,7 @@ import { SectionDivider } from "@/components/site/divider";
 export default function Landing() {
   return (
     <div className="landing-page bg-grain relative flex min-h-screen flex-col bg-background">
+      <BetaBanner />
       <SiteNav />
       <main className="flex-1">
         <Hero />

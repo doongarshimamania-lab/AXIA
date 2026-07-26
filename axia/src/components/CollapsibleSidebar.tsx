@@ -25,11 +25,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag, CreditCard, Crown } from "lucide-react";
+import { ChevronLeft, Activity, Users, Briefcase, TrendingUp, Zap, FileText, Home, Shield, Link as LinkIcon, Settings, HelpCircle, Loader2, CheckCircle2, ChevronDown, Clock, Database, FileSignature, Kanban, Building2, MessageSquare, LogOut, Tag, CreditCard, Crown, Lock } from "lucide-react";
 import { ProfileSection } from "@/components/ProfileSection";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsOwner } from "@/components/owner-dashboard/hooks";
+// ponytail (2026-07-26): real feature gating. Sidebar intercepts clicks on
+// tier-locked nav items and shows an UpgradePrompt modal instead of
+// navigating. Uses the existing useTierGate() function-based API from
+// use-subscription-tier.ts + featureForRoute from lib/tiers.ts.
+import { useTierGate } from "@/hooks/use-subscription-tier";
+import { useUpgradeGate } from "@/components/UpgradePrompt";
+import { featureForRoute, type GateKey } from "@/lib/tiers";
 
 
 type Platform = "upwork" | "fiverr" | "toptal" | "freelancer";
@@ -64,6 +71,37 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
   // useIsOwner() returns undefined while loading, then boolean. Falsy → hidden.
   const isOwner = useIsOwner();
   const isOwnerRoute = currentPath === "/owner-dashboard" || currentPath === "/owner";
+
+  // ponytail (2026-07-26): tier gate + upgrade modal. `hasAccess` is the
+  // function-based API from use-subscription-tier.ts (hasAccess(gate) → bool).
+  // `upgrade` exposes challenge(gate) which pops the modal if locked.
+  const hasAccess = useTierGate();
+  const upgrade = useUpgradeGate();
+
+  // ponytail (2026-07-26): gated navigation. If the route maps to a GateKey
+  // and the user's tier doesn't include it, pop the UpgradePrompt modal
+  // instead of navigating. Server-side enforcement is in convex/lib/tiers.ts
+  // (assertFeatureAccess / assertUnderLimitFor) — this is the UX layer.
+  const goOrLock = (path: string) => {
+    const gate = featureForRoute(path);
+    if (!gate) {
+      go(path);
+      return;
+    }
+    if (hasAccess(gate)) {
+      go(path);
+      return;
+    }
+    upgrade.challenge(gate);
+  };
+
+  // Helper: is this route locked for the current user? Used to render lock
+  // icons + dim the nav item.
+  const isLocked = (path: string): boolean => {
+    const gate = featureForRoute(path);
+    if (!gate) return false;
+    return !hasAccess(gate);
+  };
 
   // ponytail: wrap navigate so any in-sidebar nav click also closes the parent
   // Sheet (mobile only). On desktop onNavigate is undefined — no-op.
@@ -346,23 +384,23 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                   >
                     <NavItem icon={Users} label="Clients" isExpanded={true} isActive={currentPath === "/clients"} />
                   </button>
-                  <button 
-                    onClick={() => go("/teams")} 
+                  <button
+                    onClick={() => goOrLock("/teams")}
                     className="w-full text-left"
                   >
-                    <NavItem icon={Building2} label="Team" isExpanded={true} isActive={currentPath === "/teams"} />
+                    <NavItem icon={Building2} label="Team" isExpanded={true} isActive={currentPath === "/teams"} locked={isLocked("/teams")} />
                   </button>
-                  <button 
-                    onClick={() => go("/messages")} 
+                  <button
+                    onClick={() => goOrLock("/messages")}
                     className="w-full text-left"
                   >
-                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} isActive={currentPath === "/messages"} />
+                    <NavItem icon={MessageSquare} label="Messages" isExpanded={true} isActive={currentPath === "/messages"} locked={isLocked("/messages")} />
                   </button>
-                  <button 
-                    onClick={() => go("/scope")} 
+                  <button
+                    onClick={() => goOrLock("/scope")}
                     className="w-full text-left"
                   >
-                    <NavItem icon={Shield} label="Scope" isExpanded={true} isActive={currentPath === "/scope"} />
+                    <NavItem icon={Shield} label="Scope" isExpanded={true} isActive={currentPath === "/scope"} locked={isLocked("/scope")} />
                   </button>
                   <button 
                     onClick={() => go("/evidence-library")} 
@@ -411,11 +449,11 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                   <button onClick={() => go("/invoices")} className="w-full text-left" type="button">
                     <NavItem icon={FileText} label="Invoices" isExpanded={true} isActive={currentPath === "/invoices" || currentPath === "/invoices/new"} />
                   </button>
-                  <button onClick={() => go("/payment-patterns")} className="w-full text-left" type="button">
-                    <NavItem icon={CreditCard} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} />
+                  <button onClick={() => goOrLock("/payment-patterns")} className="w-full text-left" type="button">
+                    <NavItem icon={CreditCard} label="Payment Patterns" isExpanded={true} isActive={currentPath === "/payment-patterns"} locked={isLocked("/payment-patterns")} />
                   </button>
-                  <button onClick={() => go("/reports")} className="w-full text-left" type="button">
-                    <NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} />
+                  <button onClick={() => goOrLock("/reports")} className="w-full text-left" type="button">
+                    <NavItem icon={Activity} label="Reports" isExpanded={true} isActive={currentPath === "/reports"} locked={isLocked("/reports")} />
                   </button>
                 </div>
 
@@ -463,14 +501,17 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                 <button onClick={() => go("/clients")} title="Clients" className={`p-1.5 rounded-md transition-colors ${currentPath === "/clients" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <Users className={`w-4 h-4 ${currentPath === "/clients" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => go("/teams")} title="Team" className={`p-1.5 rounded-md transition-colors ${currentPath === "/teams" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                <button onClick={() => goOrLock("/teams")} title={isLocked("/teams") ? "Team — upgrade required" : "Team"} className={`p-1.5 rounded-md transition-colors relative ${currentPath === "/teams" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"} ${isLocked("/teams") ? "opacity-50" : ""}`}>
                   <Building2 className={`w-4 h-4 ${currentPath === "/teams" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  {isLocked("/teams") && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />}
                 </button>
-                <button onClick={() => go("/messages")} title="Messages" className={`p-1.5 rounded-md transition-colors ${currentPath === "/messages" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                <button onClick={() => goOrLock("/messages")} title={isLocked("/messages") ? "Messages — upgrade required" : "Messages"} className={`p-1.5 rounded-md transition-colors relative ${currentPath === "/messages" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"} ${isLocked("/messages") ? "opacity-50" : ""}`}>
                   <MessageSquare className={`w-4 h-4 ${currentPath === "/messages" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  {isLocked("/messages") && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />}
                 </button>
-                <button onClick={() => go("/scope")} title="Scope" className={`p-1.5 rounded-md transition-colors ${currentPath === "/scope" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                <button onClick={() => goOrLock("/scope")} title={isLocked("/scope") ? "Scope — upgrade required" : "Scope"} className={`p-1.5 rounded-md transition-colors relative ${currentPath === "/scope" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"} ${isLocked("/scope") ? "opacity-50" : ""}`}>
                   <Shield className={`w-4 h-4 ${currentPath === "/scope" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  {isLocked("/scope") && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />}
                 </button>
                 <button onClick={() => go("/evidence-library")} title="Evidence Library" className={`p-1.5 rounded-md transition-colors ${currentPath === "/evidence-library" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <Database className={`w-4 h-4 ${currentPath === "/evidence-library" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
@@ -504,11 +545,13 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
                 <button onClick={() => go("/invoices")} title="Invoices" className={`p-1.5 rounded-md transition-colors ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
                   <FileText className={`w-4 h-4 ${currentPath === "/invoices" || currentPath === "/invoices/new" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
                 </button>
-                <button onClick={() => go("/payment-patterns")} title="Payment Patterns" className={`p-1.5 rounded-md transition-colors ${currentPath === "/payment-patterns" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                <button onClick={() => goOrLock("/payment-patterns")} title={isLocked("/payment-patterns") ? "Payment Patterns — upgrade required" : "Payment Patterns"} className={`p-1.5 rounded-md transition-colors relative ${currentPath === "/payment-patterns" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"} ${isLocked("/payment-patterns") ? "opacity-50" : ""}`}>
                   <CreditCard className={`w-4 h-4 ${currentPath === "/payment-patterns" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  {isLocked("/payment-patterns") && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />}
                 </button>
-                <button onClick={() => go("/reports")} title="Reports" className={`p-1.5 rounded-md transition-colors ${currentPath === "/reports" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"}`}>
+                <button onClick={() => goOrLock("/reports")} title={isLocked("/reports") ? "Reports — upgrade required" : "Reports"} className={`p-1.5 rounded-md transition-colors relative ${currentPath === "/reports" ? "bg-primary/20 text-primary" : "hover:bg-sidebar-accent"} ${isLocked("/reports") ? "opacity-50" : ""}`}>
                   <Activity className={`w-4 h-4 ${currentPath === "/reports" ? "text-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground"}`} />
+                  {isLocked("/reports") && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />}
                 </button>
 
                 {/* Divider: ADMIN */}
@@ -669,6 +712,11 @@ export function CollapsibleSidebar({ onNavigate }: { onNavigate?: () => void } =
           </div>
         </div>
       )}
+
+      {/* ponytail (2026-07-26): tier-gating upgrade modal. Rendered at the
+          root of the sidebar so it overlays the entire app when a locked
+          nav item is clicked. Controlled by useUpgradeGate (challenge(gate)). */}
+      {upgrade.modal}
     </>
   );
 }
@@ -678,22 +726,33 @@ interface NavItemProps {
   label: string;
   isActive?: boolean;
   isExpanded: boolean;
+  // ponytail (2026-07-26): locked flag — dims the item + shows a lock icon.
+  // Clicking a locked item is intercepted by the parent button (goOrLock).
+  locked?: boolean;
 }
 
-function NavItem({ icon: Icon, label, isActive, isExpanded }: NavItemProps) {
+function NavItem({ icon: Icon, label, isActive, isExpanded, locked }: NavItemProps) {
   return (
     <div
       className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm relative ${
         isActive
           ? "bg-primary/15 text-primary font-semibold border-l-2 border-l-primary -ml-0.5 pl-[10px]"
-          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          : locked
+            ? "text-sidebar-foreground/40 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/50"
+            : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : locked ? "opacity-50" : ""}`} />
       {isExpanded && (
-        <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden">
+        <span className="font-medium text-[13px] whitespace-nowrap overflow-hidden flex-1">
           {label}
         </span>
+      )}
+      {locked && isExpanded && (
+        <Lock className="w-3 h-3 text-sidebar-foreground/40 flex-shrink-0" aria-label="Locked — upgrade required" />
+      )}
+      {locked && !isExpanded && (
+        <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Locked" />
       )}
     </div>
   );

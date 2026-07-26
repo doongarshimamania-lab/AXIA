@@ -100,9 +100,20 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   // ({ email: string }) — the user must finish entering their code first.
   // `typeof step === "string"` is true for "signIn"/"signUp" and false for the
   // OTP step object.
+  //
+  // ponytail (2026-07-26): fresh sign-ups route directly to
+  // /onboarding-user-information instead of the default redirect (/dashboard).
+  // Previously, a freshly-signed-up user would land on /dashboard,
+  // ProtectedRoute would notice `user.onboardingComplete === false` and
+  // bounce them to /onboarding-user-information — producing the "awkward
+  // phase" the user reported (a brief flash of the dashboard before the
+  // onboarding page appears). Returning users (step === "signIn") keep the
+  // original `redirect`.
   useEffect(() => {
     if (!authLoading && isAuthenticated && typeof step === "string") {
-      navigate(redirect);
+      const target =
+        step === "signUp" ? "/onboarding-user-information" : redirect;
+      navigate(target);
     }
   }, [authLoading, isAuthenticated, navigate, redirect, step]);
 
@@ -210,7 +221,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       // Better Auth: signIn("password", { email, password, name, flow: "signUp" })
       await signIn("password", { email, password, name, flow: "signUp" });
       toast.success("Account created successfully!");
-      navigate(redirect);
+      // ponytail (2026-07-26): route fresh sign-ups straight to onboarding
+      // to avoid the dashboard→onboarding bounce. The useEffect above also
+      // handles this, but we navigate here for an immediate transition.
+      navigate("/onboarding-user-information");
     } catch (err: any) {
       console.error("Sign-up error:", err);
       setError(err?.message || "Failed to create account. Please try again.");

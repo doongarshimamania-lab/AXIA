@@ -14,7 +14,7 @@
 // no "free" string value, which prevents the bug where someone could pass
 // "free" to bypass gating. Use `tierAtLeast(userTier, "agency")` to gate.
 
-export type Tier = "solo" | "agency" | "scale";
+export type Tier = "solo" | "agency" | "scale" | "enterprise";
 
 export interface TierDef {
   id: Tier;
@@ -47,7 +47,20 @@ export type GateKey =
   | "sso_scim" // SAML SSO + SCIM (Scale only)
   | "advanced_reports" // profitability reports (Scale only)
   | "dedicated_success_manager" // Scale only
-  | "custom_integrations_sla"; // Scale only
+  | "custom_integrations_sla" // Scale only
+  // ponytail (2026-07-26): route-based gates — map directly to app pages.
+  // These are used by featureForRoute() to gate sidebar nav + ProtectedRoute.
+  // Added so the gating system covers the REAL app routes (audited against
+  // src/main.tsx), not just abstract marketing features.
+  | "route_scope" // /scope page
+  | "route_payment_patterns" // /payment-patterns page
+  | "route_team_management" // /teams page
+  | "route_messages" // /messages page
+  | "route_reports" // /reports page
+  | "route_multi_workspace" // WorkspaceSwitcher (multi-workspace)
+  | "route_custom_fields" // custom fields on clients/projects
+  | "route_compliance_alerts" // compliance alerts feed
+  | "route_profitability_reports"; // advanced profitability reports
 
 export const TIERS: TierDef[] = [
   {
@@ -131,7 +144,7 @@ export const TIERS: TierDef[] = [
   },
 ];
 
-const TIER_LEVEL: Record<Tier, number> = { solo: 1, agency: 2, scale: 3 };
+const TIER_LEVEL: Record<Tier, number> = { solo: 1, agency: 2, scale: 3, enterprise: 4 };
 
 // ponytail: gate-to-minimum-tier map. Adding a new gate? Also add it to a
 // TierDef.gatedFeatures above so the pricing page renders the check mark.
@@ -150,6 +163,19 @@ const GATE_MIN_TIER: Record<GateKey, Tier> = {
   advanced_reports: "scale",
   dedicated_success_manager: "scale",
   custom_integrations_sla: "scale",
+  // ponytail (2026-07-26): route-based gates — mirror the nav structure.
+  // /scope, /payment-patterns, /teams, /messages, /reports all unlock at
+  // Agency. Multi-workspace, custom fields, compliance alerts, profitability
+  // reports unlock at Scale.
+  route_scope: "agency",
+  route_payment_patterns: "agency",
+  route_team_management: "agency",
+  route_messages: "agency",
+  route_reports: "agency",
+  route_multi_workspace: "scale",
+  route_custom_fields: "scale",
+  route_compliance_alerts: "scale",
+  route_profitability_reports: "scale",
 };
 
 export function getTierDef(id: Tier | undefined | null): TierDef | null {
@@ -183,5 +209,64 @@ export function getCreemProductId(tier: Tier): string {
 }
 
 export function isValidTier(value: string | undefined | null): value is Tier {
-  return !!value && (value === "solo" || value === "agency" || value === "scale");
+  return !!value && (value === "solo" || value === "agency" || value === "scale" || value === "enterprise");
 }
+
+// ponytail (2026-07-26): map a React Router path → the GateKey required to
+// access it. Used by CollapsibleSidebar + ProtectedRoute to gate nav items.
+// Returns null for public routes (/dashboard, /account-settings, /auth,
+// /onboarding-*). The route→gate mapping is grounded in the REAL app routes
+// audited against src/main.tsx.
+export function featureForRoute(path: string): GateKey | null {
+  const p = path.split("?")[0].replace(/\/$/, "");
+  if (p === "/scope" || p.startsWith("/scope/")) return "route_scope";
+  if (p === "/payment-patterns") return "route_payment_patterns";
+  if (p === "/teams") return "route_team_management";
+  if (p === "/messages") return "route_messages";
+  if (p === "/reports") return "route_reports";
+  // /dashboard, /account-settings, /onboarding-*, /auth, /clients, /projects,
+  // /proposals, /pipeline, /invoices, /time-tracking, /tags, /goals,
+  // /evidence-library → public (available to all paid tiers)
+  return null;
+}
+
+// ponytail (2026-07-26): pricing metadata — mirrors src/components/site/
+// pricing.tsx. Used by UpgradePrompt to show the price of the minimum tier
+// needed to unlock a gated feature. Solo = per-seat; Agency + Scale =
+// per-agency; Enterprise = contact sales (null).
+export const TIER_PRICING: Record<
+  Tier,
+  { monthly: number | null; pricingUnit: "seat" | "agency" | null }
+> = {
+  solo: { monthly: 29, pricingUnit: "seat" },
+  agency: { monthly: 99, pricingUnit: "agency" },
+  scale: { monthly: 299, pricingUnit: "agency" },
+  enterprise: { monthly: null, pricingUnit: null },
+};
+
+// Human-readable label for a GateKey — used in UpgradePrompt + lock tooltips.
+export const GATE_LABELS: Record<GateKey, string> = {
+  scope_creep_protection: "Scope Creep Protection",
+  full_truth_layer: "Full Truth Layer",
+  unlimited_proposals: "Unlimited Proposals",
+  evidence_library_unlimited: "Unlimited Evidence Library",
+  github_integration: "GitHub Integration",
+  figma_integration: "Figma Integration",
+  slack_integration: "Slack Integration",
+  stripe_integration: "Stripe Integration",
+  priority_support: "Priority Support",
+  multi_brand_workspaces: "Multi-Brand Workspaces",
+  sso_scim: "SSO + SCIM",
+  advanced_reports: "Advanced Reports",
+  dedicated_success_manager: "Dedicated Success Manager",
+  custom_integrations_sla: "Custom Integrations & SLA",
+  route_scope: "Scope Management",
+  route_payment_patterns: "Payment Patterns",
+  route_team_management: "Team Management",
+  route_messages: "Messages",
+  route_reports: "Reports",
+  route_multi_workspace: "Multi-Workspace",
+  route_custom_fields: "Custom Fields",
+  route_compliance_alerts: "Compliance Alerts",
+  route_profitability_reports: "Profitability Reports",
+};

@@ -5,6 +5,10 @@ import { getAuthUserId } from "../lib/auth";
 import { requireWorkspaceAccess, getWorkspaceMembership, getRecordAccess } from "../permissions";
 
 import { rateLimitAuthenticated, RATE_LIMITS } from "../security/rateLimit";
+// ponytail (2026-07-26): server-side tier enforcement. createClient now
+// checks the user's tier maxClients limit BEFORE inserting. This is the
+// actual security boundary — client-side gating is just UX.
+import { assertUnderLimitFor } from "../lib/tiers";
 // ─── QUERIES ──────────────────────────────────────────────────────────────
 
 export const getClients = query({
@@ -152,6 +156,11 @@ export const createClient = mutation({
     if (args.workspaceId) {
       await requireWorkspaceAccess(ctx, args.workspaceId, "member");
     }
+
+    // ponytail (2026-07-26): server-side tier enforcement. Count existing
+    // clients via by_user index, assert under maxClients limit. Solo=3,
+    // Agency+=unlimited. Cannot be bypassed from the client.
+    await assertUnderLimitFor(ctx, "maxClients", "clients", "by_user", "userId");
 
     return await ctx.db.insert("clients", {
       userId,
