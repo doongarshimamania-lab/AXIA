@@ -125,7 +125,7 @@ export default function OnboardingUserInformation() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background text-foreground transition-colors flex items-center justify-center p-4" style={{ paddingBottom: "calc(var(--cookie-banner-h, 0px) + 1rem)" }}>
       {/* Dark mode toggle - fixed position */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-card border border-border rounded-full px-3 py-2 shadow-sm">
         <Sun className={`h-4 w-4 ${theme === "light" ? "text-primary" : "text-muted-foreground"}`} />

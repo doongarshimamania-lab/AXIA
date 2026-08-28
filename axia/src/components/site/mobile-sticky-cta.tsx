@@ -3,15 +3,30 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import { Link } from "react-router";
+import { hasConsented } from "@/lib/cookie-consent";
 
 /**
  * MobileStickyCTA, a mobile-only bottom CTA bar that appears after the
  * user scrolls past the hero. Drives conversion on mobile where the primary
  * CTA scrolls out of view. Hidden when the final CTA / footer is visible.
+ *
+ * ponytail: also hidden while the CookieConsentBanner is showing — both
+ * are fixed at bottom:0 and the banner (z-100) covered the CTA (z-40),
+ * making the CTA unreachable and cluttering the bottom of the screen.
+ * We listen for the `axia_consent_change` event (emitted by CookieConsentBanner
+ * via the consent lib) to re-evaluate visibility when consent state changes.
  */
 export function MobileStickyCTA() {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [cookieBannerOpen, setCookieBannerOpen] = useState(() => !hasConsented());
+
+  useEffect(() => {
+    // Re-evaluate when consent state changes (banner accepted/rejected/closed)
+    const onConsentChange = () => setCookieBannerOpen(!hasConsented());
+    window.addEventListener("axia_consent_change", onConsentChange);
+    return () => window.removeEventListener("axia_consent_change", onConsentChange);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -30,7 +45,10 @@ export function MobileStickyCTA() {
 
   return (
     <AnimatePresence>
-      {visible && !dismissed && (
+      {/* ponytail: !cookieBannerOpen gate prevents the CTA from rendering
+          while the cookie consent banner is visible. Both are fixed at bottom:0
+          and the banner (z-100) would obscure the CTA (z-40) anyway. */}
+      {visible && !dismissed && !cookieBannerOpen && (
         <motion.div
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

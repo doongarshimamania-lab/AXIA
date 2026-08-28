@@ -41,7 +41,7 @@ import { SectionDivider } from "@/components/site/divider";
 
 export default function Landing() {
   return (
-    <div className="landing-page bg-grain relative flex min-h-screen flex-col bg-background">
+    <div className="landing-page bg-grain relative flex min-h-screen flex-col overflow-x-hidden bg-background">
       <BetaBanner />
       <SiteNav />
       <main className="flex-1">

@@ -19,9 +19,21 @@ export function Hero() {
       <div className="absolute inset-0 -z-10 bg-teal-glow" />
 
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+        {/* ponytail: grid-cols-1 on mobile sets grid-template-columns: minmax(0, 1fr)
+            which lets the column shrink below its content's intrinsic width.
+            Without this, the implicit single-column grid uses auto sizing
+            (max-content), letting the tool-tabs row push the grid cell to 429px
+            and clip past the 320-375px viewport. lg:grid-cols-[...] takes over
+            at the lg breakpoint. */}
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
           {/* copy */}
-          <div>
+          {/* ponytail: min-w-0 fixes mobile horizontal overflow caused by the
+              tool-tabs row (Slack/Notion/Trello/Docs/Bonsai + Axia pill).
+              Without min-w-0, the grid cell uses default min-width: auto and
+              grows to fit the unwrapped tabs row (429px), overflowing the
+              320-375px viewport and getting clipped by the section's
+              overflow-hidden. min-w-0 lets flex-wrap inside actually wrap. */}
+          <div className="min-w-0">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 shadow-sm">
                 <span className="relative flex h-1.5 w-1.5">
@@ -56,7 +68,9 @@ export function Hero() {
 
             <Reveal delay={0.16}>
               {/* tool tabs to Axia visual metaphor */}
-              <div className="mt-6 flex flex-wrap items-center gap-1.5">
+              {/* ponytail: max-w-full + flex-wrap ensures the tabs wrap to a
+                  second line on narrow screens instead of overflowing. */}
+              <div className="mt-6 flex max-w-full flex-wrap items-center gap-1.5">
                 {[
                   { name: "Slack", color: "#E01E5A" },
                   { name: "Notion", color: "#0d1218" },
@@ -271,11 +285,14 @@ function HeroTruthVisual() {
       </div>
 
       {/* floating recovered badge */}
+      {/* ponytail: on mobile the absolute -right-3 + -bottom-5 cut off the
+          badge past the parent's right edge. Switch to static positioning on
+          mobile (block, full width, below the card) and absolute on sm+. */}
       <motion.div
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="glass absolute -bottom-5 -right-3 flex items-center gap-3 rounded-xl px-4 py-3 shadow-xl sm:-right-6"
+        className="glass mt-4 flex items-center justify-center gap-3 rounded-xl px-4 py-3 shadow-xl sm:absolute sm:-bottom-5 sm:-right-6 sm:mt-0 sm:justify-start"
       >
         <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/15">
           <ShieldCheck className="h-5 w-5 text-emerald-600" />
