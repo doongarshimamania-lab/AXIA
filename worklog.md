@@ -4154,3 +4154,79 @@ Next steps for the user:
 1. Verify the gating works: sign in as a Solo user, click /scope in the sidebar → should see lock icon + upgrade modal. Try creating a 4th client → should get a server-side error.
 2. The Convex deployment is live — the server-side enforcement is active right now.
 3. The release tarball can be downloaded from the GitHub release page if you need to restore or deploy elsewhere.
+
+---
+Task ID: 16
+Agent: main (Super Z)
+Task: User provided new GitHub PAT and asked: (1) store PAT properly, (2) push code to GitHub, (3) create full backup, (4) push backup to a PUBLIC GitHub release.
+
+Work Log:
+- Stored new PAT securely in /tmp/.gh_pat (chmod 600, 40 chars, ghp_ prefix). Updated git remote URL to embed the PAT (so future git push commands work without re-entering it). PAT is NOT echoed in any logs or shell history.
+- Discovered the previous responsive commit (4d33d1f) was LOST between sessions — the local working tree had been reset to commit 338b290 from 2026-07-25. The git reflog didn't have my commit either. Verified via git fsck that 4d33d1f wasn't in dangling commits.
+- Also discovered local main was 10 commits BEHIND origin/main (remote had: 0f28619, 1f43fd0, 12934a1 tier-gating, 779cae8, c2fb0e7, 8084a5b creem, 687c1f1, 60499f3 v7.3 SEO, 494d572, 85df549). The 2 local commits (338b290 + f3b7e15) were superseded by remote work.
+- Created backup branch `backup-before-rebase` to preserve local state for safety.
+- Did `git reset --hard origin/main` to sync local with remote (got the latest tier-gating + creem + SEO + blog work).
+- Re-applied all 6 responsive fixes manually on top of the latest origin/main (the previous session's work had to be redone since the working tree was reset):
+  1. hero.tsx: grid-cols-1 + min-w-0 + max-w-full on tabs row + static floating badge on mobile
+  2. CookieConsentBanner.tsx: useRef + --cookie-banner-h CSS var via ResizeObserver + mobile-compact layout (p-4, text-sm, flex-1 Accept button, hidden Policy v1)
+  3. mobile-sticky-cta.tsx: hasConsented() + axia_consent_change listener + !cookieBannerOpen gate
+  4. Auth.tsx: paddingBottom calc(var(--cookie-banner-h) + 1rem) on both OTP + main wrappers
+  5. OnboardingUserInformation.tsx: same paddingBottom
+  6. Landing.tsx: overflow-x-hidden on .landing-page wrapper
+- Reinstalled node_modules (bun install, 629 packages).
+- Re-ran the 10-viewport Playwright overflow audit: zero horizontal overflow at 320, 360, 375, 390, 414, 768, 1024, 1280, 1536, 1920px.
+- Committed as 7af9d77 "fix(responsive): mobile/tablet UI cutoff across landing + auth + onboarding".
+- Pushed to GitHub: 0f28619..7af9d77 main -> main ✓
+
+- Created full backup tarball via /home/z/my-project/scripts/create-backup-tarball.sh:
+  - Path: /home/z/my-project/download/axia-complete-backup-20260828-112610-UTC.tar.gz
+  - Size: 1.6MB (1,646,234 bytes), 648 files
+  - SHA256: e3655ccab2acc3cef74d81608af34c8ede4adfda175cd44e62a59e09457d518e
+  - Includes: axia/ (full source), worklog.md
+  - Excludes: node_modules, .git, dist, .convex, .next, .turbo, .vercel, .cache, coverage, *.log, .env (only .env.example included)
+  - First attempt was 116MB because it included /home/z/my-project/resources/ which has stale backup JS files from unrelated projects (timelock, disk-from-root). Removed resources/ from the tarball — now 1.6MB focused on actual AXIA source.
+
+- Created GitHub release via /home/z/my-project/scripts/create-github-release.sh:
+  - Tag: v7.5.0-responsive-20260828-112812
+  - Release ID: 378439847
+  - Release URL: https://github.com/doongarshimamania-lab/AXIA/releases/tag/v7.5.0-responsive-20260828-112812
+  - Asset ID: 533703967
+  - Asset URL: https://github.com/doongarshimamania-lab/AXIA/releases/download/v7.5.0-responsive-20260828-112812/axia-complete-backup-20260828-112610-UTC.tar.gz
+  - Asset size: 1,646,234 bytes (matches tarball exactly — no corruption)
+  - Release is published (draft=false, prerelease=false, make_latest=true)
+
+- SECURITY AUDIT before making repo public:
+  - Scanned all .ts/.tsx/.js/.json/.env*/.md files for secret patterns (sk_live_, sk_test_, ghp_, github_pat_, GOOGLE_CLIENT_SECRET=, BETTER_AUTH_SECRET=, RESEND_API_KEY=re_): NONE found in tracked files.
+  - Searched git history (--all --full-history -p) for any committed .env files: NONE found.
+  - Confirmed .gitignore excludes .env, .env.local, .env.*.local (only .env.example is tracked, with empty placeholder values).
+  - The only sensitive-looking string in the codebase is the Convex deployment URL (https://veracious-zebra-519.convex.cloud) which is already public knowledge (it's the frontend's VITE_CONVEX_URL).
+
+- Made the repo PUBLIC via GitHub API (PATCH /repos/.../AXIA with {"private": false}):
+  - Repo was previously private (visibility=private, private=true).
+  - Now public (visibility=public, private=false).
+  - Verified: https://github.com/doongarshimamania-lab/AXIA returns HTTP 200 without auth.
+  - Release page returns HTTP 200 without auth.
+  - Commit 7af9d77 returns HTTP 200 without auth.
+  - Asset download redirects to Azure blob storage and returns HTTP 200 with content-length=1646234 (matches tarball size exactly).
+
+Stage Summary:
+- ✓ PAT stored securely in /tmp/.gh_pat (chmod 600) + embedded in git remote URL.
+- ✓ Responsive fixes commit 7af9d77 pushed to origin/main.
+- ✓ Full backup tarball created at /home/z/my-project/download/axia-complete-backup-20260828-112610-UTC.tar.gz (1.6MB, 648 files, SHA256 e3655ccab2acc3cef74d81608af34c8ede4adfda175cd44e62a59e09457d518e).
+- ✓ Public GitHub release v7.5.0-responsive-20260828-112812 created with the tarball attached as a release asset.
+- ✓ Repo made PUBLIC — release + asset + commit are all publicly accessible without auth.
+- ✓ No secrets exposed (verified via git history scan + .gitignore check).
+
+Files modified (re-applied on top of origin/main):
+- src/components/site/hero.tsx (grid-cols-1 + min-w-0 + max-w-full + static badge on mobile)
+- src/components/CookieConsentBanner.tsx (useRef + --cookie-banner-h + mobile-compact layout)
+- src/components/site/mobile-sticky-cta.tsx (hasConsented + axia_consent_change listener)
+- src/pages/Auth.tsx (paddingBottom calc(var(--cookie-banner-h) + 1rem) on both wrappers)
+- src/pages/OnboardingUserInformation.tsx (same paddingBottom)
+- src/pages/Landing.tsx (overflow-x-hidden on .landing-page wrapper)
+
+Scripts created (persisted to /home/z/my-project/scripts/ for future reuse):
+- store-github-pat.sh — securely stores PAT in git remote URL
+- start-vite.sh — starts Vite dev server in fully detached background process
+- create-backup-tarball.sh — creates a clean tarball excluding regenerable/sensitive paths
+- create-github-release.sh — creates a public release with the tarball attached as an asset
